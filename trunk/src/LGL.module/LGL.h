@@ -790,8 +790,10 @@ public:
 	void			SetVideo(const char* path);
 	void			CleanUp();
 
+	bool			ImageUpToDate() const;
 	LGL_Image*		LockImage();
 	void			UnlockImage(LGL_Image* image);
+	float			GetLengthSeconds();
 	void			SetTime(float seconds);
 	void			SetPrimaryDecoder();
 	bool			GetImageDecodedSinceBecomingPrimaryDecoder();
