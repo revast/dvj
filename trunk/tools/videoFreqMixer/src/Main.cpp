@@ -425,8 +425,8 @@ else
 			{
 				vid->SetPrimaryDecoder();
 				vid->SetTime(time);
+				//vid->ForceImageUpToDate();
 				int a=0;
-				vid->ForceImageUpToDate();
 				while(!vid->ImageUpToDate())
 				{
 					LGL_DelayMS(50);

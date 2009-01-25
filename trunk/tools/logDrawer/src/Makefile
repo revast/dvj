@@ -97,8 +97,8 @@ MODEFLAGS_LIN		= -g
 DEFINES_LIN		= -DLGL_LINUX
 CFLAGS_LIN		= -Wall -I$(OBJDIR_LIN) `sdl-config --cflags` $(MODEFLAGS_LIN) -I$(ROOT_SRC_DIR) -fsingle-precision-constant $(DEFINES_LIN)
 CPPFLAGS_LIN		= -include PrecompiledHeaders.h $(CFLAGS_LIN)
-AVCODECLIBRARIES_LIN	= -lxvidcore -lx264 -ltheora -lmp3lame -lvorbis -lvorbisenc -lavformat -lavcodec -lswscale -lavutil -lswscale
-LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` -lSDL_image -lSDL_net -lSDL_audioin -lGL -lcwiimote -lfftw3f -lm $(AVCODECLIBRARIES_LIN)
+AVCODECLIBRARIES_LIN	= -lavformat -lavcodec -lswscale -lavutil -lswscale
+LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cflags --libs jack` -lSDL_image -lSDL_net -lSDL_audioin -lGL -lfftw3f -lm $(AVCODECLIBRARIES_LIN)
 
 
 #DEFINE OSX BUILD OPTIONS
@@ -196,7 +196,6 @@ $(TARGET_LIB_LIN): $(MODULE_LIBS_LIN) $(OBJ_LIN)
 ifeq ($(CREATE_BINARY), 0)
 	@echo "	cp $(OBJDIR_LIN)*.o ../$(OBJDIR_LIN)"
 	@cp $(OBJDIR_LIN)*.o ../$(OBJDIR_LIN)
-	@rm -f ../$(PCH_LIN)
 endif
 
 $(TARGET_LIB_OSX): $(MODULE_LIBS_OSX) $(OBJ_OSX)
@@ -255,6 +254,7 @@ endif
 $(OBJDIR_LIN)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
 	@echo "	$(CC_LIN) PrecompiledHeaders.gch"
 	@$(CC_LIN) $(CFLAGS_LIN) -x c++-header -c PrecompiledHeaders.pch -o $(OBJDIR_LIN)PrecompiledHeaders.h.gch
+	@rm -f ../$(PCH_LIN)
 
 $(OBJDIR_OSX)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
 	@echo "	$(CC_OSX) PrecompiledHeaders.gch"

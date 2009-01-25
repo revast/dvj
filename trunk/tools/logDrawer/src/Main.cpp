@@ -50,7 +50,7 @@ LoadRecordSound
 		{
 			break;
 		}
-		float pct = recordSound->PercentLoaded();
+		float pct = recordSound->GetPercentLoaded();
 		LGL_DrawRectToScreen
 		(
 			0,pct,
@@ -990,6 +990,8 @@ printf("noCE!\n");
 			int which = atoi(fi[1]);
 			assert(which >=0 && which < 10);
 			assert(soundList[which]);
+			//FIXME: Need to adapt to latest dvj...
+			/*
 			Turntable_DrawWaveform
 			(
 				soundList[which],		//sound
@@ -1026,6 +1028,7 @@ printf("noCE!\n");
 				atof(fi[31]),			//eq1
 				atof(fi[32])			//eq2
 			);
+			*/
 		}
 		else if(strcasecmp(fi[0],"vdw")==0)
 		{
@@ -1183,6 +1186,8 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 		else if(strcasecmp(fi[0],"DirTreeDraw")==0)
 		{
 			assert(fi.Size()==5);
+			//FIXME: Need to adapt to latest dvj...
+			/*
 			Turntable_DrawDirTree
 			(
 				videoTimeActual,
@@ -1193,6 +1198,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 				(atoi(fi[1])==0) ? .50f : 0.25f,
 				atof(fi[4])
 			);
+			*/
 		}
 		else if(strcasecmp(fi[0],"!DirTreePath")==0)
 		{
