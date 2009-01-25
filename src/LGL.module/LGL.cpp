@@ -7188,6 +7188,17 @@ CleanUp()
 	SwsConvertContext=NULL;
 }
 
+bool
+LGL_Video::
+ImageUpToDate()	const
+{
+	return
+	(
+		SecondsNow==SecondsNext ||
+		ImageDecodeRequired
+	);
+}
+
 LGL_Image*
 LGL_Video::
 LockImage()
@@ -7280,6 +7291,20 @@ UnlockImage
 	ImageFrontSemaphore->Unlock();
 }
 
+float
+LGL_Video::
+GetLengthSeconds()
+{
+	if(FormatContext)
+	{
+		return(FormatContext->duration/(float)(AV_TIME_BASE));
+	}
+	else
+	{
+		return(0.0f);
+	}
+}
+
 void
 LGL_Video::
 SetTime
@@ -7287,25 +7312,6 @@ SetTime
 	float	seconds
 )
 {
-	float secondsNextCandidate=seconds;
-
-	if(FormatContext)
-	{
-		float duration=FormatContext->duration;
-		float durationSeconds = duration/(float)(AV_TIME_BASE);
-
-		if(secondsNextCandidate<-10*durationSeconds)
-		{
-			//printf("LGL_Video::SetTime(): Very negative SecondsNext (%.2f)! Ignoring...\n",seconds);
-			return;
-		}
-		if(secondsNextCandidate>10*durationSeconds)
-		{
-			//printf("LGL_Video::SetTime(): Very positive SecondsNext (%.2f)! Ignoring...\n",seconds);
-			return;
-		}
-	}
-
 	SecondsNext=seconds;
 }
 
@@ -7501,23 +7507,12 @@ RespectTime()
 	//We don't support videos shorter than a second
 	if(!FormatContext)
 	{
-printf("No FormatContext!!\n");
+printf("LGL_Video::RespectTime(): Warning: No FormatContext!!\n");
 		return;
 	}
 
 	float duration=FormatContext->duration;
 	float durationSeconds = duration/(float)(AV_TIME_BASE);
-
-	if(SecondsNext<-10*durationSeconds)
-	{
-		printf("LGL_Video::RespectTime(): Very negative SecondsNext! Setting to zero...\n");
-		SecondsNext=0.0f;
-	}
-	if(SecondsNext>10*durationSeconds)
-	{
-		printf("LGL_Video::RespectTime(): Very positive SecondsNext! Setting to zero...\n");
-		SecondsNext=0.0f;
-	}
 
 	while(SecondsNext<0)
 	{
@@ -7529,6 +7524,8 @@ printf("No FormatContext!!\n");
 		if(ThreadEndSignal) return;
 		SecondsNext-=durationSeconds;
 	}
+
+	//FIXME: This looks like a race condition with ImageUpToDate()... Harmless, but should be fixed...
 	SecondsNow=SecondsNext;
 	TimestampNext=(long)(SecondsNow*CodecContext->time_base.den/(float)CodecContext->time_base.num);
 
