@@ -2,7 +2,7 @@
 #labels Featured,Phase-Deploy
 =System Requirements + Dependencies=
 
-Linux is dvj's only supported platform. The other OS's will get ports after the linux version is bulletproof.
+Linux is dvj's only supported platform. The other OS's will get ports after the linux version is bulletproof for all users.
 
 Ensure you have the following packages:
 {{{
