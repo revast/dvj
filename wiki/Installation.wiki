@@ -62,10 +62,10 @@ sudo ln -s /usr/include/libswscale/swscale.h /usr/local/include/ffmpeg/swscale.h
 
 =Configuration=
 
-If your music directory lives at `~/music`, then type:
+If your music directory lives at `~/mp3s`, then type:
 {{{
 cd dvj/data
-ln -s ~/music
+ln -s ~/mp3s music
 }}}
 
 Ensure vsync is enable for OpenGL. For nvidia cards, run `nvidia-settings`, click "OpenGL Settings", then click the checkbox for "Sync to VBlank".
