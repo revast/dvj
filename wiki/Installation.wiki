@@ -1,0 +1,144 @@
+#summary How to download, compile, and setup dvj.
+#labels Featured,Phase-Deploy
+=System Requirements + Dependencies=
+
+Linux is dvj's only supported platform. The other OS's will get ports after the linux version is bulletproof.
+
+Ensure you have the following packages:
+{{{
+apt-get install subversion ctags libsdl1.2-dev g++ libfftw3-dev libavcodec-dev libavformat-dev libswscale-dev mencoder mplayer libsdl-image1.2-dev libsdl-net1.2-dev lame jackd libjack-dev
+}}}
+
+You'll also need to compile + install SDL_audioin:
+{{{
+ wget http://www.unison.com/opensource/sdl_audioin-0.3-rc1-ums-0.2.zip
+ unzip sdl_audioin-0.3-rc1-ums-0.2.zip
+ cd sdl_audioin-0.3-rc1/
+ chmod a+x configure
+ ./configure
+ make
+ sudo make install
+ cd ..
+ sudo mv sdl_audioin-0.3-rc1 /usr/src/
+}}}
+
+Finally, you'll need JACK 0.116.1, which is likely more recent the version your distro provides:
+{{{
+wget http://jackaudio.org/downloads/jack-audio-connection-kit-0.116.1.tar.gz
+tar -zxf jack-audio-connection-kit-0.116.1.tar.gz 
+cd jack-audio-connection-kit-0.116.1/
+./configure
+make
+sudo make install
+cd ..
+sudo mv jack-audio-connection-kit-0.116.1 /usr/src/
+}}}
+
+=Downloading=
+{{{
+svn checkout http://dvj.googlecode.com/svn/trunk/ dvj
+}}}
+
+=Compiling=
+{{{
+cd dvj
+make
+}}}
+
+*NOTE*: In Gentoo, ffmpeg's header files aren't where dvj expects them to be. If you get a compile error involving libavformat.h and/or libswscale.h, then ensure the following symlinks are pointing to these files:
+{{{
+/usr/local/include/ffmpeg/avformat.h
+/usr/local/include/ffmpeg/swscale.h
+}}}
+
+If my memory is correct, these commands cause that to happen:
+{{{
+sudo mkdir /usr/local/include/ffmpeg
+sudo ln -s /usr/include/libavformat/avformat.h /usr/local/include/ffmpeg/avformat.h
+sudo ln -s /usr/include/libswscale/swscale.h /usr/local/include/ffmpeg/swscale.h
+}}}
+
+
+
+=Configuration=
+
+If your music directory lives at `~/music`, then type:
+{{{
+cd dvj/data
+ln -s ~/music
+}}}
+
+Next, you'll need proper ~/.jackrc and ~/.asoundrc files.
+
+===~/.jackrc===
+The following should be pasted into an empty ~/.jackrc, if you're using an Xponent:
+{{{
+/usr/local/bin/jackd -Z -dalsa -d xponent -o4 -r44100 -p768 -n2 -s -M
+}}}
+The following should be pasted into an empty ~/.jackrc if you're using a 2-channel soundcard:
+{{{
+/usr/local/bin/jackd -Z -dalsa -r44100 -p512 -n4 -s -M
+}}}
+
+*IMPORTANT*: Do not attempt to use the -R or -P flags in this file. dvj handles assigning realtime priority, because jack doesn't respect its own -Z flag, when invoked with the -R flag. Lame, huh?
+
+You should experiment tweaking the numbers associated with the -p and -n parameters, to optimize latency for your system. A realtime linux kernel is highly recommended.
+
+===~/.asoundrc===
+The following should be pasted into an empty ~/.asoundrc, and will support 4-channel output on an M-Audio Xponent. Use this file even if you don't own an Xponent.
+
+{{{
+# create a virtual four-channel device with two sound devices:
+# This is in fact two interleaved stereo streams in
+# different memory locations, so JACK will complain that it
+# cannot get mmap-based access. see below.
+
+pcm.4ch {
+	type multi;
+	slaves.a.pcm "hw:1,1";
+	slaves.a.channels 2;
+	slaves.b.pcm "hw:1,0";
+	slaves.b.channels 2;
+	bindings.0.slave a;
+	bindings.0.channel 0;
+	bindings.1.slave a;
+	bindings.1.channel 1;
+	bindings.2.slave b;
+	bindings.2.channel 0;
+	bindings.3.slave b;
+	bindings.3.channel 1;
+}
+
+# JACK will be unhappy if there is no mixer to talk to, so we set
+# this to card 0. This could be any device but 0 is easy. 
+
+ctl.4ch {
+	type hw;
+	card 0;
+}
+
+# This creates a 4 channel interleaved pcm stream based on
+# the multi device. JACK will work with this one.
+
+pcm.xponent {
+	type route;
+	slave.pcm "4ch";
+	slave.channels 4;
+	ttable.0.0 1;
+	ttable.1.1 1;
+	ttable.2.2 1;
+	ttable.3.3 1;
+}
+
+# see above.
+ctl.xponent {
+	type hw;
+	card 0;
+}
+}}}
+
+=Running dvj=
+{{{
+cd dvj
+./dvj.lin
+}}}
