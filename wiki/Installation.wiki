@@ -68,6 +68,17 @@ cd dvj/data
 ln -s ~/music
 }}}
 
+Ensure vsync is enable for OpenGL. For nvidia cards, run `nvidia-settings`, click "OpenGL Settings", then click the checkbox for "Sync to VBlank".
+
+You'll also need to ensure this setting is loaded each time you log in. You'd expect this to happen automatically, but it doesn't. Do this:
+ # *System* => *Preferences* => *Sessions*
+ # Click [*Add*]
+ # Name = nvidia-settings
+ # Command = nvidia-settings --load-config-only
+ # Click [*Add*]
+
+
+
 Next, you'll need proper ~/.jackrc and ~/.asoundrc files.
 
 ===~/.jackrc===
