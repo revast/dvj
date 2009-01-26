@@ -22,7 +22,7 @@ You'll also need to compile + install SDL_audioin:
  sudo mv sdl_audioin-0.3-rc1 /usr/src/
 }}}
 
-Finally, you'll need JACK 0.116.1, which is likely more recent the version your distro provides:
+Finally, you'll need JACK 0.116.1, which is likely more recent than the version your distro provides:
 {{{
 wget http://jackaudio.org/downloads/jack-audio-connection-kit-0.116.1.tar.gz
 tar -zxf jack-audio-connection-kit-0.116.1.tar.gz 
