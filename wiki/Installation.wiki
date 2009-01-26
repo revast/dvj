@@ -80,9 +80,9 @@ The following should be pasted into an empty ~/.jackrc if you're using a 2-chann
 /usr/local/bin/jackd -Z -dalsa -r44100 -p512 -n4 -s -M
 }}}
 
-*IMPORTANT*: Do not attempt to use the -R or -P flags in this file. dvj handles assigning realtime priority, because jack doesn't respect its own -Z flag, when invoked with the -R flag. Lame, huh?
+*IMPORTANT*: Do not attempt to use the -R or -P flags in this file. dvj handles assigning JACK realtime priority. This is necessary because JACK doesn't respect its own -Z flag, when invoked with the -R flag. If you use the -R flag, JACK might disconnect dvj. Lame, huh?
 
-You should experiment tweaking the numbers associated with the -p and -n parameters, to optimize latency for your system. A realtime linux kernel is highly recommended.
+You should experiment tweaking the numbers associated with the -p and -n parameters, to optimize latency for your system. A realtime linux kernel is highly recommended, but beyond the scope of this document.
 
 ===~/.asoundrc===
 The following should be pasted into an empty ~/.asoundrc, and will support 4-channel output on an M-Audio Xponent. Use this file even if you don't own an Xponent.
