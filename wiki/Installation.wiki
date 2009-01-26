@@ -51,7 +51,7 @@ make
 /usr/local/include/ffmpeg/swscale.h
 }}}
 
-If my memory is correct, these commands cause that to happen:
+If my memory is correct, these commands will cause that to happen:
 {{{
 sudo mkdir /usr/local/include/ffmpeg
 sudo ln -s /usr/include/libavformat/avformat.h /usr/local/include/ffmpeg/avformat.h
