@@ -1078,9 +1078,9 @@ public:
 			LGL_AudioDSP();
 			~LGL_AudioDSP();
 	
-	void		ProcessLeft	(const Sint16* input, Sint16* output, unsigned long samples);
-	void		ProcessRight	(const Sint16* input, Sint16* output, unsigned long samples);
-	void		ProcessStereo	(const Sint16* input, Sint16* output, unsigned long samples);
+	void		ProcessLeft	(const float* input, float* output, unsigned long samples);
+	void		ProcessRight	(const float* input, float* output, unsigned long samples);
+	void		ProcessStereo	(const float* input, float* output, unsigned long samples);
 
 	void		SetFreqResponse	(float*		freqResponseArrayOf513);
 
@@ -1089,8 +1089,8 @@ private:
 	void		ProcessChannel
 			(
 				const
-				Sint16*		userInput,
-				Sint16*		userOutput,
+				float*		userInput,
+				float*		userOutput,
 				float*		carryOver,
 				unsigned long	samples
 			);
@@ -1098,10 +1098,10 @@ private:
 	void		ProcessChannelStereo
 			(
 				const
-				Sint16*		userInputL,
-				Sint16*		userInputR,
-				Sint16*		userOutputL,
-				Sint16*		userOutputR,
+				float*		userInputL,
+				float*		userInputR,
+				float*		userOutputL,
+				float*		userOutputR,
 				float*		carryOverL,
 				float*		carryOverR,
 				unsigned long	samples

@@ -8823,8 +8823,8 @@ LGL_AudioDSP::
 ProcessLeft
 (
 	const
-	Sint16*		input,
-	Sint16*		output,
+	float*		input,
+	float*		output,
 	unsigned long	samples
 )
 {
@@ -8846,8 +8846,8 @@ LGL_AudioDSP::
 ProcessRight
 (
 	const
-	Sint16*		input,
-	Sint16*		output,
+	float*		input,
+	float*		output,
 	unsigned long	samples
 )
 {
@@ -8864,18 +8864,18 @@ ProcessRight
 	);
 }
 
-Sint16 inputL[LGL_SAMPLESIZE];
-Sint16 inputR[LGL_SAMPLESIZE];
-Sint16 outputL[LGL_SAMPLESIZE];
-Sint16 outputR[LGL_SAMPLESIZE];
+float inputL[LGL_SAMPLESIZE];
+float inputR[LGL_SAMPLESIZE];
+float outputL[LGL_SAMPLESIZE];
+float outputR[LGL_SAMPLESIZE];
 
 void
 LGL_AudioDSP::
 ProcessStereo
 (
 	const
-	Sint16*		input,
-	Sint16*		output,
+	float*		input,
+	float*		output,
 	unsigned long	samples
 )
 {
@@ -9036,8 +9036,8 @@ LGL_AudioDSP::
 ProcessChannel
 (
 	const
-	Sint16*		userInput,
-	Sint16*		userOutput,
+	float*		userInput,
+	float*		userOutput,
 	float*		carryOver,
 	unsigned long	samples
 )
@@ -9123,7 +9123,7 @@ ProcessChannel
 		//Write to userOutput
 		for(unsigned int a=0;a<sampleCount;a++)
 		{
-			userOutput[sampleStart+a]=(Sint16)
+			userOutput[sampleStart+a]=
 			(
 				fftInputReal[a]+
 				carryOver[a]-
@@ -9156,10 +9156,10 @@ LGL_AudioDSP::
 ProcessChannelStereo
 (
 	const
-	Sint16*		userInputL,
-	Sint16*		userInputR,
-	Sint16*		userOutputL,
-	Sint16*		userOutputR,
+	float*		userInputL,
+	float*		userInputR,
+	float*		userOutputL,
+	float*		userOutputR,
 	float*		carryOverL,
 	float*		carryOverR,
 	unsigned long	samples
@@ -9249,13 +9249,13 @@ ProcessChannelStereo
 		//Write to userOutput
 		for(unsigned int a=0;a<sampleCount;a++)
 		{
-			userOutputL[sampleStart+a]=(Sint16)
+			userOutputL[sampleStart+a]=
 			(
 				fftInputReal[a]+
 				carryOverL[a]-
 				dcL
 			);
-			userOutputR[sampleStart+a]=(Sint16)
+			userOutputR[sampleStart+a]=
 			(
 				fftInputImaginary[a]+
 				carryOverR[a]-
@@ -22516,7 +22516,7 @@ float tempStreamBL[4*2*LGL_SAMPLESIZE];
 float tempStreamBR[4*2*LGL_SAMPLESIZE];
 float tempStreamRecL[4*2*LGL_SAMPLESIZE];
 float tempStreamRecR[4*2*LGL_SAMPLESIZE];
-float tempStreamSilence[4*2*LGL_SAMPLESIZE];
+float tempStreamSilenceFloat[4*2*LGL_SAMPLESIZE];
 bool tempStreamSilenceReady=false;
 
 Sint16* tempStream16Silence=NULL;
@@ -22684,13 +22684,6 @@ lgl_AudioOutCallbackGenerator
 	LGL.AudioStreamListSemaphore->Unlock();
 #endif
 
-	Sint16* audioStreamDataSint16=new Sint16[len16];
-	float* audioStreamDataFloat=new float[len16];
-	for(int a=0;a<len16;a++)
-	{
-		audioStreamDataSint16[a]=stream16[a];
-		audioStreamDataFloat[a]=stream16[a]/32768.0f;
-	}
 
 	//if(LGL.AudioAvailable==false) return;
 	unsigned long PosLastPrev;
@@ -22708,31 +22701,7 @@ lgl_AudioOutCallbackGenerator
 	double rRecord;
 
 	Sint16* stream16rec=(Sint16*)LGL.RecordBuffer;
-	//memcpy(stream16rec,tempStream16Silence,len16*2);
-	if(LGL.RecordVolume==1.0f)
-	{
-		memcpy(stream16rec,audioStreamDataSint16,len8);
-	}
-	else
-	{
-		for(int a=0;a<len16;a++)
-		{
-			stream16rec[a] = (Sint16)(audioStreamDataSint16[a]*LGL.RecordVolume);
-		}
-	}
-
-	for(int a=0;a<1024 && vChannels*a+1<(unsigned int)len16;a++)
-	{
-		if(LGL.AudioBufferPos+a<1024)
-		{
-			LGL.AudioBufferLBack[LGL.AudioBufferPos+a]+=audioStreamDataFloat[vChannels*a+0];
-			LGL.AudioBufferRBack[LGL.AudioBufferPos+a]+=audioStreamDataFloat[vChannels*a+1];
-		}
-		else
-		{
-			break;
-		}
-	}
+	memcpy(stream16rec,tempStream16Silence,len8);
 
 	for(int b=0;b<LGL_SOUND_CHANNEL_NUMBER;b++)
 	{
@@ -22779,17 +22748,17 @@ lgl_AudioOutCallbackGenerator
 		{
 			for(int a=0;a<size;a++)
 			{
-				tempStreamSilence[a]=LGL.AudioSpec->silence;
+				tempStreamSilenceFloat[a]=LGL.AudioSpec->silence;
 			}
 			tempStreamSilenceReady=true;
 		}
 
-		memcpy(tempStreamFL,tempStreamSilence,size);
-		memcpy(tempStreamFR,tempStreamSilence,size);
-		memcpy(tempStreamBL,tempStreamSilence,size);
-		memcpy(tempStreamBR,tempStreamSilence,size);
-		memcpy(tempStreamRecL,tempStreamSilence,size);
-		memcpy(tempStreamRecR,tempStreamSilence,size);
+		memcpy(tempStreamFL,tempStreamSilenceFloat,size);
+		memcpy(tempStreamFR,tempStreamSilenceFloat,size);
+		memcpy(tempStreamBL,tempStreamSilenceFloat,size);
+		memcpy(tempStreamBR,tempStreamSilenceFloat,size);
+		memcpy(tempStreamRecL,tempStreamSilenceFloat,size);
+		memcpy(tempStreamRecR,tempStreamSilenceFloat,size);
 
 		float vuNext=0.0f;
 		
@@ -22987,12 +22956,6 @@ lgl_AudioOutCallbackGenerator
 				//Add the interpolated samples
 				Sint16* myBuffer=(Sint16*)sc->Buffer;
 
-				//Sint16 Llp=SWAP16(myBuffer[PosLastPrev*BPS_half+0]);
-				//Sint16 Rlp=SWAP16(myBuffer[PosLastPrev*BPS_half+1]);
-
-				//Sint16 Lln=SWAP16(myBuffer[PosLastNext*BPS_half+0]);
-				//Sint16 Rln=SWAP16(myBuffer[PosLastNext*BPS_half+1]);
-
 				Sint16 Lnp=SWAP16(myBuffer[PosNowPrev*BPS_half+0]);
 				Sint16 Rnp=SWAP16(myBuffer[PosNowPrev*BPS_half+1]);
 
@@ -23013,8 +22976,8 @@ lgl_AudioOutCallbackGenerator
 					double GlitchNowNext=(unsigned long)(ceil(sc->GlitchNow));
 					double GlitchiNow=sc->GlitchNow-GlitchNowPrev;
 				
-					Sint16 gLnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchNowNext*BPS/2+0)]));
-					Sint16 gRnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchNowNext*BPS/2+1)]));
+					double gLnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchNowNext*BPS/2+0)]));
+					double gRnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchNowNext*BPS/2+1)]));
 				
 					double s1=sc->GlitchSpeedNow;
 					if(s1>1) s1=1;
@@ -23151,6 +23114,7 @@ lgl_AudioOutCallbackGenerator
 				{
 					localSpeedVolFactor=fabs(sc->SpeedNow)/0.02f;
 				}
+
 				double myFL = (Lnp*(1.0-closenessPercentInvNow) + Lnn*closenessPercentInvNow);
 				double myFR = (Rnp*(1.0-closenessPercentInvNow) + Rnn*closenessPercentInvNow);
 
@@ -23320,17 +23284,15 @@ lgl_AudioOutCallbackGenerator
 		sc->PositionSamplesDeltaLastTime.Reset();
 
 		//DSP!! Woo hoo!!
-		Sint16 tempStreamDSPInStereo[LGL_SAMPLESIZE*2];
-		Sint16 tempStreamDSPOutStereo[LGL_SAMPLESIZE*2];
+		float tempStreamDSPInStereo[LGL_SAMPLESIZE*2];
+		float tempStreamDSPOutStereo[LGL_SAMPLESIZE*2];
 		if(sc->LGLAudioDSPFront)
 		{
-			const float DSP_QUIET_FACTOR = 0.25f;
-			const float DSP_UNQUIET_FACTOR = 1.0f/DSP_QUIET_FACTOR;
 			//Stereo
 			for(unsigned int s=0;s<LGL_SAMPLESIZE*2;s+=2)
 			{
-				tempStreamDSPInStereo[s]=(Sint16)(tempStreamFL[s/2]*DSP_QUIET_FACTOR);
-				tempStreamDSPInStereo[s+1]=(Sint16)(tempStreamFR[s/2]*DSP_QUIET_FACTOR);
+				tempStreamDSPInStereo[s]=tempStreamFL[s/2];
+				tempStreamDSPInStereo[s+1]=tempStreamFR[s/2];
 			}
 			sc->LGLAudioDSPFront->ProcessStereo
 			(
@@ -23340,10 +23302,10 @@ lgl_AudioOutCallbackGenerator
 			);
 			for(unsigned int s=0;s<LGL_SAMPLESIZE*2;s+=2)
 			{
-				tempStreamFL[s/2]=(Sint16)LGL_Clamp(-32767,tempStreamDSPOutStereo[s]*DSP_UNQUIET_FACTOR,32767);
-				tempStreamFR[s/2]=(Sint16)LGL_Clamp(-32767,tempStreamDSPOutStereo[s+1]*DSP_UNQUIET_FACTOR,32767);
-				tempStreamRecL[s/2]=SWAP16(tempStreamFL[s]);
-				tempStreamRecR[s/2]=SWAP16(tempStreamFR[s]);
+				tempStreamFL[s/2]=LGL_Clamp(-32767.0f,tempStreamDSPOutStereo[s],32767.0f);
+				tempStreamFR[s/2]=LGL_Clamp(-32767.0f,tempStreamDSPOutStereo[s+1],32767.0f);
+				tempStreamRecL[s/2]=tempStreamFL[s];
+				tempStreamRecR[s/2]=tempStreamFR[s];
 			}
 
 			memcpy(tempStreamBL,tempStreamFL,4*2*LGL_SAMPLESIZE*sizeof(float));
@@ -23400,10 +23362,6 @@ lgl_AudioOutCallbackGenerator
 				stream16rec[2*l+0]=(Sint16)LGL_Clamp(-32767,stream16rec[2*l+0]+tempStreamRecL[l]*LGL.RecordVolume,32767);
 				stream16rec[2*l+1]=(Sint16)LGL_Clamp(-32767,stream16rec[2*l+1]+tempStreamRecR[l]*LGL.RecordVolume,32767);
 
-				//Also audioStream data
-				stream16rec[2*l+0]=(Sint16)LGL_Clamp(-32767,stream16rec[2*l+0]+audioStreamDataSint16[2*l+0]*LGL.RecordVolume,32767);
-				stream16rec[2*l+1]=(Sint16)LGL_Clamp(-32767,stream16rec[2*l+1]+audioStreamDataSint16[2*l+1]*LGL.RecordVolume,32767);
-
 				if(LGL.AudioBufferPos+l<1024)
 				{
 					LGL.AudioBufferLBack[LGL.AudioBufferPos+l]+=(tempStreamFL[l]/32767.0f);
@@ -23432,10 +23390,6 @@ lgl_AudioOutCallbackGenerator
 		LGL.RecordSamplesWritten+=LGL_SAMPLESIZE;
 	}
 	LGL.AudioBufferPos=LGL.AudioBufferPos+LGL_SAMPLESIZE;
-
-	delete audioStreamDataSint16;
-	delete audioStreamDataFloat;
-
 }
 
 void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8)
