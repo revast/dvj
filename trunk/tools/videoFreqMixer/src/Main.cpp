@@ -17,9 +17,6 @@
 
 #include "../../../src/Common.cpp"	//This is so screwy, but it works.
 
-#define	BEAT_RESEARCH
-//#define	GANTZ_GRAF_MASHUP
-
 //const char* targetMusicPath="/home/emf/music/hypermind.mp3";
 /*
 const char* targetMusicPath="/home/emf/music/Terminal Dusk - Crimson (04) - Eight Frozen Modules - Left Me.mp3";
@@ -42,7 +39,7 @@ LoadRecordSound
 	char*	audioFile
 )
 {
-	long soundBufferLength=4*44100*60*80;
+	long soundBufferLength=4*44100*60*8;
 	Uint8* soundBuffer=(Uint8*)malloc(soundBufferLength);
 	assert(soundBuffer);
 	LGL_Sound* recordSound=new LGL_Sound(audioFile,true,2,soundBuffer,soundBufferLength);
@@ -114,13 +111,11 @@ main
 {
 	bool encodeAll=(argc==2 && strcmp(argv[1],"--all")==0);
 
-#ifndef	BEAT_RESEARCH
 	if(argc!=5 && encodeAll==false)
 	{
 		printf("Usage: ./videoFreqMixer.lin music.mp3 bg.avi lo.avi hi.avi\n\n");
 		exit(0);
 	}
-#endif	//BEAT_RESEARCH
 
 	//Init LGL
 	LGL_Init
@@ -210,11 +205,7 @@ encodeVideo
 	char**	argv
 )
 {
-#ifdef	BEAT_RESEARCH
-	strcpy(targetMusicPath,"BeatResearch.mp3");
-#else
 	strcpy(targetMusicPath,argv[1]);
-#endif
 
 	for(int a=2;a<=4;a++)
 	{
@@ -272,32 +263,6 @@ encodeVideo
 
 	//Fire up mencoder
 	char cmd[1024];
-#ifdef	BEAT_RESEARCH
-	//60fps mpeg4
-	sprintf
-	(
-		cmd,
-		"mencoder -audiofile \"%s\" -oac copy -ovc lavc -of avi -vf harddup -lavcopts vcodec=mpeg4:vrc_buf_size=5848:vrc_maxrate=9800:vbitrate=5000:autoaspect=1 -ofps 60000/1001 -o %s.avi - -nosound -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip",
-		targetMusicPath,
-		targetMusicPath,
-		ResX,
-		ResY
-
-	);
-	//NTSC-DVD
-	/*
-	sprintf
-	(
-		cmd,
-		"mencoder -audiofile \"%s\" -oac lavc -ovc lavc -of mpeg -mpegopts format=dvd:tsaf -vf scale=720:480,harddup -srate 48000 -af lavcresample=48000 -lavcopts vcodec=mpeg2video:vrc_buf_size=1835:vrc_maxrate=9800:vbitrate=5000:keyint=18:vstrict=0:acodec=ac3:abitrate=384:aspect=16/9 -ofps 30000/1001 -o %s.mpg - -nosound -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip",
-		targetMusicPath,
-		targetMusicPath,
-		ResX,
-		ResY
-
-	);
-	*/
-#else	//BEAT_RESEARCH
 	const char* cmdInput;
 	if(strstr(targetMusicPath,".ogg"))
 	{
@@ -330,7 +295,6 @@ encodeVideo
 			targetVideoOutPath
 		);
 	}
-#endif	//BEAT_RESEARCH
 	//const char* cmdInput="mencoder - -audiofile \"%s\" -oac copy -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell=yes:v4mv=yes:vbitrate=%i:autoaspect=1:threads=1 -vf scale=%i:%i,harddup -noskip -of avi -o \"%s\" 1>/dev/null 2>/dev/null";
 printf("cmd:\n\t%s\n",cmd);
 	FILE* mencoderFD=popen(cmd,"w");
@@ -343,266 +307,6 @@ printf("cmd:\n\t%s\n",cmd);
 	float secondsStart=0.0f;
 	float secondsEnd=9999.0f;
 
-LGL_Video* setVid=NULL;
-#ifdef	BEAT_RESEARCH
-double	timeStartGlobal[22];
-double	timeStartLocal[22];
-const char*	setVids[22];
-const char*	lowVids[22];
-const char*	hiVids[22];
-float		hiScalar[22];
-float		hiScalarSpeed[22];
-
-int i=0;
-
-//00: Gantz
-i=0;
-timeStartGlobal[i]=0.0f;
-timeStartLocal[i]=2*60 + 39.06 + 0.075;
-setVids[i]="tracks/Met_Biddler - Biddler On The Roof (04) - Missy Elliot + Dance Graf + Hella Good = Awesome Song (102.00 - 116.65).mp3.mjpeg.avi";
-lowVids[i]="";
-hiVids[i]="";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//01: Toxic
-i++;
-timeStartGlobal[i]=4*60 + 13.004 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (07) - Phuturocity (03).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (07) - Phuturocity (05).mp3.mjpeg.avi";
-hiScalar[i]=2.0f;
-hiScalarSpeed[i]=4.0f;
-
-//02: Rukus
-i++;
-timeStartGlobal[i]=3*60 + 0.875 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (08) - Stimulant Control (05).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (08) - Stimulant Control (07).mp3.mjpeg.avi";
-hiScalar[i]=2.0f;
-hiScalarSpeed[i]=4.0f;
-
-//03: Champion Dub
-i++;
-timeStartGlobal[i]=1*60 + 22.288f + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (08) - Stimulant Control (02).mp3.mjpeg.avi";
-hiVids[i]="tracks/BT - This Binary Universe (05) - See You On The Other Side.mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//04: Platonia
-i++;
-timeStartGlobal[i]=2*60 + 17.169f + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (07) - Phuturocity (02).mp3.mjpeg.avi'";
-hiVids[i]="data/all/David The VJ - Free Loops.mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//05: Thequenique
-i++;
-timeStartGlobal[i]=1*60 + 22.315 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-//lowVids[i]="tracks/Plaid - Greedy Baby (12) - New Family.mp3.mjpeg.avi";
-lowVids[i]="data/all/Huseinpeyda.mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (03) - Infinite Dream (03).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//06: Android
-i++;
-timeStartGlobal[i]=2*60 + 30.830 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (03) - Infinite Dream (11).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (03) - Infinite Dream (07).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//07: Less
-i++;
-timeStartGlobal[i]=0*60 + 54.866 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (08) - Stimulant Control (07).mp3.mjpeg.avi";
-hiVids[i]="tracks/Meat Beat Manifesto - In Dub (08) - Happiness Supreme Dub.mp3.mjpeg.avi";
-hiScalar[i]=2.0f;
-hiScalarSpeed[i]=4.0f;
-
-//08: Reptile Dub
-i++;
-timeStartGlobal[i]=4*60 + 0.002 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-//lowVids[i]="data/all/Huseinpeyda.mp3.mjpeg.avi";
-lowVids[i]="tracks/BT - This Binary Universe (04) - 1.618.mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (08) - Stimulant Control (04).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//09: Smart Bomb
-i++;
-timeStartGlobal[i]=3*60 + 8.570 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (08) - Stimulant Control (02).mp3.mjpeg.avi";
-//hiVids[i]="data/all/Bit_Meddler - Anamorph.mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (07) - Phuturocity (08).mp3.mjpeg.avi";
-hiScalar[i]=2.0f;
-hiScalarSpeed[i]=4.0f;
-
-//10: Zealot
-i++;
-timeStartGlobal[i]=1*60 + 49.720 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (03) - Infinite Dream (04).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (03) - Infinite Dream (05).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//11: Crux
-i++;
-timeStartGlobal[i]=1*60 + 22.294 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/VJ Mission - Timbale.mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (08) - Stimulant Control (11).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//12: Creeping Up On You
-i++;
-timeStartGlobal[i]=1*60 + 44.996 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (08) - Stimulant Control (01).mp3.mjpeg.avi";
-hiVids[i]="data/all/Bit_Meddler - Anamorph.mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=2.0f;
-
-//13: Poison Is The Mindkiller
-i++;
-timeStartGlobal[i]=4*60 + 21.391 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Rez - Area 5 HD Gameplay.mp3.mjpeg.avi";
-hiVids[i]="data/all/Hackers - Selected Scenes.mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=2.0f;
-
-//14: Gnats
-i++;
-timeStartGlobal[i]=3*60 + 24.417 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (03) - Infinite Dream (08).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (03) - Infinite Dream (09).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//15: Dumbfound
-i++;
-timeStartGlobal[i]=2*60 + 9.168 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (04) - Quantum Reality (01).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (03) - Infinite Dream (12).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//16: Dermetfak
-i++;
-timeStartGlobal[i]=3*60 + 13.924 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (04) - Quantum Reality (03).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (04) - Quantum Reality (02).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//17: 3 Points
-i++;
-timeStartGlobal[i]=2*60 + 48.049 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (07) - Phuturocity (10).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (08) - Stimulant Control (03).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//18: Eight Zero One
-i++;
-timeStartGlobal[i]=1*60 + 50.765 + timeStartGlobal[i-1];
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (07) - Phuturocity (01).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (04) - Quantum Reality (06).mp3.mjpeg.avi";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//19: Snarepusher
-const double SNAREPUSHER_OFFSET=1.253 - 0.075;
-i++;
-timeStartGlobal[i]=3*60 + 2.646 + timeStartGlobal[i-1] - SNAREPUSHER_OFFSET;
-timeStartLocal[i]=0.075;
-setVids[i]="tracks/Interim Descriptor - Snarepusher.mp3.mjpeg.avi";
-lowVids[i]="";
-hiVids[i]="";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-//20: What It Is Without
-i++;
-timeStartGlobal[i]=5*60 + 23.940 + timeStartGlobal[i-1] + SNAREPUSHER_OFFSET;
-timeStartLocal[i]=0.0f;
-setVids[i]=NULL;
-lowVids[i]="data/all/Motion Loops (03) - Infinite Dream (06).mp3.mjpeg.avi";
-hiVids[i]="data/all/Motion Loops (04) - Quantum Reality (11).mp3.mjpeg.avi";
-hiScalar[i]=4.0f;
-hiScalarSpeed[i]=2.0f;
-
-//21: Lunatics
-const double LUNATICS_OFFSET=7.645;
-i++;
-timeStartGlobal[i]=5*60 + 21.526 + timeStartGlobal[i-1] - LUNATICS_OFFSET;
-timeStartLocal[i]=0.0075;
-setVids[i]="tracks/Collide - The Lunatics Have Taken Over.mp3.mjpeg.avi";
-lowVids[i]="";
-hiVids[i]="";
-hiScalar[i]=1.0f;
-hiScalarSpeed[i]=4.0f;
-
-for(int a=0;a<22;a++)
-{
-	if(lowVids[i]!=NULL && strlen(lowVids[i])>0)
-	{
-		assert(LGL_FileExists(lowVids[i]));
-	}
-	if(hiVids[i]!=NULL && strlen(hiVids[i])>0)
-	{
-		assert(LGL_FileExists(hiVids[i]));
-	}
-	if(setVids[i]!=NULL && strlen(setVids[i])>0)
-	{
-		assert(LGL_FileExists(setVids[i]));
-	}
-}
-
-int brIndexNow=-1;
-setVid = new LGL_Video(setVids[0]);
-bool useSetVid=false;
-secondsEnd=3891.0f;
-#endif
-
-#ifdef	GANTZ_GRAF_MASHUP
 secondsStart=0.0f;
 secondsEnd=9999.0f;
 //Missy starts at 3:27.15
@@ -616,17 +320,11 @@ LGL_Video* missyVid=new LGL_Video("tracks/Missy Elliott - The Videos (01) - Get 
 LGL_Video* gantzVid=new LGL_Video("tracks/Autechre - Gantz Graf (Chris Cunningham).mp3.mjpeg.avi");
 LGL_Video* britneyVid=new LGL_Video("tracks/Britney Spears - Greatest Hits (My Perogative) (11) - I Am A Slave 4 U.mp3.mjpeg.avi");
 LGL_Video* rndVid=vidHi;
-#endif	//GANTZ_GRAF_MASHUP
-
-float frameRate=60.0f;
-
-	bool firstFrame=true;
 
 	//Loop
-	for(int frame=secondsStart*frameRate;frame<snd->GetLengthSeconds()*60 && frame<secondsEnd*frameRate;frame++)
+	for(int frame=secondsStart*60.0f;frame<snd->GetLengthSeconds()*60 && frame<secondsEnd*60.0f;frame++)
 	{
-#ifdef	GANTZ_GRAF_MASHUP
-float secondsNow=frame/frameRate;
+float secondsNow=frame/60.0f;
 if(secondsNow<missyStart)
 {
 	//Meh
@@ -646,87 +344,6 @@ else
 	vidLo=rndVid;
 	vidHi=britneyVid;
 }
-#endif	//GANTZ_GRAF_MASHUP
-
-#ifdef	BEAT_RESEARCH
-	float secondsNow=frame/frameRate;
-	if
-	(
-		brIndexNow==-1 ||
-		(
-			brIndexNow<21 &&
-			secondsNow>=timeStartGlobal[brIndexNow+1]
-		)
-	)
-	{
-		//Next video!
-		brIndexNow++;
-		printf("BR Video %i\n",brIndexNow);
-		if(setVids[brIndexNow])
-		{
-			setVid->SetVideo(setVids[brIndexNow]);
-			useSetVid=true;
-		}
-		else
-		{
-			char target[1024];
-			if(strcmp(lowVids[brIndexNow],"rnd")==0)
-			{
-				LGL_DirTree allVideos("data/all");
-				int index=LGL_RandInt(0,allVideos.GetFileCount()-1);
-				sprintf(target,"%s/%s",allVideos.GetPath(),allVideos.GetFileName(index));
-				printf("Video[lo: %s [%s]\n",target,LGL_FileExists(target)?"OK":"NO FILE");
-				if(vidLo==NULL)
-				{
-					vidLo=new LGL_Video(target);
-				}
-				else
-				{
-					vidLo->SetVideo(target);
-				}
-			}
-			else
-			{
-				if(vidLo==NULL)
-				{
-					vidLo=new LGL_Video(lowVids[brIndexNow]);
-				}
-				else
-				{
-					vidLo->SetVideo(lowVids[brIndexNow]);
-				}
-			}
-			if(strcmp(hiVids[brIndexNow],"rnd")==0)
-			{
-				LGL_DirTree allVideos("data/all");
-				int index=LGL_RandInt(0,allVideos.GetFileCount()-1);
-				sprintf(target,"%s/%s",allVideos.GetPath(),allVideos.GetFileName(index));
-				printf("Video[hi]: %s [%s]\n",target,LGL_FileExists(target)?"OK":"NO FILE");
-				if(vidHi==NULL)
-				{
-					vidHi=new LGL_Video(target);
-				}
-				else
-				{
-					vidHi->SetVideo(target);
-				}
-			}
-			else
-			{
-				if(vidHi==NULL)
-				{
-					vidHi=new LGL_Video(hiVids[brIndexNow]);
-				}
-				else
-				{
-					vidHi->SetVideo(hiVids[brIndexNow]);
-				}
-			}
-			useSetVid=false;
-		}
-	}
-#endif	//BEAT_RESEARCH
-
 		//Check for early out
 		LGL_ProcessInput();
 		if(LGL_KeyStroke(SDLK_ESCAPE))
@@ -737,7 +354,7 @@ else
 		}
 
 		//Analyze
-		const long sampleNow=(long)(frame*44100.0f/frameRate);
+		const long sampleNow=(long)(frame*44100.0f/60.0f);
 		const long sampleLast=(long)LGL_Min(snd->GetLengthSamples(),(sampleNow+2*(44100/60)));
 		const int sampleSkipFactor=1;
 		float zeroCrossingFactor;
@@ -759,64 +376,6 @@ else
 			overdriven
 		);
 
-#ifdef	BEAT_RESEARCH
-if(brIndexNow<20)
-{
-	magnitudeAve=LGL_Min(1.0f,magnitudeAve*2);
-	magnitudeMax=LGL_Min(1.0f,magnitudeMax*2);
-}
-#endif	//BEAT_RESEARCH
-
-if(firstFrame)
-{
-	//First frame shall be black
-	firstFrame=false;
-}
-else if(useSetVid)
-{
-	LGL_Video* vid=setVid;
-	vid->SetPrimaryDecoder();
-	float time=timeStartLocal[brIndexNow] + (secondsNow-timeStartGlobal[brIndexNow]);
-	vid->SetTime(time);
-	vid->ForceImageUpToDate();
-	int a=0;
-	while(!vid->ImageUpToDate())
-	{
-		LGL_DelayMS(50);
-		if(a==59)
-		{
-			printf("Frame not decoded: %s\n",vid->GetPathShort());
-			break;
-		}
-		a++;
-	}
-	a=0;
-	LGL_Image* image=vid->LockImage();
-	while(image==NULL)
-	{
-		vid->UnlockImage(NULL);	//Still gotta unlock it, even though it's NULL...
-		LGL_DelayMS(50);
-		image=vid->LockImage();
-		if(a==59)
-		{
-			printf("Image not locked: %s\n",vid->GetPathShort());
-			break;
-		}
-		a++;
-	}
-	assert(image);
-	float bright=1.0f;
-	image->DrawToScreen
-	(
-		0.0f,1.0f,
-		0.0f,1.0f,
-		0.0f,
-		bright,bright,bright,0.0f
-	);
-	vid->UnlockImage(image);
-}
-else
-{
 		//Draw Videos
 		for(int a=0;a<3;a++)
 		{
@@ -857,10 +416,7 @@ else
 				vid=vidHi;
 				float magnitudeThreashold=LGL_Clamp(0.0f,(magnitudeAve-0.1f)*8,1.0f);
 				float magnitudeLoud=LGL_Clamp(0.0f,(magnitudeMax-0.5f)*4,1.0f);
-				factor=4.0f*(zeroCrossingFactor*(0.5f+0.5f*magnitudeLoud))*magnitudeThreashold*(0.0f+fadeFactor);
-#ifdef	BEAT_RESEARCH
-				factor=LGL_Min(8.0f,factor*hiScalar[brIndexNow]);
-#endif
+				factor=((secondsNow<gantzStart)?1.5f:4.0f)*(zeroCrossingFactor*(0.5f+0.5f*magnitudeLoud))*magnitudeThreashold*(0.0f+fadeFactor);
 				time=vidHiTime;
 			}
 			if(vid==NULL) continue;
@@ -869,7 +425,7 @@ else
 			{
 				vid->SetPrimaryDecoder();
 				vid->SetTime(time);
-				vid->ForceImageUpToDate();
+				//vid->ForceImageUpToDate();
 				int a=0;
 				while(!vid->ImageUpToDate())
 				{
@@ -923,16 +479,11 @@ else
 				}
 			}
 		}
-}
 
 		//Advance videos
-		vidBGTime+=1.0f/frameRate;
-		vidLoTime+=1.0f/frameRate;
-#ifdef	BEAT_RESEARCH
-		vidHiTime+=hiScalarSpeed[brIndexNow]/frameRate;
-#else
-		vidHiTime+=4.0f/frameRate;
-#endif	//BEAT_RESEARCH
+		vidBGTime+=1.0f/60.0f;
+		vidLoTime+=1.0f/60.0f;
+		vidHiTime+=2.0f/60.0f;
 		if(vidBG && vidBGTime>vidBG->GetLengthSeconds()-10.0f)
 		{
 			vidBGTime=10.0f;
@@ -968,7 +519,7 @@ else
 		free(pixels);
 
 		//Status
-		float pct = frame/(frameRate*snd->GetLengthSeconds());
+		float pct = frame/(60.0f*snd->GetLengthSeconds());
 		LGL_DrawRectToScreen
 		(
 			0,pct,
