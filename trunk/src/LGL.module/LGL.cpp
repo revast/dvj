@@ -54,8 +54,6 @@
 
 #endif	//LGL_LINUX
 
-#include <samplerate.h>
-
 #ifdef LGL_LINUX_VIDCAM
 //<V4L>
 #include <stdlib.h>		//malloc()
@@ -91,9 +89,6 @@ fftwf_plan plan_main_backward;
 fftwf_plan plan_callback_forward;
 fftwf_plan plan_callback_backward;
 int fft_elementCount=LGL_EQ_SAMPLES_FFT;
-
-#define SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES (128)
-#define SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES_EDGE (16)
 
 typedef struct
 {
@@ -149,6 +144,9 @@ typedef struct
 	Uint8*			Buffer;
 	LGL_Semaphore*		BufferSemaphore;
 	LGL_Sound*		LGLSound;
+#ifdef	USE_DEPRECATED_LGL_MUSIC
+	LGL_Music*		LGLMusic;
+#endif	//USE_DEPRECATE_LGL_MUSIC
 	LGL_AudioDSP*		LGLAudioDSPFront;
 
 	double			DivergeSamples;
@@ -156,14 +154,6 @@ typedef struct
 	float			DivergeSpeed;
 	double			WarpPointSecondsTrigger;
 	double			WarpPointSecondsDestination;
-
-	SRC_STATE*		SampleRateConverter;
-	float			SampleRateConverterBufferL[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
-	float			SampleRateConverterBufferR[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
-	float			SampleRateConverterBufferSpeed;
-	long			SampleRateConverterBufferStartSamples;
-	long			SampleRateConverterBufferValidSamples;
-	int			SampleRateConverterBufferCurrentSamplesIndex;
 } LGL_SoundChannel;
 
 #define	LGL_SOUND_CHANNEL_NUMBER	32
@@ -228,6 +218,9 @@ typedef struct
 	unsigned long		RecordSamplesWritten;
 	Uint8			RecordBuffer[LGL_SAMPLESIZE*4*2];
 	float			RecordVolume;
+#ifdef	USE_DEPRECATED_LGL_MUSIC
+	std::vector<LGL_Music*>	MusicList;
+#endif	//USE_DEPRECATED_LGL_MUSIC
 	std::vector<LGL_AudioStream*>
 				AudioStreamList;
 	LGL_Semaphore*		AudioStreamListSemaphore;
@@ -524,6 +517,9 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].Buffer=NULL;
 	LGL.SoundChannel[a].BufferSemaphore=NULL;
 	LGL.SoundChannel[a].LGLSound=NULL;
+#ifdef	USE_DEPRECATED_LGL_MUSIC
+	LGL.SoundChannel[a].LGLMusic=NULL;
+#endif	//USE_DEPRECATE_LGL_MUSIC
 	if(LGL.SoundChannel[a].LGLAudioDSPFront!=NULL)
 	{
 		delete LGL.SoundChannel[a].LGLAudioDSPFront;
@@ -1120,13 +1116,6 @@ LGL_ThreadSetPriority(1.0f);
 	}
 LGL_ThreadSetPriority(-0.1f);
 #endif	//LGL_JACK
-
-	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
-	{
-		LGL.SoundChannel[a].SampleRateConverter = NULL;
-	}
-	LGL.SoundChannel[a].SampleRateConverterBufferStartSamples=-1;
-	LGL.SoundChannel[a].SampleRateConverterBufferValidSamples=-1;
 
 	//Initialize Video
 
@@ -2454,6 +2443,13 @@ LGL_SwapBuffers()
 		*/
 	}
 	
+#ifdef	USE_DEPRECATED_LGL_MUSIC
+	for(unsigned int a=0;a<LGL.MusicList.size();a++)
+	{
+		LGL.MusicList[a]->NextFrame();
+	}
+#endif	//USE_DEPRECATED_LGL_MUSIC
+
 	if(LGL.AudioStreamListSemaphore!=NULL)
 	{
 		if(LGL.AudioStreamList.size()>0)
@@ -11222,16 +11218,6 @@ Play
 		LGL.SoundChannel[Available].DivergeSpeed=1.0f;
 		LGL.SoundChannel[Available].WarpPointSecondsTrigger=-1.0f;
 		LGL.SoundChannel[Available].WarpPointSecondsDestination=-1.0f;
-		if(LGL.SoundChannel[Available].SampleRateConverter)
-		{
-			src_reset(LGL.SoundChannel[Available].SampleRateConverter);
-		}
-		else
-		{
-			int error=0;
-			LGL.SoundChannel[Available].SampleRateConverter = src_new(SRC_SINC_FASTEST,1,&error);
-			assert(LGL.SoundChannel[Available].SampleRateConverter);
-		}
 		LGL.SoundChannel[Available].VolumeFrontLeftDesired=volume;
 		LGL.SoundChannel[Available].VolumeFrontRightDesired=volume;
 		LGL.SoundChannel[Available].VolumeBackLeftDesired=volume;
@@ -11266,6 +11252,9 @@ Play
 		LGL.SoundChannel[Available].Buffer=Buffer;
 		LGL.SoundChannel[Available].BufferSemaphore=&BufferSemaphore;
 		LGL.SoundChannel[Available].LGLSound=this;
+#ifdef	USE_DEPRECATED_LGL_MUSIC
+		LGL.SoundChannel[Available].LGLMusic=NULL;
+#endif	//USE_DEPRECATE_LGL_MUSIC
 		if(LGL.SoundChannel[Available].LGLAudioDSPFront!=NULL)
 		{
 			delete LGL.SoundChannel[Available].LGLAudioDSPFront;
@@ -12829,6 +12818,27 @@ LGL_SetRecordDVJToFileVolume
 {
 	LGL.RecordVolume = LGL_Clamp(0.0f,volume,1.0f);
 }
+
+#ifdef	USE_DEPRECATED_LGL_MUSIC
+LGL_Music*
+LGL_MetaSyncMusic()
+{
+//FIXME: LGL_MetaSyncMusic isn't the safest thing in the world, since the LGL_Music that's returned could be deleted at any moment... Remember to code smartly.
+	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
+	{
+		if
+		(
+			LGL.SoundChannel[a].Occupied &&
+			LGL.SoundChannel[a].LGLMusic!=NULL &&
+			LGL.SoundChannel[a].LGLMusic->MetaSync_Available()
+		)
+		{
+			return(LGL.SoundChannel[a].LGLMusic);
+		}
+	}
+	return(NULL);
+}
+#endif	//USE_DEPRECATED_LGL_MUSIC
 
 //Input
 
@@ -22860,44 +22870,81 @@ lgl_AudioOutCallbackGenerator
 			{
 				//Loop or stop
 				GoForIt=false;
-				if(sc->Loop)
+				if
+				(
+#ifdef	USE_DEPRECATED_LGL_MUSIC
+					sc->LGLMusic!=NULL &&
+					sc->LGLMusic->BufferBackEmpty==false
+#else	//USE_DEPRECATED_LGL_MUSIC
+					0
+#endif	//USE_DEPRECATED_LGL_MUSIC
+				)
 				{
-					if
-					(
-						sc->StickyEndpoints ||
-						(
-							(
-								sc->LGLSound==NULL ||
-								sc->LGLSound->IsLoaded()==false
-							) &&
-							sc->PositionSamplesEnd>=44100.0f*50000.0f
-						)
-					)
-					{
-						//sc->PositionSamplesNow=sc->PositionSamplesStart;
-						//sc->PositionSamplesPrev=sc->PositionSamplesStart;
-						//sc->PositionSamplesNowLastReported=sc->PositionSamplesNow;
-						sc->PositionSamplesNow=sc->BufferLength/BPS-1;
-						sc->PositionSamplesPrev=sc->BufferLength/BPS-1;
-						sc->PositionSamplesNowLastReported=sc->PositionSamplesNow;
-						sc->SpeedNow=0.0f;
-						sc->SpeedDesired=0.0f;
-					}
-					else
-					{
-						//We are looping on a valid PositionSamplesEnd
-						sc->PositionSamplesNow=sc->PositionSamplesStart;
-						sc->PositionSamplesPrev=sc->PositionSamplesStart;
-						sc->PositionSamplesNowLastReported=sc->PositionSamplesNow;
-					}
+#ifdef	USE_DEPRECATED_LGL_MUSIC
+					//Gotta Switch Buffers
+					sc->LGLMusic->SwapBuffers();
+					sc->Buffer=sc->LGLMusic->BufferFront;
+					sc->PositionSamplesNow=0;
+					sc->PositionSamplesPrev=0;
+
+					PosLastPrev=(unsigned long)(floor(sc->PositionSamplesPrev));
+					PosLastNext=(unsigned long)(ceil(sc->PositionSamplesPrev));
+					closenessPercentInvLast=sc->PositionSamplesPrev-PosLastPrev;
+
+					PosNowPrev=(unsigned long)(floor(sc->PositionSamplesNow));
+					PosNowNext=(unsigned long)(ceil(sc->PositionSamplesNow));
+					closenessPercentInvNow=sc->PositionSamplesNow-PosNowPrev;
+
+					GoForIt=true;
+#endif	//USE_DEPRECATE_LGL_MUSIC
 				}
 				else
 				{
-					sc->Occupied=false;
-					sc->PositionSamplesNow=0;
-					sc->PositionSamplesPrev=0;
-					sc->Buffer=NULL;
-					GoForIt=false;
+					if(sc->Loop)
+					{
+						if
+						(
+							sc->StickyEndpoints ||
+							(
+								(
+									sc->LGLSound==NULL ||
+									sc->LGLSound->IsLoaded()==false
+								) &&
+								sc->PositionSamplesEnd>=44100.0f*50000.0f
+							)
+						)
+						{
+							//sc->PositionSamplesNow=sc->PositionSamplesStart;
+							//sc->PositionSamplesPrev=sc->PositionSamplesStart;
+							//sc->PositionSamplesNowLastReported=sc->PositionSamplesNow;
+							sc->PositionSamplesNow=sc->BufferLength/BPS-1;
+							sc->PositionSamplesPrev=sc->BufferLength/BPS-1;
+							sc->PositionSamplesNowLastReported=sc->PositionSamplesNow;
+							sc->SpeedNow=0.0f;
+							sc->SpeedDesired=0.0f;
+						}
+						else
+						{
+							//We are looping on a valid PositionSamplesEnd
+							sc->PositionSamplesNow=sc->PositionSamplesStart;
+							sc->PositionSamplesPrev=sc->PositionSamplesStart;
+							sc->PositionSamplesNowLastReported=sc->PositionSamplesNow;
+						}
+					}
+					else
+					{
+						sc->Occupied=false;
+						sc->PositionSamplesNow=0;
+						sc->PositionSamplesPrev=0;
+						sc->Buffer=NULL;
+						GoForIt=false;
+#ifdef	USE_DEPRECATED_LGL_MUSIC
+						if(sc->LGLMusic!=NULL)
+						{
+							sc->LGLMusic->Channel=-1;
+						}
+#endif	//USE_DEPRECATE_LGL_MUSIC
+					}
 				}
 			}
 			if(sc->Buffer==NULL)
@@ -23068,87 +23115,8 @@ lgl_AudioOutCallbackGenerator
 					localSpeedVolFactor=fabs(sc->SpeedNow)/0.02f;
 				}
 
-				//Default to linear interpolation
 				double myFL = (Lnp*(1.0-closenessPercentInvNow) + Lnn*closenessPercentInvNow);
 				double myFR = (Rnp*(1.0-closenessPercentInvNow) + Rnn*closenessPercentInvNow);
-
-				//Attempt to use libresample
-				if
-				(
-					sc->SpeedNow>0 &&
-					fabsf(sc->SpeedNow)<2.0f &&
-					fabsf(sc->SpeedNow)>0.5f
-				)
-				{
-					long sampleNow=(long)sc->PositionSamplesNow;
-					if
-					(
-						sampleNow>sc->SampleRateConverterBufferStartSamples+SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES_EDGE &&
-						sampleNow<sc->SampleRateConverterBufferStartSamples+
-							sc->SampleRateConverterBufferValidSamples-SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES_EDGE
-					)
-					{
-						//We may use SampleRateConverterBuffer, below
-					}
-					else
-					{
-						//We must generate SampleRateConverterBuffer
-						for(int c=0;c<2;c++)
-						{
-							SRC_DATA srcData;
-							float srcBufIn[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES*2];
-							float srcBufOut[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
-							long indexStart=sampleNow-SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES_EDGE;
-							for(int b=0;b<SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES*2;b++)
-							{
-								long index=indexStart+b;
-								if(index<0) index=0;
-								if(index*BPS>=(long)sc->BufferLength) index=0;
-								srcBufIn[b]=myBuffer[index*BPS_half+c]/32767.0f;
-							}
-
-							srcData.data_in=srcBufIn;
-							srcData.data_out=srcBufOut;
-							srcData.input_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES*2;
-							srcData.output_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;
-							srcData.src_ratio=1.0f/fabsf(sc->SpeedNow);
-							srcData.end_of_input=1;
-
-							src_reset(sc->SampleRateConverter);
-							src_process(sc->SampleRateConverter,&srcData);
-
-							for(int b=0;b<srcData.output_frames_gen;b++)
-							{
-								float* buf=(c==0) ?
-									sc->SampleRateConverterBufferL :
-									sc->SampleRateConverterBufferR;
-								buf[b]=srcBufOut[b]*32767.0f;
-							}
-							sc->SampleRateConverterBufferSpeed=sc->SpeedNow;
-							sc->SampleRateConverterBufferStartSamples=indexStart;
-							sc->SampleRateConverterBufferValidSamples=srcData.output_frames_gen;
-							sc->SampleRateConverterBufferCurrentSamplesIndex=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES_EDGE;
-						}
-					}
-
-					if
-					(
-						sc->SpeedNow>0 &&
-						sc->SpeedNow==sc->SampleRateConverterBufferSpeed &&
-						sc->SampleRateConverterBufferCurrentSamplesIndex>=0 &&
-						sc->SampleRateConverterBufferCurrentSamplesIndex<sc->SampleRateConverterBufferValidSamples
-					)
-					{
-						int index=sc->SampleRateConverterBufferCurrentSamplesIndex;
-						sc->SampleRateConverterBufferCurrentSamplesIndex++;
-						assert(index>0 && index<SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES);
-						if(index<sc->SampleRateConverterBufferValidSamples)
-						{
-							myFL = sc->SampleRateConverterBufferL[index];
-							myFR = sc->SampleRateConverterBufferR[index];
-						}
-					}
-				}
 
 				double myLStereo=myFL;
 				double myRStereo=myFR;
