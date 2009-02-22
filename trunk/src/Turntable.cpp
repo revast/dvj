@@ -1086,7 +1086,7 @@ NextFrame
 				!(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_MINUS)) &&
 				!(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_PLUS))
 			);
-			GlitchPureDuo=(LGL_GetWiimote(1).ButtonDown(LGL_WIIMOTE_B)==false);
+			GlitchPureDuo=true;//(LGL_GetWiimote(1).ButtonDown(LGL_WIIMOTE_B)==false);
 			if(GlitchPure)
 			{
 				GlitchPureSpeed=Pitchbend*LGL_Clamp(0,1.0f-LGL_GetWiimote(1).GetAccelRaw().GetY(),4.0f);
@@ -1112,26 +1112,15 @@ NextFrame
 				VolumeMultiplierNow = candidate;
 			}
 
-			bool wasScratching = LuminScratch || RecordScratch;
-			if
-			(
-				GlitchPure==false &&
-				(
-					LGL_JoyDown(0,LGL_JOY_CROSS) ||
-					LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_MINUS)
-				)
-			)
+			//bool wasScratching = LuminScratch || RecordScratch;
+			if(Input.WaveformPointerScratch(target)!=-1.0f)
 			{
 				//Lumin Scratch
 				float centerSample=Sound->GetPositionSamples(Channel);
 				float leftSample=centerSample-64*512*Pitchbend;
 				float rightSample=centerSample+64*512*Pitchbend;
-				
-				float gSamplePercent=1.0f;
-				if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_MINUS))
-				{
-					gSamplePercent=-0.025f+LGL_MouseX()*1.05f;
-				}
+
+				float gSamplePercent=0.5f+(Input.WaveformPointerScratch(target)-0.5f)*(1.0f/WAVE_WIDTH_PERCENT);
 
 				LuminScratch=true;
 				LuminScratchSamplePositionDesired=
@@ -1144,8 +1133,7 @@ NextFrame
 				{
 					LuminScratchSamplePositionDesired-=Sound->GetLengthSamples();
 				}
-				GlitchBegin=Sound->GetPositionGlitchBeginSamples(Channel)-
-					.005*64*512*Pitchbend;
+				GlitchBegin=Sound->GetPositionGlitchBeginSamples(Channel)-.005f*64*512*Pitchbend;
 			}
 			else
 			{
@@ -1165,6 +1153,7 @@ NextFrame
 			)
 			{
 				//Just finished Scratching... Recall?
+				/*
 				if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B)==false)
 				{
 					Recall();
@@ -1176,6 +1165,7 @@ NextFrame
 						ClearRecallOrigin();
 					}
 				}
+				*/
 			}
 
 			if
@@ -1230,11 +1220,14 @@ NextFrame
 			bool savePointJump=false;
 			bool savePointRecall=false;
 
+			/*
 			if(LGL_GetWiimote(0).ButtonRelease(LGL_WIIMOTE_B))
 			{
 				ClearRecallOrigin();
 			}
+			*/
 
+			/*
 			if
 			(
 				(
@@ -1262,6 +1255,7 @@ NextFrame
 			{
 				savePointRecall=true;
 			}
+			*/
 
 			if
 			(
@@ -1362,6 +1356,7 @@ NextFrame
 				}
 			}
 
+			/*
 			//Must continue to hold down WIIMOTE_B, to warp
 			if
 			(
@@ -1382,7 +1377,7 @@ NextFrame
 				//Clear Recall
 				ClearRecallOrigin();
 			}
-
+			*/
 
 			if(Visualizer!=NULL && MixerVolumeFront>.5f)
 			{
@@ -1459,6 +1454,7 @@ NextFrame
 			GlitchVolume=0;
 			GlitchBegin=0;
 			GlitchLength=0;
+			GlitchPitch=1.0f;
 			SmoothWaveformScrollingSample=0.0f;
 			VideoOffsetSeconds=LGL_RandFloat(0,1000.0f);
 
@@ -1524,13 +1520,12 @@ NextFrame
 		)
 		{
 			float volume=1;
-			if(volume>1) volume=1;
-			float GlitchInterpolation=20.0/44100.0;
+			float GlitchInterpolation=20.0f/44100.0f;
 			if(LuminScratch)
 			{
 				GlitchLength=Sound->GetLengthSamples();
 				GlitchDuo=false;
-				GlitchInterpolation=40.0/44100.0;
+				GlitchInterpolation=40.0f/44100.0f;
 				if(LuminScratchSamplePositionDesired!=-10000)
 				{
 					GlitchInterpolation=40.0/44100.0;
@@ -1559,7 +1554,7 @@ NextFrame
 			{
 				if(glitchPurePrev)
 				{
-					Sound->SetGlitchNow(Channel,Sound->GetPositionSamples(Channel));
+					Sound->SetGlitchSamplesNow(Channel,Sound->GetPositionSamples(Channel));
 				}
 				Sound->SetGlitchAttributes
 				(
@@ -2433,7 +2428,7 @@ GetVideoSolo()
 		(MixerVolumeFront==0.0f ? 1.0f : 0.0f) :
 		MixerVolumeFront;
 	volFront*=(VolumeKill?0.0f:1.0f);
-	return(RecordScratch && (volFront>0.0f));
+	return((RecordScratch || LuminScratch) && (volFront>0.0f));
 }
 
 float
@@ -2861,7 +2856,7 @@ bool
 TurntableObj::
 GetRecordScratch()
 {
-	return(RecordScratch);
+	return(RecordScratch || LuminScratch);
 }
 
 bool

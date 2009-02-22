@@ -190,31 +190,32 @@ NextFrame
 	int syncTT = -1;
 	int target = -1;
 
-	if(Input.SyncTopToBottom())
+	if
+	(
+		Turntable[0]->GetBPM()>0 &&
+		Turntable[1]->GetBPM()>0
+	)
 	{
-		if
-		(
-			Turntable[0]->GetBPM()>0 &&
-			Turntable[1]->GetBPM()>0
-		)
+		if(Input.SyncTopToBottom())
 		{
 			syncTT=0;
 			target=1;
 		}
-	}
-	if(Input.SyncBottomToTop())
-	{
-		if
-		(
-			Turntable[0]->GetBPM()>0 &&
-			Turntable[1]->GetBPM()>0
-		)
+		if(Input.SyncBottomToTop())
 		{
 			syncTT=1;
 			target=0;
 		}
+		if(Turntable[Focus]->GetMode()==2)
+		{
+			if(Input.WaveformSyncBPM(TARGET_FOCUS))
+			{
+				syncTT=Focus;
+				target=Focus?0:1;
+			}
+		}
 	}
-	
+
 	if(syncTT!=-1)
 	{
 		//Sync BPM

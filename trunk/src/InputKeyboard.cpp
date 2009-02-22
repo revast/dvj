@@ -723,3 +723,23 @@ WaveformVideoAdvanceRate
 	return(-1.0f);
 }
 
+bool
+InputKeyboardObj::
+WaveformSyncBPM
+(
+	unsigned int	target
+)	const
+{
+	return(LGL_KeyDown(SDLK_BACKSLASH));
+}
+
+float
+InputKeyboardObj::
+WaveformPointerScratch
+(
+	unsigned int	target
+)	const
+{
+	return(-1.0f);
+}
+

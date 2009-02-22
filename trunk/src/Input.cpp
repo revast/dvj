@@ -1010,3 +1010,41 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
+bool
+InputObj::
+WaveformSyncBPM
+(
+	unsigned int	target
+)	const
+{
+	bool sync=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		sync|=Children[a]->WaveformSyncBPM(target);
+	}
+
+	return(sync);
+}
+
+float
+InputObj::
+WaveformPointerScratch
+(
+	unsigned int	target
+)	const
+{
+	float targetX=-1.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformPointerScratch(target);
+		if(candidate!=-1.0f)
+		{
+			targetX=candidate;
+		}
+	}
+
+	return(targetX);
+}
+

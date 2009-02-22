@@ -129,7 +129,7 @@ typedef struct
 	float			GlitchDuo;
 	bool			GlitchLuminScratch;
 	long			GlitchLuminScratchPositionDesired;
-	double			GlitchNow;
+	double			GlitchSamplesNow;
 	double			GlitchLast;
 	double			GlitchBegin;
 	double			GlitchLength;
@@ -138,7 +138,7 @@ typedef struct
 	float			FutureGlitchSpeedDesired;
 	long			FutureGlitchLuminScratchPositionDesired;
 
-	long			FutureGlitchNow;	//Not affected by FutureGlitchSettingsAvailable. Meh.
+	long			FutureGlitchSamplesNow;	//Not affected by FutureGlitchSettingsAvailable. Meh.
 
 	float			VU;
 
@@ -514,8 +514,8 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].GlitchDuo=0;
 	LGL.SoundChannel[a].GlitchLuminScratch=false;
 	LGL.SoundChannel[a].GlitchLuminScratchPositionDesired=-10000;
-	LGL.SoundChannel[a].FutureGlitchNow=-10000;
-	LGL.SoundChannel[a].GlitchNow=0;
+	LGL.SoundChannel[a].FutureGlitchSamplesNow=-10000;
+	LGL.SoundChannel[a].GlitchSamplesNow=0;
 	LGL.SoundChannel[a].GlitchLast=0;
 	LGL.SoundChannel[a].GlitchBegin=0;
 	LGL.SoundChannel[a].GlitchLength=0;
@@ -2549,6 +2549,7 @@ LGL_SwapBuffers()
 		char* neo;
 		for(int a=0;a<8;a++)
 		{
+			LGL_GetWiimote(a).INTERNAL_ProcessInput();
 			if(LGL_GetWiimote(a).GetPointerAvailable())
 			{
 				std::vector<LGL_Vector> motion = LGL_GetWiimote(a).GetPointerMotionThisFrame();
@@ -8035,6 +8036,7 @@ const	char	*string,
 	for(unsigned int a=0;a<len;a++)
 	{
 		unsigned char ch=tmpstr[a];
+		if(QueryChar(ch)==false) ch=63;	//?
 		float width=GetWidthChar(height,ch);
 		float glyphTexHeight=GlyphTexHeight[ch];
 		float glyphWidthOverHeight=GlyphTexWidthHeightRatio[ch];
@@ -8235,6 +8237,8 @@ PrintMissingGlyphs
 	...
 )
 {
+return;	//Actually, don't do this...
+
 	LGL_Assert(string!=NULL);
 
 	//Process the formatted part of the string
@@ -11232,7 +11236,7 @@ Play
 		else
 		{
 			int error=0;
-			LGL.SoundChannel[Available].SampleRateConverterL = src_new(SRC_SINC_BEST_QUALITY,1,&error);
+			LGL.SoundChannel[Available].SampleRateConverterL = src_new(SRC_SINC_FASTEST,1,&error);
 			assert(LGL.SoundChannel[Available].SampleRateConverterL);
 		}
 		if(LGL.SoundChannel[Available].SampleRateConverterR)
@@ -11242,7 +11246,7 @@ Play
 		else
 		{
 			int error=0;
-			LGL.SoundChannel[Available].SampleRateConverterR = src_new(SRC_SINC_BEST_QUALITY,1,&error);
+			LGL.SoundChannel[Available].SampleRateConverterR = src_new(SRC_SINC_FASTEST,1,&error);
 			assert(LGL.SoundChannel[Available].SampleRateConverterR);
 		}
 		LGL.SoundChannel[Available].VolumeFrontLeftDesired=volume;
@@ -11267,8 +11271,8 @@ Play
 		LGL.SoundChannel[Available].GlitchDuo=0;
 		LGL.SoundChannel[Available].GlitchLuminScratch=false;
 		LGL.SoundChannel[Available].GlitchLuminScratchPositionDesired=-10000;
-		LGL.SoundChannel[Available].FutureGlitchNow=-10000;
-		LGL.SoundChannel[Available].GlitchNow=0;
+		LGL.SoundChannel[Available].FutureGlitchSamplesNow=-10000;
+		LGL.SoundChannel[Available].GlitchSamplesNow=0;
 		LGL.SoundChannel[Available].GlitchLast=0;
 		LGL.SoundChannel[Available].GlitchBegin=0;
 		LGL.SoundChannel[Available].GlitchLength=0;
@@ -11587,12 +11591,13 @@ SetGlitchAttributes
 				if(luminscratchPositionDesired==-10000)
 				{
 					LGL.SoundChannel[channel].GlitchLuminScratchPositionDesired=luminscratchPositionDesired;
+					LGL.SoundChannel[channel].GlitchSamplesNow=GetPositionSamples(channel);
 				}
 				else
 				{
 					LGL.SoundChannel[channel].GlitchLuminScratchPositionDesired=luminscratchPositionDesired%GetLengthSamples();
+					LGL.SoundChannel[channel].GlitchSamplesNow=LGL.SoundChannel[channel].GlitchLuminScratchPositionDesired;
 				}
-				LGL.SoundChannel[channel].GlitchNow=GetPositionSamples(channel);
 				LGL.SoundChannel[channel].GlitchLast=GetPositionSamples(channel);
 				LGL.SoundChannel[channel].GlitchBegin=(samplesBegin >= 0) ? samplesBegin : GetPositionSamples(channel);
 				LGL.SoundChannel[channel].GlitchLength=samplesLength;
@@ -11631,7 +11636,7 @@ SetGlitchAttributes
 			LGL.SoundChannel[channel].GlitchDuo=0;
 			LGL.SoundChannel[channel].GlitchLuminScratch=false;
 			LGL.SoundChannel[channel].GlitchLuminScratchPositionDesired=-10000;
-			LGL.SoundChannel[channel].GlitchNow=0;
+			LGL.SoundChannel[channel].GlitchSamplesNow=0;
 			LGL.SoundChannel[channel].GlitchLast=0;
 			LGL.SoundChannel[channel].GlitchBegin=0;
 			LGL.SoundChannel[channel].GlitchLength=0;
@@ -11642,7 +11647,7 @@ SetGlitchAttributes
 
 void
 LGL_Sound::
-SetGlitchNow
+SetGlitchSamplesNow
 (
 	int	channel,
 	long	glitchNowSamples
@@ -11650,10 +11655,10 @@ SetGlitchNow
 {
 if(channel<0)
 {
-	printf("LGL_Sound::SetGlitchNow(): WARNING! channel < 0\n");
+	printf("LGL_Sound::SetGlitchSamplesNow(): WARNING! channel < 0\n");
 	return;
 }
-	LGL.SoundChannel[channel].FutureGlitchNow=glitchNowSamples;
+	LGL.SoundChannel[channel].FutureGlitchSamplesNow=glitchNowSamples;
 }
 
 long
@@ -11854,7 +11859,7 @@ if(channel<0)
 	printf("LGL_Sound::GetPositionGlitchBeginSamples(): WARNING! channel < 0\n");
 	return(0);
 }
-	return((unsigned long)(LGL.SoundChannel[channel].GlitchNow));	//FIXME: This isn't right.
+	return((unsigned long)(LGL.SoundChannel[channel].GlitchSamplesNow));	//FIXME: This isn't right.
 }
 
 bool
@@ -15058,14 +15063,31 @@ LGL_JoyReset
 
 //Wiimote
 
-void lgl_WiimoteCallback0(union wiimote_mesg *mesg) { if(LGL.Running) LGL.Wiimote[0].INTERNAL_Callback(mesg); }
-void lgl_WiimoteCallback1(union wiimote_mesg *mesg) { if(LGL.Running) LGL.Wiimote[1].INTERNAL_Callback(mesg); }
-void lgl_WiimoteCallback2(union wiimote_mesg *mesg) { if(LGL.Running) LGL.Wiimote[2].INTERNAL_Callback(mesg); }
-void lgl_WiimoteCallback3(union wiimote_mesg *mesg) { if(LGL.Running) LGL.Wiimote[3].INTERNAL_Callback(mesg); }
-void lgl_WiimoteCallback4(union wiimote_mesg *mesg) { if(LGL.Running) LGL.Wiimote[4].INTERNAL_Callback(mesg); }
-void lgl_WiimoteCallback5(union wiimote_mesg *mesg) { if(LGL.Running) LGL.Wiimote[5].INTERNAL_Callback(mesg); }
-void lgl_WiimoteCallback6(union wiimote_mesg *mesg) { if(LGL.Running) LGL.Wiimote[6].INTERNAL_Callback(mesg); }
-void lgl_WiimoteCallback7(union wiimote_mesg *mesg) { if(LGL.Running) LGL.Wiimote[7].INTERNAL_Callback(mesg); }
+void
+lgl_WiimoteCallbackGeneric
+(
+	int			which,
+	int			count,
+	union cwiid_mesg*	mesg
+)
+{
+	if(LGL.Running)
+	{
+		for(int a=0;a<count;a++)
+		{
+			LGL.Wiimote[which].INTERNAL_Callback(&(mesg[a]));
+		}
+	}
+}
+
+void lgl_WiimoteCallback0(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(0,count,mesg); }
+void lgl_WiimoteCallback1(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(1,count,mesg); }
+void lgl_WiimoteCallback2(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(2,count,mesg); }
+void lgl_WiimoteCallback3(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(3,count,mesg); }
+void lgl_WiimoteCallback4(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(4,count,mesg); }
+void lgl_WiimoteCallback5(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(5,count,mesg); }
+void lgl_WiimoteCallback6(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(6,count,mesg); }
+void lgl_WiimoteCallback7(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(7,count,mesg); }
 
 int
 lgl_WiimoteListenThread
@@ -15112,7 +15134,7 @@ LGL_Wiimote() :
 	PointerGreatestIRSourceDistance=0;
 	Battery=0.0f;
 	ConnecterThread=NULL;
-	//Wiimote=NULL;
+	Wiimote=NULL;
 	Extension=LGL_WIIMOTE_EXTENSION_NONE;
 	Reset();
 }
@@ -15176,30 +15198,24 @@ bool
 LGL_Wiimote::
 Connected()
 {
-return(false);
-	//return(Wiimote!=NULL);
+	return(Wiimote!=NULL);
 }
 
 void
 LGL_Wiimote::
 Disconnect()
 {
-return;
-/*
 	if(Wiimote==NULL)
 	{
 		return;
 	}
-*/
-	//FIXME: Reimplement for new libwiimote
-	/*
-	WiimoteSemaphore.Lock("?","Calling wiimote_disconnect()");
+
+	WiimoteSemaphore.Lock("?","Calling cwiid_close()");
 	{
-		wiimote_disconnect(Wiimote);
+		cwiid_close(Wiimote);
 		Wiimote=NULL;
 	}
 	WiimoteSemaphore.Unlock();
-	*/
 }
 
 int
@@ -15208,18 +15224,14 @@ lgl_Wiimote_SetRumble
 	void* wiimotePtr
 )
 {
-	//FIXME: Reimplement for new libwiimote
-	/*
 	LGL_Wiimote* wiimote = (LGL_Wiimote*)wiimotePtr;
 	LGL_Semaphore* semaphore = wiimote->INTERNAL_GetWiimoteSemaphore();
 
-	semaphore->Lock("?","Calling wiimote_command() from lgl_Wiimote_SetRumble()");
+	semaphore->Lock("?","Calling cwiid_command() from lgl_Wiimote_SetRumble()");
 	{
-		//wiimote_command(wiimote->INTERNAL_GetWiimote(), WIIMOTE_CMD_RUMBLE, wiimote->GetRumble());
-		wiimote_command(wiimote->INTERNAL_GetWiimote(), WIIMOTE_RUMBLE, wiimote->GetRumble());
+		cwiid_command(wiimote->INTERNAL_GetWiimote(), CWIID_CMD_RUMBLE, wiimote->GetRumble());
 	}
 	semaphore->Unlock();
-	*/
 
 	return(0);
 }
@@ -15232,16 +15244,16 @@ SetRumble
 	float	seconds
 )
 {
-	//printf("LGL_Wiimote::SetRumble(): Warning! This fn() caused a framerate spike, and is disabled until fixed.\n");	//FIXME
-	return;
-/*
 	Rumble=status;
 	RumbleSeconds=seconds;
 	if(Wiimote)
 	{
-		LGL_ThreadCreate(lgl_Wiimote_SetRumble,this);
+		WiimoteSemaphore.Lock("Main","Calling cwiid_command() from LGL_Wiimote::SetRumble()");
+		{
+			cwiid_command(Wiimote, CWIID_CMD_RUMBLE, Rumble);
+		}
+		WiimoteSemaphore.Unlock();
 	}
-*/
 }
 
 void
@@ -15254,23 +15266,20 @@ SetLED
 {
 	LEDState[which] = status;
 
-	//FIXME: Reimplement for new libwiimote
-	/*
 	if(Wiimote)
 	{
 		unsigned char ledState=0;
-		if(LEDState[0]) ledState |= WIIMOTE_LED1_ON;
-		if(LEDState[1]) ledState |= WIIMOTE_LED2_ON;
-		if(LEDState[2]) ledState |= WIIMOTE_LED3_ON;
-		if(LEDState[3]) ledState |= WIIMOTE_LED4_ON;
+		if(LEDState[0]) ledState |= CWIID_LED1_ON;
+		if(LEDState[1]) ledState |= CWIID_LED2_ON;
+		if(LEDState[2]) ledState |= CWIID_LED3_ON;
+		if(LEDState[3]) ledState |= CWIID_LED4_ON;
 
-		WiimoteSemaphore.Lock("Main","Calling wiimote_command() from LGL_Wiimote::SetLED()");
+		WiimoteSemaphore.Lock("Main","Calling cwiid_command() from LGL_Wiimote::SetLED()");
 		{
-			wiimote_command(Wiimote, WIIMOTE_CMD_LED, ledState);
+			cwiid_command(Wiimote, CWIID_CMD_LED, ledState);
 		}
 		WiimoteSemaphore.Unlock();
 	}
-	*/
 }
 
 bool
@@ -15284,8 +15293,6 @@ float
 LGL_Wiimote::
 GetBattery()
 {
-return(0.0f);
-/*
 	if(Wiimote==NULL)
 	{
 		return(0.0f);
@@ -15294,39 +15301,34 @@ return(0.0f);
 	{
 		return(Battery);
 	}
-*/
 }
 
 bool
 LGL_Wiimote::
 ButtonDown(int which)
 {
-return(false);
-	//return(Wiimote && ButtonDownArrayFront[which]);
+	return(Wiimote && ButtonDownArrayFront[which]);
 }
 
 bool
 LGL_Wiimote::
 ButtonStroke(int which)
 {
-return(false);
-	//return(Wiimote && ButtonStrokeArrayFront[which]);
+	return(Wiimote && ButtonStrokeArrayFront[which]);
 }
 
 bool
 LGL_Wiimote::
 ButtonRelease(int which)
 {
-	return(false);
-	//return(Wiimote && ButtonReleaseArrayFront[which]);
+	return(Wiimote && ButtonReleaseArrayFront[which]);
 }
 
 bool
 LGL_Wiimote::
 GetPointerAvailable()
 {
-return(false);
-	//if(Wiimote==NULL) return(false);
+	if(Wiimote==NULL) return(false);
 
 	return(PointerFront.GetZ()>0);
 }
@@ -15360,8 +15362,7 @@ DrawPointerIRSources
 	float	bottom,	float	top
 )
 {
-return;
-	//if(Wiimote==NULL) return;
+	if(Wiimote==NULL) return;
 
 	float width = right-left;
 	float height = top-bottom;
@@ -15411,8 +15412,7 @@ DrawAccelGraph
 	float	bottom,	float	top
 )
 {
-return;
-	//if(Wiimote==NULL) return;
+	if(Wiimote==NULL) return;
 
 	float width = right-left;
 	float height = top-bottom;
@@ -15468,71 +15468,76 @@ int
 LGL_Wiimote::
 GetExtension()
 {
-return(0);
-	//return(Wiimote ? Extension : 0);
+	return(Wiimote ? Extension : 0);
 }
 
 bool
 LGL_Wiimote::
 INTERNAL_Connect()
 {
-	//FIXME: Reimplement for new libwiimote
-	/*
-	if(ID==0) Wiimote = wiimote_connect(*BDADDR_ANY,lgl_WiimoteCallback0);
-	if(ID==1) Wiimote = wiimote_connect(*BDADDR_ANY,lgl_WiimoteCallback1);
-	if(ID==2) Wiimote = wiimote_connect(*BDADDR_ANY,lgl_WiimoteCallback2);
-	if(ID==3) Wiimote = wiimote_connect(*BDADDR_ANY,lgl_WiimoteCallback3);
-	if(ID==4) Wiimote = wiimote_connect(*BDADDR_ANY,lgl_WiimoteCallback4);
-	if(ID==5) Wiimote = wiimote_connect(*BDADDR_ANY,lgl_WiimoteCallback5);
-	if(ID==6) Wiimote = wiimote_connect(*BDADDR_ANY,lgl_WiimoteCallback6);
-	if(ID==7) Wiimote = wiimote_connect(*BDADDR_ANY,lgl_WiimoteCallback7);
+	bdaddr_t bdany;
+	for(int a=0;a<6;a++) bdany.b[a]=0;	//Want to use BDADDR_ANY, but that results in a compiler warning... Hmm...
+	Wiimote = cwiid_open(&bdany,0);
 
 	if(Wiimote)
 	{
 		Reset();
-		wiimote_command(Wiimote, WIIMOTE_CMD_STATUS, 0);	//Why do we do this?
+		
+		if(ID==0)
+		{
+			printf("Callback set\n");
+			cwiid_set_mesg_callback(Wiimote,lgl_WiimoteCallback0);
+		}
+		if(ID==1) cwiid_set_mesg_callback(Wiimote,lgl_WiimoteCallback1);
+		if(ID==2) cwiid_set_mesg_callback(Wiimote,lgl_WiimoteCallback2);
+		if(ID==3) cwiid_set_mesg_callback(Wiimote,lgl_WiimoteCallback3);
+		if(ID==4) cwiid_set_mesg_callback(Wiimote,lgl_WiimoteCallback4);
+		if(ID==5) cwiid_set_mesg_callback(Wiimote,lgl_WiimoteCallback5);
+		if(ID==6) cwiid_set_mesg_callback(Wiimote,lgl_WiimoteCallback6);
+		if(ID==7) cwiid_set_mesg_callback(Wiimote,lgl_WiimoteCallback7);
 
 		unsigned char reportMode =
-			WIIMOTE_RPT_STATUS |
-			WIIMOTE_RPT_BTN |
-			WIIMOTE_RPT_IR |
-			WIIMOTE_RPT_ACC |
-			WIIMOTE_RPT_EXT;
-		wiimote_command(Wiimote, WIIMOTE_CMD_RPT_MODE, reportMode);
+			CWIID_RPT_STATUS |
+			CWIID_RPT_BTN |
+			CWIID_RPT_IR |
+			CWIID_RPT_ACC |
+			CWIID_RPT_EXT;
+		cwiid_command(Wiimote, CWIID_CMD_RPT_MODE, reportMode);
+
+		cwiid_enable(Wiimote,CWIID_FLAG_MESG_IFC);
+
+		cwiid_command(Wiimote, CWIID_CMD_STATUS, 0);	//Why do we do this?
 
 		for(int a=0;a<4;a++)
 		{
 			SetLED(a,a==ID);
 		}
 	}
-	*/
-return(false);
-	//return(Wiimote!=NULL);
+
+	return(Wiimote!=NULL);
 }
 
 void
 LGL_Wiimote::
 INTERNAL_Callback
 (
-	union wiimote_mesg* mesg
+	union cwiid_mesg* mesg
 )
 {
-	//FIXME: Reimplement for new libwiimote
-	/*
-	if(mesg->type==WIIMOTE_MESG_STATUS)
+	if(mesg->type==CWIID_MESG_STATUS)
 	{
-		struct wiimote_status_mesg status_mesg = mesg->status_mesg;
-		Battery = floorf(100.0f*status_mesg.battery/(float)WIIMOTE_BATTERY_MAX)/100.0f;
-		if(status_mesg.extension==WIIMOTE_EXT_NONE)
+		struct cwiid_status_mesg status_mesg = mesg->status_mesg;
+		Battery = floorf(100.0f*status_mesg.battery/(float)CWIID_BATTERY_MAX)/100.0f;
+		if(status_mesg.ext_type==CWIID_EXT_NONE)
 		{
 			Extension = LGL_WIIMOTE_EXTENSION_NONE;
 		}
-		else if(status_mesg.extension==WIIMOTE_EXT_NUNCHUK)
+		else if(status_mesg.ext_type==CWIID_EXT_NUNCHUK)
 		{
 			if(Extension != LGL_WIIMOTE_EXTENSION_NUNCHUK)
 			{
 				unsigned char accelCalibration[7];
-				if(wiimote_read(Wiimote, WIIMOTE_RW_REG | WIIMOTE_RW_DECODE, 0xA40020, 7, accelCalibration))
+				if(cwiid_read(Wiimote, CWIID_RW_REG | CWIID_RW_DECODE, 0xA40020, 7, accelCalibration))
 				{
 					for(int a=0;a<2;a++)
 					{
@@ -15545,58 +15550,58 @@ INTERNAL_Callback
 			}
 			Extension = LGL_WIIMOTE_EXTENSION_NUNCHUK;
 		}
-		else if(status_mesg.extension==WIIMOTE_EXT_CLASSIC)
+		else if(status_mesg.ext_type==CWIID_EXT_CLASSIC)
 		{
 			Extension = LGL_WIIMOTE_EXTENSION_CLASSIC;
 		}
 	}
-	else if(mesg->type==WIIMOTE_MESG_BTN)
+	else if(mesg->type==CWIID_MESG_BTN)
 	{
-		struct wiimote_btn_mesg btn_mesg = mesg->btn_mesg;
+		struct cwiid_btn_mesg btn_mesg = mesg->btn_mesg;
 		unsigned short buttons = btn_mesg.buttons;
 		ButtonArraySemaphore.Lock("Wiimote Callback","INTERNAL_Callback() calling INTERNAL_UpdateButton()");
 		{
-			INTERNAL_UpdateButton(LGL_WIIMOTE_LEFT,(buttons & WIIMOTE_BTN_LEFT));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_RIGHT,(buttons & WIIMOTE_BTN_RIGHT));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_DOWN,(buttons & WIIMOTE_BTN_DOWN));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_UP,(buttons & WIIMOTE_BTN_UP));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_A,(buttons & WIIMOTE_BTN_A));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_B,(buttons & WIIMOTE_BTN_B));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_MINUS,(buttons & WIIMOTE_BTN_MINUS));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_PLUS,(buttons & WIIMOTE_BTN_PLUS));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_HOME,(buttons & WIIMOTE_BTN_HOME));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_1,(buttons & WIIMOTE_BTN_1));
-			INTERNAL_UpdateButton(LGL_WIIMOTE_2,(buttons & WIIMOTE_BTN_2));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_LEFT,(buttons & CWIID_BTN_LEFT));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_RIGHT,(buttons & CWIID_BTN_RIGHT));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_DOWN,(buttons & CWIID_BTN_DOWN));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_UP,(buttons & CWIID_BTN_UP));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_A,(buttons & CWIID_BTN_A));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_B,(buttons & CWIID_BTN_B));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_MINUS,(buttons & CWIID_BTN_MINUS));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_PLUS,(buttons & CWIID_BTN_PLUS));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_HOME,(buttons & CWIID_BTN_HOME));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_1,(buttons & CWIID_BTN_1));
+			INTERNAL_UpdateButton(LGL_WIIMOTE_2,(buttons & CWIID_BTN_2));
 		}
 		ButtonArraySemaphore.Unlock();
 	}
-	else if(mesg->type==WIIMOTE_MESG_ACC)
+	else if(mesg->type==CWIID_MESG_ACC)
 	{
-		struct wiimote_acc_mesg acc_mesg = mesg->acc_mesg;
+		struct cwiid_acc_mesg acc_mesg = mesg->acc_mesg;
 		AccelBack.SetXYZ
 		(
-			(acc_mesg.x-134.25f)/(128.0f*.215),
-			(acc_mesg.y-134.25f)/(128.0f*.215),
-			(acc_mesg.z-134.25f)/(128.0f*.215)
+			(acc_mesg.acc[0]-134.25f)/(128.0f*.215),
+			(acc_mesg.acc[1]-134.25f)/(128.0f*.215),
+			(acc_mesg.acc[2]-134.25f)/(128.0f*.215)
 		);
 	}
-	else if(mesg->type==WIIMOTE_MESG_IR)
+	else if(mesg->type==CWIID_MESG_IR)
 	{
-		struct wiimote_ir_mesg ir_mesg = mesg->ir_mesg;
+		struct cwiid_ir_mesg ir_mesg = mesg->ir_mesg;
 		int validSources=0;
 		float x=0;
 		float y=0;
 
 		//Calculate Sources
-		for(int a=0;a<WIIMOTE_IR_SRC_COUNT;a++)
+		for(int a=0;a<CWIID_IR_SRC_COUNT;a++)
 		{
-			wiimote_ir_src src = ir_mesg.src[a];
+			cwiid_ir_src src = ir_mesg.src[a];
 			if(src.valid)
 			{
 				PointerIRSources[a].SetXYZ
 				(
-					src.x/(float)WIIMOTE_IR_X_MAX,
-					src.y/(float)WIIMOTE_IR_Y_MAX,
+					src.pos[0]/(float)CWIID_IR_X_MAX,
+					src.pos[1]/(float)CWIID_IR_Y_MAX,
 					1
 				);
 				validSources++;
@@ -15661,21 +15666,30 @@ INTERNAL_Callback
 			PointerGreatestIRSourceDistance=0;
 		}
 	}
-	else if(mesg->type==WIIMOTE_MESG_NUNCHUK)
+	else if(mesg->type==CWIID_MESG_NUNCHUK)
 	{
 		printf("Nunchuk!\n");
 	}
-	else if(mesg->type==WIIMOTE_MESG_CLASSIC)
+	else if(mesg->type==CWIID_MESG_CLASSIC)
 	{
 		printf("Classic!\n");
 	}
-	*/
+	else
+	{
+		printf("WTF?\n");
+	}
+
 }
 
 void
 LGL_Wiimote::
 INTERNAL_ProcessInput()
 {
+	if(Connected()==false)
+	{
+		return;
+	}
+
 	for(int a=0;a<11;a++)
 	{
 		ButtonDownArrayFront[a] = ButtonDownArrayBack[a];
@@ -15750,12 +15764,10 @@ LGL_Wiimote::Reset()
 	}
 	if(LGL.WiimoteSemaphore) LGL.WiimoteSemaphore->Unlock();
 
-	//FIXME: Reimplement for new libwiimote
-	/*
 	if(Wiimote)
 	{
 		unsigned char accelCalibration[7];
-		if(wiimote_read(Wiimote, WIIMOTE_RW_EEPROM, 0x16, 7, accelCalibration))
+		if(cwiid_read(Wiimote, CWIID_RW_EEPROM, 0x16, 7, accelCalibration))
 		{
 			for(int a=0;a<2;a++)
 			{
@@ -15766,7 +15778,6 @@ LGL_Wiimote::Reset()
 			}
 		}
 	}
-	*/
 }
 
 void
@@ -15786,14 +15797,12 @@ INTERNAL_UpdateButton
 	ButtonDownArrayBack[which] = (ButtonDownArrayBack[which] || pressed) && !justReleased;
 }
 
-/*
-wiimote_t*
+cwiid_wiimote_t*
 LGL_Wiimote::
 INTERNAL_GetWiimote()
 {
 	return(Wiimote);
 }
-*/
 
 LGL_Semaphore*
 LGL_Wiimote::
@@ -22783,10 +22792,11 @@ lgl_AudioOutCallbackGenerator
 			sc->GlitchSpeedDesired=sc->FutureGlitchSpeedDesired;
 			sc->GlitchLuminScratchPositionDesired=sc->FutureGlitchLuminScratchPositionDesired;
 		}
-		if(sc->FutureGlitchNow!=-10000)
+		if(sc->FutureGlitchSamplesNow!=-10000)
 		{
-			sc->GlitchNow=sc->FutureGlitchNow;
-			sc->FutureGlitchNow=-10000;
+			sc->GlitchSamplesNow=sc->FutureGlitchSamplesNow;
+printf("GN2: %lf\n",sc->GlitchSamplesNow);
+			sc->FutureGlitchSamplesNow=-10000;
 		}
 
 		if
@@ -22938,18 +22948,12 @@ lgl_AudioOutCallbackGenerator
 				
 				if(sc->Glitch)
 				{
-					double GlitchNowPrev=(unsigned long)(floor(sc->GlitchNow));
-					double GlitchNowNext=(unsigned long)(ceil(sc->GlitchNow));
-					double GlitchiNow=sc->GlitchNow-GlitchNowPrev;
-				
-					double gLnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchNowNext*BPS/2+0)]));
-					double gRnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchNowNext*BPS/2+1)]));
-				
-					double s1=sc->GlitchSpeedNow;
-					if(s1>1) s1=1;
-					double s2=1.0f-s1;
-					s2=1;
-					s1=0;
+					double GlitchSamplesNowPrev=floor(sc->GlitchSamplesNow);
+					double GlitchSamplesNowNext=ceil(sc->GlitchSamplesNow);
+					double GlitchiNow=sc->GlitchSamplesNow-GlitchSamplesNowPrev;
+
+					double gLnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+0)]));
+					double gRnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+1)]));
 
 					double myFL = (gLnn*(1.0-GlitchiNow) + gLnn*GlitchiNow);
 					double myFR = (gRnn*(1.0-GlitchiNow) + gRnn*GlitchiNow);
@@ -22971,8 +22975,8 @@ lgl_AudioOutCallbackGenerator
 					bl+=myBL;
 					br+=myBR;
 
-					sc->GlitchLast=sc->GlitchNow;
-					
+					sc->GlitchLast=sc->GlitchSamplesNow;
+
 					if
 					(
 						sc->GlitchLuminScratch &&
@@ -22980,16 +22984,16 @@ lgl_AudioOutCallbackGenerator
 					)
 					{
 						assert(sc->GlitchLuminScratchPositionDesired>=0);
-						double terp=.9f;
+						double terp=1.0;
 
 						//Normal
-						double cand1=(double)sc->GlitchLuminScratchPositionDesired-(double)sc->GlitchNow;
+						double cand1=(double)sc->GlitchLuminScratchPositionDesired-(double)sc->GlitchSamplesNow;
 
 						//Wrap Backwards
-						double cand2=(double)sc->GlitchLuminScratchPositionDesired-(double)(sc->BufferLength/BPS)-(double)(sc->GlitchNow);
+						double cand2=(double)sc->GlitchLuminScratchPositionDesired-(double)(sc->BufferLength/BPS)-(double)(sc->GlitchSamplesNow);
 						
 						//Wrap Forwards
-						double cand3=(double)sc->GlitchLuminScratchPositionDesired+(double)(sc->BufferLength/BPS)-(double)(sc->GlitchNow);
+						double cand3=(double)sc->GlitchLuminScratchPositionDesired+(double)(sc->BufferLength/BPS)-(double)(sc->GlitchSamplesNow);
 
 						double win=0;
 						if(fabs(cand1)<fabs(cand2))
@@ -23012,43 +23016,51 @@ lgl_AudioOutCallbackGenerator
 					sc->GlitchSpeedNow=
 						(1.0f-sc->GlitchSpeedInterpolationFactor)*sc->GlitchSpeedNow+
 						(0.0f+sc->GlitchSpeedInterpolationFactor)*sc->GlitchSpeedDesired;
+					/*
+					float proxFactor=LGL_Clamp
+					(
+						0,
+						1.0f-(100*fabsf(sc->GlitchSamplesNow-sc->GlitchLuminScratchPositionDesired))/44100.0f,
+						1
+					);
+					sc->GlitchSpeedNow*=(1.0f-proxFactor);
+					*/
 					if(fabs(sc->GlitchSpeedNow-sc->GlitchSpeedDesired)<.0003f)
 					{
 						sc->GlitchSpeedNow=sc->GlitchSpeedDesired;
 					}
-
-					sc->GlitchNow+=sc->GlitchSpeedNow*timeAdvancementMultiplier;
+					sc->GlitchSamplesNow+=sc->GlitchSpeedNow*timeAdvancementMultiplier;
 					if(sc->GlitchLuminScratch==false)
 					{
 						if
 						(
-							sc->GlitchNow >=
+							sc->GlitchSamplesNow >=
 							sc->GlitchBegin+
 							sc->GlitchLength 
 						)
 						{
-							sc->GlitchNow=sc->GlitchBegin;
+							sc->GlitchSamplesNow=sc->GlitchBegin;
 						}
 						if
 						(
-							sc->GlitchNow <
+							sc->GlitchSamplesNow <
 							sc->GlitchBegin
 						)
 						{
-							sc->GlitchNow=
+							sc->GlitchSamplesNow=
 								sc->GlitchBegin+sc->GlitchLength;
 						}
 					}
 				
 					if
 					(
-						sc->GlitchNow >=
+						sc->GlitchSamplesNow >=
 						sc->BufferLength/BPS
 					)
 					{
-						sc->GlitchNow-=sc->BufferLength/BPS;
+						sc->GlitchSamplesNow-=sc->BufferLength/BPS;
 					}
-					if(sc->GlitchNow < 0)
+					if(sc->GlitchSamplesNow < 0)
 					{
 						if
 						(
@@ -23056,50 +23068,37 @@ lgl_AudioOutCallbackGenerator
 							sc->LGLSound->IsLoaded()
 						)
 						{
-							sc->GlitchNow+=(sc->BufferLength/BPS-1);
+							sc->GlitchSamplesNow+=(sc->BufferLength/BPS-1);
 						}
 						else
 						{
-							sc->GlitchNow=0;
+							sc->GlitchSamplesNow=0;
 						}
 					}
 				}
 
 				//Volume Alpha
 
-				double s1=sc->SpeedNow;
-				if(s1>1) s1=1;
-				double s2=1.0f-s1;
-
-				s1=0;
-				s2=1;
-
 				double localSpeedVolFactor=1;
 
+				/*
 				if(fabs(sc->SpeedNow)<=0.02f)
 				{
-					localSpeedVolFactor=fabs(sc->SpeedNow)/0.02f;
+					localSpeedVolFactor=fabs(sc->SpeedNow)/0.02;
 				}
+				*/
 
 				//Default to linear interpolation
 				double myFL = (Lnp*(1.0-closenessPercentInvNow) + Lnn*closenessPercentInvNow);
 				double myFR = (Rnp*(1.0-closenessPercentInvNow) + Rnn*closenessPercentInvNow);
 
 				//Attempt to use libsamplerate
-				if
-				(
-					sc->SpeedNow!=0.0f &&
-					fabsf(sc->SpeedNow)<1.5f
-					/*
-					sc->SpeedNow>0 &&
-					fabsf(sc->SpeedNow)<1.5f &&
-					fabsf(sc->SpeedNow)>(1.0f/1.5f)
-					*/
-				)
+				if(fabsf(sc->SpeedNow)<1.5f)
 				{
 					long sampleNow=(long)sc->PositionSamplesNow;
 					if
 					(
+						sc->SpeedNow==0.0f ||
 						sc->SampleRateConverterBufferCurrentSamplesIndex<sc->SampleRateConverterBufferValidSamples
 						//sampleNow>=sc->SampleRateConverterBufferStartSamples &&
 						//sampleNow<sc->SampleRateConverterBufferStartSamples+sc->SampleRateConverterBufferValidSamples*(1.0f/sc->SampleRateConverterBufferSpeed)
@@ -23141,7 +23140,7 @@ lgl_AudioOutCallbackGenerator
 								srcData.data_out=srcBufOut;
 								srcData.input_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;
 								srcData.output_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;
-								srcData.src_ratio=1.0f/fabsf(sc->SpeedNow);
+								srcData.src_ratio=1.0f/LGL_Max(0.01f,fabsf(sc->SpeedNow));
 								srcData.end_of_input=0;
 
 								src_set_ratio((c==0)?sc->SampleRateConverterL:sc->SampleRateConverterR,srcData.src_ratio);
@@ -23158,25 +23157,16 @@ lgl_AudioOutCallbackGenerator
 								sc->SampleRateConverterBufferStartSamples=indexStart;
 								sc->SampleRateConverterBufferConsumedSamples=srcData.input_frames_used*LGL_Sign(sc->SpeedNow);
 								sc->SampleRateConverterBufferValidSamples=srcData.output_frames_gen;
-	//printf("Set: %li, %li, %.li\n",sc->SampleRateConverterBufferStartSamples,
-	//	sc->SampleRateConverterBufferConsumedSamples,
-	//	sc->SampleRateConverterBufferValidSamples);
 								sc->SampleRateConverterBufferCurrentSamplesIndex=0;
 							}
 						}
 					}
 
-/*
-printf("%i, %i, %i (%i vs %li)\n",
-						(sc->SpeedNow==sc->SampleRateConverterBufferSpeed) ? 1 : 0,
-						(sc->SampleRateConverterBufferCurrentSamplesIndex>=0) ? 1 : 0,
-						(sc->SampleRateConverterBufferCurrentSamplesIndex<sc->SampleRateConverterBufferValidSamples) ? 1 : 0,
-						sc->SampleRateConverterBufferCurrentSamplesIndex,sc->SampleRateConverterBufferValidSamples);
-*/
+					double neoFL;
+					double neoFR;
 
 					if
 					(
-						//sc->SpeedNow==sc->SampleRateConverterBufferSpeed &&
 						sc->SampleRateConverterBufferCurrentSamplesIndex>=0 &&
 						sc->SampleRateConverterBufferCurrentSamplesIndex<sc->SampleRateConverterBufferValidSamples
 					)
@@ -23186,11 +23176,22 @@ printf("%i, %i, %i (%i vs %li)\n",
 						assert(index>=0 && index<SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES);
 						if(index<sc->SampleRateConverterBufferValidSamples)
 						{
-//printf("Yatta!\n");
-							myFL = sc->SampleRateConverterBufferL[index];
-							myFR = sc->SampleRateConverterBufferR[index];
+							neoFL = sc->SampleRateConverterBufferL[index];
+							neoFR = sc->SampleRateConverterBufferR[index];
 						}
 					}
+					else if(sc->SpeedNow==0.0f)
+					{
+						neoFL = sc->SampleRateConverterBufferL[0];
+						neoFR = sc->SampleRateConverterBufferR[0];
+					}
+
+					//Interpolate to linear resampling, as our speed goes from 1.45 => 1.50
+					float sampleRateFactor = LGL_Min(1.0f,20*fabsf(sc->SpeedNow-1.5f));
+					myFL =	(0.0f+sampleRateFactor)*neoFL +
+						(1.0f-sampleRateFactor)*myFL;
+					myFR =	(0.0f+sampleRateFactor)*neoFR +
+						(1.0f-sampleRateFactor)*myFR;
 				}
 				else
 				{

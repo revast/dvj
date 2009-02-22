@@ -28,8 +28,10 @@
 #include "Particle.h"
 
 #include "Input.h"
+#include "InputNull.h"
 #include "InputKeyboard.h"
 #include "InputXponent.h"
+#include "InputWiimote.h"
 
 //Global Variables
 
@@ -101,8 +103,10 @@ void InitializeGlobalsPreLGL()
 
 void InitializeGlobals()
 {
+	Input.AddChild(new InputNullObj);
 	Input.AddChild(new InputKeyboardObj);
 	Input.AddChild(new InputXponentObj);
+	Input.AddChild(new InputWiimoteObj);
 
 	QuadrentSplitX=.5f;
 	QuadrentSplitY=.5f;
