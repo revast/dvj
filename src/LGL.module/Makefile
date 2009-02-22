@@ -98,7 +98,7 @@ DEFINES_LIN		= -DLGL_LINUX
 CFLAGS_LIN		= -Wall -I$(OBJDIR_LIN) `sdl-config --cflags` $(MODEFLAGS_LIN) -I$(ROOT_SRC_DIR) -fsingle-precision-constant $(DEFINES_LIN)
 CPPFLAGS_LIN		= -include PrecompiledHeaders.h $(CFLAGS_LIN)
 AVCODECLIBRARIES_LIN	= -lavformat -lavcodec -lswscale -lavutil -lswscale
-LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cflags --libs jack` -lSDL_image -lSDL_net -lSDL_audioin -lGL -lfftw3f -lm $(AVCODECLIBRARIES_LIN)
+LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cflags --libs jack` -lSDL_image -lSDL_net -lSDL_audioin -lGL -lfftw3f -lm $(AVCODECLIBRARIES_LIN) -lsamplerate -lcwiid
 
 
 #DEFINE OSX BUILD OPTIONS

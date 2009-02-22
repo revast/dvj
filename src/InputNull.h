@@ -1,6 +1,6 @@
 /*
  *
- * InputXponent.h
+ * InputNull.h - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,19 +21,21 @@
  *
  */
 
-#ifndef	_INPUT_XPONENT_H_
-#define	_INPUT_XPONENT_H_
+#ifndef	_INPUT_NULL_H_
+#define	_INPUT_NULL_H_
 
 #include "Input.h"
 
-class InputXponentObj : public InputObj
+class InputNullObj : public InputObj
 {
 
 public:
 
+		InputNullObj();
+virtual		~InputNullObj();
+
 	//Core
 
-	void	AddChild(InputObj*);
 virtual	void	NextFrame();
 
 	//Global Input
@@ -101,17 +103,8 @@ virtual	bool	WaveformLoopDisable		(unsigned int target)	const;	//Exit loop mode
 virtual	int	WaveformLoopMeasures		(unsigned int target)	const;	//Loop end point = Loop start point + N measures
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
-virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
-virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
-
-private:
-
-	LGL_Timer
-		WaveformSavePointUnsetTimerLeft;
-	LGL_Timer
-		WaveformSavePointUnsetTimerRight;
 
 };
 
-#endif	//_INPUT_XPONENT_H_
+#endif	//_INPUT_NULL_H_
 

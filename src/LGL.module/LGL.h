@@ -27,9 +27,7 @@
 #define DEFINE_LGL
 
 #ifdef	LGL_LINUX
-//#include <wiimote.h>
-//#include <wiimote_link.h>
-//#include <wiimote_event.h>
+#include <cwiid.h>
 
 //Next three for midi devices
 #include <sys/soundcard.h>
@@ -1431,7 +1429,7 @@ public:
 				bool	luminscratch,
 				long	luminscratchPositionDesired
 			);
-	void		SetGlitchNow(int channel, long glitchNowSamples);
+	void		SetGlitchSamplesNow(int channel, long glitchNowSamples);
 	long		GetGlitchLuminScratchPositionDesired(int channel);
 	void		SetDownMixToMono
 			(
@@ -1692,10 +1690,11 @@ public:
 	int		GetExtension();
 
 	bool		INTERNAL_Connect();					//DON'T CALL THIS FROM USER-LAND! Use ListenForConnection() instead!
-	void		INTERNAL_Callback(union wiimote_mesg* mesg);		//DON'T CALL THIS!!!
+	void		INTERNAL_Callback(union cwiid_mesg* mesg);		//DON'T CALL THIS!!!
 	void		INTERNAL_ProcessInput();				//DON'T CALL THIS EITHER!!!
 	void		INTERNAL_UpdateButton(int which, bool pressed);		//DON'T CALL THIS ESPECIALLY!!!
-	//wiimote_t*	INTERNAL_GetWiimote();					//DON'T CALL THIS, JERKFACE!!
+	cwiid_wiimote_t*
+			INTERNAL_GetWiimote();					//DON'T CALL THIS, JERKFACE!!
 	LGL_Semaphore*	INTERNAL_GetWiimoteSemaphore();
 
 private:
@@ -1705,8 +1704,8 @@ private:
 	int		ID;
 static	int		IDCounter;
 
-	//wiimote_t*	Wiimote;
-	void*		Wiimote;
+	cwiid_wiimote_t*
+			Wiimote;
 	LGL_Semaphore	WiimoteSemaphore;
 	SDL_Thread*	ConnecterThread;
 

@@ -1,6 +1,6 @@
 /*
  *
- * InputXponent.h
+ * InputNull.h - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,19 +21,21 @@
  *
  */
 
-#ifndef	_INPUT_XPONENT_H_
-#define	_INPUT_XPONENT_H_
+#ifndef	_INPUT_WIIMOTE_H_
+#define	_INPUT_WIIMOTE_H_
 
 #include "Input.h"
 
-class InputXponentObj : public InputObj
+class InputWiimoteObj : public InputObj
 {
 
 public:
 
+		InputWiimoteObj();
+virtual		~InputWiimoteObj();
+
 	//Core
 
-	void	AddChild(InputObj*);
 virtual	void	NextFrame();
 
 	//Global Input
@@ -104,14 +106,12 @@ virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickl
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
 
-private:
+	private:
 
-	LGL_Timer
-		WaveformSavePointUnsetTimerLeft;
-	LGL_Timer
-		WaveformSavePointUnsetTimerRight;
+	float	ScrollInitialAccel;
+	float	LastKnownPointerScratchX;
 
 };
 
-#endif	//_INPUT_XPONENT_H_
+#endif	//_INPUT_WIIMOTE_H_
 

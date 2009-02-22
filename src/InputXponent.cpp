@@ -1668,3 +1668,23 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
+bool
+InputXponentObj::
+WaveformSyncBPM
+(
+	unsigned int	target
+)	const
+{
+	return(false);
+}
+
+float
+InputXponentObj::
+WaveformPointerScratch
+(
+	unsigned int	target
+)	const
+{
+	return(-1.0f);
+}
+
