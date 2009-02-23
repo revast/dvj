@@ -6,7 +6,7 @@ Linux is dvj's only supported platform. The other OS's will get ports after the 
 
 Ensure you have the following packages:
 {{{
-apt-get install subversion ctags libsdl1.2-dev g++ libfftw3-dev libavcodec-dev libavformat-dev libswscale-dev mencoder mplayer libsdl-image1.2-dev libsdl-net1.2-dev lame jackd libjack-dev libsamplerate0-dev
+apt-get install subversion ctags libsdl1.2-dev g++ libfftw3-dev libavcodec-dev libavformat-dev libswscale-dev mencoder mplayer libsdl-image1.2-dev libsdl-net1.2-dev lame jackd libjack-dev libsamplerate0-dev libcwiid1-dev
 }}}
 
 You'll also need to compile + install SDL_audioin:
