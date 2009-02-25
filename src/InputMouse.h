@@ -1,6 +1,6 @@
 /*
  *
- * InputNull.h - Input abstraction object
+ * InputMouse.h - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,18 +21,18 @@
  *
  */
 
-#ifndef	_INPUT_NULL_H_
-#define	_INPUT_NULL_H_
+#ifndef	_INPUT_MOUSE_H_
+#define	_INPUT_MOUSE_H_
 
 #include "Input.h"
 
-class InputNullObj : public InputObj
+class InputMouseObj : public InputObj
 {
 
 public:
 
-		InputNullObj();
-virtual		~InputNullObj();
+		InputMouseObj();
+virtual		~InputMouseObj();
 
 	//Core
 
@@ -108,5 +108,5 @@ virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at th
 
 };
 
-#endif	//_INPUT_NULL_H_
+#endif	//_INPUT_MOUSE_H_
 

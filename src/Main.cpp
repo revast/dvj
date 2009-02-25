@@ -30,6 +30,7 @@
 #include "Input.h"
 #include "InputNull.h"
 #include "InputKeyboard.h"
+#include "InputMouse.h"
 #include "InputXponent.h"
 #include "InputWiimote.h"
 
@@ -105,6 +106,7 @@ void InitializeGlobals()
 {
 	Input.AddChild(new InputNullObj);
 	Input.AddChild(new InputKeyboardObj);
+	Input.AddChild(new InputMouseObj);
 	Input.AddChild(new InputXponentObj);
 	Input.AddChild(new InputWiimoteObj);
 
