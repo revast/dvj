@@ -550,9 +550,12 @@ NextFrame
 			if(rewindFFFactor!=0.0f)
 			{
 				//Rewind
-				recordSpeed=rewindFFFactor;
 				endpointsSticky=true;
-				localVolumeMultiplier=0.25f;
+				recordSpeed=rewindFFFactor;
+				float normalVolFactor=(fabsf(rewindFFFactor)<2.0f) ? 1.0f : LGL_Max(0.0f,1.0f-fabsf(fabsf(rewindFFFactor)-2.0f)/2.0f);
+				localVolumeMultiplier=
+					(0.0f+normalVolFactor)*1.00f+
+					(1.0f-normalVolFactor)*0.25f;
 				LoopStartSeconds=-1.0;
 				if
 				(
