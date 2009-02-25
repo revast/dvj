@@ -1,6 +1,6 @@
 /*
  *
- * InputNull.cpp - Input abstraction object
+ * InputMouse.cpp - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,16 +21,16 @@
  *
  */
 
-#include "InputNull.h"
+#include "InputMouse.h"
 
-InputNullObj::
-InputNullObj()
+InputMouseObj::
+InputMouseObj()
 {
 	//
 }
 
-InputNullObj::
-~InputNullObj()
+InputMouseObj::
+~InputMouseObj()
 {
 	//
 }
@@ -38,7 +38,7 @@ InputNullObj::
 //Core
 
 void
-InputNullObj::
+InputMouseObj::
 NextFrame()
 {
 	//
@@ -47,7 +47,7 @@ NextFrame()
 //Global Input
 
 bool
-InputNullObj::
+InputMouseObj::
 FocusChange()	const
 {
 	bool change=false;
@@ -55,7 +55,7 @@ FocusChange()	const
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 FocusBottom()	const
 {
 	bool bottom=false;
@@ -63,7 +63,7 @@ FocusBottom()	const
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 FocusTop()	const
 {
 	bool top=false;
@@ -71,7 +71,7 @@ FocusTop()	const
 }
 
 float
-InputNullObj::
+InputMouseObj::
 XfaderSpeakers()	const
 {
 	float xfade=-1.0f;
@@ -79,7 +79,7 @@ XfaderSpeakers()	const
 }
 
 float
-InputNullObj::
+InputMouseObj::
 XfaderSpeakersDelta()	const
 {
 	float delta=0.0f;
@@ -87,7 +87,7 @@ XfaderSpeakersDelta()	const
 }
 
 float
-InputNullObj::
+InputMouseObj::
 XfaderHeadphones()	const
 {
 	float xfade=-1.0f;
@@ -95,7 +95,7 @@ XfaderHeadphones()	const
 }
 
 float
-InputNullObj::
+InputMouseObj::
 XfaderHeadphonesDelta()	const
 {
 	float delta=0.0f;
@@ -103,7 +103,7 @@ XfaderHeadphonesDelta()	const
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 SyncTopToBottom()	const
 {
 	bool sync=false;
@@ -111,7 +111,7 @@ SyncTopToBottom()	const
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 SyncBottomToTop()	const
 {
 	bool sync=false;
@@ -121,7 +121,7 @@ SyncBottomToTop()	const
 //Mode 0: File Selection
 
 float
-InputNullObj::
+InputMouseObj::
 FileScroll
 (
 	unsigned int	target
@@ -132,7 +132,7 @@ FileScroll
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 FileSelect
 (
 	unsigned int	target
@@ -143,7 +143,7 @@ FileSelect
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 FileRefresh
 (
 	unsigned int	target
@@ -156,7 +156,7 @@ FileRefresh
 //Mode 1: Decoding...
 
 bool
-InputNullObj::
+InputMouseObj::
 DecodeAbort
 (
 	unsigned int	target
@@ -169,7 +169,7 @@ DecodeAbort
 //Mode 2: Waveform
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformEject
 (
 	unsigned int	target
@@ -180,7 +180,7 @@ WaveformEject
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformTogglePause
 (
 	unsigned int	target
@@ -191,7 +191,7 @@ WaveformTogglePause
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformNudge
 (
 	unsigned int	target
@@ -202,7 +202,7 @@ WaveformNudge
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformPitchbend
 (
 	unsigned int	target
@@ -213,7 +213,7 @@ WaveformPitchbend
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformPitchbendDelta
 (
 	unsigned int	target
@@ -224,7 +224,7 @@ WaveformPitchbendDelta
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformEQLow
 (
 	unsigned int	target
@@ -235,7 +235,7 @@ WaveformEQLow
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformEQLowDelta
 (
 	unsigned int	target
@@ -246,7 +246,7 @@ WaveformEQLowDelta
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformEQLowKill
 (
 	unsigned int	target
@@ -257,7 +257,7 @@ WaveformEQLowKill
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformEQMid
 (
 	unsigned int	target
@@ -268,7 +268,7 @@ WaveformEQMid
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformEQMidDelta
 (
 	unsigned int	target
@@ -279,7 +279,7 @@ WaveformEQMidDelta
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformEQMidKill
 (
 	unsigned int	target
@@ -290,7 +290,7 @@ WaveformEQMidKill
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformEQHigh
 (
 	unsigned int	target
@@ -301,7 +301,7 @@ WaveformEQHigh
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformEQHighDelta
 (
 	unsigned int	target
@@ -312,7 +312,7 @@ WaveformEQHighDelta
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformEQHighKill
 (
 	unsigned int	target
@@ -323,7 +323,7 @@ WaveformEQHighKill
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformGain
 (
 	unsigned int	target
@@ -334,7 +334,7 @@ WaveformGain
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformGainDelta
 (
 	unsigned int	target
@@ -345,7 +345,7 @@ WaveformGainDelta
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformGainKill
 (
 	unsigned int	target
@@ -356,7 +356,7 @@ WaveformGainKill
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformVolumeSlider
 (
 	unsigned int	target
@@ -367,7 +367,7 @@ WaveformVolumeSlider
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformVolumeInvert
 (
 	unsigned int	target
@@ -378,7 +378,7 @@ WaveformVolumeInvert
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformVolumeSolo
 (
 	unsigned int	target
@@ -389,18 +389,28 @@ WaveformVolumeSolo
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformRewindFF
 (
 	unsigned int	target
 )	const
 {
 	float rewindff=0.0f;
+	
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_MouseDown(LGL_MOUSE_RIGHT))
+		{
+			float val = 16.0f*(LGL_MouseX()-0.5f);
+			rewindff=(powf(2.0f,fabsf(val))-1.0f)*LGL_Sign(val);
+		}
+	}
+
 	return(rewindff);
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformRecordHold
 (
 	unsigned int	target
@@ -411,7 +421,7 @@ WaveformRecordHold
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformRecordSpeed
 (
 	unsigned int	target
@@ -422,7 +432,7 @@ WaveformRecordSpeed
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformStutter
 (
 	unsigned int	target
@@ -433,7 +443,7 @@ WaveformStutter
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformStutterPitch
 (
 	unsigned int	target
@@ -444,7 +454,7 @@ WaveformStutterPitch
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformStutterSpeed
 (
 	unsigned int	target
@@ -455,7 +465,7 @@ WaveformStutterSpeed
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformSavePointPrev
 (
 	unsigned int	target
@@ -466,7 +476,7 @@ WaveformSavePointPrev
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformSavePointNext
 (
 	unsigned int	target
@@ -477,7 +487,7 @@ WaveformSavePointNext
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformSavePointSet
 (
 	unsigned int	target
@@ -488,7 +498,7 @@ WaveformSavePointSet
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformSavePointUnsetPercent
 (
 	unsigned int	target
@@ -499,7 +509,7 @@ WaveformSavePointUnsetPercent
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformSavePointShift
 (
 	unsigned int	target
@@ -510,7 +520,7 @@ WaveformSavePointShift
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformSavePointShiftAll
 (
 	unsigned int	target
@@ -521,7 +531,7 @@ WaveformSavePointShiftAll
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformSavePointShiftAllHere
 (
 	unsigned int	target
@@ -532,7 +542,7 @@ WaveformSavePointShiftAllHere
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformSavePointJumpNow
 (
 	unsigned int	target
@@ -543,7 +553,7 @@ WaveformSavePointJumpNow
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformSavePointJumpAtMeasure
 (
 	unsigned int	target
@@ -554,7 +564,7 @@ WaveformSavePointJumpAtMeasure
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformLoopBegin
 (
 	unsigned int	target
@@ -565,7 +575,7 @@ WaveformLoopBegin
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformLoopEnd
 (
 	unsigned int	target
@@ -576,7 +586,7 @@ WaveformLoopEnd
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformLoopDisable
 (
 	unsigned int	target
@@ -587,7 +597,7 @@ WaveformLoopDisable
 }
 
 int
-InputNullObj::
+InputMouseObj::
 WaveformLoopMeasures
 (
 	unsigned int	target
@@ -598,7 +608,7 @@ WaveformLoopMeasures
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformVideoSelect
 (
 	unsigned int	target
@@ -609,7 +619,7 @@ WaveformVideoSelect
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformVideoAdvanceRate
 (
 	unsigned int	target
@@ -620,7 +630,7 @@ WaveformVideoAdvanceRate
 }
 
 bool
-InputNullObj::
+InputMouseObj::
 WaveformSyncBPM
 (
 	unsigned int	target
@@ -631,13 +641,22 @@ WaveformSyncBPM
 }
 
 float
-InputNullObj::
+InputMouseObj::
 WaveformPointerScratch
 (
 	unsigned int	target
 )	const
 {
 	float targetX=-1.0f;
+	
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_MouseDown(LGL_MOUSE_LEFT))
+		{
+			targetX=LGL_MouseX();
+		}
+	}
+
 	return(targetX);
 }
 
