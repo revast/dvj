@@ -81,6 +81,7 @@ TurntableObj
 
 	LGL_Assertf(LGL_DirectoryExists("data/music"),("Error! Must create directory data/music!\n"));
 	DirTree.SetPath("data/music");
+	DirTree.WaitOnWorkerThread(true);
 	FilterTextMostRecent[0]='\0';
 
 	FileTop=DirTree.GetFilteredDirCount();
@@ -457,6 +458,8 @@ NextFrame
 				FileSelectFloat=0.0f;
 				FilterText.SetString();
 				UpdateFileBPM();
+				NoiseFactor=1.0f;
+				WhiteFactor=1.0f;
 			}
 		}
 
@@ -471,41 +474,44 @@ NextFrame
 			}
 		}
 
-		FileSelectFloat=
-			FileSelectInt +
-			Input.FileScroll(target);
+		if(DirTree.Ready())
+		{
+			FileSelectFloat=
+				FileSelectInt +
+				Input.FileScroll(target);
 
-		if(FileSelectFloat<0)
-		{
-			FileSelectFloat=0;
-		}
-		if(FileSelectFloat+0.5f >= DirTree.GetFilteredDirCount()+DirTree.GetFilteredFileCount())
-		{
-			FileSelectFloat=LGL_Max(0,((int)(DirTree.GetFilteredDirCount()))+((int)(DirTree.GetFilteredFileCount()))-1);
-		}
+			if(FileSelectFloat<0)
+			{
+				FileSelectFloat=0;
+			}
+			if(FileSelectFloat+0.5f >= DirTree.GetFilteredDirCount()+DirTree.GetFilteredFileCount())
+			{
+				FileSelectFloat=LGL_Max(0,((int)(DirTree.GetFilteredDirCount()))+((int)(DirTree.GetFilteredFileCount()))-1);
+			}
 
-		if(FileSelectInt != (int)floor(FileSelectFloat+.5f))
-		{
-			BadFileFlash=0.0f;
-			FileSelectInt=(int)floor(FileSelectFloat+.5f);
-		}
-	
-		if(FileSelectInt>=FileTop+4)
-		{
-			FileTop=FileSelectInt-4;
-		}
-		if(FileSelectInt<FileTop)
-		{
-			FileTop=FileSelectInt;
-		}
+			if(FileSelectInt != (int)floor(FileSelectFloat+.5f))
+			{
+				BadFileFlash=0.0f;
+				FileSelectInt=(int)floor(FileSelectFloat+.5f);
+			}
+		
+			if(FileSelectInt>=FileTop+4)
+			{
+				FileTop=FileSelectInt-4;
+			}
+			if(FileSelectInt<FileTop)
+			{
+				FileTop=FileSelectInt;
+			}
 
-		if
-		(
-			FileTop!=fileTopOld ||
-			filterDelta
-		)
-		{
-			UpdateFileBPM();
+			if
+			(
+				FileTop!=fileTopOld ||
+				filterDelta
+			)
+			{
+				UpdateFileBPM();
+			}
 		}
 	}
 	else if(Mode==1)
@@ -1716,7 +1722,14 @@ NextFrame
 	WhiteFactor = LGL_Max(0.0f,WhiteFactor-4.0f*LGL_SecondsSinceLastFrame());
 	if(noiseIncreasing==false)
 	{
-		NoiseFactor = LGL_Max(0.0f,NoiseFactor-2.0f*LGL_SecondsSinceLastFrame());
+		if
+		(
+			Mode!=0 ||
+			DirTree.Ready()
+		)
+		{
+			NoiseFactor = LGL_Max(0.0f,NoiseFactor-2.0f*LGL_SecondsSinceLastFrame());
+		}
 	}
 }
 
@@ -1831,20 +1844,23 @@ DrawFrame
 	{
 		//File Selection
 
-		LGL_DrawLogPause();
-		Turntable_DrawDirTree
-		(
-			LGL_SecondsSinceExecution()*Focus,
-			&DirTree,
-			FileTop,
-			FileSelectInt,
-			ViewPortBottom,
-			ViewPortTop,
-			BadFileFlash,
-			FileBPM
-		);
-		LGL_DrawLogPause(false);
-		LGL_DrawLogWrite("DirTreeDraw|%i|%i|%i|%.2f\n",Which,FileTop,FileSelectInt,BadFileFlash);
+		if(DirTree.Ready())
+		{
+			LGL_DrawLogPause();
+			Turntable_DrawDirTree
+			(
+				LGL_SecondsSinceExecution()*Focus,
+				&DirTree,
+				FileTop,
+				FileSelectInt,
+				ViewPortBottom,
+				ViewPortTop,
+				BadFileFlash,
+				FileBPM
+			);
+			LGL_DrawLogPause(false);
+			LGL_DrawLogWrite("DirTreeDraw|%i|%i|%i|%.2f\n",Which,FileTop,FileSelectInt,BadFileFlash);
+		}
 	}
 	if(Mode==1)
 	{
@@ -2940,7 +2956,7 @@ ProcessHintFile
 const
 char*
 TurntableObj::
-GetCurrentFileString() const
+GetCurrentFileString()
 {
 	int fileNum=DirTree.GetFilteredDirCount()+DirTree.GetFilteredFileCount();
 	if(fileNum==0) return(NULL);
@@ -3036,6 +3052,11 @@ void
 TurntableObj::
 UpdateFileBPM()
 {
+	if(DirTree.Ready()==false)
+	{
+		return;
+	}
+
 	int fileNum=DirTree.GetFilteredDirCount()+DirTree.GetFilteredFileCount();
 
 	for

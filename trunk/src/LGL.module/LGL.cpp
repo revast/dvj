@@ -19132,6 +19132,19 @@ LGL_NetIPToHost
 	return(ret);
 }
 
+int
+lgl_dirTreeRefreshThreadFunc
+(
+	void*	obj
+)
+{
+	LGL_DirTree* dirTree = (LGL_DirTree*)obj;
+
+	dirTree->Refresh_INTERNAL();
+
+	return(0);
+}
+
 LGL_DirTree::
 LGL_DirTree
 (
@@ -19139,10 +19152,14 @@ LGL_DirTree
 	char*	path
 )
 {
+	WorkerThread=NULL;
+	WorkerThreadDone=true;
+
 	Path[0]='\0';
 	if(SetPath(path)==false)
 	{
-		assert(SetPath("."));
+		bool ret=SetPath(".");
+		assert(ret);
 	}
 	FilterText[0]='\0';
 }
@@ -19150,7 +19167,15 @@ LGL_DirTree
 LGL_DirTree::
 ~LGL_DirTree()
 {
+	WaitOnWorkerThread();
 	ClearLists();
+}
+
+bool
+LGL_DirTree::
+Ready() const
+{
+	return(WorkerThreadDone);
 }
 
 const
@@ -19169,6 +19194,8 @@ SetPath
 	char*	path
 )
 {
+	WaitOnWorkerThread();
+
 	//Verify our path is a valid string
 	if
 	(
@@ -19285,7 +19312,7 @@ SetPath
 		}
 		else
 		{
-			//Our path is too big.
+			//Our path is too big. Our /path/ is too /big/! ...OUR PATH IS TOO BIG!!! (I am a baNAna!)
 			return(false);
 		}
 	}
@@ -19317,52 +19344,8 @@ SetPath
 		strcpy(Path,temp);
 	}
 
-	Refresh();
-
-	/*
-	ClearLists();
-
-	if
-	(
-		(
-			Path[0]=='.' &&
-			Path[1]=='\0'
-		)==false
-	)
-	{
-		//Supply ".." as the zeroth directory
-
-		char* dotdot=new char[3];
-		dotdot[0]='.';
-		dotdot[1]='.';
-		dotdot[2]='\0';
-		DirList.push_back(dotdot);
-	}
-
-	std::vector<char*> everything=LGL_DirectoryListCreate(Path,false);
-
-	for(unsigned int a=0;a<everything.size();a++)
-	{
-		char check[2048];
-
-		sprintf(check,"%s/%s",Path,everything[a]);
-		
-		if(LGL_DirectoryExists(check))
-		{
-			//It's a directory
-
-			DirList.push_back(everything[a]);
-		}
-		else
-		{
-			//It's a file
-
-			FileList.push_back(everything[a]);
-		}
-	}
-
-	everything.clear();
-	*/
+	WorkerThreadDone=false;
+	WorkerThread = LGL_ThreadCreate(lgl_dirTreeRefreshThreadFunc,this);
 
 	return(true);
 }
@@ -19370,6 +19353,15 @@ SetPath
 void
 LGL_DirTree::
 Refresh()
+{
+	char path[2048];
+	strcpy(path,GetPath());
+	SetPath(path);
+}
+
+void
+LGL_DirTree::
+Refresh_INTERNAL()
 {
 	ClearLists();
 
@@ -19415,19 +19407,23 @@ Refresh()
 	everything.clear();
 
 	GenerateFilterLists();
+
+	WorkerThreadDone=true;
 }
 
 unsigned int
 LGL_DirTree::
-GetFileCount()	const
+GetFileCount()
 {
+	WaitOnWorkerThread();
 	return(FileList.size());
 }
 
 unsigned int
 LGL_DirTree::
-GetDirCount()	const
+GetDirCount()
 {
+	WaitOnWorkerThread();
 	return(DirList.size());
 }
 
@@ -19437,8 +19433,9 @@ LGL_DirTree::
 GetFileName
 (
 	unsigned int	index
-)	const
+)
 {
+	WaitOnWorkerThread();
 	assert(index>=0 && index<FileList.size());
 
 	return(FileList[index]);
@@ -19450,8 +19447,9 @@ LGL_DirTree::
 GetDirName
 (
 	unsigned int	index
-)	const
+)
 {
+	WaitOnWorkerThread();
 	assert(index>=0 && index<DirList.size());
 
 	return(DirList[index]);
@@ -19481,7 +19479,10 @@ SetFilterText
 	{
 		strcpy(FilterText,path);
 	}
-	GenerateFilterLists();
+	if(Ready())
+	{
+		GenerateFilterLists();
+	}
 }
 
 void
@@ -19638,15 +19639,17 @@ GenerateFilterLists()
 
 unsigned int
 LGL_DirTree::
-GetFilteredFileCount()	const
+GetFilteredFileCount()
 {
+	WaitOnWorkerThread();
 	return(FilteredFileList.size());
 }
 
 unsigned int
 LGL_DirTree::
-GetFilteredDirCount()	const
+GetFilteredDirCount()
 {
+	WaitOnWorkerThread();
 	return(FilteredDirList.size());
 }
 
@@ -19656,8 +19659,9 @@ LGL_DirTree::
 GetFilteredFileName
 (
 	unsigned int	index
-)	const
+)
 {
+	WaitOnWorkerThread();
 	assert(index>=0 && index<FilteredFileList.size());
 
 	return(FilteredFileList[index]);
@@ -19669,11 +19673,23 @@ LGL_DirTree::
 GetFilteredDirName
 (
 	unsigned int	index
-)	const
+)
 {
+	WaitOnWorkerThread();
 	assert(index>=0 && index<FilteredDirList.size());
 
 	return(FilteredDirList[index]);
+}
+
+void
+LGL_DirTree::
+WaitOnWorkerThread()
+{
+	if(WorkerThread)
+	{
+		LGL_ThreadWait(WorkerThread);
+		WorkerThread=NULL;
+	}
 }
 
 void

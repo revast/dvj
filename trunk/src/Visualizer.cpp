@@ -124,6 +124,7 @@ VisualizerObj()
 	{
 		VideoAvailable=false;
 	}
+	videoAmbientDirTree.WaitOnWorkerThread(true);
 	videoAmbientDirTree.SetFilterText("avi");
 	strcpy(VideoAmbientPath,videoAmbientDirTree.GetPath());
 
@@ -155,6 +156,7 @@ VisualizerObj()
 	{
 		VideoAvailable=false;
 	}
+	videoAmbientMellowDirTree.WaitOnWorkerThread(true);
 	videoAmbientMellowDirTree.SetFilterText("mjpeg");
 	strcpy(VideoAmbientMellowPath,videoAmbientMellowDirTree.GetPath());
 
