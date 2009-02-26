@@ -108,7 +108,7 @@ const	char*				GetSoundPathShort();
 private:
 
 	void				ProcessHintFile(char* path);
-const	char*				GetCurrentFileString() const;
+const	char*				GetCurrentFileString();
 
 private:
 

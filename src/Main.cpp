@@ -76,6 +76,7 @@ void InitializeGlobalsPreLGL()
 		{
 			assert(LGL_DirectoryCreate("data/record/old"));
 		}
+		dirTree.WaitOnWorkerThread(true);
 		for(unsigned int a=0;a<dirTree.GetFileCount();a++)
 		{
 			const char* target=dirTree.GetFileName(a);
@@ -354,7 +355,7 @@ void NextFrame()
 	}
 	VisualizerZoomOutPercentSmooth=(1.0f-cosf(LGL_PI*VisualizerZoomOutPercent))/2.0f;
 
-	mouseMotionEver|=0;//LGL_MouseMotion();
+	mouseMotionEver|=LGL_MouseMotion();
 
 	bool presentTitle = false;
 

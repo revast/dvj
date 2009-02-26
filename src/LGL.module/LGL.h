@@ -2253,34 +2253,41 @@ public:
 
 				LGL_DirTree(const char* path=NULL);
 				~LGL_DirTree();
+	
+	bool			Ready() const;
 
 	const
 	char*			GetPath() const;
 	bool			SetPath(const char* path=NULL);
 
 	void			Refresh();
+	void			Refresh_INTERNAL();
 
-	unsigned int		GetFileCount() const;
-	unsigned int		GetDirCount() const;
+	unsigned int		GetFileCount();
+	unsigned int		GetDirCount();
 
 	const
-	char*			GetFileName(unsigned int index) const;
+	char*			GetFileName(unsigned int index);
 	const
-	char*			GetDirName(unsigned int index) const;
+	char*			GetDirName(unsigned int index);
 
 	const
 	char*			GetFilterText() const;
 	void			SetFilterText(const char* filterText=NULL);
 
+private:
 	void			GenerateFilterLists();
+
+public:
 	
-	unsigned int		GetFilteredFileCount() const;
-	unsigned int		GetFilteredDirCount() const;
+	unsigned int		GetFilteredFileCount();
+	unsigned int		GetFilteredDirCount();
 
 	const
-	char*			GetFilteredFileName(unsigned int index) const;
+	char*			GetFilteredFileName(unsigned int index);
 	const
-	char*			GetFilteredDirName(unsigned int index) const;
+	char*			GetFilteredDirName(unsigned int index);
+	void			WaitOnWorkerThread();
 
 private:
 
@@ -2289,11 +2296,13 @@ private:
 	char			Path[1024];
 	std::vector<char*>	FileList;
 	std::vector<char*>	DirList;
-	
+
 	char			FilterText[1024];
 	std::vector<char*>	FilteredFileList;
 	std::vector<char*>	FilteredDirList;
-	
+
+	SDL_Thread*		WorkerThread;
+	bool			WorkerThreadDone;
 };
 
 class LGL_FileToMemory
