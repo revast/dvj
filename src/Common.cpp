@@ -685,6 +685,8 @@ Turntable_DrawWaveform
 	int		savePointIndex,
 	int		savePointIndexActual,
 	unsigned int	savePointSetBitfield,
+	float*		savePointUnsetNoisePercent,
+	float*		savePointUnsetFlashPercent,
 	float		bpm,
 	float		bpmAdjusted,
 	float		bpmFirstBeatSeconds,
@@ -697,7 +699,8 @@ Turntable_DrawWaveform
 	float*		entireWaveArrayMagnitudeAve,
 	float*		entireWaveArrayMagnitudeMax,
 	float*		entireWaveArrayFreqFactor,
-	float		cachedLengthSeconds
+	float		cachedLengthSeconds,
+	LGL_Image*	noiseImage256x64
 )
 {
 	float glow = GetGlowFromTime(time);
@@ -2104,6 +2107,22 @@ Turntable_DrawWaveform
 			lft+i*wth,lft+i*wth+spc,
 			bot,top,
 			0,0,mySavePointSet[i]?glow:0,1
+		);
+		noiseImage256x64->DrawToScreen
+		(
+			lft+i*wth,lft+i*wth+spc,
+			bot,top,
+			0,
+			savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],
+			false,false,0,0,0,
+			0,1.0f/32.0f,
+			0,1.0f/8.0f
+		);
+		LGL_DrawRectToScreen
+		(
+			lft+i*wth,lft+i*wth+spc,
+			bot,top,
+			savePointUnsetFlashPercent[i],savePointUnsetFlashPercent[i],savePointUnsetFlashPercent[i],0
 		);
 
 		if(1)//i!=0)

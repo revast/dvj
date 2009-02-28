@@ -207,6 +207,8 @@ private:
 	double				RecallOrigin;
 	unsigned long			RecallSampleCounter;
 	double				SmoothWaveformScrollingSample;
+	float				SavePointUnsetNoisePercent[18];
+	float				SavePointUnsetFlashPercent[18];
 
 	void				SetRecallOrigin();
 	void				ClearRecallOrigin();
