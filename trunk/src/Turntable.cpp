@@ -81,7 +81,7 @@ TurntableObj
 
 	LGL_Assertf(LGL_DirectoryExists("data/music"),("Error! Must create directory data/music!\n"));
 	DirTree.SetPath("data/music");
-	DirTree.WaitOnWorkerThread(true);
+	DirTree.WaitOnWorkerThread();
 	FilterTextMostRecent[0]='\0';
 
 	FileTop=DirTree.GetFilteredDirCount();
@@ -420,7 +420,12 @@ NextFrame
 						LoopLengthMeasures=0;
 						LoopAtEndOfMeasure=false;
 						SavePointIndex=0;
-						for(int a=0;a<18;a++) SavePointSeconds[a]=-1.0f;
+						for(int a=0;a<18;a++)
+						{
+							SavePointSeconds[a]=-1.0f;
+							SavePointUnsetNoisePercent[a]=0.0f;
+							SavePointUnsetFlashPercent[a]=0.0f;
+						}
 						LoadMetaData();
 						FilterText.ReleaseFocus();
 						ClearRecallOrigin();
@@ -656,6 +661,7 @@ NextFrame
 			if(SavePointSeconds[SavePointIndex]==-1.0f)
 			{
 				SavePointSeconds[SavePointIndex]=Sound->GetPositionSeconds(Channel);
+				SavePointUnsetFlashPercent[SavePointIndex]=1.0f;
 				SaveMetaData();
 			}
 		}
@@ -668,7 +674,22 @@ NextFrame
 		{
 			//Unset Save Point
 			SavePointSeconds[SavePointIndex]=-1.0f;
+			SavePointUnsetFlashPercent[SavePointIndex]=1.0f;
 			SaveMetaData();
+		}
+
+		for(int a=0;a<18;a++)
+		{
+			SavePointUnsetFlashPercent[a]=LGL_Max(0,SavePointUnsetFlashPercent[a]-4.0f*LGL_SecondsSinceLastFrame());
+			SavePointUnsetNoisePercent[a]=LGL_Max(0,SavePointUnsetNoisePercent[a]-2.0f*LGL_SecondsSinceLastFrame());
+			if(a==SavePointIndex)
+			{
+				SavePointUnsetNoisePercent[SavePointIndex]=LGL_Max
+				(
+					SavePointUnsetNoisePercent[SavePointIndex],
+					LGL_Min(1,Input.WaveformSavePointUnsetPercent(target)*2.0f)
+				);
+			}
 		}
 
 		if
@@ -2098,6 +2119,8 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 			SavePointIndex,
 			SavePointIndex,
 			savePointBitfield,
+			SavePointUnsetNoisePercent,
+			SavePointUnsetFlashPercent,
 			GetBPM(),
 			GetBPMAdjusted(),
 			GetBPMFirstBeatSeconds(),
@@ -2110,7 +2133,8 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 			EntireWaveArrayMagnitudeAve,
 			EntireWaveArrayMagnitudeMax,
 			EntireWaveArrayFreqFactor,
-			CachedLengthSeconds
+			CachedLengthSeconds,
+			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64]
 		);
 		LGL_DrawLogPause(false);
 		

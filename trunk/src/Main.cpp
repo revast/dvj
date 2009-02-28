@@ -76,7 +76,7 @@ void InitializeGlobalsPreLGL()
 		{
 			assert(LGL_DirectoryCreate("data/record/old"));
 		}
-		dirTree.WaitOnWorkerThread(true);
+		dirTree.WaitOnWorkerThread();
 		for(unsigned int a=0;a<dirTree.GetFileCount();a++)
 		{
 			const char* target=dirTree.GetFileName(a);
@@ -773,10 +773,10 @@ int main(int argc, char** argv)
 		"dvj"
 	);
 
+	LGL_MouseVisible(false);
+
 	if(fullscreen)
 	{
-		LGL_MouseVisible(false);
-
 		//This seems weird, but it keeps us at fullscreen and lets us rotate our Compiz Cube
 		LGL_FullScreenToggle();
 	}

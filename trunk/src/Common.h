@@ -119,6 +119,8 @@ Turntable_DrawWaveform
 	int		savePointIndex,
 	int		savePointIndexActual,
 	unsigned int	savePointSetBitfield,
+	float*		savePointUnsetNoisePercent,
+	float*		savePointUnsetFlashPercent,
 	float		bpm,
 	float		bpmAdjusted,
 	float		bpmFirstBeatSeconds,
@@ -131,7 +133,8 @@ Turntable_DrawWaveform
 	float*		entireWaveArrayMagnitudeAve,
 	float*		entireWaveArrayMagnitudeMax,
 	float*		entireWaveArrayFreqFactor,
-	float		cachedLengthSeconds
+	float		cachedLengthSeconds,
+	LGL_Image*	noiseImage
 );
 
 void
