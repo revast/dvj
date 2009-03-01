@@ -134,7 +134,7 @@ Turntable_DrawWaveform
 	float*		entireWaveArrayMagnitudeMax,
 	float*		entireWaveArrayFreqFactor,
 	float		cachedLengthSeconds,
-	LGL_Image*	noiseImage
+	LGL_Image*	noiseImage256x64
 );
 
 void
