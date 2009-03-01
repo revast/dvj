@@ -11229,6 +11229,9 @@ Play
 		LGL.SoundChannel[Available].DivergeSpeed=1.0f;
 		LGL.SoundChannel[Available].WarpPointSecondsTrigger=-1.0f;
 		LGL.SoundChannel[Available].WarpPointSecondsDestination=-1.0f;
+		LGL.SoundChannel[Available].SampleRateConverterBufferValidSamples=0;
+		LGL.SoundChannel[Available].SampleRateConverterBufferCurrentSamplesIndex=0;
+		LGL.SoundChannel[Available].SampleRateConverterBufferStartSamples=0;
 		if(LGL.SoundChannel[Available].SampleRateConverterL)
 		{
 			src_reset(LGL.SoundChannel[Available].SampleRateConverterL);
