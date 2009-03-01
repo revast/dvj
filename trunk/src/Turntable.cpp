@@ -107,10 +107,13 @@ TurntableObj
 	}
 	VolumeSlider=1.0f;
 	VolumeMultiplierNow=1.0f;
+	VolumeInvertBinary=false;
 	LoopStartSeconds=-1.0;
 	LoopLengthMeasures=0;
 	LoopAtEndOfMeasure=false;
 	SavePointIndex=0;
+	RecordScratch=false;
+	LuminScratch=false;
 
 	for(int a=0;a<3;a++)
 	{
