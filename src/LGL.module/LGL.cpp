@@ -121,6 +121,7 @@ typedef struct
 	float			SpeedNow;
 	float			SpeedDesired;
 	float			SpeedInterpolationFactor;
+	float			SpeedVolumeFactor;
 	bool			Glitch;
 	float			GlitchVolume;
 	float			GlitchSpeedNow;
@@ -505,6 +506,7 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].SpeedNow=1;
 	LGL.SoundChannel[a].SpeedDesired=1;
 	LGL.SoundChannel[a].SpeedInterpolationFactor=1;
+	LGL.SoundChannel[a].SpeedVolumeFactor=1;
 	LGL.SoundChannel[a].Glitch=false;
 	LGL.SoundChannel[a].FutureGlitchSettingsAvailable=false;
 	LGL.SoundChannel[a].GlitchVolume=0;
@@ -11265,6 +11267,7 @@ Play
 		LGL.SoundChannel[Available].SpeedNow=speed;
 		LGL.SoundChannel[Available].SpeedDesired=speed;
 		LGL.SoundChannel[Available].SpeedInterpolationFactor=1;
+		LGL.SoundChannel[Available].SpeedVolumeFactor=1;
 		LGL.SoundChannel[Available].Glitch=false;
 		LGL.SoundChannel[Available].FutureGlitchSettingsAvailable=false;
 		LGL.SoundChannel[Available].GlitchVolume=0;
@@ -23096,23 +23099,20 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 					}
 				}
 
-				//Volume Alpha
-
-				double localSpeedVolFactor=1;
-
-				/*
-				if(fabs(sc->SpeedNow)<=0.02f)
-				{
-					localSpeedVolFactor=fabs(sc->SpeedNow)/0.02;
-				}
-				*/
+				//Volume
+				float tmpFact = LGL_Min(1.0f,fabsf(sc->SpeedNow)/0.02f);
+				float terp=0.995f;
+				sc->SpeedVolumeFactor =
+					(0.0f + terp) * sc->SpeedVolumeFactor +
+					(1.0f - terp) * tmpFact;
+				sc->SpeedVolumeFactor = 1.0f;
 
 				//Default to linear interpolation
 				double myFL = (Lnp*(1.0-closenessPercentInvNow) + Lnn*closenessPercentInvNow);
 				double myFR = (Rnp*(1.0-closenessPercentInvNow) + Rnn*closenessPercentInvNow);
 
 				//Attempt to use libsamplerate
-				if(fabsf(sc->SpeedNow)<1.5f)
+				if(fabsf(sc->SpeedNow)<2.0f)
 				{
 					long sampleNow=(long)sc->PositionSamplesNow;
 					if
@@ -23124,11 +23124,9 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 					)
 					{
 						//We may use SampleRateConverterBuffer, below
-						//printf("We good!\n");
 					}
 					else
 					{
-						//printf("GENERATE! (%i vs %i)\n",sc->SampleRateConverterBufferCurrentSamplesIndex,(int)sc->SampleRateConverterBufferValidSamples);
 						//We must generate SampleRateConverterBuffer
 
 						sc->SampleRateConverterBufferValidSamples=0;
@@ -23142,10 +23140,9 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 								long indexStart=sampleNow-SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES_EDGE;
 								if(sc->SampleRateConverterBufferStartSamples!=-1)
 								{
-	//printf("%li => %li (%li, %li)\n",indexStart,
-	//	sc->SampleRateConverterBufferStartSamples+sc->SampleRateConverterBufferConsumedSamples,
-	//	sc->SampleRateConverterBufferStartSamples,sc->SampleRateConverterBufferConsumedSamples);
-									indexStart=(c==0) ? (sc->SampleRateConverterBufferStartSamples+sc->SampleRateConverterBufferConsumedSamples) : sc->SampleRateConverterBufferStartSamples;
+									indexStart=(c==0) ?
+										(sc->SampleRateConverterBufferStartSamples+sc->SampleRateConverterBufferConsumedSamples) :
+										sc->SampleRateConverterBufferStartSamples;
 								}
 								for(int b=0;b<SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;b++)
 								{
@@ -23201,16 +23198,21 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 					}
 					else if(sc->SpeedNow==0.0f)
 					{
-						neoFL = sc->SampleRateConverterBufferL[0];
-						neoFR = sc->SampleRateConverterBufferR[0];
+						int index=LGL_Max(0,sc->SampleRateConverterBufferCurrentSamplesIndex-1);
+						neoFL = sc->SampleRateConverterBufferL[index];
+						neoFR = sc->SampleRateConverterBufferR[index];
 					}
 
-					//Interpolate to linear resampling, as our speed goes from 1.45 => 1.50
-					float sampleRateFactor = LGL_Min(1.0f,20*fabsf(sc->SpeedNow-1.5f));
-					myFL =	(0.0f+sampleRateFactor)*neoFL +
-						(1.0f-sampleRateFactor)*myFL;
-					myFR =	(0.0f+sampleRateFactor)*neoFR +
-						(1.0f-sampleRateFactor)*myFR;
+					//Interpolate to linear resampling
+					float sampleRateLinearFactor=0.0f;
+					if(fabsf(sc->SpeedNow)>1.5f)
+					{
+						sampleRateLinearFactor = 2.0f*(fabsf(sc->SpeedNow)-1.5f);
+					}
+					myFL =	(1.0f-sampleRateLinearFactor)*neoFL +
+						(0.0f+sampleRateLinearFactor)*myFL;
+					myFR =	(1.0f-sampleRateLinearFactor)*neoFR +
+						(0.0f+sampleRateLinearFactor)*myFR;
 				}
 				else
 				{
@@ -23242,6 +23244,8 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 
 				double myBL=myFL;
 				double myBR=myFR;
+
+				double localSpeedVolFactor = sc->SpeedVolumeFactor;
 
 				if
 				(
