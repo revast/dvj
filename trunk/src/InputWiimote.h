@@ -110,6 +110,8 @@ virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at th
 
 	float	ScrollInitialAccel;
 	float	LastKnownPointerScratchX;
+	LGL_Timer
+		HomeDownTimer;
 
 };
 
