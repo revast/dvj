@@ -19998,10 +19998,10 @@ LGL_DirectoryExists
 )
 {
 #ifdef	LGL_LINUX
-	
+
 	struct stat buf;
 	int ret=stat(dir,&buf);
-	
+
 	if
 	(
 		ret==0 &&
@@ -20014,7 +20014,7 @@ LGL_DirectoryExists
 	{
 		return(false);
 	}
-	
+
 #endif	//LGL_LINUX
 
 #ifdef	LGL_WIN32
@@ -20028,28 +20028,6 @@ LGL_DirectoryExists
 		handle!=INVALID_HANDLE_VALUE &&
 		(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 	);
-	/*
-printf("LGL_DirectoryExists('%s') => LGL_FileExists()\n",dir);
-	//This code is seriously goofy, but it works
-	char target[1024];
-	sprintf(target,"%s/.lglDeleteMe.txt",dir);
-	if(LGL_FileExists(target))
-	{
-		return(true);
-	}
-	FILE* file=fopen(target,"w+");
-	if(file==NULL)
-	{
-		return(false);
-	}
-	else
-	{
-		fclose(file);
-printf("LGL_DirectoryExists('%s') => LGL_FileDelete('%s')\n",dir,target);
-		LGL_FileDelete(target);
-		return(true);
-	}
-	*/
 
 #endif	//LGL_WIN32
 }
@@ -22935,6 +22913,9 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 						sc->PositionSamplesPrev=sc->PositionSamplesStart;
 						sc->PositionSamplesNowLastReported=sc->PositionSamplesNow;
 					}
+					sc->SampleRateConverterBufferStartSamples=0;
+					sc->SampleRateConverterBufferValidSamples=0;
+					sc->SampleRateConverterBufferCurrentSamplesIndex=0;
 				}
 				else
 				{
@@ -23328,6 +23309,8 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 						sc->PositionSamplesNow=0;
 						sc->PositionSamplesPrev=0;
 					}
+					sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
+					sc->SampleRateConverterBufferValidSamples=0;
 				}
 				if
 				(
@@ -23347,6 +23330,8 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 						sc->PositionSamplesNow=0;
 						sc->PositionSamplesPrev=0;
 					}
+					sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
+					sc->SampleRateConverterBufferValidSamples=0;
 				}
 			}
 			if(fl<-32767) fl=-32767;
