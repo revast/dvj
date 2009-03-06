@@ -63,6 +63,10 @@ NextFrame()
 	{
 		LastKnownPointerScratchX=0.5f;
 	}
+	if(LGL_GetWiimote(0).ButtonStroke(LGL_WIIMOTE_HOME))
+	{
+		HomeDownTimer.Reset();
+	}
 }
 
 //Global Input
@@ -225,8 +229,7 @@ FileSelect
 
 	if(target & TARGET_FOCUS)
 	{
-		LGL_Wiimote& wiimote = LGL_GetWiimote(0);	
-		if(wiimote.ButtonStroke(LGL_WIIMOTE_A))
+		if(LGL_GetWiimote(0).ButtonStroke(LGL_WIIMOTE_A))
 		{
 			choose=true;
 		}
@@ -269,6 +272,13 @@ WaveformEject
 )	const
 {
 	bool eject=false;
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_HOME))
+		{
+			eject=HomeDownTimer.SecondsSinceLastReset()>0.5f;
+		}
+	}
 	return(eject);
 }
 
@@ -283,7 +293,7 @@ WaveformTogglePause
 	
 	if(target & TARGET_FOCUS)
 	{
-		if(LGL_GetWiimote(0).ButtonStroke(LGL_WIIMOTE_A))
+		if(LGL_GetWiimote(0).ButtonStroke(LGL_WIIMOTE_HOME))
 		{
 			toggle=true;
 		}
@@ -300,6 +310,17 @@ WaveformNudge
 )	const
 {
 	float nudge=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_LEFT))
+		{
+			nudge-=4;
+		}
+		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_RIGHT))
+		{
+			nudge+=4;
+		}
+	}
 	return(nudge);
 }
 
@@ -311,6 +332,17 @@ WaveformPitchbend
 )	const
 {
 	float pitchbend=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_UP))
+		{
+			pitchbend+=LGL_SecondsSinceLastFrame();
+		}
+		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_DOWN))
+		{
+			pitchbend-=LGL_SecondsSinceLastFrame();
+		}
+	}
 	return(pitchbend);
 }
 
@@ -476,6 +508,13 @@ WaveformVolumeInvert
 )	const
 {
 	bool invert=false;
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B))
+		{
+			invert=true;
+		}
+	}
 	return(invert);
 }
 
@@ -752,7 +791,7 @@ WaveformPointerScratch
 
 	if(target & TARGET_FOCUS)
 	{
-		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B))
+		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_A))
 		{
 			targetX=LastKnownPointerScratchX;
 		}
