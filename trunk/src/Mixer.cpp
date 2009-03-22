@@ -91,19 +91,6 @@ NextFrame
 )
 {
 	float candidate;
-	float bpm = Turntable[1]->GetBPMAdjusted();
-	float secondsAfterFirstBeat = Turntable[1]->GetTimeSeconds() - Turntable[1]->GetBPMFirstBeatSeconds();
-	float speed  = Turntable[1]->GetBPMAdjusted()/Turntable[1]->GetBPM();
-	if(bpm>0)
-	{
-		Sequencer.SetBPMInfo
-		(
-			bpm,
-			secondsAfterFirstBeat,
-			speed
-		);
-	}
-	Sequencer.NextFrame();
 
 	//Process Input
 
@@ -713,8 +700,6 @@ void
 MixerObj::
 DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent)
 {
-	Sequencer.Draw(visualizerQuadrent,visualizerZoomOutPercent);
-
 	float glow = GetGlowFromTime(LGL_SecondsSinceExecution());
 	for(int a=0;a<2;a++)
 	{
