@@ -106,6 +106,9 @@ virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at th
 
 private:
 
+	LGL_Timer
+		WaveformSavePointUnsetTimer;
+
 };
 
 #endif	//_INPUT_KEYBOARD_H_

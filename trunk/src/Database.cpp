@@ -156,7 +156,7 @@ MatchesFilter
 )
 {
 	//BPM
-	if(filter->BPMCenter>0)
+	if(filter->BPMCenter>=0)
 	{
 		if(BPM<=0)
 		{
@@ -167,6 +167,7 @@ MatchesFilter
 		float bottom = filter->BPMCenter - filter->BPMRange;
 		if
 		(
+			filter->BPMCenter==0 ||
 			(
 				0.5f*BPM>=bottom &&
 				0.5f*BPM<=top
