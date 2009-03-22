@@ -22779,12 +22779,16 @@ lgl_AudioOutCallbackGenerator
 			sc->PositionSamplesNow=sc->FuturePositionSamplesNow;
 			//FIXME: Race condition on this line for FuturePositionSamplesNow
 			sc->FuturePositionSamplesNow=-1.0f;
+
+			sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
 		}
 		if(sc->FuturePositionSamplesPrev>=0)
 		{
 			sc->PositionSamplesPrev=sc->FuturePositionSamplesPrev;
 			//FIXME: Race condition on this line for FuturePositionSamplesPrev
 			sc->FuturePositionSamplesPrev=-1.0f;
+
+			sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
 		}
 		if(sc->FutureGlitchSettingsAvailable)
 		{
@@ -23248,7 +23252,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 				lRecord+=myLStereo;
 				rRecord+=myRStereo;
 
-				float lerp=0.1f;
+				float lerp=0.2f;
 				sc->VolumeFrontLeft=
 					(1.0f-lerp) * sc->VolumeFrontLeft +
 					(0.0f+lerp) * sc->VolumeFrontLeftDesired;
