@@ -849,7 +849,8 @@ int main(int argc, char** argv)
 				drawFPS ||
 				drawFPSSpike > 0.0f
 			) &&
-			VisualizerFullScreen==false
+			VisualizerFullScreen==false &&
+			LGL_SecondsSinceExecution()>10.0f
 		)
 		{
 			LGL_DrawFPSGraph

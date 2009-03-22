@@ -42,7 +42,8 @@ TurntableObj::
 TurntableObj
 (
 	float	left,	float	right,
-	float	bottom,	float	top
+	float	bottom,	float	top,
+	DatabaseObj* database
 )
 {
 	Mode=0;
@@ -80,14 +81,7 @@ TurntableObj
 	CenterY=.5f*(ViewPortBottom+ViewPortTop);
 
 	LGL_Assertf(LGL_DirectoryExists("data/music"),("Error! Must create directory data/music!\n"));
-	DirTree.SetPath("data/music");
-	DirTree.WaitOnWorkerThread();
 	FilterTextMostRecent[0]='\0';
-
-	FileTop=DirTree.GetFilteredDirCount();
-	FileSelectInt=FileTop;
-	FileSelectFloat=(float)FileTop;
-	UpdateFileBPM();
 
 	BadFileFlash=0.0f;
 
@@ -159,6 +153,22 @@ TurntableObj
 	}
 
 	LowRez=false;
+
+	Database=database;
+	DatabaseFilter.SetDir("data/music");
+	DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+
+	for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
+	{
+		FileTop=a;
+		if(DatabaseFilteredEntries[a]->IsDir==false)
+		{
+			break;
+		}
+	}
+
+	FileSelectInt=FileTop;
+	FileSelectFloat=(float)FileTop;
 }
 
 TurntableObj::
@@ -291,9 +301,8 @@ NextFrame
 
 	if(Mode==0)
 	{
-		int fileTopOld = FileTop;
-		bool filterDelta = false;
 		//File Select
+		bool filterDelta = false;
 
 		BadFileFlash-=2.0f*LGL_SecondsSinceLastFrame();
 		if(BadFileFlash<0.0f)
@@ -314,49 +323,104 @@ NextFrame
 				filterDelta=true;
 				strcpy(FilterTextMostRecent,FilterText.GetString());
 
-				//First, we must make note of our currently selected file.
-				char* oldSelection=NULL;
-				if(GetCurrentFileString()!=NULL)
+				char oldSelection[2048];
+				strcpy(oldSelection,DatabaseFilteredEntries[FileSelectInt]->PathShort);
+
+				char filterText[2048];
+				strcpy(filterText,FilterText.GetString());
+				while(char* space=strchr(filterText,' '))
 				{
-					char* oldSelection=new char[strlen(GetCurrentFileString())+1];
-					strcpy(oldSelection,GetCurrentFileString());
+					space[0]='|';
 				}
-				//Now we update our DirTree
-				DirTree.SetFilterText(FilterText.GetString());
-				LGL_DrawLogWrite("!DirTreeFilter|%i|%s\n",Which,DirTree.GetFilterText());
 
-				bool oldSelectionFound=false;
+				char pattern[2048];
+				pattern[0]='\0';
 
-				if(oldSelection!=NULL)
+				DatabaseFilter.SetBPMCenter(0);
+				DatabaseFilter.SetBPMRange(10);
+
+				FileInterfaceObj fi;
+				fi.ReadLine(filterText);
+				for(unsigned int a=0;a<fi.Size();a++)
 				{
-					//Finally, we try to seek to our previously highlighted file
-					unsigned int fileNum=DirTree.GetFilteredDirCount()+DirTree.GetFilteredFileCount();
-					if(fileNum> 0)
+					const char* item=fi[a];
+					int len = strlen(item);
+					if(len>0)
 					{
-						for(unsigned int z=0;z<fileNum;z++)
+						if(item[0]=='~')
 						{
-							const char* fileNow;
-							fileNow=(z<DirTree.GetFilteredDirCount()) ?
-								DirTree.GetFilteredDirName(z) :
-								DirTree.GetFilteredFileName(z - DirTree.GetFilteredDirCount());
-							if(strcmp(fileNow,oldSelection)==0)
+							//BPM directive
+							if
+							(
+								item[1] >= '0' && item[1] <='9' &&
+								item[2] >= '0' && item[2] <='9' &&
+								item[3] >= '0' && item[3] <='9'
+							)
 							{
-								FileTop=z-4;
-								if(FileTop<0) FileTop=0;
-								FileSelectInt=z;
-								FileSelectFloat=z;
-								oldSelectionFound=true;
+								//We found a BPM center
+								char centerStr[2048];
+								strcpy(centerStr,&(item[1]));
+								if(char* tilde = strchr(centerStr,'~'))
+								{
+									tilde[0]='\0';
+								}
+								float center=atof(centerStr);
+								DatabaseFilter.SetBPMCenter(center);
+
+								if
+								(
+									item[4]=='~' &&
+									item[5] >= '0' && item[5] <='9'
+								)
+								{
+									//We found a BPM range
+									char rangeStr[2048];
+									strcpy(rangeStr,&(item[5]));
+									float range=atof(rangeStr);
+									DatabaseFilter.SetBPMRange(range);
+								}
+							}
+							else
+							{
+								if(BPMMaster>0)
+								{
+									DatabaseFilter.SetBPMCenter(BPMMaster);
+								}
 							}
 						}
+						else
+						{
+							if(pattern[0]!='\0')
+							{
+								strcat(pattern," ");
+							}
+							strcat(pattern,item);
+						}
 					}
-					delete oldSelection;
 				}
-				
-				if(oldSelectionFound==false)
+
+				DatabaseFilter.SetPattern(pattern);
+				DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+
+				FileTop=0;
+				FileSelectInt=0;
+				FileSelectFloat=0;
+
+				for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
 				{
-					FileTop=DirTree.GetFilteredDirCount();
-					FileSelectInt=FileTop;
-					FileSelectFloat=(float)FileTop;
+					if(strcmp(DatabaseFilteredEntries[a]->PathShort,oldSelection)==0)
+					{
+						FileTop=a;
+						FileSelectInt=a;
+						FileSelectFloat=FileSelectInt;
+
+						if((unsigned int)FileTop>DatabaseFilteredEntries.size()-5)
+						{
+							FileTop=LGL_Max(0,DatabaseFilteredEntries.size()-5);
+						}
+
+						break;
+					}
 				}
 			}
 		}
@@ -367,27 +431,33 @@ NextFrame
 
 		if(Input.FileSelect(target))
 		{
+			char target[2048];
+			target[0]='\0';
+			bool targetIsDir;
+
+			strcpy(target,DatabaseFilteredEntries[FileSelectInt]->PathFull);
+			targetIsDir=DatabaseFilteredEntries[FileSelectInt]->IsDir;
+			if(strcmp(target,"..")==0)
+			{
+				strcpy(target,DatabaseFilter.Dir);
+				if(char* slash = strrchr(target,'/'))
+				{
+					slash[0]='\0';
+				}
+			}
+
 			if
 			(
-				FileSelectInt>=(int)DirTree.GetFilteredDirCount() &&
-				DirTree.GetFilteredFileCount()>0
+				targetIsDir==false &&
+				target[0]!='\0'
 			)
 			{
-				sprintf
-				(
-					 SoundName,
-					 "%s",
-					 (FileSelectInt<(int)DirTree.GetFilteredDirCount()) ?
-					 DirTree.GetFilteredDirName(FileSelectInt) :
-					 DirTree.GetFilteredFileName(FileSelectInt - DirTree.GetFilteredDirCount())
-				);
-				char filename[512];
+				char filename[2048];
 				sprintf
 				(
 					 filename,
-					 "%s/%s",
-					 DirTree.GetPath(),
-					 SoundName
+					 "%s",
+					 target
 				);
 				if(LGL_FileExists(filename))
 				{
@@ -433,17 +503,6 @@ NextFrame
 						FilterText.ReleaseFocus();
 						ClearRecallOrigin();
 
-						char hintpath[512];
-						sprintf
-						(
-							 hintpath,
-							 "%s/.hints/%s.hint",
-							 DirTree.GetPath(),
-							 SoundName
-						);
-
-						ProcessHintFile(hintpath);
-
 						char* update=new char[1024];
 						sprintf(update,"ALPHA: %s",SoundName);
 						TrackListFileUpdates.push_back(update);
@@ -454,72 +513,60 @@ NextFrame
 					}
 				}
 			}
-			else if(DirTree.GetFilteredDirCount()>0)
+			else if
+			(
+				targetIsDir &&
+				target[0]!='\0'
+			)
 			{
-				DirTree.SetPath(DirTree.GetFilteredDirName(FileSelectInt));
-				DirTree.SetFilterText();
 				FilterTextMostRecent[0]='\0';
 				FilterText.SetString("");
-				LGL_DrawLogWrite("!DirTreePath|%i|%s\n",Which,DirTree.GetPath());
+				DatabaseFilter.SetDir(target);
+				DatabaseFilter.SetPattern(FilterText.GetString());
+				DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+
+				//LGL_DrawLogWrite("!DirTreePath|%i|%s\n",Which,DirTree.GetPath());
 				FileTop=0;
 				FileSelectInt=0;
 				FileSelectFloat=0.0f;
 				FilterText.SetString();
-				UpdateFileBPM();
 				NoiseFactor=1.0f;
 				WhiteFactor=1.0f;
 			}
 		}
 
-		if(Input.FileRefresh(target))
+		//CAN CRASH. Disabled until fixed.
+		if(0 && Input.FileRefresh(target))
 		{
-			DirTree.Refresh();
-			if((unsigned int)FileSelectInt >= DirTree.GetFilteredFileCount() + DirTree.GetFilteredDirCount())
-			{
-				FileTop=0;
-				FileSelectInt=0;
-				FileSelectFloat=0.0f;
-			}
+			//
 		}
 
-		if(DirTree.Ready())
+		FileSelectFloat=
+			FileSelectInt +
+			Input.FileScroll(target);
+
+		if(FileSelectFloat<0)
 		{
-			FileSelectFloat=
-				FileSelectInt +
-				Input.FileScroll(target);
+			FileSelectFloat=0;
+		}
+		if(FileSelectFloat+0.5f >= DatabaseFilteredEntries.size()-1)
+		{
+			FileSelectFloat=DatabaseFilteredEntries.size()-1;
+		}
 
-			if(FileSelectFloat<0)
-			{
-				FileSelectFloat=0;
-			}
-			if(FileSelectFloat+0.5f >= DirTree.GetFilteredDirCount()+DirTree.GetFilteredFileCount())
-			{
-				FileSelectFloat=LGL_Max(0,((int)(DirTree.GetFilteredDirCount()))+((int)(DirTree.GetFilteredFileCount()))-1);
-			}
-
-			if(FileSelectInt != (int)floor(FileSelectFloat+.5f))
-			{
-				BadFileFlash=0.0f;
-				FileSelectInt=(int)floor(FileSelectFloat+.5f);
-			}
-		
-			if(FileSelectInt>=FileTop+4)
-			{
-				FileTop=FileSelectInt-4;
-			}
-			if(FileSelectInt<FileTop)
-			{
-				FileTop=FileSelectInt;
-			}
-
-			if
-			(
-				FileTop!=fileTopOld ||
-				filterDelta
-			)
-			{
-				UpdateFileBPM();
-			}
+		if(FileSelectInt != (int)floor(FileSelectFloat+.5f))
+		{
+			BadFileFlash=0.0f;
+			FileSelectInt=(int)floor(FileSelectFloat+.5f);
+		}
+	
+		if(FileSelectInt>=FileTop+4)
+		{
+			FileTop=FileSelectInt-4;
+		}
+		if(FileSelectInt<FileTop)
+		{
+			FileTop=FileSelectInt;
 		}
 	}
 	else if(Mode==1)
@@ -1099,7 +1146,6 @@ NextFrame
 		{
 			delete Sound;
 			Sound=NULL;
-			UpdateFileBPM();
 			Mode=0;
 		}
 		else
@@ -1746,14 +1792,7 @@ NextFrame
 	WhiteFactor = LGL_Max(0.0f,WhiteFactor-4.0f*LGL_SecondsSinceLastFrame());
 	if(noiseIncreasing==false)
 	{
-		if
-		(
-			Mode!=0 ||
-			DirTree.Ready()
-		)
-		{
-			NoiseFactor = LGL_Max(0.0f,NoiseFactor-2.0f*LGL_SecondsSinceLastFrame());
-		}
+		NoiseFactor = LGL_Max(0.0f,NoiseFactor-2.0f*LGL_SecondsSinceLastFrame());
 	}
 }
 
@@ -1868,23 +1907,33 @@ DrawFrame
 	{
 		//File Selection
 
-		if(DirTree.Ready())
+		unsigned int fileNum=DatabaseFilteredEntries.size();
+		const char* nameArray[5];
+		bool isDirBits[5];
+		float bpm[5];
+		for(unsigned int a=(unsigned int)FileTop;a<(unsigned int)FileTop+5 && a<fileNum;a++)
 		{
-			LGL_DrawLogPause();
-			Turntable_DrawDirTree
-			(
-				LGL_SecondsSinceExecution()*Focus,
-				&DirTree,
-				FileTop,
-				FileSelectInt,
-				ViewPortBottom,
-				ViewPortTop,
-				BadFileFlash,
-				FileBPM
-			);
-			LGL_DrawLogPause(false);
-			LGL_DrawLogWrite("DirTreeDraw|%i|%i|%i|%.2f\n",Which,FileTop,FileSelectInt,BadFileFlash);
+			nameArray[a-FileTop]=DatabaseFilteredEntries[a]->PathShort;
+			isDirBits[a-FileTop]=DatabaseFilteredEntries[a]->IsDir;
+			bpm[a-FileTop]=DatabaseFilteredEntries[a]->BPM;
 		}
+		LGL_DrawLogPause();
+
+		Turntable_DrawDirTree
+		(
+			LGL_SecondsSinceExecution()*Focus,
+			FilterText.GetString(),
+			DatabaseFilter.Dir,
+			nameArray,
+			isDirBits,
+			fileNum-FileTop,
+			FileSelectInt-FileTop,
+			ViewPortBottom,
+			ViewPortTop,
+			BadFileFlash,
+			bpm
+		);
+		LGL_DrawLogPause(false);
 	}
 	if(Mode==1)
 	{
@@ -2980,36 +3029,6 @@ ProcessHintFile
 	}
 }
 
-const
-char*
-TurntableObj::
-GetCurrentFileString()
-{
-	int fileNum=DirTree.GetFilteredDirCount()+DirTree.GetFilteredFileCount();
-	if(fileNum==0) return(NULL);
-
-	for(int b=0;b<5 && b+FileTop<fileNum && b+FileTop<10000;b++)
-	{
-		const char* fileNow;
-
-		unsigned int num=b+FileTop;
-		fileNow=(num<DirTree.GetFilteredDirCount()) ?
-			DirTree.GetFilteredDirName(num) :
-			DirTree.GetFilteredFileName(num - DirTree.GetFilteredDirCount());
-
-		if
-		(
-			strlen(fileNow)>0 &&
-			b+FileTop==FileSelectInt
-		)
-		{
-			return(fileNow);
-		}
-	}
-
-	return(NULL);
-}
-
 bool
 TurntableObj::
 LoopActive()
@@ -3073,107 +3092,6 @@ Recall()
 	Sound->SetDivergeRecallEnd(Channel);
 	
 	ClearRecallOrigin();
-}
-
-void
-TurntableObj::
-UpdateFileBPM()
-{
-	if(DirTree.Ready()==false)
-	{
-		return;
-	}
-
-	int fileNum=DirTree.GetFilteredDirCount()+DirTree.GetFilteredFileCount();
-
-	for
-	(
-		int b=0;
-		(
-			b<5 &&
-			b+FileTop<fileNum &&
-			b+FileTop<10000
-		);
-		b++
-	)
-	{
-		unsigned int num=b+FileTop;
-		if(num<DirTree.GetFilteredDirCount())
-		{
-			FileBPM[b]=0;
-			continue;
-		}
-		const char* fileNow = DirTree.GetFilteredFileName(num - DirTree.GetFilteredDirCount());
-
-		char metaDataPath[1024];
-		sprintf(metaDataPath,"data/metadata/%s.musefuse-metadata.txt",fileNow);
-		FILE* fd=fopen(metaDataPath,"r");
-		float bpm=0;
-		float savePointSeconds[20];
-		for(int a=0;a<20;a++)
-		{
-			savePointSeconds[a]=-999;
-		}
-		if(fd)
-		{
-			FileInterfaceObj fi;
-			for(;;)
-			{
-				fi.ReadLine(fd);
-				if(feof(fd))
-				{
-					break;
-				}
-				if(fi.Size()==0)
-				{
-					continue;
-				}
-				if
-				(
-					strcasecmp(fi[0],"HomePoints")==0 ||
-					strcasecmp(fi[0],"SavePoints")==0
-				)
-				{
-					for(unsigned int c=0;c<fi.Size()-1 && c<18;c++)
-					{
-						savePointSeconds[c]=atof(fi[c+1]);
-					}
-				}
-			}
-
-			fclose(fd);
-			fd=NULL;
-		}
-
-		if
-		(
-			savePointSeconds[0]!=-999 &&
-			savePointSeconds[1]!=-999
-		)
-		{
-			int bpmMin=100;
-			float p0=savePointSeconds[0];
-			float p1=savePointSeconds[1];
-			float dp=p1-p0;
-			int measuresGuess=1;
-			float bpmGuess;
-			if(dp!=0)
-			{
-				for(int a=0;a<10;a++)
-				{
-					bpmGuess=(4*measuresGuess)/(dp/60.0f);
-					if(bpmGuess>=bpmMin)
-					{
-						bpm=bpmGuess;
-						break;
-					}
-					measuresGuess*=2;
-				}
-			}
-		}
-
-		FileBPM[b] = bpm;
-	}
 }
 
 void
@@ -3377,6 +3295,16 @@ SetBPMAdjusted
 	}
 	Pitchbend=best*Pitchbend;
 	PitchbendLastSetBySlider=false;
+}
+
+void
+TurntableObj::
+SetBPMMaster
+(
+	float bpmMaster
+)
+{
+	BPMMaster=bpmMaster;
 }
 
 bool
