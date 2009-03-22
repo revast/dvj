@@ -157,7 +157,6 @@ TurntableObj
 	Database=database;
 	DatabaseFilter.SetDir("data/music");
 	DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
-
 	for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
 	{
 		FileTop=a;
@@ -166,7 +165,6 @@ TurntableObj
 			break;
 		}
 	}
-
 	FileSelectInt=FileTop;
 	FileSelectFloat=(float)FileTop;
 }
@@ -318,115 +316,116 @@ NextFrame
 			}
 
 			FilterText.GrabFocus();
-			if(strcmp(FilterText.GetString(),FilterTextMostRecent)!=0)
-			{
-				filterDelta=true;
-				strcpy(FilterTextMostRecent,FilterText.GetString());
-
-				char oldSelection[2048];
-				strcpy(oldSelection,DatabaseFilteredEntries[FileSelectInt]->PathShort);
-
-				char filterText[2048];
-				strcpy(filterText,FilterText.GetString());
-				while(char* space=strchr(filterText,' '))
-				{
-					space[0]='|';
-				}
-
-				char pattern[2048];
-				pattern[0]='\0';
-
-				DatabaseFilter.SetBPMCenter(0);
-				DatabaseFilter.SetBPMRange(10);
-
-				FileInterfaceObj fi;
-				fi.ReadLine(filterText);
-				for(unsigned int a=0;a<fi.Size();a++)
-				{
-					const char* item=fi[a];
-					int len = strlen(item);
-					if(len>0)
-					{
-						if(item[0]=='~')
-						{
-							//BPM directive
-							if
-							(
-								item[1] >= '0' && item[1] <='9' &&
-								item[2] >= '0' && item[2] <='9' &&
-								item[3] >= '0' && item[3] <='9'
-							)
-							{
-								//We found a BPM center
-								char centerStr[2048];
-								strcpy(centerStr,&(item[1]));
-								if(char* tilde = strchr(centerStr,'~'))
-								{
-									tilde[0]='\0';
-								}
-								float center=atof(centerStr);
-								DatabaseFilter.SetBPMCenter(center);
-
-								if
-								(
-									item[4]=='~' &&
-									item[5] >= '0' && item[5] <='9'
-								)
-								{
-									//We found a BPM range
-									char rangeStr[2048];
-									strcpy(rangeStr,&(item[5]));
-									float range=atof(rangeStr);
-									DatabaseFilter.SetBPMRange(range);
-								}
-							}
-							else
-							{
-								if(BPMMaster>0)
-								{
-									DatabaseFilter.SetBPMCenter(BPMMaster);
-								}
-							}
-						}
-						else
-						{
-							if(pattern[0]!='\0')
-							{
-								strcat(pattern," ");
-							}
-							strcat(pattern,item);
-						}
-					}
-				}
-
-				DatabaseFilter.SetPattern(pattern);
-				DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
-
-				FileTop=0;
-				FileSelectInt=0;
-				FileSelectFloat=0;
-
-				for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
-				{
-					if(strcmp(DatabaseFilteredEntries[a]->PathShort,oldSelection)==0)
-					{
-						FileTop=a;
-						FileSelectInt=a;
-						FileSelectFloat=FileSelectInt;
-
-						if((unsigned int)FileTop>DatabaseFilteredEntries.size()-5)
-						{
-							FileTop=LGL_Max(0,DatabaseFilteredEntries.size()-5);
-						}
-
-						break;
-					}
-				}
-			}
 		}
 		else
 		{
 			FilterText.ReleaseFocus();
+		}
+		
+		if(strcmp(FilterText.GetString(),FilterTextMostRecent)!=0)
+		{
+			filterDelta=true;
+			strcpy(FilterTextMostRecent,FilterText.GetString());
+
+			char oldSelection[2048];
+			strcpy(oldSelection,DatabaseFilteredEntries[FileSelectInt]->PathShort);
+
+			char filterText[2048];
+			strcpy(filterText,FilterText.GetString());
+			while(char* space=strchr(filterText,' '))
+			{
+				space[0]='|';
+			}
+
+			char pattern[2048];
+			pattern[0]='\0';
+
+			DatabaseFilter.SetBPMCenter(0);
+			DatabaseFilter.SetBPMRange(10);
+
+			FileInterfaceObj fi;
+			fi.ReadLine(filterText);
+			for(unsigned int a=0;a<fi.Size();a++)
+			{
+				const char* item=fi[a];
+				int len = strlen(item);
+				if(len>0)
+				{
+					if(item[0]=='~')
+					{
+						//BPM directive
+						if
+						(
+							item[1] >= '0' && item[1] <='9' &&
+							item[2] >= '0' && item[2] <='9' &&
+							item[3] >= '0' && item[3] <='9'
+						)
+						{
+							//We found a BPM center
+							char centerStr[2048];
+							strcpy(centerStr,&(item[1]));
+							if(char* tilde = strchr(centerStr,'~'))
+							{
+								tilde[0]='\0';
+							}
+							float center=atof(centerStr);
+							DatabaseFilter.SetBPMCenter(center);
+
+							if
+							(
+								item[4]=='~' &&
+								item[5] >= '0' && item[5] <='9'
+							)
+							{
+								//We found a BPM range
+								char rangeStr[2048];
+								strcpy(rangeStr,&(item[5]));
+								float range=atof(rangeStr);
+								DatabaseFilter.SetBPMRange(range);
+							}
+						}
+						else
+						{
+							if(BPMMaster>0)
+							{
+								DatabaseFilter.SetBPMCenter(BPMMaster);
+							}
+						}
+					}
+					else
+					{
+						if(pattern[0]!='\0')
+						{
+							strcat(pattern," ");
+						}
+						strcat(pattern,item);
+					}
+				}
+			}
+
+			DatabaseFilter.SetPattern(pattern);
+			DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+
+			FileTop=0;
+			FileSelectInt=0;
+			FileSelectFloat=0;
+
+			for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
+			{
+				if(strcmp(DatabaseFilteredEntries[a]->PathShort,oldSelection)==0)
+				{
+					FileTop=a;
+					FileSelectInt=a;
+					FileSelectFloat=FileSelectInt;
+
+					if((unsigned int)FileTop>DatabaseFilteredEntries.size()-5)
+					{
+						FileTop=LGL_Max(0,DatabaseFilteredEntries.size()-5);
+					}
+
+					break;
+				}
+			}
 		}
 
 		if(Input.FileSelect(target))
@@ -3306,6 +3305,12 @@ SetBPMMaster
 	float bpmMaster
 )
 {
+	if(BPMMaster!=bpmMaster)
+	{
+		//Reevaluate filtered entries
+		FilterTextMostRecent[0]='\0';
+	}
+
 	BPMMaster=bpmMaster;
 }
 
