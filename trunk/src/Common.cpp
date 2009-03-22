@@ -596,7 +596,7 @@ analyzeWaveSegment
 
 	for(int a=0;a<2;a++)
 	{
-		int myIndex = sampleFirst+a;
+		unsigned int myIndex = sampleFirst+a;
 		if(myIndex>len16-1) myIndex=len16-1;
 		int zeroCrossingSign=(int)LGL_Sign(buf16[myIndex]);
 
