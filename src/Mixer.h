@@ -30,7 +30,6 @@
 #include "Database.h"
 
 #include "Visualizer.h"
-#include "Sequencer.h"
 
 class MixerObj
 {
@@ -93,7 +92,6 @@ private:
 	float				CrossFadeSliderLeft;
 	float				CrossFadeSliderRight;
 
-	SequencerObj			Sequencer;
 	VisualizerObj*			Visualizer;
 
 	float				ViewPortStatusLeft;
