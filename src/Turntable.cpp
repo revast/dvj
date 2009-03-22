@@ -340,7 +340,7 @@ NextFrame
 			char pattern[2048];
 			pattern[0]='\0';
 
-			DatabaseFilter.SetBPMCenter(0);
+			DatabaseFilter.SetBPMCenter(-1);
 			DatabaseFilter.SetBPMRange(10);
 
 			FileInterfaceObj fi;

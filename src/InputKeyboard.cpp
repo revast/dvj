@@ -31,7 +31,14 @@ void
 InputKeyboardObj::
 NextFrame()
 {
-	//Nothing necessary
+	if
+	(
+		LGL_KeyDown(SDLK_KP5)==false ||
+		LGL_KeyDown(SDLK_TAB)
+	)
+	{
+		WaveformSavePointUnsetTimer.Reset();
+	}
 }
 
 //Global Input
@@ -483,7 +490,14 @@ WaveformVolumeInvert
 	unsigned int	target
 )	const
 {
-	return(false);
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyDown(SDLK_KP0));
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 bool
@@ -523,13 +537,17 @@ WaveformRecordSpeed
 	unsigned int	target
 )	const
 {
-	const float SPEED=8.0f;
+	const float SPEED_FAST=8.0f;
+	const float SPEED_SLOW=2.0f;
 	float speed=0.0f;
 
 	if(target & TARGET_FOCUS)
 	{
-		speed-=(LGL_KeyDown(SDLK_LEFTBRACKET)?1:0)*SPEED;
-		speed+=(LGL_KeyDown(SDLK_RIGHTBRACKET)?1:0)*SPEED;
+		speed-=(LGL_KeyDown(SDLK_LEFTBRACKET)?1:0)*(SPEED_FAST+1.0f);
+		speed+=(LGL_KeyDown(SDLK_RIGHTBRACKET)?1:0)*(SPEED_FAST-1.0f);
+
+		speed-=(LGL_KeyDown(SDLK_SEMICOLON)?1:0)*(SPEED_SLOW+1.0f);
+		speed+=(LGL_KeyDown(SDLK_QUOTE)?1:0)*(SPEED_SLOW-1.0f);
 	}
 
 	return(speed);
@@ -572,7 +590,14 @@ WaveformSavePointPrev
 	unsigned int	target
 )	const
 {
-	return(false);
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(SDLK_KP4));
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 bool
@@ -582,6 +607,14 @@ WaveformSavePointNext
 	unsigned int	target
 )	const
 {
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(SDLK_KP6));
+	}
+	else
+	{
+		return(false);
+	}
 	return(false);
 }
 
@@ -592,7 +625,14 @@ WaveformSavePointSet
 	unsigned int	target
 )	const
 {
-	return(false);
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(SDLK_KP5));
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 float
@@ -602,7 +642,18 @@ WaveformSavePointUnsetPercent
 	unsigned int	target
 )	const
 {
-	return(0.0f);
+	float percent=0.0f;
+
+	if(target & TARGET_FOCUS)
+	{
+		percent=LGL_Clamp(0.0f,2.0f*WaveformSavePointUnsetTimer.SecondsSinceLastReset(),1.0f);
+	}
+	else
+	{
+		//
+	}
+
+	return(percent);
 }
 
 float
@@ -642,7 +693,14 @@ WaveformSavePointJumpNow
 	unsigned int	target
 )	const
 {
-	return(false);
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(SDLK_KP2));
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 bool
@@ -652,7 +710,14 @@ WaveformSavePointJumpAtMeasure
 	unsigned int	target
 )	const
 {
-	return(false);
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(SDLK_KP8));
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 bool
