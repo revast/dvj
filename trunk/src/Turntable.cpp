@@ -493,6 +493,7 @@ NextFrame
 						LoopLengthMeasures=0;
 						LoopAtEndOfMeasure=false;
 						SavePointIndex=0;
+						strcpy(SoundName,Sound->GetPathShort());
 						for(int a=0;a<18;a++)
 						{
 							SavePointSeconds[a]=-1.0f;
@@ -3136,6 +3137,7 @@ SelectNewVideo
 {
 	char videoFileName[1024];
 	sprintf(videoFileName,"data/video/tracks/%s.mjpeg.avi",SoundName);
+printf("Trying '%s'\n",videoFileName);
 	if
 	(
 		forceAmbient ||
