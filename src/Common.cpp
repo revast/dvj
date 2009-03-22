@@ -365,8 +365,11 @@ void
 Turntable_DrawDirTree
 (
 	float		time,
-	LGL_DirTree*	dirTree,
-	int		fileTop,
+	const char*	filterText,
+	const char*	path,
+	const char**	nameArray,
+	bool*		isDirBits,
+	int		fileNum,
 	int		fileSelectInt,
 	float		viewPortBottom,
 	float		viewPortTop,
@@ -385,90 +388,78 @@ Turntable_DrawDirTree
 		centerX,viewPortBottom+.875*viewPortHeight,.025,
 		1,1,1,1,
 		true,.5,
-		dirTree->GetFilterText()[0]=='\0'?
-		dirTree->GetPath() :
-		dirTree->GetFilterText()
+		filterText[0]=='\0' ?
+		path :
+		filterText
 	);
-	int fileNum;
-	fileNum=dirTree->GetFilteredDirCount()+dirTree->GetFilteredFileCount();
-	if(fileNum>0)
+
+	for
+	(
+		int b=0;
+		b<5 && b<fileNum;
+		b++
+	)
 	{
-		for
-		(
-			int b=0;
-			(
-				b<5 &&
-				b+fileTop<fileNum &&
-				b+fileTop<10000
-			);
-			b++
-		)
+		const char* fileNow=nameArray[b];
+		
+		float R=1.0f;
+		float G=1.0f;
+		float B=1.0f;
+		if(isDirBits[b])
 		{
-			const char* fileNow;
-			float R=1.0f;
-			float G=1.0f;
-			float B=1.0f;
-			
-			unsigned int num=b+fileTop;
-			fileNow=(num<dirTree->GetFilteredDirCount()) ?
-				dirTree->GetFilteredDirName(num) :
-				dirTree->GetFilteredFileName(num - dirTree->GetFilteredDirCount());
-			if(num<dirTree->GetFilteredDirCount())
+			R=0.0f;
+			G=0.0f;
+			B=1.0f;
+		}
+
+		if(strlen(fileNow)>0)
+		{
+			if(b==fileSelectInt)
 			{
-				R=0.0f;
-				G=0.0f;
-				B=1.0f;
-			}
-
-			if(strlen(fileNow)>0)
-			{
-				if(b+fileTop==fileSelectInt)
-				{
-					float R=badFileFlash;
-					float G=0.0f;
-					float B=(1.0f-badFileFlash)*.3f*glow;
-					float A=.5f;
-					LGL_DrawRectToScreen
-					(
-						viewPortLeft,viewPortRight,
-						viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight,
-						viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight+viewPortHeight/15.0f+.04f*viewPortHeight,
-						R,G,B,A
-					);
-				}
-
-				float stringY=viewPortTop-0.1f*viewPortHeight-(viewPortHeight*((b+1)/6.25f-0.035f));
-
-				float bpm = inBPMList[b];
-				if(bpm!=0)
-				{
-					LGL_GetFont().DrawString
-					(
-						viewPortLeft+0.01f*viewPortWidth,
-						stringY-0.5f*viewPortHeight/15.0f,
-						viewPortHeight/15.0f,
-						R,G,B,1,
-						false,0,
-						"%.0f",
-						bpm
-					);
-				}
-
-				float fontHeight=viewPortHeight/15.0f;
-				float fontWidth=LGL_GetFont().GetWidthString(fontHeight,fileNow);
-				float fontWidthMax=viewPortWidth*0.9f;
-				fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
-
-				LGL_GetFont().DrawString
+				float R=badFileFlash;
+				float G=0.0f;
+				float B=(1.0f-badFileFlash)*.3f*glow;
+				float A=.5f;
+				LGL_DrawRectToScreen
 				(
-					viewPortLeft+(.025f+0.05f)*viewPortWidth,
-					stringY-0.5f*fontHeight,
-					fontHeight,
-					R,G,B,1,
-					false,0,
-					fileNow
+					viewPortLeft,viewPortRight,
+					viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight,
+					viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight+viewPortHeight/15.0f+.04f*viewPortHeight,
+					R,G,B,A
 				);
 			}
+
+			float stringY=viewPortTop-0.1f*viewPortHeight-(viewPortHeight*((b+1)/6.25f-0.035f));
+
+			float bpm = inBPMList[b];
+			if(bpm>0)
+			{
+				LGL_GetFont().DrawString
+				(
+					viewPortLeft+0.01f*viewPortWidth,
+					stringY-0.5f*viewPortHeight/15.0f,
+					viewPortHeight/15.0f,
+					R,G,B,1,
+					false,0,
+					"%.0f",
+					bpm
+				);
+			}
+
+			float fontHeight=viewPortHeight/15.0f;
+			float fontWidth=LGL_GetFont().GetWidthString(fontHeight,fileNow);
+			float fontWidthMax=viewPortWidth*0.9f;
+			fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
+
+			LGL_GetFont().DrawString
+			(
+				viewPortLeft+(.025f+0.05f)*viewPortWidth,
+				stringY-0.5f*fontHeight,
+				fontHeight,
+				R,G,B,1,
+				false,0,
+				fileNow
+			);
 		}
 	}
 }

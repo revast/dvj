@@ -79,8 +79,11 @@ void
 Turntable_DrawDirTree
 (
 	float		time,
-	LGL_DirTree*	dirTree,
-	int		fileTop,
+	const char*	filterText,
+	const char*	path,
+	const char**	nameArray,
+	bool*		isDirBits,
+	int		fileNum,
 	int		fileSelectInt,
 	float		viewPortBottom,
 	float		viewPortTop,

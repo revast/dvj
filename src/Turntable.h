@@ -27,6 +27,8 @@
 #include "LGL.module/LGL.h"
 #include "Visualizer.h"
 
+#include "Database.h"
+
 #define	NOISE_IMAGE_COUNT_256_64 64
 #define	ENTIRE_WAVE_ARRAY_COUNT_MAX 1920
 
@@ -38,7 +40,8 @@ public:
 					TurntableObj
 					(
 						float	left,	float	right,
-						float	bottom,	float	top
+						float	bottom,	float	top,
+						DatabaseObj* database
 					);
 					~TurntableObj();
 
@@ -108,7 +111,6 @@ const	char*				GetSoundPathShort();
 private:
 
 	void				ProcessHintFile(char* path);
-const	char*				GetCurrentFileString();
 
 private:
 
@@ -155,7 +157,10 @@ private:
 	float				CenterX;
 	float				CenterY;
 
-	LGL_DirTree			DirTree;
+	DatabaseObj*			Database;
+	DatabaseFilterObj		DatabaseFilter;
+	std::vector<DatabaseEntryObj*>	DatabaseFilteredEntries;
+
 	LGL_InputBuffer			FilterText;
 	char				FilterTextMostRecent[1024];
 	int				FileTop;
@@ -215,7 +220,6 @@ private:
 	bool				RecallIsSet();
 	void				Recall();
 
-	void				UpdateFileBPM();
 	void				UpdateSoundFreqResponse();
 
 	int				Which;		//Which turntable we are.
@@ -235,6 +239,7 @@ static	VisualizerObj*			Visualizer;
 
 	float				BPM;
 	bool				BPMRecalculationRequired;
+	float				BPMMaster;
 	double				SecondsLast;
 	double				SecondsNow;
 
@@ -265,6 +270,7 @@ public:
 	float				GetBPMAdjusted();
 	float				GetBPMFirstBeatSeconds();
 	void				SetBPMAdjusted(float bpmAdjusted);
+	void				SetBPMMaster(float bpmMaster);
 	bool				GetBeatThisFrame(float fractionOfBeat=1.0f);
 	double				GetPercentOfCurrentMeasure(float measureMultiplier=1.0f);
 	double				GetBeginningOfCurrentMeasureSeconds(float measureMultiplier=1.0f);

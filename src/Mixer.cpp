@@ -29,11 +29,11 @@
 #define	CPU_TEMP_DANGER (70)
 
 MixerObj::
-MixerObj()
+MixerObj() : Database("data/music")
 {
 	for(int a=0;a<2;a++)
 	{
-		Turntable[a]=new TurntableObj(0.025,0.975,0.25,0.50);
+		Turntable[a]=new TurntableObj(0.025,0.975,0.25,0.50,&Database);
 		Turntable[a]->SetTurntableNumber(a);
 	}
 
@@ -276,6 +276,43 @@ NextFrame
 		CrossFadeSliderLeft=LGL_Clamp(0.0f,CrossFadeSliderLeft+Input.XfaderSpeakersDelta(),1.0f);
 		CrossFadeSliderRight=LGL_Clamp(0.0f,CrossFadeSliderRight+Input.XfaderHeadphonesDelta(),1.0f);
 	}
+
+	int masterTT=-1;
+	if
+	(
+		Turntable[0]->GetMode()==2 &&
+		Turntable[1]->GetMode()==2
+	)
+	{
+		if(CrossFadeSliderLeft>0.5f)
+		{
+			masterTT=0;
+		}
+		else
+		{
+			masterTT=1;
+		}
+	}
+	else if(Turntable[0]->GetMode()==2)
+	{
+		masterTT=0;
+	}
+	else if(Turntable[1]->GetMode()==2)
+	{
+		masterTT=1;
+	}
+
+	float bpmMaster=-1.0f;
+	if(masterTT!=-1)
+	{
+		float adjusted=Turntable[masterTT]->GetBPMAdjusted();
+		if(adjusted>0)
+		{
+			bpmMaster=adjusted;
+		}
+	}
+	Turntable[0]->SetBPMMaster(bpmMaster);
+	Turntable[1]->SetBPMMaster(bpmMaster);
 
 	for(int a=0;a<2;a++)
 	{

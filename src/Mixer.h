@@ -26,6 +26,9 @@
 
 #include "LGL.module/LGL.h"
 #include "Turntable.h"
+
+#include "Database.h"
+
 #include "Visualizer.h"
 #include "Sequencer.h"
 
@@ -110,6 +113,8 @@ private:
 	bool				LowRez;
 
 	LGL_Timer			SongTitleAsScrollTextTimer;
+
+	DatabaseObj			Database;
 };
 
 #endif	//_DVJ_MIXER_H_
