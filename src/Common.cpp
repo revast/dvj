@@ -25,6 +25,8 @@
 
 #define	NEEDLE_DISTANCE_FROM_EDGES (0.0f)
 
+#define sampleRadiusMultiplier (2.0f)
+
 float
 GetGlowFromTime
 (
@@ -508,18 +510,32 @@ turntable_DrawBPMLines
 
 			LGL_DrawLineToScreen
 			(
-				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointTop-pointHeight*0.4f-shadowOffset,
-				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointTop-pointHeight*0.6f-shadowOffset,
+				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointBottom+pointHeight*0.0f-shadowOffset,
+				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointBottom+pointHeight*0.2f-shadowOffset,
 				0,0,0,0.9f,
-				b1?20:5
+				b1?10:3
+			);
+			LGL_DrawLineToScreen
+			(
+				wavLeft+wavWidth*bpmPointPercent,pointBottom+pointHeight*0.0f,
+				wavLeft+wavWidth*bpmPointPercent,pointBottom+pointHeight*0.2f,
+				1,1,1,1,
+				b1?10:3
 			);
 
 			LGL_DrawLineToScreen
 			(
-				wavLeft+wavWidth*bpmPointPercent,pointTop-pointHeight*0.4f,
-				wavLeft+wavWidth*bpmPointPercent,pointTop-pointHeight*0.6f,
+				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointTop-pointHeight*0.0f-shadowOffset,
+				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointTop-pointHeight*0.2f-shadowOffset,
+				0,0,0,0.9f,
+				b1?10:3
+			);
+			LGL_DrawLineToScreen
+			(
+				wavLeft+wavWidth*bpmPointPercent,pointTop-pointHeight*0.0f,
+				wavLeft+wavWidth*bpmPointPercent,pointTop-pointHeight*0.2f,
 				1,1,1,1,
-				b1?20:5
+				b1?10:3
 			);
 
 			float fontHeight=0.10f*pointHeight;
@@ -531,7 +547,7 @@ turntable_DrawBPMLines
 				LGL_GetFont().DrawString
 				(
 					wavLeft+wavWidth*bpmPointPercent+lDelta,
-					pointBottom+0.5f*pointHeight-0.5f*fontHeight,
+					pointBottom+0.1f*pointHeight-0.5f*fontHeight,
 					fontHeight,
 					1,1,1,1,
 					false,
@@ -720,6 +736,9 @@ Turntable_DrawWaveform
 	float deltaR=
 		(0.0f+grainStreamCrossfader) * (3.0f/4.0f)*grainStreamLength +
 		(1.0f-grainStreamCrossfader) * 0.005f;
+	
+	deltaL/=sampleRadiusMultiplier;
+	deltaR/=sampleRadiusMultiplier;
 
 	if(loaded)
 	{
@@ -753,7 +772,6 @@ Turntable_DrawWaveform
 	float pointRadiusMin=viewPortRight-(viewPortLeft+0.5f*viewPortWidth);
 	//float pointRadiusMax=2.0f*pointRadiusMin;
 	float pointRadius=pointRadiusMin*zoom;
-	float sampleRadiusMultiplier=1.0f;
 	/*
 	while(pointRadius>=pointRadiusMax)
 	{
@@ -809,12 +827,12 @@ Turntable_DrawWaveform
 		glitch
 	)
 	{
-		float gleftSample=glitchBegin;
-		float grightSample=(glitchBegin+glitchLength);
+		float gleftSample=glitchBegin-glitchLength;
+		float grightSample=glitchBegin+glitchLength;
 		
 		float centerSample=soundPositionSamples;
-		float leftSample=(centerSample-64*512*pitchBend);
-		float rightSample=(centerSample+64*512*pitchBend);
+		float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
+		float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
 
 		if
 		(
@@ -848,8 +866,8 @@ Turntable_DrawWaveform
 			}
 		}
 
-		float gLeftPercent=1.0-(rightSample-gleftSample)/(rightSample-leftSample);
-		float gRightPercent=1.0-(rightSample-grightSample)/(rightSample-leftSample);
+		float gLeftPercent=1.0f-(rightSample-gleftSample)/(rightSample-leftSample);
+		float gRightPercent=1.0f-(rightSample-grightSample)/(rightSample-leftSample);
 
 		glitchLines=true;
 		glitchLinesLeft=	pointLeft+gLeftPercent*pointWidth;
@@ -988,7 +1006,7 @@ Turntable_DrawWaveform
 		{
 			long sampleNow=(long)(sampleLeftBase+deltaSample*a);
 			const long sampleLast=(long)(sampleNow+deltaSample);
-			const int sampleSkipFactor=1;
+			const int sampleSkipFactor=1*sampleRadiusMultiplier;
 			float zeroCrossingFactor;
 			float magnitudeAve;
 			float magnitudeMax;
@@ -1013,12 +1031,14 @@ Turntable_DrawWaveform
 			arrayV[(a*2)+0]=pointLeft+((a-xOffset)/(float)pointResolution)*pointWidth;
 			arrayV[(a*2)+1]=pointBottom+(0.5f+0.5f*magnitudeAve)*pointHeight;
 
+			float glitchDelta = -0.35f*(glitchSampleRight-glitchSampleLeft);
+
 			bool active=
 			(
 				(
 					glitchLines &&
-					sampleNow>glitchSampleLeft &&
-					sampleNow<glitchSampleRight
+					sampleNow>glitchSampleLeft-glitchDelta &&
+					sampleNow<glitchSampleRight-glitchDelta
 				) ||
 				(
 					arrayV[(a*2)+0] >= centerX+deltaL*viewPortWidth &&
@@ -1137,12 +1157,12 @@ Turntable_DrawWaveform
 		glitch
 	)
 	{
-		float gleftSample=glitchBegin;
-		float grightSample=(glitchBegin+glitchLength);
+		float gleftSample=glitchBegin-glitchLength;
+		float grightSample=glitchBegin+glitchLength;
 		
 		float centerSample=soundPositionSamples;
-		float leftSample=(centerSample-64*512*pitchBend);
-		float rightSample=(centerSample+64*512*pitchBend);
+		float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
+		float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
 
 		if(leftSample<0 || rightSample>soundLengthSamples)
 		{
@@ -1231,8 +1251,8 @@ Turntable_DrawWaveform
 	{
 		//float centerSample=soundPositionSamples;
 		float centerSample=sampleLeftExact+deltaSample*(pointResolution/2);
-		float leftSample=(centerSample-64*512*viewSize*pitchBend);
-		float rightSample=(centerSample+64*512*viewSize*pitchBend);
+		float leftSample=(centerSample-64*512*viewSize*pitchBend*sampleRadiusMultiplier);
+		float rightSample=(centerSample+64*512*viewSize*pitchBend*sampleRadiusMultiplier);
 		double soundLengthSeconds=soundLengthSamples/44100.0;
 		double secondsPerBeat=60.0/bpm;
 
@@ -1334,8 +1354,8 @@ Turntable_DrawWaveform
 		if(savePointSeconds[a]>=0.0f)
 		{
 			float centerSample=soundPositionSamples;
-			float leftSample=(centerSample-64*512*pitchBend);
-			float rightSample=(centerSample+64*512*pitchBend);
+			float leftSample=(centerSample-64*512*pitchBend*sampleRadiusMultiplier);
+			float rightSample=(centerSample+64*512*pitchBend*sampleRadiusMultiplier);
 			float widthSample=rightSample-leftSample;
 
 			long savePointSamples = (long)(savePointSeconds[a]*44100);

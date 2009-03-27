@@ -1196,10 +1196,11 @@ NextFrame
 			{
 				//Lumin Scratch
 				float centerSample=Sound->GetPositionSamples(Channel);
-				float leftSample=centerSample-64*512*Pitchbend;
-				float rightSample=centerSample+64*512*Pitchbend;
+				float leftSample=centerSample-64*512*Pitchbend*2;
+				float rightSample=centerSample+64*512*Pitchbend*2;
 
-				float gSamplePercent=0.5f+(Input.WaveformPointerScratch(target)-0.5f)*(1.0f/WAVE_WIDTH_PERCENT);
+				float gSamplePercent=0.5f+(Input.WaveformPointerScratch(target)-0.5f);
+				gSamplePercent = LGL_Clamp(0,(gSamplePercent-0.2f)*(1.0f/0.6f),1);
 
 				LuminScratch=true;
 				LuminScratchSamplePositionDesired=
@@ -1212,7 +1213,7 @@ NextFrame
 				{
 					LuminScratchSamplePositionDesired-=Sound->GetLengthSamples();
 				}
-				GlitchBegin=Sound->GetPositionGlitchBeginSamples(Channel)-.005f*64*512*Pitchbend;
+				GlitchBegin=Sound->GetPositionGlitchBeginSamples(Channel)-.005f*64*512*Pitchbend*2;
 			}
 			else
 			{
