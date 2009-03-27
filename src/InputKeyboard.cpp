@@ -527,7 +527,18 @@ WaveformRecordHold
 	unsigned int	target
 )	const
 {
-	return(false);
+	bool hold=false;
+
+	if(target & TARGET_FOCUS)
+	{
+		hold|=LGL_KeyDown(SDLK_LEFTBRACKET);
+		hold|=LGL_KeyDown(SDLK_RIGHTBRACKET);
+
+		hold|=LGL_KeyDown(SDLK_SEMICOLON);
+		hold|=LGL_KeyDown(SDLK_QUOTE);
+	}
+
+	return(hold);
 }
 
 float
@@ -543,11 +554,11 @@ WaveformRecordSpeed
 
 	if(target & TARGET_FOCUS)
 	{
-		speed-=(LGL_KeyDown(SDLK_LEFTBRACKET)?1:0)*(SPEED_FAST+1.0f);
-		speed+=(LGL_KeyDown(SDLK_RIGHTBRACKET)?1:0)*(SPEED_FAST-1.0f);
+		speed-=(LGL_KeyDown(SDLK_LEFTBRACKET)?1:0)*SPEED_FAST;
+		speed+=(LGL_KeyDown(SDLK_RIGHTBRACKET)?1:0)*SPEED_FAST;
 
-		speed-=(LGL_KeyDown(SDLK_SEMICOLON)?1:0)*(SPEED_SLOW+1.0f);
-		speed+=(LGL_KeyDown(SDLK_QUOTE)?1:0)*(SPEED_SLOW-1.0f);
+		speed-=(LGL_KeyDown(SDLK_SEMICOLON)?1:0)*SPEED_SLOW;
+		speed+=(LGL_KeyDown(SDLK_QUOTE)?1:0)*SPEED_SLOW;
 	}
 
 	return(speed);
