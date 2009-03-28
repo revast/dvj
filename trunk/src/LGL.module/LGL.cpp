@@ -12367,15 +12367,16 @@ LoadToMemory()
 					if(channels==1)
 					{
 						int16_t* outbuf16 = (int16_t*)outbuf; 
-						int16_t* buf16 = (int16_t*)Buffer; 
+						int16_t* buf16 = (int16_t*)Buffer;
 						int samples=outbufsize/2;
 
-						for(int a=0;a<samples*2;a++)
+						for(int a=0;a<samples;a++)
 						{
-							buf16[BufferLength+a]=outbuf16[a/2];
+							buf16[BufferLength/2+2*a+0]=outbuf16[a];
+							buf16[BufferLength/2+2*a+1]=outbuf16[a];
 						}
 
-						BufferLength+=outbufsize;
+						BufferLength+=samples*2*2;
 					}
 					else
 					{
