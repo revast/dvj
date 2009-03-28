@@ -20949,6 +20949,46 @@ LGL_SimplifyPath
 
 //Misc
 
+float
+LGL_MemoryFreePercent()
+{
+#ifdef	LGL_LINUX
+	float memTotal=-1.0f;
+	float memFree=-1.0f;
+	if(FILE* fd=fopen("/proc/meminfo","r"))
+	{
+		char buf[2048];
+		while(feof(fd)==false)
+		{
+			fgets(buf,20480,fd);
+			if(strstr(buf,"MemTotal"))
+			{
+				memTotal=atof(&(strchr(buf,':')[1]));
+			}
+			if(strstr(buf,"MemFree"))
+			{
+				memFree=atof(&(strchr(buf,':')[1]));
+			}
+		}
+		fclose(fd);
+	}
+	if
+	(
+		memTotal>=0 &&
+		memFree>=0
+	)
+	{
+		return(memFree/memTotal);
+	}
+	else
+	{
+		return(1.0f);
+	}
+#else	//LGL_LINUX
+	return(1.0f);
+#endif	//LGL_LINUX
+}
+
 void
 LGL_DrawFPSGraph
 (

@@ -981,6 +981,21 @@ DrawStatus
 		);
 	}
 
+	float freeMemPercent = LGL_MemoryFreePercent();
+	if(freeMemPercent<0.05f)
+	{
+		LGL_GetFont().DrawString
+		(
+			l+.025f*w,
+			b+.025f*h,
+			.015f,
+			1.0f,0.0f,0.0f,1.0f,
+			false,.5f,
+			"Low Free Memory: %.1f%%",
+			freeMemPercent*100.0f
+		);
+	}
+
 	/*
 	LGL_DrawLogWrite
 	(
