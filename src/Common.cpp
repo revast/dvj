@@ -508,19 +508,22 @@ turntable_DrawBPMLines
 			float bpmPointPercent = (bpmPointSamples-leftSample)/(float)widthSample;
 			bool b1=(whichBeat==1);
 
+			int big=3;
+			int small=3;
+
 			LGL_DrawLineToScreen
 			(
 				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointBottom+pointHeight*0.0f-shadowOffset,
 				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointBottom+pointHeight*0.2f-shadowOffset,
 				0,0,0,0.9f,
-				b1?10:3
+				b1?big:small
 			);
 			LGL_DrawLineToScreen
 			(
 				wavLeft+wavWidth*bpmPointPercent,pointBottom+pointHeight*0.0f,
 				wavLeft+wavWidth*bpmPointPercent,pointBottom+pointHeight*0.2f,
 				1,1,1,1,
-				b1?10:3
+				b1?big:small
 			);
 
 			LGL_DrawLineToScreen
@@ -528,14 +531,14 @@ turntable_DrawBPMLines
 				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointTop-pointHeight*0.0f-shadowOffset,
 				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointTop-pointHeight*0.2f-shadowOffset,
 				0,0,0,0.9f,
-				b1?10:3
+				b1?big:small
 			);
 			LGL_DrawLineToScreen
 			(
 				wavLeft+wavWidth*bpmPointPercent,pointTop-pointHeight*0.0f,
 				wavLeft+wavWidth*bpmPointPercent,pointTop-pointHeight*0.2f,
 				1,1,1,1,
-				b1?10:3
+				b1?big:small
 			);
 
 			float fontHeight=0.10f*pointHeight;
