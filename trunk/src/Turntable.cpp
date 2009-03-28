@@ -428,7 +428,11 @@ NextFrame
 			}
 		}
 
-		if(Input.FileSelect(target))
+		if
+		(
+			Input.FileSelect(target) &&
+			DatabaseFilteredEntries.empty()==false
+		)
 		{
 			char target[2048];
 			target[0]='\0';
@@ -2013,7 +2017,7 @@ DrawFrame
 	{
 		//Smooth waveform scrolling
 
-		double proposedDelta = (LGL_AudioAvailable()?1:0)*Sound->GetSpeed(Channel)*44100*(LGL_SecondsSinceLastFrame())*1.0f;
+		double proposedDelta = (LGL_AudioAvailable()?1:0)*Sound->GetSpeed(Channel)*Sound->GetHz()*(LGL_SecondsSinceLastFrame())*1.0f;
 		double currentSample=Sound->GetPositionSamples(Channel);
 		double diff=fabsf(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
 		double diffMax=1024*2;
