@@ -20957,6 +20957,7 @@ LGL_MemoryFreePercent()
 #ifdef	LGL_LINUX
 	float memTotal=-1.0f;
 	float memFree=-1.0f;
+	float memCached=-1.0f;
 	if(FILE* fd=fopen("/proc/meminfo","r"))
 	{
 		char buf[2048];
@@ -20967,9 +20968,13 @@ LGL_MemoryFreePercent()
 			{
 				memTotal=atof(&(strchr(buf,':')[1]));
 			}
-			if(strstr(buf,"MemFree:"))
+			else if(strstr(buf,"MemFree:"))
 			{
 				memFree=atof(&(strchr(buf,':')[1]));
+			}
+			else if(strstr(buf,"Cached:")==buf)
+			{
+				memCached=atof(&(strchr(buf,':')[1]));
 			}
 		}
 		fclose(fd);
@@ -20977,10 +20982,11 @@ LGL_MemoryFreePercent()
 	if
 	(
 		memTotal>=0 &&
-		memFree>=0
+		memFree>=0 &&
+		memCached>=0
 	)
 	{
-		return(memFree/memTotal);
+		return((memFree+memCached)/memTotal);
 	}
 	else
 	{
