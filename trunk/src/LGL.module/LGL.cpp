@@ -21054,7 +21054,6 @@ LGL_BatteryChargePercent()
 		charge!=-1.0f
 	)
 	{
-		printf("%.2f / %.2f\n",charge,capacity);
 		return(charge/capacity);
 	}
 	else
