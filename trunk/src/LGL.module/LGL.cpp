@@ -117,6 +117,7 @@ typedef struct
 	float			VolumeBackLeft;
 	float			VolumeBackRight;
 	int			Channels;
+	int			Hz;
 	bool			ToMono;
 	float			SpeedNow;
 	float			SpeedDesired;
@@ -224,7 +225,7 @@ typedef struct
 	float			AudioPeakLeft;
 	float			AudioPeakRight;
 	float			AudioPeakMono;
-	float			FreqBufferL[512];	//freq.mag=44100.0*index/1024.0
+	float			FreqBufferL[512];
 	float			FreqBufferR[512];
 	bool			RecordActive;
 	FILE*			RecordFileDescriptor;
@@ -502,6 +503,7 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].VolumeBackLeft=1.0f;
 	LGL.SoundChannel[a].VolumeBackRight=1.0f;
 	LGL.SoundChannel[a].Channels=2;
+	LGL.SoundChannel[a].Hz=44100;
 	LGL.SoundChannel[a].ToMono=false;
 	LGL.SoundChannel[a].SpeedNow=1;
 	LGL.SoundChannel[a].SpeedDesired=1;
@@ -1362,7 +1364,6 @@ LGL_ThreadSetPriority(-0.1f);
 				}
 			}
 		}
-		//assert(AudioObtained->freq==44100);
 		//assert(AudioObtained->samples==LGL_SAMPLESIZE);
 		assert(LGL.AudioStreamListSemaphore);
 
@@ -9784,8 +9785,8 @@ SetWaveformFromLGLSound
 		return;
 	}
 
-	long centerPositionSamples=(int)LGL_Max(0,(centerSeconds+LGL_RandFloat(-centerSecondsVariance,centerSecondsVariance))*44100);
-	LengthSamples=(int)LGL_Max(0,(lengthSeconds+LGL_RandFloat(-lengthSecondsVariance,lengthSecondsVariance))*44100);
+	long centerPositionSamples=(int)LGL_Max(0,(centerSeconds+LGL_RandFloat(-centerSecondsVariance,centerSecondsVariance))*sound->GetHz());
+	LengthSamples=(int)LGL_Max(0,(lengthSeconds+LGL_RandFloat(-lengthSecondsVariance,lengthSecondsVariance))*sound->GetHz());
 	long startPositionSamples=centerPositionSamples-(LengthSamples/2);
 	long endPositionSamples=startPositionSamples+LengthSamples;
 
@@ -10949,6 +10950,7 @@ LGL_Sound
 	assert(strlen(filename)<1024);
 	//if(LGL.AudioAvailable==false) return;
 	Channels=channels;
+	Hz=44100;
 
 	BadFile=false;
 
@@ -11011,6 +11013,7 @@ LGL_Sound
 	PrepareForDeleteThread=NULL;
 
 	Channels=channels;
+	Hz=44100;
 
 	strcpy(Path,"Memory Buffer");
 	strcpy(PathShort,Path);
@@ -11217,14 +11220,14 @@ Play
 	if(Available!=-1)
 	{
 		LGL.SoundChannel[Available].Paused=false;
-		LGL.SoundChannel[Available].PositionSamplesStart=startSeconds*44100;
-		LGL.SoundChannel[Available].PositionSamplesPrev=startSeconds*44100;
-		LGL.SoundChannel[Available].PositionSamplesNow=startSeconds*44100;
+		LGL.SoundChannel[Available].PositionSamplesStart=startSeconds*Hz;
+		LGL.SoundChannel[Available].PositionSamplesPrev=startSeconds*Hz;
+		LGL.SoundChannel[Available].PositionSamplesNow=startSeconds*Hz;
 		LGL.SoundChannel[Available].FuturePositionSamplesPrev=-1;
 		LGL.SoundChannel[Available].FuturePositionSamplesNow=-1;
 		LGL.SoundChannel[Available].PositionSamplesNowLastReported=0;
-		LGL.SoundChannel[Available].PositionSamplesEnd=startSeconds*44100+
-			lengthSeconds*44100.0f;
+		LGL.SoundChannel[Available].PositionSamplesEnd=startSeconds*Hz+
+			lengthSeconds*Hz;
 		LGL.SoundChannel[Available].PositionSamplesDeltaLastTime.Reset();
 		LGL.SoundChannel[Available].DivergeSamples=0;
 		LGL.SoundChannel[Available].DivergeState=0;
@@ -11263,6 +11266,7 @@ Play
 		LGL.SoundChannel[Available].VolumeBackLeft=volume;
 		LGL.SoundChannel[Available].VolumeBackRight=volume;
 		LGL.SoundChannel[Available].Channels=Channels;
+		LGL.SoundChannel[Available].Hz=Hz;
 		LGL.SoundChannel[Available].ToMono=false;
 		LGL.SoundChannel[Available].SpeedNow=speed;
 		LGL.SoundChannel[Available].SpeedDesired=speed;
@@ -11284,7 +11288,7 @@ Play
 		LGL.SoundChannel[Available].GlitchLength=0;
 		LGL.SoundChannel[Available].Loop=looping;
 		LGL.SoundChannel[Available].StickyEndpoints=false;
-		LGL.SoundChannel[Available].LengthSamples=lengthSeconds*44100.0f;
+		LGL.SoundChannel[Available].LengthSamples=lengthSeconds*Hz;
 		LGL.SoundChannel[Available].BufferLength=BufferLength;
 		LGL.SoundChannel[Available].Buffer=Buffer;
 		LGL.SoundChannel[Available].BufferSemaphore=&BufferSemaphore;
@@ -11454,9 +11458,9 @@ if(channel<0)
 }
 	//if(LGL.AudioAvailable==false) return;
 
-	LGL.SoundChannel[channel].FuturePositionSamplesPrev=seconds*44100;
-	LGL.SoundChannel[channel].FuturePositionSamplesNow=seconds*44100;
-	LGL.SoundChannel[channel].PositionSamplesNowLastReported=seconds*44100;
+	LGL.SoundChannel[channel].FuturePositionSamplesPrev=seconds*Hz;
+	LGL.SoundChannel[channel].FuturePositionSamplesNow=seconds*Hz;
+	LGL.SoundChannel[channel].PositionSamplesNowLastReported=seconds*Hz;
 }
 
 void
@@ -11786,7 +11790,7 @@ if(channel<0)
 }
 	//if(LGL.AudioAvailable==false) return(0);
 
-	double ret = GetPositionSamples(channel)/44100.0;
+	double ret = GetPositionSamples(channel)/(double)Hz;
 	if(ret > GetLengthSeconds())
 	{
 		ret=0.0;
@@ -12174,7 +12178,7 @@ LGL_Sound::
 GetLengthSeconds()
 {
 	//if(LGL.AudioAvailable==false) return(0);
-	return(BufferLength/(4.0f*44100));
+	return(BufferLength/(4.0f*Hz));
 }
 
 long
@@ -12296,6 +12300,8 @@ LoadToMemory()
 			BadFile=true;
 			return;
 		}
+
+		Hz=codecContext->sample_rate;
 
 		// Open codec
 		if(avcodec_open(codecContext,codec)<0)
@@ -12569,6 +12575,13 @@ GetChannelCount()
 
 int
 LGL_Sound::
+GetHz()
+{
+	return(Hz);
+}
+
+int
+LGL_Sound::
 GetReferenceCount()
 {
 	return(ReferenceCount);
@@ -12743,7 +12756,7 @@ LGL_FreqL
 	float	freq
 )
 {
-	float indexF=512-freq*1024.0/44100.0;
+	float indexF=512-freq*1024.0/44100.0f;
 	int indexL=(int)floor(indexF)-1;
 	int indexH=(int)ceil(indexF)-1;
 	float valL=(indexL>=2 && indexL<512)?LGL.FreqBufferL[indexL]:0;
@@ -12757,7 +12770,7 @@ LGL_FreqR
 	float	freq
 )
 {
-	float indexF=512-freq*1024.0/44100.0;
+	float indexF=512-freq*1024.0/44100.0f;
 	int indexL=(int)floor(indexF)-1;
 	int indexH=(int)ceil(indexF)-1;
 	float valL=(indexL>=0 && indexL<512)?LGL.FreqBufferR[indexL]:0;
@@ -22646,8 +22659,7 @@ lgl_AudioOutCallbackGenerator
 		return;
 	}
 
-	//Allow for either 44100hz or 48000hz
-
+	//Allow for any output sampling rate
 	double timeAdvancementMultiplier = 44100.0/LGL.AudioSpec->freq;
 
 	unsigned int vChannels=LGL_AudioChannels();
@@ -22846,7 +22858,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 
 			if(sc->WarpPointSecondsTrigger>=0.0f)
 			{
-				if(sc->PositionSamplesNow>=sc->WarpPointSecondsTrigger*44100.0f)
+				if(sc->PositionSamplesNow>=sc->WarpPointSecondsTrigger*sc->Hz)
 				{
 					if
 					(
@@ -22854,8 +22866,8 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 						sc->LGLSound->IsLoaded()
 					)
 					{
-						sc->PositionSamplesNow=sc->WarpPointSecondsDestination*44100.0;
-						while(sc->PositionSamplesNow<0) sc->PositionSamplesNow+=sc->LengthSamples*44100.0;
+						sc->PositionSamplesNow=sc->WarpPointSecondsDestination*sc->Hz;
+						while(sc->PositionSamplesNow<0) sc->PositionSamplesNow+=sc->LengthSamples*sc->Hz;
 					}
 					sc->WarpPointSecondsTrigger=-1.0f;
 					sc->WarpPointSecondsDestination=-1.0f;
@@ -22898,7 +22910,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 								sc->LGLSound==NULL ||
 								sc->LGLSound->IsLoaded()==false
 							) &&
-							sc->PositionSamplesEnd>=44100.0f*50000.0f
+							sc->PositionSamplesEnd>=sc->Hz*50000.0f
 						)
 					)
 					{
@@ -23019,7 +23031,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 						sc->GlitchSpeedDesired=
 							(1.0f-terp)*sc->GlitchSpeedDesired+
 							(0.0f+terp)*
-							win/(.025f*44100.0f);
+							win/(.025f*sc->Hz);
 					}
 					sc->GlitchSpeedNow=
 						(1.0f-sc->GlitchSpeedInterpolationFactor)*sc->GlitchSpeedNow+
@@ -23028,7 +23040,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 					float proxFactor=LGL_Clamp
 					(
 						0,
-						1.0f-(100*fabsf(sc->GlitchSamplesNow-sc->GlitchLuminScratchPositionDesired))/44100.0f,
+						1.0f-(100*fabsf(sc->GlitchSamplesNow-sc->GlitchLuminScratchPositionDesired))/sc->Hz,
 						1
 					);
 					sc->GlitchSpeedNow*=(1.0f-proxFactor);
@@ -23142,7 +23154,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 								srcData.data_out=srcBufOut;
 								srcData.input_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;
 								srcData.output_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;
-								srcData.src_ratio=1.0f/LGL_Max(0.01f,fabsf(sc->SpeedNow));
+								srcData.src_ratio=(1.0f/LGL_Max(0.01f,fabsf(sc->SpeedNow)))*(44100.f/sc->Hz);
 								srcData.end_of_input=0;
 
 								src_set_ratio((c==0)?sc->SampleRateConverterL:sc->SampleRateConverterR,srcData.src_ratio);
@@ -23287,7 +23299,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 				sc->PositionSamplesPrev=
 					sc->PositionSamplesNow;
 				sc->PositionSamplesNow+=
-					sc->SpeedNow*timeAdvancementMultiplier;
+					sc->SpeedNow*timeAdvancementMultiplier*(sc->Hz/44100.0f);
 				if(sc->PositionSamplesNow<0)
 				{
 					if
