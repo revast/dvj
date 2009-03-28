@@ -23004,6 +23004,8 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 					{
 						sc->PositionSamplesNow=sc->WarpPointSecondsDestination*sc->Hz;
 						while(sc->PositionSamplesNow<0) sc->PositionSamplesNow+=sc->LengthSamples*sc->Hz;
+						sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
+						sc->SampleRateConverterBufferValidSamples=0;
 					}
 					sc->WarpPointSecondsTrigger=-1.0f;
 					sc->WarpPointSecondsDestination=-1.0f;
