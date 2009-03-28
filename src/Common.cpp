@@ -738,17 +738,17 @@ Turntable_DrawWaveform
 
 	//Draw Waveform
 
-	float deltaL=
+	float needleDeltaL=
 		(0.0f+grainStreamCrossfader) * -(0.0f/4.0f)*grainStreamLength +
 		(1.0f-grainStreamCrossfader) * -0.005f;
-	float deltaR=
+	float needleDeltaR=
 		(0.0f+grainStreamCrossfader) * (3.0f/4.0f)*grainStreamLength +
 		(1.0f-grainStreamCrossfader) * 0.005f;
 
 	float sampleRadiusMultiplier=SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
 	
-	deltaL/=sampleRadiusMultiplier;
-	deltaR/=sampleRadiusMultiplier;
+	needleDeltaL/=sampleRadiusMultiplier;
+	needleDeltaR/=sampleRadiusMultiplier;
 
 	if(loaded)
 	{
@@ -771,24 +771,17 @@ Turntable_DrawWaveform
 	if(pitchBend!=0.0f)
 	{
 		zoom=1.0f/pitchBend;
+		zoom*=44100.0f/sound->GetHz();
 	}
 
-	/*
-	long pointResolution=pointResolutionMax;
-	if(lowRez) pointResolution=256+1;
-	*/
 	long pointResolution=256+1;
 
 	float pointRadiusMin=viewPortRight-(viewPortLeft+0.5f*viewPortWidth);
-	//float pointRadiusMax=2.0f*pointRadiusMin;
 	float pointRadius=pointRadiusMin*zoom;
 
 	float percentTowardsNextZoomInLevel=(pointRadius-pointRadiusMin)/pointRadiusMin;
-	//float oneMinusPercentTowardsNextZoomInLevel=1.0f-percentTowardsNextZoomInLevel;
 
-	int viewSize=1;	//If this isn't 1, certain things break. FIXME.
-
-	int sampleRadius=(int)(512*64*viewSize*SAMPLE_RADIUS_MULTIPLIER);	//This number is arbitrary and possibly magical for an unknown reason.
+	int sampleRadius=(int)(512*64*SAMPLE_RADIUS_MULTIPLIER);	//This number is arbitrary and possibly magical for an unknown reason.
 	long sampleLeft=pos-sampleRadius;
 	long sampleRight=pos+sampleRadius;
 	long sampleWidth=sampleRight-sampleLeft;
@@ -890,108 +883,6 @@ Turntable_DrawWaveform
 	int pointsToDrawIndexStart=0;
 	int pointsToDrawIndexEnd=pointResolution;
 
-	/*
-	for(int a=0;a<pointResolution;a++)
-	{
-		float xPreview = pointLeft + a/(float)(pointResolution-2)*pointWidth;
-		if
-		(
-			xPreview > 0.0f &&
-			xPreview < 1.0f
-		)
-		{
-			long sampleNow=(long)(sampleLeftBase+deltaSample*a);
-			double sampleNowDouble=(sampleLeft+sampleWidth*(a/(double)pointResolution));
-			long sampleNowExact=sampleNow;
-			sampleNow/=deltaSampleLong;
-			sampleNow*=deltaSampleLong;
-			float xOffset=1.0f-(sampleNowExact-sampleNowDouble)/(float)deltaSample;
-
-			double sampleHeight=0.5f;
-			long index=sampleNow*2;
-			if
-			(
-				loaded ||
-				(
-					index>=0 &&
-					(unsigned long)index<len16
-				)
-			)
-			{
-				while(index<0)
-				{
-					index+=len16;
-				}
-				Sint16 mySampleHeightL=SWAP16(buf16[index%len16]);
-				Sint16 mySampleHeightR=SWAP16(buf16[(index+1)%len16]);
-				sampleHeight=0.5f+volumeMultiplierNow*
-					(
-						mySampleHeightL+
-						mySampleHeightR
-					)/(32768.0f*4.0f);
-			}
-
-			arrayV[(a*2)+0]=pointLeft+((a-xOffset)/(float)(pointResolution-2))*pointWidth;
-			arrayV[(a*2)+1]=pointBottom+sampleHeight*pointHeight;
-
-			bool active=
-			(
-				(
-					glitchLines &&
-					sampleNow>glitchSampleLeft &&
-					sampleNow<glitchSampleRight
-				) ||
-				(
-					arrayV[(a*2)+0] >= centerX+deltaL*viewPortWidth &&
-					arrayV[(a*2)+0] <= centerX+deltaR*viewPortWidth
-				)
-			);
-
-			arrayC[(a*4)+0]=active?0.5f:0.0f;
-			arrayC[(a*4)+1]=active?0.25f:0.0f;
-			arrayC[(a*4)+2]=1.0f;
-			arrayC[(a*4)+3]=1.0f;
-		}
-		else if(xPreview >= 1.0f)
-		{
-			pointsToDrawIndexEnd=a-1;
-			break;
-		}
-		else if(xPreview <= 0.0f)
-		{
-			pointsToDrawIndexStart=a+2;
-		}
-	}
-	sound->UnlockBufferForReading();
-
-	for(int a=sampleLeftBaseIsOdd?0:1;a<pointResolution;a+=2)
-	{
-		arrayV[(a*2)+0]=
-			(
-				arrayV[((a-1)*2)+0]+
-				arrayV[((a+1)*2)+0]
-			)*0.5f;
-		arrayV[(a*2)+1]=
-			percentTowardsNextZoomInLevel*arrayV[(a*2)+1]+
-			oneMinusPercentTowardsNextZoomInLevel*
-			(
-				arrayV[((a-1)*2)+1]+
-				arrayV[((a+1)*2)+1]
-			)*0.5f;
-	}
-	*/
-
-	/*
-	LGL_DrawLineStripToScreen
-	(
-		&(arrayV[pointsToDrawIndexStart*2]),
-		&(arrayC[pointsToDrawIndexStart*4]),
-		pointsToDrawIndexEnd-pointsToDrawIndexStart,
-		3.5f,
-		!lowRez
-	);
-	*/
-
 	//Experimental frequency-sensitive renderer
 	for(int a=0;a<pointResolution*2;a++)
 	{
@@ -1040,8 +931,8 @@ Turntable_DrawWaveform
 					sampleNow<glitchSampleRight-glitchDelta
 				) ||
 				(
-					arrayV[(a*2)+0] >= centerX+deltaL*viewPortWidth &&
-					arrayV[(a*2)+0] <= centerX+deltaR*viewPortWidth
+					arrayV[(a*2)+0] >= centerX+needleDeltaL*viewPortWidth &&
+					arrayV[(a*2)+0] <= centerX+needleDeltaR*viewPortWidth
 				)
 			);
 
@@ -1142,8 +1033,8 @@ Turntable_DrawWaveform
 	//Draw Center Needle Rectangle
 	LGL_DrawRectToScreen
 	(
-		centerX+deltaL*viewPortWidth,
-		centerX+deltaR*viewPortWidth,
+		centerX+needleDeltaL*viewPortWidth,
+		centerX+needleDeltaR*viewPortWidth,
 		pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 		pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 		0.1f,0.05f,0.25f,0.0f
@@ -1214,15 +1105,15 @@ Turntable_DrawWaveform
 	//Center Needle frame
 	LGL_DrawLineToScreen
 	(
-		centerX+deltaL*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-		centerX+deltaL*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+		centerX+needleDeltaL*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+		centerX+needleDeltaL*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 		.4f,.2f,1,1,
 		1
 	);
 	LGL_DrawLineToScreen
 	(
-		centerX+deltaR*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-		centerX+deltaR*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+		centerX+needleDeltaR*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+		centerX+needleDeltaR*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 		.4f,.2f,1,1,
 		1
 	);
@@ -1248,10 +1139,9 @@ Turntable_DrawWaveform
 	//Draw BPM Lines
 	if(bpm>0)
 	{
-		//float centerSample=soundPositionSamples;
-		float centerSample=soundPositionSamples*44100/sound->GetHz();
-		float leftSample=(centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*(44100.0f/sound->GetHz()));
-		float rightSample=(centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*(44100.0f/sound->GetHz()));
+		float centerSample=soundPositionSamples*(44100.0f/sound->GetHz());
+		float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+		float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
 		double secondsPerBeat=(60.0/bpm);
 
 		if(leftSample<0)
@@ -1351,11 +1241,10 @@ Turntable_DrawWaveform
 	{
 		if(savePointSeconds[a]>=0.0f)
 		{
-			float centerSample=soundPositionSamples*44100/sound->GetHz();
-			float leftSample=(centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*(44100.0f/sound->GetHz()));
-			float rightSample=(centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*(44100.0f/sound->GetHz()));
+			float centerSample=soundPositionSamples*(44100.0f/sound->GetHz());
+			float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+			float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
 			float widthSample=rightSample-leftSample;
-if(a==1) printf("SPS[1]: %.2f (%.2f,%.2f\n",savePointSeconds[a],leftSample/44100.0f,rightSample/44100.0f);
 
 			long savePointSamples = (long)(savePointSeconds[a]*44100);
 			if
