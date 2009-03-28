@@ -25,7 +25,7 @@
 
 #define	NEEDLE_DISTANCE_FROM_EDGES (0.0f)
 
-#define sampleRadiusMultiplier (2.0f)
+#define SAMPLE_RADIUS_MULTIPLIER (2.0f)
 
 float
 GetGlowFromTime
@@ -511,17 +511,19 @@ turntable_DrawBPMLines
 			int big=3;
 			int small=3;
 
+			float len = b1?0.2f:0.1f;
+
 			LGL_DrawLineToScreen
 			(
 				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointBottom+pointHeight*0.0f-shadowOffset,
-				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointBottom+pointHeight*0.2f-shadowOffset,
+				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointBottom+pointHeight*len-shadowOffset,
 				0,0,0,0.9f,
 				b1?big:small
 			);
 			LGL_DrawLineToScreen
 			(
 				wavLeft+wavWidth*bpmPointPercent,pointBottom+pointHeight*0.0f,
-				wavLeft+wavWidth*bpmPointPercent,pointBottom+pointHeight*0.2f,
+				wavLeft+wavWidth*bpmPointPercent,pointBottom+pointHeight*len,
 				1,1,1,1,
 				b1?big:small
 			);
@@ -529,14 +531,14 @@ turntable_DrawBPMLines
 			LGL_DrawLineToScreen
 			(
 				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointTop-pointHeight*0.0f-shadowOffset,
-				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointTop-pointHeight*0.2f-shadowOffset,
+				wavLeft+wavWidth*bpmPointPercent+shadowOffset,pointTop-pointHeight*len-shadowOffset,
 				0,0,0,0.9f,
 				b1?big:small
 			);
 			LGL_DrawLineToScreen
 			(
 				wavLeft+wavWidth*bpmPointPercent,pointTop-pointHeight*0.0f,
-				wavLeft+wavWidth*bpmPointPercent,pointTop-pointHeight*0.2f,
+				wavLeft+wavWidth*bpmPointPercent,pointTop-pointHeight*len,
 				1,1,1,1,
 				b1?big:small
 			);
@@ -594,6 +596,7 @@ analyzeWaveSegment
 	const Sint16*	buf16,
 	unsigned long	len16,
 	bool		loaded,
+	int		hz,
 	long		sampleFirst,
 	long		sampleLast,
 	int		sampleSkipFactor,
@@ -647,6 +650,8 @@ analyzeWaveSegment
 			}
 		}
 	}
+
+	zeroCrossings = (int)(zeroCrossings * (hz/44100.0f));
 
 	int samplesScanned=(int)(sampleLast-sampleFirst);
 	float samplesScannedFactor=samplesScanned/128.0f;
@@ -728,8 +733,8 @@ Turntable_DrawWaveform
 	float viewPortWidth = viewPortRight - viewPortLeft;
 	float viewPortHeight = viewPortTop - viewPortBottom;
 	float soundLengthSamplesHalf = 0.5f*soundLengthSamples;
-	float soundLengthSeconds = soundLengthSamples / 44100.0f;
-	float soundPositionSeconds = soundPositionSamples / 44100.0f;
+	float soundLengthSeconds = soundLengthSamples / sound->GetHz();
+	float soundPositionSeconds = soundPositionSamples / sound->GetHz();
 
 	//Draw Waveform
 
@@ -739,6 +744,8 @@ Turntable_DrawWaveform
 	float deltaR=
 		(0.0f+grainStreamCrossfader) * (3.0f/4.0f)*grainStreamLength +
 		(1.0f-grainStreamCrossfader) * 0.005f;
+
+	float sampleRadiusMultiplier=SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
 	
 	deltaL/=sampleRadiusMultiplier;
 	deltaR/=sampleRadiusMultiplier;
@@ -775,25 +782,13 @@ Turntable_DrawWaveform
 	float pointRadiusMin=viewPortRight-(viewPortLeft+0.5f*viewPortWidth);
 	//float pointRadiusMax=2.0f*pointRadiusMin;
 	float pointRadius=pointRadiusMin*zoom;
-	/*
-	while(pointRadius>=pointRadiusMax)
-	{
-		pointRadius/=2.0f;
-		sampleRadiusMultiplier/=2.0f;
-	}
-	while(pointRadius<pointRadiusMin)
-	{
-		pointRadius*=2.0f;
-		sampleRadiusMultiplier*=2.0f;
-	}
-	*/
 
 	float percentTowardsNextZoomInLevel=(pointRadius-pointRadiusMin)/pointRadiusMin;
 	//float oneMinusPercentTowardsNextZoomInLevel=1.0f-percentTowardsNextZoomInLevel;
 
 	int viewSize=1;	//If this isn't 1, certain things break. FIXME.
 
-	int sampleRadius=(int)(512*64*viewSize*sampleRadiusMultiplier);	//This number is arbitrary and possibly magical for an unknown reason.
+	int sampleRadius=(int)(512*64*viewSize*SAMPLE_RADIUS_MULTIPLIER);	//This number is arbitrary and possibly magical for an unknown reason.
 	long sampleLeft=pos-sampleRadius;
 	long sampleRight=pos+sampleRadius;
 	long sampleWidth=sampleRight-sampleLeft;
@@ -1018,6 +1013,7 @@ Turntable_DrawWaveform
 				buf16,
 				len16,
 				loaded,
+				sound->GetHz(),
 				sampleNow,
 				sampleLast,
 				sampleSkipFactor,
@@ -1253,11 +1249,10 @@ Turntable_DrawWaveform
 	if(bpm>0)
 	{
 		//float centerSample=soundPositionSamples;
-		float centerSample=sampleLeftExact+deltaSample*(pointResolution/2);
-		float leftSample=(centerSample-64*512*viewSize*pitchBend*sampleRadiusMultiplier);
-		float rightSample=(centerSample+64*512*viewSize*pitchBend*sampleRadiusMultiplier);
-		double soundLengthSeconds=soundLengthSamples/44100.0;
-		double secondsPerBeat=60.0/bpm;
+		float centerSample=soundPositionSamples*44100/sound->GetHz();
+		float leftSample=(centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*(44100.0f/sound->GetHz()));
+		float rightSample=(centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*(44100.0f/sound->GetHz()));
+		double secondsPerBeat=(60.0/bpm);
 
 		if(leftSample<0)
 		{
@@ -1356,10 +1351,11 @@ Turntable_DrawWaveform
 	{
 		if(savePointSeconds[a]>=0.0f)
 		{
-			float centerSample=soundPositionSamples;
-			float leftSample=(centerSample-64*512*pitchBend*sampleRadiusMultiplier);
-			float rightSample=(centerSample+64*512*pitchBend*sampleRadiusMultiplier);
+			float centerSample=soundPositionSamples*44100/sound->GetHz();
+			float leftSample=(centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*(44100.0f/sound->GetHz()));
+			float rightSample=(centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*(44100.0f/sound->GetHz()));
 			float widthSample=rightSample-leftSample;
+if(a==1) printf("SPS[1]: %.2f (%.2f,%.2f\n",savePointSeconds[a],leftSample/44100.0f,rightSample/44100.0f);
 
 			long savePointSamples = (long)(savePointSeconds[a]*44100);
 			if
@@ -1411,6 +1407,8 @@ Turntable_DrawWaveform
 
 	LGL_ClipRectDisable();
 
+	float hzRatio = sound->GetHz()/44100.0f;
+
 	//Entire Wave Array
 	if(loaded)
 	{
@@ -1423,8 +1421,8 @@ Turntable_DrawWaveform
 				float magnitudeMax;
 				bool overdrivenNow;
 
-				long sampleNow=(long)(entireWaveArrayFillIndex*(len16/(double)(entireWaveArrayCount*2)));
-				long sampleLast=sampleNow+(len16/entireWaveArrayCount)-1;
+				long sampleNow=(long)(entireWaveArrayFillIndex*(2*soundLengthSeconds*sound->GetHz()/(double)(entireWaveArrayCount*2)));
+				long sampleLast=sampleNow+(hzRatio*2*soundLengthSeconds*sound->GetHz()/entireWaveArrayCount)-1;
 				int sampleSkipFactor=16;
 
 				analyzeWaveSegment
@@ -1432,6 +1430,7 @@ Turntable_DrawWaveform
 					buf16,
 					len16,
 					loaded,
+					sound->GetHz(),
 					sampleNow,
 					sampleLast,
 					sampleSkipFactor,
@@ -1571,7 +1570,7 @@ Turntable_DrawWaveform
 
 		if(cachedLengthSeconds!=0)
 		{
-			float pos=soundPositionSamples/(cachedLengthSeconds*44100);
+			float pos=soundPositionSamples/(cachedLengthSeconds*sound->GetHz());
 			LGL_DrawLineToScreen
 			(
 				viewPortLeft+pos*viewPortWidth,
