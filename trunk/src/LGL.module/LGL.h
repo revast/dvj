@@ -2355,6 +2355,8 @@ void		LGL_DirectoryListDelete(std::vector<char*>& list);
 
 //Misc
 
+float		LGL_MemoryFreePercent();
+
 void		LGL_DrawFPSGraph
 		(
 			float left=0.8,		float right=0.9,
