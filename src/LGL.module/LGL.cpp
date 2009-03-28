@@ -50,6 +50,8 @@
 #include <dirent.h>		//Directory Searching
 #include <errno.h>		//Error indentification
 #include <sys/mman.h>		//mmap()
+#include <sys/statvfs.h>	//Free disk space
+
 #include <sched.h>
 
 #endif	//LGL_LINUX
@@ -21062,6 +21064,24 @@ LGL_BatteryChargePercent()
 	}
 #else	//LGL_LINUX
 	return(1.0f);
+#endif	//LGL_LINUX
+}
+
+float
+LGL_FilesystemFreeSpaceMB()
+{
+#ifdef	LGL_LINUX
+	struct statvfs fiData;
+	if(statvfs(".",&fiData)>=0)
+	{
+		return(fiData.f_frsize*fiData.f_bavail/(1024*1024));
+	}
+	else
+	{
+		return(9999.0f);
+	}
+#else	//LGL_LINUX
+	return(9999.0f);
 #endif	//LGL_LINUX
 }
 

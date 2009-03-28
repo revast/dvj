@@ -1119,6 +1119,30 @@ DrawStatus
 		);
 	}
 
+	float freeMB = LGL_FilesystemFreeSpaceMB();
+	if(freeMB<1000)
+	{
+		LGL_GetFont().DrawString
+		(
+			l+.025f*w,
+			b+.75f*h,
+			.02f,
+			1.0f,0,0,1.0f,
+			false,.5f,
+			"Low Disk Space Remaining"
+		);
+		LGL_GetFont().DrawString
+		(
+			l+.025f*w,
+			b+.70f*h,
+			.02f,
+			1.0f,0,0,1.0f,
+			false,.5f,
+			"(%.0fMB left)",
+			freeMB
+		);
+	}
+
 	//TODO: Get VUs looking better
 	/*
 	Turntable[0]->DrawVU

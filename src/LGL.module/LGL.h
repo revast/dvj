@@ -2358,6 +2358,7 @@ void		LGL_DirectoryListDelete(std::vector<char*>& list);
 float		LGL_MemoryFreePercent();
 bool		LGL_BatteryChargeDraining();
 float		LGL_BatteryChargePercent();
+float		LGL_FilesystemFreeSpaceMB();
 
 void		LGL_DrawFPSGraph
 		(
