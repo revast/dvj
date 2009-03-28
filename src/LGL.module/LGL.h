@@ -1479,6 +1479,7 @@ public:
 	void		MaybeSwapBuffers();	//Called from lgl_AudioCallback(). Users: Don't call this!
 
 	int		GetChannelCount();
+	int		GetHz();
 
 	int		GetReferenceCount();
 	void		IncrementReferenceCount();
@@ -1510,6 +1511,7 @@ private:
 	float		LoadedSmooth;
 	float		LoadedSmoothTime;
 	int		Channels;
+	int		Hz;
 
 	LGL_Timer	LoadTimer;
 	float		LoadTimerMin;
