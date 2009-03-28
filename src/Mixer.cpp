@@ -1059,6 +1059,7 @@ DrawStatus
 			false,.5f,
 			"GHz"
 		);
+
 		if(cpuTemp!=999)
 		{
 			if(cpuTemp>=CPU_TEMP_DANGER)
@@ -1093,6 +1094,29 @@ DrawStatus
 				"C"
 			);
 		}
+	}
+
+	if(LGL_BatteryChargeDraining())
+	{
+		LGL_GetFont().DrawString
+		(
+			l+.025f*w,
+			b+.85f*h,
+			.02f,
+			1.0f,0,0,1.0f,
+			false,.5f,
+			"Battery Discharging"
+		);
+		LGL_GetFont().DrawString
+		(
+			l+.025f*w,
+			b+.80f*h,
+			.02f,
+			1.0f,0,0,1.0f,
+			false,.5f,
+			"(%.2f%% left)",
+			LGL_BatteryChargePercent()*100.0f
+		);
 	}
 
 	//TODO: Get VUs looking better

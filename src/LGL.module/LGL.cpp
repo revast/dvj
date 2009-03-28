@@ -20960,12 +20960,12 @@ LGL_MemoryFreePercent()
 		char buf[2048];
 		while(feof(fd)==false)
 		{
-			fgets(buf,20480,fd);
-			if(strstr(buf,"MemTotal"))
+			fgets(buf,2048,fd);
+			if(strstr(buf,"MemTotal:"))
 			{
 				memTotal=atof(&(strchr(buf,':')[1]));
 			}
-			if(strstr(buf,"MemFree"))
+			if(strstr(buf,"MemFree:"))
 			{
 				memFree=atof(&(strchr(buf,':')[1]));
 			}
@@ -20979,6 +20979,83 @@ LGL_MemoryFreePercent()
 	)
 	{
 		return(memFree/memTotal);
+	}
+	else
+	{
+		return(1.0f);
+	}
+#else	//LGL_LINUX
+	return(1.0f);
+#endif	//LGL_LINUX
+}
+
+bool
+LGL_BatteryChargeDraining()
+{
+#ifdef	LGL_LINUX
+	if(FILE* fd=fopen("/proc/acpi/battery/BAT0/state","r"))
+	{
+		char buf[2048];
+		while(feof(fd)==false)
+		{
+			fgets(buf,2048,fd);
+			if(strstr(buf,"charging state:"))
+			{
+				fclose(fd);
+				return(strstr(buf,"discharging")!=NULL);
+			}
+		}
+		fclose(fd);
+	}
+	
+	return(false);
+#else	//LGL_LINUX
+	return(false);
+#endif	//LGL_LINUX
+}
+
+float
+LGL_BatteryChargePercent()
+{
+#ifdef	LGL_LINUX
+	float capacity=-1.0f;
+	float charge=-1.0f;
+
+	if(FILE* fd=fopen("/proc/acpi/battery/BAT0/state","r"))
+	{
+		char buf[2048];
+		while(feof(fd)==false)
+		{
+			fgets(buf,2048,fd);
+			if(strstr(buf,"remaining capacity:"))
+			{
+				charge=atof(&(strchr(buf,':')[1]));
+			}
+		}
+		fclose(fd);
+	}
+	if(FILE* fd=fopen("/proc/acpi/battery/BAT0/info","r"))
+	{
+		char buf[2048];
+		while(feof(fd)==false)
+		{
+			fgets(buf,2048,fd);
+			if(strstr(buf,"design capacity:"))
+			{
+				capacity=atof(&(strchr(buf,':')[1]));
+			}
+		}
+		fclose(fd);
+	}
+
+	if
+	(
+		capacity!=-1.0f &&
+		charge!=-1.0f
+	)
+	{
+		printf("%.2f / %.2f\n",charge,capacity);
+		return(charge/capacity);
 	}
 	else
 	{
