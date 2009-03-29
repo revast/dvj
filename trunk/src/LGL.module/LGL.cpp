@@ -7870,7 +7870,7 @@ LGL_Font
 		
 		if(LGL_FileExists(path))
 		{
-			Glyph[a]=new LGL_Image(path,false,true,TextureGL,x,y);
+			Glyph[a]=new LGL_Image(path,false,true,TextureGL,x,y);/*{{{*//*}}}*/
 			GlyphTexLeft[a]=x;
 			GlyphTexRight[a]=x+Glyph[a]->w;
 			GlyphTexBottom[a]=y+Glyph[a]->h;
@@ -8185,6 +8185,11 @@ QueryChar
 	char	in
 )
 {
+	if(in<0)
+	{
+		return(false);
+	}
+
 	if(Glyph[(unsigned int)in]!=NULL)
 	{
 		return(true);
@@ -8257,7 +8262,11 @@ return;	//Actually, don't do this...
 
 	for(unsigned int a=0;a<len;a++)
 	{
-		if(Glyph[(int)tmpstr[a]]==NULL)
+		if(tmpstr[a]<0)
+		{
+			printf("LGL_Font::PrintMissingGlyphs('%s'): '%c' (ASCII %i) IS LESS THAN ZERO.\n",tmpstr,tmpstr[a],tmpstr[a]);
+		}
+		else if(Glyph[(int)tmpstr[a]]==NULL)
 		{
 			printf("LGL_Font::PrintMissingGlyphs('%s'): '%c' (ASCII %i)\n",tmpstr,tmpstr[a],tmpstr[a]);
 		}
@@ -8274,15 +8283,17 @@ GetWidthChar
 {
 	if(in<0)
 	{
-		printf("LGL_Font::GetWidthChar(): Warning! Character '%c' is < 0 (%i). Segfault imminent\n",in,in);
+		//printf("LGL_Font::GetWidthChar(): Warning! Character '%c' is < 0 (%i). WTF.\n",in,in);
+		return(GetWidthChar(height,' '));
 	}
+
 	if(Glyph[(unsigned int)in]==NULL)
 	{
 		return(GetWidthChar(height,' '));
 	}
 	if(QueryChar(in)==false)
 	{
-		printf("LGL_Font::GetWidthChar(): Font doesn't support '%c'\n",in);
+		//printf("LGL_Font::GetWidthChar(): Font doesn't support '%c'\n",in);
 		return(0);
 	}
 	return
