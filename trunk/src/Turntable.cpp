@@ -796,37 +796,15 @@ NextFrame
 		)
 		{
 			LoopStartSeconds=-1.0;
-			double savePointSecondsOrig=SavePointSeconds[SavePointIndex];
-			double savePointSeconds=savePointSecondsOrig;
+			double savePointSeconds=SavePointSeconds[SavePointIndex];
 			if(savePointSeconds < 0.0f)
 			{
-				if(Sound->IsLoaded()==false)
-				{
-					savePointSeconds=0.0f;
-				}
-				else
-				{
-					savePointSeconds += Sound->GetLengthSeconds();
-				}
+				savePointSeconds=0;
 			}
 
-			if(savePointSecondsOrig>=0)
+			if(Sound->GetLengthSeconds()>savePointSeconds)
 			{
-				if(Sound->GetLengthSeconds()>savePointSeconds)
-				{
-					Sound->SetPositionSeconds(Channel,savePointSeconds);
-				}
-			}
-			else
-			{
-				if(Sound->IsLoaded())
-				{
-					Sound->SetPositionSeconds(Channel,Sound->GetLengthSeconds()+savePointSecondsOrig);
-				}
-				else
-				{
-					Sound->SetPositionSeconds(Channel,0.0f);
-				}
+				Sound->SetPositionSeconds(Channel,savePointSeconds);
 			}
 		}
 		if
@@ -839,60 +817,43 @@ NextFrame
 		)
 		{
 			LoopStartSeconds=-1.0;
-			double savePointSecondsOrig=SavePointSeconds[SavePointIndex];
-			double savePointSeconds=savePointSecondsOrig;
-			if(savePointSeconds < 0.0f)
+			double savePointSeconds=SavePointSeconds[SavePointIndex];
+			if(savePointSeconds >= 0.0f)
 			{
-				if(Sound->IsLoaded()==false)
+				//Jump at start of next measure
+				double beatStart=GetBPMFirstBeatSeconds();
+				double measureLength=(1.0f/GetBPM())*60.0f*(4.0f);
+				double savePointSecondsQuantized=beatStart;
+				double closest=99999.0;
+				for(double test=beatStart;test<savePointSeconds+2*measureLength;test+=0.25*measureLength)
 				{
-					savePointSeconds=0.0f;
+					if(fabsf(test-savePointSeconds)<closest)
+					{
+						closest=fabsf(test-savePointSeconds);
+						savePointSecondsQuantized=test;
+					}
 				}
-				else
+				double nowSeconds=Sound->GetPositionSeconds(Channel);
+				double savePointMeasureStart=beatStart;
+				while(savePointMeasureStart+measureLength<savePointSecondsQuantized)
 				{
-					savePointSeconds += Sound->GetLengthSeconds();
+					savePointMeasureStart+=measureLength;
 				}
-			}
-	
-			//Jump at start of next measure
-			double beatStart=GetBPMFirstBeatSeconds();
-			double measureLength=(1.0f/GetBPM())*60.0f*(4.0f);
-			double savePointSecondsQuantized=beatStart;
-			double closest=99999.0;
-			for(double test=beatStart;test<savePointSeconds+2*measureLength;test+=0.25*measureLength)
-			{
-				if(fabsf(test-savePointSecondsOrig)<closest)
+				double savePointSecondsIntoMeasure=savePointSecondsQuantized-savePointMeasureStart;
+				double nowMeasureStart=beatStart;
+				while(nowMeasureStart+measureLength<nowSeconds)
 				{
-					closest=fabsf(test-savePointSecondsOrig);
-					savePointSecondsQuantized=test;
+					nowMeasureStart+=measureLength;
 				}
+				double timeToWarp=nowMeasureStart+savePointSecondsIntoMeasure;
+				while(timeToWarp<nowSeconds)
+				{
+					timeToWarp+=measureLength;
+				}
+
+				Sound->SetWarpPoint(Channel,timeToWarp,savePointSecondsQuantized);
+				Sound->SetDivergeRecallBegin(Channel,Pitchbend);
 			}
-			double nowSeconds=Sound->GetPositionSeconds(Channel);
-			double savePointMeasureStart=beatStart;
-			while(savePointMeasureStart+measureLength<savePointSecondsQuantized)
-			{
-				savePointMeasureStart+=measureLength;
-			}
-			double savePointSecondsIntoMeasure=savePointSecondsQuantized-savePointMeasureStart;
-			double nowMeasureStart=beatStart;
-			while(nowMeasureStart+measureLength<nowSeconds)
-			{
-				nowMeasureStart+=measureLength;
-			}
-			double timeToWarp=nowMeasureStart+savePointSecondsIntoMeasure;
-			while(timeToWarp<nowSeconds)
-			{
-				timeToWarp+=measureLength;
-			}
-			if
-			(
-				Sound->IsLoaded() &&
-				beatStart<0
-			)
-			{
-				savePointSecondsQuantized = Sound->GetLengthSeconds()+beatStart;
-			}
-			Sound->SetWarpPoint(Channel,timeToWarp,savePointSecondsQuantized);
-			Sound->SetDivergeRecallBegin(Channel,Pitchbend);
 		}
 
 		//Pitch
