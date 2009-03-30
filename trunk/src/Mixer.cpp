@@ -1043,7 +1043,7 @@ DrawStatus
 		LGL_GetFont().DrawString
 		(
 			l+.025f*w,
-			b+.95f*h,
+			b+.90f*h,
 			.02f,
 			R,G,B,1.0f,
 			false,.5f,
@@ -1053,7 +1053,7 @@ DrawStatus
 		LGL_GetFont().DrawString
 		(
 			l+.125f*w,
-			b+.95f*h,
+			b+.90f*h,
 			.02f,
 			R,G,B,1.0f,
 			false,.5f,
@@ -1077,7 +1077,7 @@ DrawStatus
 			LGL_GetFont().DrawString
 			(
 				l+.025f*w,
-				b+.9f*h,
+				b+.85f*h,
 				.02f,
 				R,G,B,1.0f,
 				false,.5f,
@@ -1087,7 +1087,7 @@ DrawStatus
 			LGL_GetFont().DrawString
 			(
 				l+.125f*w,
-				b+.9f*h,
+				b+.85f*h,
 				.02f,
 				R,G,B,1.0f,
 				false,.5f,
@@ -1101,7 +1101,7 @@ DrawStatus
 		LGL_GetFont().DrawString
 		(
 			l+.025f*w,
-			b+.85f*h,
+			b+.80f*h,
 			.02f,
 			1.0f,0,0,1.0f,
 			false,.5f,
@@ -1110,7 +1110,7 @@ DrawStatus
 		LGL_GetFont().DrawString
 		(
 			l+.025f*w,
-			b+.80f*h,
+			b+.75f*h,
 			.02f,
 			1.0f,0,0,1.0f,
 			false,.5f,
@@ -1125,7 +1125,7 @@ DrawStatus
 		LGL_GetFont().DrawString
 		(
 			l+.025f*w,
-			b+.75f*h,
+			b+.70f*h,
 			.02f,
 			1.0f,0,0,1.0f,
 			false,.5f,
@@ -1134,7 +1134,7 @@ DrawStatus
 		LGL_GetFont().DrawString
 		(
 			l+.025f*w,
-			b+.70f*h,
+			b+.65f*h,
 			.02f,
 			1.0f,0,0,1.0f,
 			false,.5f,
