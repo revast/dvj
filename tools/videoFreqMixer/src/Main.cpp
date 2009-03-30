@@ -366,6 +366,7 @@ else
 			buf16,
 			len16,
 			true,
+			snd->GetHz(),
 			sampleNow,
 			sampleLast,
 			sampleSkipFactor,
