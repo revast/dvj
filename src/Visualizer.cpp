@@ -708,25 +708,6 @@ DrawVisuals
 		);
 		*/
 
-		if
-		(
-			Videos[0]==NULL &&
-			Videos[1]==NULL
-		)
-		{
-			LGL_DrawLogWrite("vdw\n");
-			LGL_DrawLogPause();
-			/*
-			Visualizer_DrawWaveform
-			(
-				LGL_AudioSampleLeftArray(),
-				256,
-				FullScreen
-			);
-			*/
-			LGL_DrawLogPause(false);
-		}
-
 		/*
 		LGL_DrawLineToScreen
 		(
