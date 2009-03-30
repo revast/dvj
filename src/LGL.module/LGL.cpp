@@ -4723,9 +4723,6 @@ LGL_Image
 	sprintf(Path,"!%s",name);
 	sprintf(PathShort,"!%s",name);
 
-	printf("Path: '%s'\n",Path);
-	printf("PathShort: '%s'\n",PathShort);
-
 	//Load via SDL_CreateRGBSurfaceFrom to an SDL_Surface
 
 	SDL_Surface *mySDL_Surface1=SDL_CreateRGBSurfaceFrom
