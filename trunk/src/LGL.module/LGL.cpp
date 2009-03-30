@@ -4713,9 +4713,14 @@ LGL_Image
 	return;
 #endif	//LGL_NO_GRAPHICS
 
+	assert(name[0]!='!');
+
 	LinearInterpolation=inLinearInterpolation;
 	sprintf(Path,"!%s",name);
 	sprintf(PathShort,"!%s",name);
+
+	printf("Path: '%s'\n",Path);
+	printf("PathShort: '%s'\n",PathShort);
 
 	//Load via SDL_CreateRGBSurfaceFrom to an SDL_Surface
 
@@ -5906,8 +5911,16 @@ UpdateTexture
 	assert(data!=NULL);
 	LinearInterpolation=inLinearInterpolation;
 	assert(name);
-	sprintf(Path,"!%s",name);
-	sprintf(PathShort,"!%s",name);
+	if(name[0]=='!')
+	{
+		sprintf(Path,"%s",name);
+		sprintf(PathShort,"%s",name);
+	}
+	else
+	{
+		sprintf(Path,"!%s",name);
+		sprintf(PathShort,"!%s",name);
+	}
 
 	bool pboReady = gl2IsBuffer(PixelBufferObjectFrontGL);
 
@@ -6375,7 +6388,7 @@ FileLoad
 			Path,
 			IMG_GetError()
 		);
-		exit(-1);
+		assert(false);
 	}
 
 	AlphaChannel=mySDL_Surface1->flags & SDL_SRCALPHA;
@@ -7227,7 +7240,7 @@ LockImage()
 		{
 			char imageName[1024];
 			sprintf(imageName,"%s!%f",Path,SecondsNow);
-			
+
 			if(ImageBackSemaphore->Lock("Main","Inside LGL_Video::LockImage() (3)",false)==false)
 			{
 				//We didn't get the lock, and we're not goint to wait.
@@ -7262,6 +7275,7 @@ LockImage()
 						true,
 						imageName
 					);
+					assert(ImageBack->GetPath()[0]!='!' || ImageBack->GetPath()[1]!='!');
 				}
 				else
 				{
@@ -7274,6 +7288,7 @@ LockImage()
 						true,
 						imageName
 					);
+					assert(ImageBack->GetPath()[0]!='!' || ImageBack->GetPath()[1]!='!');
 				}
 				if(BufferRGBBackReady)
 				{

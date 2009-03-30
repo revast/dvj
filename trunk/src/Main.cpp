@@ -373,7 +373,7 @@ void NextFrame()
 		{
 			LGL_FileDelete("data/record/drawlog.txt");
 		}
-		//LGL_DrawLogStart("data/record/drawlog.txt");
+		LGL_DrawLogStart("data/record/drawlog.txt");
 
 		LGL_DrawLogWrite
 		(
@@ -513,7 +513,7 @@ void NextFrame()
 	LGL_SetRecordDVJToFileVolume(OmniFader);
 	Mixer->SetVolumeMaster(OmniFader);
 	if(presentTitle) PresentTitle();
-	LGL_DrawLogWrite("!dvj::OmniFader|%.3f\n",OmniFader);
+	LGL_DrawLogWrite("dvj::OmniFader|%.3f\n",OmniFader);
 }
 
 void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
@@ -541,7 +541,7 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	{
 		if(VisualizerFullScreen==false)
 		{
-			LGL_DrawLogWrite("!dvj::MainDrawGlowLines|%c|%.3f\n",visualsQuadrent?'T':'F',visualizerZoomOutPercent);
+			LGL_DrawLogWrite("dvj::MainDrawGlowLines|%c|%.3f\n",visualsQuadrent?'T':'F',visualizerZoomOutPercent);
 			LGL_DrawLogPause();
 			Main_DrawGlowLines(LGL_SecondsSinceExecution(),1.0f,visualsQuadrent,visualizerZoomOutPercent);
 			LGL_DrawLogPause(false);

@@ -302,11 +302,7 @@ NextFrame
 		//File Select
 		bool filterDelta = false;
 
-		BadFileFlash-=2.0f*LGL_SecondsSinceLastFrame();
-		if(BadFileFlash<0.0f)
-		{
-			BadFileFlash=0.0f;
-		}
+		BadFileFlash=LGL_Max(0.0f,BadFileFlash-2.0f*LGL_SecondsSinceLastFrame());
 
 		if(Focus)
 		{
@@ -414,7 +410,7 @@ NextFrame
 			{
 				if(strcmp(DatabaseFilteredEntries[a]->PathShort,oldSelection)==0)
 				{
-					FileTop=a;
+					FileTop=(DatabaseFilteredEntries.size()>4) ? a : 0;
 					FileSelectInt=a;
 					FileSelectFloat=FileSelectInt;
 
@@ -529,7 +525,6 @@ NextFrame
 				DatabaseFilter.SetPattern(FilterText.GetString());
 				DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
 
-				//LGL_DrawLogWrite("!DirTreePath|%i|%s\n",Which,DirTree.GetPath());
 				FileTop=0;
 				FileSelectInt=0;
 				FileSelectFloat=0.0f;
@@ -1922,8 +1917,38 @@ DrawFrame
 			isDirBits[a-FileTop]=DatabaseFilteredEntries[a]->IsDir;
 			bpm[a-FileTop]=DatabaseFilteredEntries[a]->BPM;
 		}
-		LGL_DrawLogPause();
 
+		LGL_DrawLogWrite
+		(
+			//             01  02 03 04 05 06 07 08 09 10 11  12    13   14   15   16   17   18   19
+			"DirTreeDraw|%.3f|%s|%s|%s|%s|%s|%s|%s|%i|%i|%i|%.4f|%.4f|%.3f|%.2f|%.2f|%.2f|%.2f|%.2f\n",
+			LGL_SecondsSinceExecution()*Focus,		//01
+			FilterText.GetString(),				//02
+			DatabaseFilter.Dir,				//03
+			(fileNum>0)?nameArray[0]:"",			//04
+			(fileNum>1)?nameArray[1]:"",			//05
+			(fileNum>2)?nameArray[2]:"",			//06
+			(fileNum>3)?nameArray[3]:"",			//07
+			(fileNum>4)?nameArray[4]:"",			//08
+			(
+				(isDirBits[0]<<0) +			//09
+				(isDirBits[1]<<1) +
+				(isDirBits[2]<<2) +
+				(isDirBits[3]<<3) +
+				(isDirBits[4]<<4)
+			),
+			fileNum-FileTop,				//10
+			FileSelectInt-FileTop,				//11
+			ViewPortBottom,					//12
+			ViewPortTop,					//13
+			BadFileFlash,					//14
+			bpm[0],						//15
+			bpm[1],						//16
+			bpm[2],						//17
+			bpm[3],						//18
+			bpm[4]						//19
+		);
+		LGL_DrawLogPause();
 		Turntable_DrawDirTree
 		(
 			LGL_SecondsSinceExecution()*Focus,
@@ -2108,39 +2133,94 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 		);
 		LGL_DrawLogWrite
 		(
-			"dtt|%i|%c|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.3f|%.3f|%i|%i|%i|%.4f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
-			Which,
-			Sound->IsLoaded() ? 'T' : 'F',
-			(GlitchDuo || LuminScratch || GlitchPure) ? 'T' : 'F',
-			GlitchBegin,
-			GlitchLength,
-			currentSample,//(double)Sound->GetPositionSamples(Channel),
-			(double)Sound->GetLengthSamples(),
-			Sound->GetSpeed(Channel),
-			Pitchbend,
-			GrainStreamCrossfader,
-			GrainStreamSourcePoint,
-			GrainStreamLength,
-			GrainStreamPitch,
-			ViewPortLeft,
-			ViewPortRight,
-			ViewPortBottom,
-			ViewPortTop,
-			VolumeMultiplierNow,
-			CenterX,
-			PauseMultiplier ? 'T' : 'F',
-			Nudge,
-			0.0f,//LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS),
-			SavePointSeconds[SavePointIndex],
-			SavePointIndex,
-			SavePointIndex,
-			savePointBitfield,
-			GetBPM(),
-			GetBPMAdjusted(),
-			GetBPMFirstBeatSeconds(),
-			EQFinal[0],
-			EQFinal[1],
-			EQFinal[2]
+			"dttpreflash|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
+			SavePointUnsetFlashPercent[0],
+			SavePointUnsetFlashPercent[1],
+			SavePointUnsetFlashPercent[2],
+			SavePointUnsetFlashPercent[3],
+			SavePointUnsetFlashPercent[4],
+			SavePointUnsetFlashPercent[5],
+			SavePointUnsetFlashPercent[6],
+			SavePointUnsetFlashPercent[7],
+			SavePointUnsetFlashPercent[8],
+			SavePointUnsetFlashPercent[9],
+			SavePointUnsetFlashPercent[10],
+			SavePointUnsetFlashPercent[11],
+			SavePointUnsetFlashPercent[12],
+			SavePointUnsetFlashPercent[13],
+			SavePointUnsetFlashPercent[14],
+			SavePointUnsetFlashPercent[15],
+			SavePointUnsetFlashPercent[16],
+			SavePointUnsetFlashPercent[17]
+		);
+		LGL_DrawLogWrite
+		(
+			"dttprenoise|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
+			SavePointUnsetNoisePercent[0],
+			SavePointUnsetNoisePercent[1],
+			SavePointUnsetNoisePercent[2],
+			SavePointUnsetNoisePercent[3],
+			SavePointUnsetNoisePercent[4],
+			SavePointUnsetNoisePercent[5],
+			SavePointUnsetNoisePercent[6],
+			SavePointUnsetNoisePercent[7],
+			SavePointUnsetNoisePercent[8],
+			SavePointUnsetNoisePercent[9],
+			SavePointUnsetNoisePercent[10],
+			SavePointUnsetNoisePercent[11],
+			SavePointUnsetNoisePercent[12],
+			SavePointUnsetNoisePercent[13],
+			SavePointUnsetNoisePercent[14],
+			SavePointUnsetNoisePercent[15],
+			SavePointUnsetNoisePercent[16],
+			SavePointUnsetNoisePercent[17]
+		);
+		LGL_DrawLogWrite
+		(
+			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34
+			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c\n",
+			Which,							//01
+			Sound->IsLoaded() ? 'T' : 'F',				//02
+			GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
+			(GlitchDuo || LuminScratch || GlitchPure) ? 'T' : 'F',	//04
+			GlitchBegin,						//05
+			GlitchLength,						//06
+			currentSample,						//07
+			(double)Sound->GetLengthSamples(),			//08
+			Sound->GetSpeed(Channel),				//09
+			Pitchbend,						//10
+			GrainStreamCrossfader,					//11
+			GrainStreamSourcePoint,					//12
+			GrainStreamLength,					//13
+			GrainStreamPitch,					//14
+			ViewPortLeft,						//15
+			ViewPortRight,						//16
+			ViewPortBottom,						//17
+			ViewPortTop,						//18
+			VolumeMultiplierNow,					//19
+			CenterX,						//20
+			PauseMultiplier ? 'T' : 'F',				//21
+			Nudge,							//22
+			0.0f,							//23
+			LGL_SecondsSinceExecution(),				//24
+			SavePointIndex,						//25
+			SavePointIndex,						//26
+			savePointBitfield,					//27
+			GetBPM(),						//28
+			GetBPMAdjusted(),					//29
+			GetBPMFirstBeatSeconds(),				//30
+			EQFinal[0],						//31
+			EQFinal[1],						//32
+			EQFinal[2],						//33
+			LowRez ? 'T' : 'F'					//34
+			/*
+			EntireWaveArrayFillIndex,				//35
+			ENTIRE_WAVE_ARRAY_COUNT,				//36
+			EntireWaveArrayMagnitudeAve,				//37
+			EntireWaveArrayMagnitudeMax,				//38
+			EntireWaveArrayFreqFactor,				//39
+			CachedLengthSeconds					//40
+			*/
 		);
 		
 		bool waveArrayFilledBefore=(EntireWaveArrayFillIndex==ENTIRE_WAVE_ARRAY_COUNT);
@@ -2148,50 +2228,50 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 		LGL_DrawLogPause();
 		Turntable_DrawWaveform
 		(
-			Sound,
-			Sound->IsLoaded(),
-			GetVideo() ? GetVideo()->GetPathShort() : NULL,
-			GlitchDuo || LuminScratch || GlitchPure,
-			GlitchBegin,
-			GlitchLength,
-			currentSample,//Sound->GetPositionSamples(Channel),
-			Sound->GetLengthSamples(),
-			Sound->GetSpeed(Channel),
-			Pitchbend,
-			GrainStreamCrossfader,
-			GrainStreamSourcePoint,
-			GrainStreamLength,
-			GrainStreamPitch,
-			ViewPortLeft,
-			ViewPortRight,
-			ViewPortBottom,
-			ViewPortTop,
-			VolumeMultiplierNow,
-			CenterX,
-			PauseMultiplier,
-			Nudge,
-			0.0f,//LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS),
-			LGL_SecondsSinceExecution(),
-			SavePointSeconds,
-			SavePointIndex,
-			SavePointIndex,
-			savePointBitfield,
-			SavePointUnsetNoisePercent,
-			SavePointUnsetFlashPercent,
-			GetBPM(),
-			GetBPMAdjusted(),
-			GetBPMFirstBeatSeconds(),
-			EQFinal[0],
-			EQFinal[1],
-			EQFinal[2],
-			LowRez,
-			EntireWaveArrayFillIndex,
-			ENTIRE_WAVE_ARRAY_COUNT,
-			EntireWaveArrayMagnitudeAve,
-			EntireWaveArrayMagnitudeMax,
-			EntireWaveArrayFreqFactor,
-			CachedLengthSeconds,
-			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64]
+			Sound,							//01
+			Sound->IsLoaded(),					//02
+			GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
+			GlitchDuo || LuminScratch || GlitchPure,		//04
+			GlitchBegin,						//05
+			GlitchLength,						//06
+			currentSample,						//07
+			Sound->GetLengthSamples(),				//08
+			Sound->GetSpeed(Channel),				//09
+			Pitchbend,						//10
+			GrainStreamCrossfader,					//11
+			GrainStreamSourcePoint,					//12
+			GrainStreamLength,					//13
+			GrainStreamPitch,					//14
+			ViewPortLeft,						//15
+			ViewPortRight,						//16
+			ViewPortBottom,						//17
+			ViewPortTop,						//18
+			VolumeMultiplierNow,					//19
+			CenterX,						//20
+			PauseMultiplier,					//21
+			Nudge,							//22
+			0.0f,							//23
+			LGL_SecondsSinceExecution(),				//24
+			SavePointSeconds,					//25
+			SavePointIndex,						//26
+			SavePointIndex,						//27
+			savePointBitfield,					//28
+			SavePointUnsetNoisePercent,				//29
+			SavePointUnsetFlashPercent,				//30
+			GetBPM(),						//31
+			GetBPMAdjusted(),					//32
+			GetBPMFirstBeatSeconds(),				//33
+			EQFinal[0],						//34
+			EQFinal[1],						//35
+			EQFinal[2],						//36
+			LowRez,							//37
+			EntireWaveArrayFillIndex,				//38
+			ENTIRE_WAVE_ARRAY_COUNT,				//39
+			EntireWaveArrayMagnitudeAve,				//40
+			EntireWaveArrayMagnitudeMax,				//41
+			EntireWaveArrayFreqFactor,				//42
+			CachedLengthSeconds,					//43
+			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64]		//44
 		);
 		LGL_DrawLogPause(false);
 		
@@ -3215,6 +3295,7 @@ BPMAvailable()
 {
 	return
 	(
+		Mode==2 &&
 		SavePointSeconds[0]!=-1.0f &&
 		SavePointSeconds[1]!=-1.0f &&
 		SavePointSeconds[1]>SavePointSeconds[0]
