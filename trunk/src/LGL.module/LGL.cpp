@@ -1121,12 +1121,15 @@ LGL_Init
 	);
 
 #ifdef	LGL_JACK
-LGL_ThreadSetPriority(1.0f);
-	if(LGL_InitJack())
+	if(inAudioChannels>0)
 	{
-		//
+		LGL_ThreadSetPriority(1.0f);
+		if(LGL_InitJack())
+		{
+			//
+		}
+		LGL_ThreadSetPriority(-0.1f);
 	}
-LGL_ThreadSetPriority(-0.1f);
 #endif	//LGL_JACK
 
 	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
@@ -2380,7 +2383,8 @@ LGL_FFT
 float*	tempAudioBufferBackSilence=NULL;
 int	lgl_MidiUpdate(void* nothing);	//Internal LGL function
 
-float lgl_font_gl_buffer[1024*1024];	//4MB for fonts... that sould be more than enough, right?
+#define	FONT_BUFFER_SIZE (1024*1024)	//4MB for fonts... that sould be more than enough, right?
+float lgl_font_gl_buffer[FONT_BUFFER_SIZE];
 float* lgl_font_gl_buffer_ptr;
 
 void
@@ -4741,7 +4745,7 @@ LGL_Image
 			"LGL_Image::LGL_Image(): Error loading '%s' to an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 
 	AlphaChannel=mySDL_Surface1->flags & SDL_SRCALPHA;
@@ -7936,6 +7940,7 @@ lgl_GetFontBuffer(int floatCount)
 {
 	float* ret = lgl_font_gl_buffer_ptr;
 	lgl_font_gl_buffer_ptr = &(lgl_font_gl_buffer_ptr[floatCount]);
+	assert(lgl_font_gl_buffer_ptr < lgl_font_gl_buffer + FONT_BUFFER_SIZE);
 	return(ret);
 }
 
@@ -7965,7 +7970,7 @@ const	char	*string,
 	va_end(args);
 
 	PrintMissingGlyphs(tmpstr);
-	
+
 	lgl_glScreenify2D();
 
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
@@ -8030,7 +8035,7 @@ const	char	*string,
 	assert(Glyph[32]);
 	float glyph32h = Glyph[32]->h;
 	float& alpha = a;
-	
+
 	bool fixedWidthOn=true;
 	float fixedWidth=0;
 	for(unsigned int a=0;a<len;a++)
@@ -10970,6 +10975,13 @@ LGL_Sound
 	BufferBackReadyForWriting=true;
 	BufferBackReadyForReading=false;
 	BufferAllocatedFromElsewhere=(buffer!=NULL);
+
+	if(buffer==NULL)
+	{
+		BufferLengthTotal=4*44100*60*20;
+		Buffer=(Uint8*)malloc(BufferLengthTotal);
+	}
+
 	BufferReaderCount=0;
 	HogCPU=false;
 	DestructorHint=false;
@@ -12457,7 +12469,10 @@ LoadToMemory()
 		if(cyclesNow>=cyclesMax)
 		{
 			cyclesNow=0;
-			LGL_DelayMS(1);
+			if(HogCPU==false)
+			{
+				LGL_DelayMS(1);
+			}
 		}
 	}
 
