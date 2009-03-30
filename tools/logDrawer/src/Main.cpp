@@ -28,63 +28,47 @@
 #include "Particle.h"
 
 #include "../../../src/Common.cpp"	//This is so screwy, but it works.
+#include "../../../src/Turntable.h"	//For NOISE_IMAGE_COUNT_256_64
 
-LGL_Sound*
-LoadRecordSound
+#define	ENTIRE_WAVE_ARRAY_COUNT	(1920)
+
+void
+LoadWaveArrayData
 (
-	const
-	char*	audioFile
+	LGL_Sound*	sound,
+	float*		entireWaveArrayMagnitudeAve,
+	float*		entireWaveArrayMagnitudeMax,
+	float*		entireWaveArrayFreqFactor
 )
 {
-	LGL_Sound* recordSound=new LGL_Sound(audioFile,true);
-	recordSound->SetHogCPU();
-	for(;;)
+	if(sound==NULL)
 	{
-		LGL_ProcessInput();
-		if(LGL_KeyStroke(SDLK_ESCAPE))
-		{
-			delete recordSound;
-			exit(0);
-		}
-		if(recordSound->IsLoaded())
-		{
-			break;
-		}
-		float pct = recordSound->GetPercentLoaded();
-		LGL_DrawRectToScreen
-		(
-			0,pct,
-			0,0.05f,
-			.4f*pct,.2f*pct,0.5f+0.5f*pct,1.0f
-		);
-		LGL_GetFont().DrawString
-		(
-			0.49f,0.015f,0.02f,
-			1,1,1,1,
-			false,
-			.75f,
-			"%.0f%%",
-			pct*100.0f
-		);
-		LGL_GetFont().DrawString
-		(
-			0.49f,0.065f,0.025f,
-			1,1,1,1,
-			true,
-			.75f,
-			"Loading '%s'",
-			audioFile
-		);
-		LGL_DelaySeconds(1.0f/120.0f-LGL_SecondsSinceThisFrame());
-		LGL_SwapBuffers();
+		return;
 	}
-printf("Sound len: %f\n",recordSound->GetLengthSeconds());
-	if(recordSound->GetLengthSeconds()==0)
+
+	char waveArrayDataPath[1024];
+	sprintf(waveArrayDataPath,"data/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
+
+	int expectedSize=sizeof(float)*ENTIRE_WAVE_ARRAY_COUNT*3;
+	if
+	(
+		LGL_FileExists(waveArrayDataPath) &&
+		expectedSize!=LGL_FileLengthBytes(waveArrayDataPath)
+	)
 	{
-		printf("Error! Soundtrack '%s' has zero length!\n",audioFile);
-		exit(0);
+		//Bad data... Whatever.
+		LGL_FileDelete(waveArrayDataPath);
+		return;
 	}
-	return(recordSound);
+
+	FILE* fd=fopen(waveArrayDataPath,"rb");
+	if(fd)
+	{
+		fread(entireWaveArrayMagnitudeAve,sizeof(float),ENTIRE_WAVE_ARRAY_COUNT,fd);
+		fread(entireWaveArrayMagnitudeMax,sizeof(float),ENTIRE_WAVE_ARRAY_COUNT,fd);
+		fread(entireWaveArrayFreqFactor,sizeof(float),ENTIRE_WAVE_ARRAY_COUNT,fd);
+		fclose(fd);
+	}
 }
 
 int main(int argc, char** argv)
@@ -211,7 +195,7 @@ int main(int argc, char** argv)
 	(
 		ResX,ResY,
 		false,
-		2,
+		0,
 		"Luminescence | logDrawer"
 	);
 
@@ -240,7 +224,20 @@ int main(int argc, char** argv)
 	FileInterfaceObj fi;
 	
 	char audioFile[2048];
-	LGL_Sound* recordSound=NULL;
+
+	LGL_Image* NoiseImage[NOISE_IMAGE_COUNT_256_64];
+	for(int a=0;a<NOISE_IMAGE_COUNT_256_64;a++)
+	{
+		char path[1024];
+		sprintf
+		(
+			path,
+			"data/noise/256x64/%02i.png",
+			a
+		);
+		assert(LGL_FileExists(path));
+		NoiseImage[a] = new LGL_Image(path);
+	}
 
 	for(;;)
 	{
@@ -266,10 +263,6 @@ int main(int argc, char** argv)
 			{
 				sprintf(audioFile,"%s",fi[1]);
 			}
-			if(recordSound==NULL)
-			{
-				recordSound=LoadRecordSound(audioFile);
-			}
 			break;
 		}
 		/*
@@ -287,7 +280,6 @@ int main(int argc, char** argv)
 				LGL_ProcessInput();
 				if(LGL_KeyStroke(SDLK_ESCAPE))
 				{
-					delete recordSound;
 					exit(0);
 				}
 				double pct = ftell(fd)/(double)fdLengthBytes;
@@ -363,11 +355,13 @@ exit(0);
 	bool noCE=false;
 
 	double homePointSeconds[18];
+	float homePointFlash[18];
+	float homePointNoise[18];
 	
 	LGL_Image* fbImage=NULL;
 
 	std::vector<LGL_Image*> imageList;
-	//std::vector<LGL_Video*> videoList;
+	std::vector<LGL_Video*> videoList;
 	LGL_Sound* soundList[10];
 	for(int a=0;a<10;a++)
 	{
@@ -389,9 +383,10 @@ exit(0);
 
 	FILE* mencoderFD=NULL;
 
+	int lineNum=0;
+
 	for(;;)
 	{
-		/*
 		if(videoList.size()>4)
 		{
 			for(unsigned int a=0;a<videoList.size();a++)
@@ -401,8 +396,9 @@ exit(0);
 			}
 			videoList.clear();
 		}
-		*/
 		fi.ReadLine(fd);
+		lineNum++;
+		//printf("Line %i\n",lineNum);
 		if(feof(fd))
 		{
 			break;
@@ -495,7 +491,7 @@ exit(0);
 			{
 				if(fi[1][0]=='!')
 				{
-					//It's a RAM Image!
+					//It's a RAM Image! (Or a video image...)
 					char imageName[1024];
 					char imageTimeSeconds[1024];
 					int secondChk=-1;
@@ -507,12 +503,11 @@ exit(0);
 							secondChk=a;
 						}
 					}
-					assert(secondChk!=-1);
 
 					fi[1][secondChk]='\0';
 					strcpy(imageName,&(fi[1][1]));
 					strcpy(imageTimeSeconds,&(fi[1][secondChk+1]));
-					/*
+					vid=NULL;
 					for(unsigned int a=0;a<videoList.size();a++)
 					{
 						assert(videoList[a]!=NULL);
@@ -522,25 +517,28 @@ exit(0);
 							break;
 						}
 					}
-					*/
 					
 					if(vid==NULL)
 					{
+						printf("New Video: %s\n",imageName);
 						vid = new LGL_Video(imageName);
+						videoList.push_back(vid);
 					}
+					/*
 					else
 					{
+						printf("Set Video: %s\n",imageName);
 						vid->SetVideo(imageName);
 					}
+					*/
 					vid->SetPrimaryDecoder();
 					vid->SetTime(atof(imageTimeSeconds));
 					for(int a=0;a<200;a++)
 					{
-						if(vid->GetImageDecodedSinceBecomingPrimaryDecoder())
+						if(vid->ImageUpToDate())
 						{
 							break;
 						}
-						LGL_DelayMS(1);
 					}
 					image=vid->LockImage();
 					imageLocked=true;
@@ -652,15 +650,12 @@ exit(0);
 					0.5f,1.0f
 				);
 			}
-
-printf("vqcre: %c\n",fi[1][0]);
 		}
 		else if(strcasecmp(fi[0],"ce")==0)
 		{
 			assert(fi.Size()==5);
 			if(visualsOnly==false && noCE==false)
 			{
-printf("ce: %.2f\n",atof(fi[2]));
 				LGL_ClipRectEnable
 				(
 					atof(fi[1]),atof(fi[2]),				//l,r
@@ -674,7 +669,6 @@ printf("ce: %.2f\n",atof(fi[2]));
 					0.0f,0.5f,
 					0.5f,1.0f
 				);
-printf("noCE!\n");
 			}
 		}
 		else if(strcasecmp(fi[0],"cd")==0)
@@ -864,11 +858,6 @@ printf("noCE!\n");
 			videoTimePrev=videoTimeActual;
 			videoTimeNow=atof(fi[1]);
 			videoTimeActual = videoTimeNow*videoTimeScalar;
-			if(videoTimeActual > recordSound->GetLengthSeconds())
-			{
-				//Don't record more video than we have audio
-				break;
-			}
 
 			double dTime=videoTimeActual-videoTimePrev;
 			for(int a=0;a<8;a++)
@@ -916,12 +905,15 @@ printf("noCE!\n");
 				exit(-1);
 			}
 
-			//See how many frames have elapsed.
-
-			int framesElapsed=0;
+			//Draw this frame however many times we need to catch up. Always draw at least once.
+			bool frameDrawn=false;
 			for(;;)
 			{
-				if(videoTimeActual>=videoTimeNext)
+				if
+				(
+					frameDrawn==false ||
+					videoTimeActual>=videoTimeNext
+				)
 				{
 					//Send this frame to mencoder. Maybe.
 					if(mencoderFD)
@@ -934,7 +926,7 @@ printf("noCE!\n");
 						}
 					}
 					videoTimeNext+=videoTimeStep;
-					framesElapsed++;
+					frameDrawn=true;
 				}
 				else
 				{
@@ -949,10 +941,10 @@ printf("noCE!\n");
 		else if(strcasecmp(fi[0],"LGL_DrawLogStart")==0)
 		{
 			assert(fi.Size()==2);
-			videoTimeNow=-atof(fi[1]);
-			videoTimeActual=-atof(fi[1]);
+			videoTimeNow=atof(fi[1]);
+			videoTimeActual=atof(fi[1]);
 		}
-		else if(strcasecmp(fi[0],"!Luminescence::ParticleMouse")==0)
+		else if(strcasecmp(fi[0],"!dvj::ParticleMouse")==0)
 		{
 			assert(fi.Size()==22);
 			assert(ParticleSystem[0]==NULL);
@@ -974,6 +966,7 @@ printf("noCE!\n");
 					atof(fi[21])						//Particles Per Second
 				);
 				ParticleSystem[a]->PosPrev.SetXY(0.5f,0.5f);
+				ParticleSystem[a]->ParticlesPerSecond = 0;
 			}
 		}
 		else if(strcasecmp(fi[0],"dttprehps")==0)
@@ -984,68 +977,89 @@ printf("noCE!\n");
 				homePointSeconds[a]=atof(fi[a+1]);
 			}
 		}
+		else if(strcasecmp(fi[0],"dttpreflash")==0)
+		{
+			assert(fi.Size()==19);
+			for(int a=0;a<18;a++)
+			{
+				homePointFlash[a]=atof(fi[a+1]);
+			}
+		}
+		else if(strcasecmp(fi[0],"dttprenoise")==0)
+		{
+			assert(fi.Size()==19);
+			for(int a=0;a<18;a++)
+			{
+				homePointNoise[a]=atof(fi[a+1]);
+			}
+		}
 		else if(strcasecmp(fi[0],"dtt")==0)
 		{
-			assert(fi.Size()==33);
+			assert(fi.Size()==35);
+			
 			int which = atoi(fi[1]);
 			assert(which >=0 && which < 10);
 			assert(soundList[which]);
-			//FIXME: Need to adapt to latest dvj...
-			/*
+
+			int entireWaveArrayCount=ENTIRE_WAVE_ARRAY_COUNT;
+			float entireWaveArrayMagnitudeAve[ENTIRE_WAVE_ARRAY_COUNT];
+			float entireWaveArrayMagnitudeMax[ENTIRE_WAVE_ARRAY_COUNT];
+			float entireWaveArrayFreqFactor[ENTIRE_WAVE_ARRAY_COUNT];
+
+			LoadWaveArrayData
+			(
+				soundList[which],
+				entireWaveArrayMagnitudeAve,
+				entireWaveArrayMagnitudeMax,
+				entireWaveArrayFreqFactor
+			);
+			
 			Turntable_DrawWaveform
 			(
-				soundList[which],		//sound
-				fi[2][0] == 'T',		//loaded
-				fi[3][0] == 'T',		//glitch
-				atof(fi[4]),			//glitchBegin
-				atof(fi[5]),			//glitchLength
-				atof(fi[6]),			//soundPositionSamples
-				atof(fi[7]),			//soundLengthSamples
-				atof(fi[8]),			//soundSpeed
-				atof(fi[9]),			//pitchBend
-				atof(fi[10]),			//grainStreamCrossfader
-				atof(fi[11]),			//grainStreamSourcePoint
-				atof(fi[12]),			//grainStreamLength
-				atof(fi[13]),			//grainStreamPitch
-				atof(fi[14]),			//viewPortLeft
-				atof(fi[15]),			//viewPortRight
-				atof(fi[16]),			//viewPortBottom
-				atof(fi[17]),			//viewPortTop
-				atof(fi[18]),			//volumeMultiplierNow
-				atof(fi[19]),			//centerX
-				fi[20][0] == 'T',		//pause
-				atof(fi[21]),			//nudge
-				atof(fi[22]),			//joyAnalogueStatusLeftX
-				atof(fi[23]),			//time
-				homePointSeconds,		//homePointSeconds
-				atoi(fi[24]),			//homePointIndex
-				atoi(fi[25]),			//homePointIndexActual
-				atol(fi[26]),			//homePointBitfield
-				atof(fi[27]),			//bpm
-				atof(fi[28]),			//bpmAdjusted
-				atof(fi[29]),			//bpmFirstBeatSeconds
-				atof(fi[30]),			//eq0
-				atof(fi[31]),			//eq1
-				atof(fi[32])			//eq2
-			);
-			*/
-		}
-		else if(strcasecmp(fi[0],"vdw")==0)
-		{
-			assert(fi.Size()==1);
-			assert(recordSound);
-			int sampleCount=256;
-			float samples[sampleCount];
-			int baseSample=(int)(44100*(videoTimeActual+0.25/60.0));
-			for(int a=0;a<sampleCount;a++)
-			{
-				samples[a]=recordSound->GetSample(baseSample+a);
-			}
-			Visualizer_DrawWaveform
-			(
-				samples,
-				sampleCount,
-				false	//TODO: Allow fullscreen
+				soundList[which],		//01: sound
+				fi[2][0] == 'T',		//02: loaded
+				fi[3],				//03: video path short
+				fi[4][0] == 'T',		//04: glitch
+				atof(fi[5]),			//05: glitchBegin
+				atof(fi[6]),			//06: glitchLength
+				atof(fi[7]),			//07: soundPositionSamples
+				atof(fi[8]),			//08: soundLengthSamples
+				atof(fi[9]),			//09: soundSpeed
+				atof(fi[10]),			//10: pitchBend
+				atof(fi[11]),			//11: grainStreamCrossfader
+				atof(fi[12]),			//12: grainStreamSourcePoint
+				atof(fi[13]),			//13: grainStreamLength
+				atof(fi[14]),			//14: grainStreamPitch
+				atof(fi[15]),			//15: viewPortLeft
+				atof(fi[16]),			//16: viewPortRight
+				atof(fi[17]),			//17: viewPortBottom
+				atof(fi[18]),			//18: viewPortTop
+				atof(fi[19]),			//19: volumeMultiplierNow
+				atof(fi[20]),			//20: centerX
+				fi[21][0] == 'T',		//21: pause
+				atof(fi[22]),			//22: nudge
+				atof(fi[23]),			//23: Deprecated
+				atof(fi[24]),			//24: SecondsSinceExecution
+				homePointSeconds,		//25: homePointSeconds
+				atoi(fi[25]),			//26: homePointIndex
+				atoi(fi[26]),			//27: homePointIndexActual
+				atol(fi[27]),			//28: homePointBitfield
+				homePointNoise,			//29: homePointNoisePct
+				homePointFlash,			//30: homePointFlashPct
+				atof(fi[28]),			//31: bpm
+				atof(fi[29]),			//32: bpmAdjusted
+				atof(fi[30]),			//33: bpmFirstBeatSeconds
+				atof(fi[31]),			//34: eq0
+				atof(fi[32]),			//35: eq1
+				atof(fi[33]),			//36: eq2
+				false,//fi[34][0] == 'T'	//37: LowRez
+				entireWaveArrayCount,		//38: entireWaveArrayFillIndex
+				ENTIRE_WAVE_ARRAY_COUNT,	//39: ENTIRE_WAVE_ARRAY_COUNT
+				entireWaveArrayMagnitudeAve,	//40: MagAve
+				entireWaveArrayMagnitudeMax,	//41: MagMax
+				entireWaveArrayFreqFactor,	//42: FreqFactor
+				soundList[which]->GetLengthSeconds(),			//43: CachedLengthSeconds
+				NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64]		//44: NoiseImage
 			);
 		}
 		else if(strcasecmp(fi[0],"MixF")==0)
@@ -1107,12 +1121,12 @@ printf("noCE!\n");
 				);
 			}
 		}
-		else if(strcasecmp(fi[0],"Luminescence::OmniFader")==0)
+		else if(strcasecmp(fi[0],"dvj::OmniFader")==0)
 		{
 			assert(fi.Size()==2);
 			OmniFader = atof(fi[1]);
 		}
-		else if(strcasecmp(fi[0],"!Luminescence::NewSound")==0)
+		else if(strcasecmp(fi[0],"!dvj::NewSound")==0)
 		{
 			assert(fi.Size()==3);
 			int which = atoi(fi[2]);
@@ -1121,15 +1135,24 @@ printf("noCE!\n");
 printf("soundList[%i] = new LGL_Sound('%s')\n",which,fi[1]);
 			soundList[which] = new LGL_Sound(fi[1]);
 		}
-		else if(strcasecmp(fi[0],"!Luminescence::DeleteSound")==0)
+		else if(strcasecmp(fi[0],"!dvj::DeleteSound")==0)
 		{
 			assert(fi.Size()==2);
 			int which = atoi(fi[1]);
 			assert(soundList[which]);
+			soundList[which]->PrepareForDelete();
+			for(;;)
+			{
+				if(soundList[which]->ReadyForDelete())
+				{
+					break;
+				}
+				LGL_DelayMS(1);
+			}
 			delete soundList[which];
 			soundList[which]=NULL;
 		}
-		else if(strcasecmp(fi[0],"!Luminescence::NewVideo")==0)
+		else if(strcasecmp(fi[0],"!dvj::NewVideo")==0)
 		{
 			assert(fi.Size()==2);
 
@@ -1155,7 +1178,7 @@ printf("soundList[%i] = new LGL_Sound('%s')\n",which,fi[1]);
 				}
 			}
 		}
-		else if(strcasecmp(fi[0],"!Luminescence::DeleteVideo")==0)
+		else if(strcasecmp(fi[0],"!dvj::DeleteVideo")==0)
 		{
 			//Meh
 			/*
@@ -1185,20 +1208,41 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 		}
 		else if(strcasecmp(fi[0],"DirTreeDraw")==0)
 		{
-			assert(fi.Size()==5);
-			//FIXME: Need to adapt to latest dvj...
-			/*
+			assert(fi.Size()==20);
+
+			float glow = atof(fi[1]);
+			const char* filterText=fi[2];
+			const char* filterDir=fi[3];
+			const char* nameArray[5];
+			for(int a=0;a<5;a++)
+			{
+				nameArray[a]=fi[4+a];
+			}
+			bool isDirBits[5];
+			for(int a=0;a<5;a++)
+			{
+				isDirBits[a]=atoi(fi[9]) & (1<<a);
+			}
+			float bpm[5];
+			for(int a=0;a<5;a++)
+			{
+				bpm[a]=atof(fi[15+a]);
+			}
+
 			Turntable_DrawDirTree
 			(
-				videoTimeActual,
-				&dirTrees[atoi(fi[1])],
-				atoi(fi[2]),
-				atoi(fi[3]),
-				(atoi(fi[1])==0) ? .25f : 0.00f,
-				(atoi(fi[1])==0) ? .50f : 0.25f,
-				atof(fi[4])
+				glow,			//01
+				filterText,		//02
+				filterDir,		//03
+				nameArray,		//04-08
+				isDirBits,		//09
+				atoi(fi[10]),		//10
+				atoi(fi[11]),		//11
+				atof(fi[12]),		//12
+				atof(fi[13]),		//13
+				atof(fi[14]),		//14
+				bpm			//15-19
 			);
-			*/
 		}
 		else if(strcasecmp(fi[0],"!DirTreePath")==0)
 		{
@@ -1227,7 +1271,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 			assert(fi.Size()==1);
 			ttLines=false;
 		}
-		else if(strcasecmp(fi[0],"Luminescence::MainDrawGlowLines")==0)
+		else if(strcasecmp(fi[0],"dvj::MainDrawGlowLines")==0)
 		{
 			assert(fi.Size()==3);
 			if(visualsOnly==false && ttLines)
@@ -1238,7 +1282,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 			}
 			ttLines=true;
 		}
-		else if(strcasecmp(fi[0],"!Luminescence::Record.mp3")==0)
+		else if(strcasecmp(fi[0],"!dvj::Record.mp3")==0)
 		{
 			assert(fi.Size()==2);
 			if(LGL_FileExists("data/record/visualizer-audio-override.mp3"))
@@ -1248,10 +1292,6 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 			else
 			{
 				sprintf(audioFile,"%s",fi[1]);
-			}
-			if(recordSound==NULL)
-			{
-				recordSound=LoadRecordSound(audioFile);
 			}
 			char cmdInput[2048];
 			sprintf(noExtensionFile,"%s",fi[1]);

@@ -727,6 +727,7 @@ Turntable_DrawWaveform
 	{
 		//This can only trigger in logDrawer, so it's safe
 		LGL_DelayMS(50);
+		printf("waiting for sound to load... %li vs %li\n",(long int)sound->GetLengthSamples(), (long int)soundLengthSamples);
 	}
 
 	//Prepare some derived varibales
@@ -2192,6 +2193,8 @@ Turntable_DrawWaveform
 			str
 		);
 	}
+	
+	sound->UnlockBufferForReading(10);
 }
 
 void
