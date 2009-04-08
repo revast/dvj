@@ -7222,7 +7222,7 @@ ImageUpToDate()	const
 	return
 	(
 		SecondsNow==SecondsNext ||
-		ImageDecodeRequired
+		ImageDecodeRequired==false
 	);
 }
 
@@ -7341,6 +7341,7 @@ SetTime
 	float	seconds
 )
 {
+	seconds=LGL_Clamp(0,seconds,GetLengthSeconds());
 	SecondsNext=seconds;
 }
 
