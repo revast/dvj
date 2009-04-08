@@ -7341,7 +7341,6 @@ SetTime
 	float	seconds
 )
 {
-	seconds=LGL_Clamp(0,seconds,GetLengthSeconds());
 	SecondsNext=seconds;
 }
 
