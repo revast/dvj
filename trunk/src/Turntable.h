@@ -160,6 +160,7 @@ private:
 	DatabaseObj*			Database;
 	DatabaseFilterObj		DatabaseFilter;
 	std::vector<DatabaseEntryObj*>	DatabaseFilteredEntries;
+	DatabaseEntryObj*		DatabaseEntryNow;
 
 	LGL_InputBuffer			FilterText;
 	char				FilterTextMostRecent[1024];

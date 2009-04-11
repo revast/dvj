@@ -484,6 +484,7 @@ NextFrame
 					else
 					{
 						Mode=1;
+						DatabaseEntryNow=DatabaseFilteredEntries[FileSelectInt];
 						DecodeTimer.Reset();
 						SecondsLast=0.0f;
 						SecondsNow=0.0f;
@@ -1106,6 +1107,7 @@ NextFrame
 		{
 			delete Sound;
 			Sound=NULL;
+			DatabaseEntryNow=NULL;
 			Mode=0;
 		}
 		else
@@ -2662,6 +2664,11 @@ SaveMetaData()
 	if(Sound==NULL)
 	{
 		return;
+	}
+
+	if(DatabaseEntryNow)
+	{
+		DatabaseEntryNow->BPM = GetBPM();
 	}
 
 	char metaDataPath[1024];
