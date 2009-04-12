@@ -20,14 +20,12 @@
 //const char* targetMusicPath="/home/emf/music/hypermind.mp3";
 /*
 const char* targetMusicPath="/home/emf/music/Terminal Dusk - Crimson (04) - Eight Frozen Modules - Left Me.mp3";
-const char* targetVideoBGPath="data/bg.avi";
 const char* targetVideoLoPath="data/lo.avi";
 const char* targetVideoHiPath="data/hi.avi";
 const char* targetVideoOutPath="data/out.avi";
 */
 
 char targetMusicPath[1024];
-char targetVideoBGPath[1024];
 char targetVideoLoPath[1024];
 char targetVideoHiPath[1024];
 char targetVideoOutPath[1024];
@@ -110,10 +108,24 @@ main
 )
 {
 	bool encodeAll=(argc==2 && strcmp(argv[1],"--all")==0);
-
-	if(argc!=5 && encodeAll==false)
+	bool encode=true;
+	if(argc==5 && strstr(argv[4],"--noencode"))
 	{
-		printf("Usage: ./videoFreqMixer.lin music.mp3 bg.avi lo.avi hi.avi\n\n");
+		encode=false;
+	}
+
+	if
+	(
+		(
+			argc!=4 &&
+			encode==true
+		) &&
+		encodeAll==false
+	)
+	{
+		printf("Usage: ./videoFreqMixer.lin music.mp3 lo.avi hi.avi\n\n");
+		printf("Usage: ./videoFreqMixer.lin music.mp3 rnd rnd\n\n");
+		printf("Usage: ./videoFreqMixer.lin music.mp3 rnd rnd --noencode\n\n");
 		exit(0);
 	}
 
@@ -123,7 +135,7 @@ main
 		ResX,
 		ResY,
 		false,
-		2,
+		0,
 		argv[0]
 	);
 
@@ -205,14 +217,19 @@ encodeVideo
 	char**	argv
 )
 {
+	bool encode=true;
+	if(argc==5 && strstr(argv[4],"--noencode"))
+	{
+		encode=false;
+	}
+
 	strcpy(targetMusicPath,argv[1]);
 
-	for(int a=2;a<=4;a++)
+	for(int a=2;a<=3;a++)
 	{
 		char* target;
-		if(a==2) target=targetVideoBGPath;
-		if(a==3) target=targetVideoLoPath;
-		if(a==4) target=targetVideoHiPath;
+		if(a==2) target=targetVideoLoPath;
+		if(a==3) target=targetVideoHiPath;
 
 		if(strcmp(argv[a],"rnd")==0)
 		{
@@ -237,28 +254,28 @@ encodeVideo
 	//Load Sound
 	LGL_Sound* snd=LoadRecordSound(targetMusicPath);
 	snd->LockBufferForReading(10);
-	Uint8* buf8=snd->GetBuffer();
-	Sint16* buf16=(Sint16*)buf8;
-	unsigned long len16=(snd->GetBufferLength()/2);
 
 	//Load Videos
 	LGL_Video* vidBG=NULL;
 	LGL_Video* vidLo=NULL;
 	LGL_Video* vidHi=NULL;
-	if(LGL_FileExists(targetVideoBGPath))
-	{
-		vidBG=new LGL_Video(targetVideoBGPath);
-		printf("Video[BG]: %s [%s]\n",targetVideoBGPath,LGL_FileExists(targetVideoBGPath)?"OK":"NO FILE");
-	}
 	if(LGL_FileExists(targetVideoLoPath))
 	{
 		vidLo=new LGL_Video(targetVideoLoPath);
 		printf("Video[Lo]: %s [%s]\n",targetVideoLoPath,LGL_FileExists(targetVideoLoPath)?"OK":"NO FILE");
 	}
+	else
+	{
+		printf("Video[Lo]: DOES NOT EXIST '%s'\n",targetVideoLoPath);
+	}
 	if(LGL_FileExists(targetVideoHiPath))
 	{
 		vidHi=new LGL_Video(targetVideoHiPath);
 		printf("Video[Hi]: %s [%s]\n",targetVideoHiPath,LGL_FileExists(targetVideoHiPath)?"OK":"NO FILE");
+	}
+	else
+	{
+		printf("Video[Hi]: DOES NOT EXIST '%s'\n",targetVideoHiPath);
 	}
 
 	//Fire up mencoder
@@ -295,6 +312,16 @@ encodeVideo
 			targetVideoOutPath
 		);
 	}
+
+	if(encode==false)
+	{
+		sprintf
+		(
+			cmd,
+			"cat - > /dev/null"
+		);
+	}
+
 	//const char* cmdInput="mencoder - -audiofile \"%s\" -oac copy -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell=yes:v4mv=yes:vbitrate=%i:autoaspect=1:threads=1 -vf scale=%i:%i,harddup -noskip -of avi -o \"%s\" 1>/dev/null 2>/dev/null";
 printf("cmd:\n\t%s\n",cmd);
 	FILE* mencoderFD=popen(cmd,"w");
@@ -306,44 +333,9 @@ printf("cmd:\n\t%s\n",cmd);
 
 	float secondsStart=0.0f;
 	float secondsEnd=9999.0f;
-
-secondsStart=0.0f;
-secondsEnd=9999.0f;
-//Missy starts at 3:27.15
-//Gantz starts at 3:54.80
-//Britney starts at 5:37.05
-float missyStart=3*60 + 27.15f;
-float gantzStart=3*60 + 54.80f;
-float britneyStart=5*60 + 37.05f;
-
-LGL_Video* missyVid=new LGL_Video("tracks/Missy Elliott - The Videos (01) - Get Ur Freak On.mp3.mjpeg.avi");
-LGL_Video* gantzVid=new LGL_Video("tracks/Autechre - Gantz Graf (Chris Cunningham).mp3.mjpeg.avi");
-LGL_Video* britneyVid=new LGL_Video("tracks/Britney Spears - Greatest Hits (My Perogative) (11) - I Am A Slave 4 U.mp3.mjpeg.avi");
-LGL_Video* rndVid=vidHi;
-
 	//Loop
 	for(int frame=secondsStart*60.0f;frame<snd->GetLengthSeconds()*60 && frame<secondsEnd*60.0f;frame++)
 	{
-float secondsNow=frame/60.0f;
-if(secondsNow<missyStart)
-{
-	//Meh
-}
-else if(secondsNow<gantzStart)
-{
-	vidLo=missyVid;
-	vidHi=rndVid;
-}
-else if(secondsNow<britneyStart)
-{
-	vidLo=missyVid;
-	vidHi=gantzVid;
-}
-else
-{
-	vidLo=rndVid;
-	vidHi=britneyVid;
-}
 		//Check for early out
 		LGL_ProcessInput();
 		if(LGL_KeyStroke(SDLK_ESCAPE))
@@ -356,25 +348,17 @@ else
 		//Analyze
 		const long sampleNow=(long)(frame*44100.0f/60.0f);
 		const long sampleLast=(long)LGL_Min(snd->GetLengthSamples(),(sampleNow+2*(44100/60)));
-		const int sampleSkipFactor=1;
 		float zeroCrossingFactor;
 		float magnitudeAve;
 		float magnitudeMax;
-		bool overdriven;
-		analyzeWaveSegment
+
+		snd->GetMetadata
 		(
-			buf16,
-			len16,
-			true,
-			snd->GetHz(),
-			sampleNow,
-			sampleLast,
-			sampleSkipFactor,
-			1.0f,	//volumeMultiplierNow
+			sampleNow/44100.0f,
+			sampleLast/44100.0f,
 			zeroCrossingFactor,
 			magnitudeAve,
-			magnitudeMax,
-			overdriven
+			magnitudeMax
 		);
 
 		//Draw Videos
@@ -417,40 +401,26 @@ else
 				vid=vidHi;
 				float magnitudeThreashold=LGL_Clamp(0.0f,(magnitudeAve-0.1f)*8,1.0f);
 				float magnitudeLoud=LGL_Clamp(0.0f,(magnitudeMax-0.5f)*4,1.0f);
-				factor=((secondsNow<gantzStart)?1.5f:4.0f)*(zeroCrossingFactor*(0.5f+0.5f*magnitudeLoud))*magnitudeThreashold*(0.0f+fadeFactor);
+				factor=(4.0f)*(zeroCrossingFactor*(0.5f+0.5f*magnitudeLoud))*magnitudeThreashold*(0.0f+fadeFactor);
 				time=vidHiTime;
 			}
 			if(vid==NULL) continue;
 
 			if(factor>0.0f)
 			{
-				vid->SetPrimaryDecoder();
+				//vid->SetPrimaryDecoder();
 				vid->SetTime(time);
 				//vid->ForceImageUpToDate();
-				int a=0;
 				while(!vid->ImageUpToDate())
 				{
 					LGL_DelayMS(50);
-					if(a==59)
-					{
-						printf("Frame not decoded: %s\n",vid->GetPathShort());
-						break;
-					}
-					a++;
 				}
-				a=0;
 				LGL_Image* image=vid->LockImage();
 				while(image==NULL)
 				{
 					vid->UnlockImage(NULL);	//Still gotta unlock it, even though it's NULL...
 					LGL_DelayMS(50);
 					image=vid->LockImage();
-					if(a==59)
-					{
-						printf("Image not locked: %s\n",vid->GetPathShort());
-						break;
-					}
-					a++;
 				}
 				assert(image);
 				while(factor>0.0f)
@@ -472,11 +442,11 @@ else
 				//We're not drawing, so pick a new time
 				if(a==1)
 				{
-					vidLoTime=LGL_RandFloat(10.0f,vid->GetLengthSeconds()-30.0f);
+					vidLoTime=LGL_Max(0.0f,LGL_RandFloat(10.0f,vid->GetLengthSeconds()-30.0f));
 				}
 				else if(a==2)
 				{
-					vidHiTime=LGL_RandFloat(10.0f,vid->GetLengthSeconds()-30.0f);
+					vidHiTime=LGL_Max(0.0f,LGL_RandFloat(10.0f,vid->GetLengthSeconds()-30.0f));
 				}
 			}
 		}
