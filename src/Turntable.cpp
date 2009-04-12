@@ -1725,7 +1725,7 @@ NextFrame
 			(MixerVolumeFront==0.0f ? 1.0f : 0.0f) :
 			MixerVolumeFront;
 		float volBack = VolumeInvertBinary ?
-			(MixerVolumeBack==0.0f ? 1.0f : MixerVolumeBack) :
+			(MixerVolumeBack==0.0f ? 1.0f : 0.0f) :
 			MixerVolumeBack;
 		if(volumeFull)
 		{
