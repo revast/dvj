@@ -591,87 +591,6 @@ float entireWaveArrayLine2Colors[pointResolutionMax*4];
 float entireWaveArrayTriColors[pointResolutionMax*4*2];
 
 void
-analyzeWaveSegment
-(
-	const Sint16*	buf16,
-	unsigned long	len16,
-	bool		loaded,
-	int		hz,
-	long		sampleFirst,
-	long		sampleLast,
-	int		sampleSkipFactor,
-	float		volumeMultiplierNow,
-	float&		zeroCrossingFactor,
-	float&		magnitudeAve,
-	float&		magnitudeMax,
-	bool&		overdriven
-)
-{
-	assert(sampleLast>=sampleFirst);
-	zeroCrossingFactor=0.0f;
-	magnitudeAve=0.0f;
-	magnitudeMax=0.0f;
-	overdriven=false;
-
-	float magnitudeTotal=0.0f;
-	int zeroCrossings=0;
-
-	for(int a=0;a<2;a++)
-	{
-		unsigned int myIndex = sampleFirst+a;
-		if(myIndex>len16-1) myIndex=len16-1;
-		int zeroCrossingSign=(int)LGL_Sign(buf16[myIndex]);
-
-		for(long b=sampleFirst*2+a;b<sampleLast*2;b+=2*sampleSkipFactor)
-		{
-			long index=b;
-			if
-			(
-				loaded ||
-				(
-					index>=0 &&
-					(unsigned long)index<len16
-				)
-			)
-			{
-				while(index<0) index+=len16;
-				Sint16 sampleMag=SWAP16(buf16[index%len16]);
-				float sampleMagAbs = fabsf(sampleMag);
-				magnitudeTotal+=sampleMagAbs;
-				if(sampleMagAbs>magnitudeMax)
-				{
-					magnitudeMax=sampleMagAbs;
-				}
-				if(zeroCrossingSign*sampleMag<0)
-				{
-					zeroCrossingSign*=-1;
-					zeroCrossings++;
-				}
-			}
-		}
-	}
-
-	zeroCrossings = (int)(zeroCrossings * (hz/44100.0f));
-
-	int samplesScanned=(int)(sampleLast-sampleFirst);
-	float samplesScannedFactor=samplesScanned/128.0f;
-	magnitudeAve=(volumeMultiplierNow*magnitudeTotal/(samplesScanned/sampleSkipFactor))/(1<<16);
-	if(magnitudeAve>1.0f)
-	{
-		magnitudeAve=1.0f;
-	}
-	magnitudeMax/=(1<<16);
-	overdriven=(magnitudeMax*volumeMultiplierNow)>1.0f;
-	if(magnitudeMax>1.0f)
-	{
-		magnitudeMax=1.0f;
-	}
-
-	float zeroCrossingHiThreashold=(50.0f*samplesScannedFactor)/(sqrtf(sampleSkipFactor));
-	zeroCrossingFactor=LGL_Min(1.0f,(zeroCrossings/zeroCrossingHiThreashold))*LGL_Min(1.0f,magnitudeAve*20);
-}
-
-void
 Turntable_DrawWaveform
 (
 	LGL_Sound*	sound,
@@ -758,11 +677,6 @@ Turntable_DrawWaveform
 			LGL_DelayMS(50);
 		}
 	}
-
-	sound->LockBufferForReading(10);
-	Uint8* buf8=sound->GetBuffer();
-	Sint16* buf16=(Sint16*)buf8;
-	unsigned long len16=(sound->GetBufferLength()/2);
 
 	long pos=(long)soundPositionSamples;
 
@@ -896,25 +810,21 @@ Turntable_DrawWaveform
 		{
 			long sampleNow=(long)(sampleLeftBase+deltaSample*a);
 			const long sampleLast=(long)(sampleNow+deltaSample);
-			const int sampleSkipFactor=1*sampleRadiusMultiplier;
 			float zeroCrossingFactor;
 			float magnitudeAve;
 			float magnitudeMax;
-			analyzeWaveSegment
+
+			sound->GetMetadata
 			(
-				buf16,
-				len16,
-				loaded,
-				sound->GetHz(),
-				sampleNow,
-				sampleLast,
-				sampleSkipFactor,
-				volumeMultiplierNow,
+				sampleNow/44100.0f,
+				sampleLast/44100.0f,
 				zeroCrossingFactor,
 				magnitudeAve,
-				magnitudeMax,
-				overdriven[a]
+				magnitudeMax
 			);
+
+			magnitudeAve*=volumeMultiplierNow;
+			magnitudeMax*=volumeMultiplierNow;
 
 			double sampleNowDouble=(sampleLeft+sampleWidth*(a/(double)pointResolution));
 			float xOffset=1.0f-(sampleNow-sampleNowDouble)/(float)deltaSample;
@@ -968,6 +878,13 @@ Turntable_DrawWaveform
 			arrayC[(a*4)+0]+=0.5f*zeroCrossingFactor;
 			arrayC[(a*4)+1]+=0.5f*zeroCrossingFactor;
 			arrayC[(a*4)+2]+=0.5f*zeroCrossingFactor;
+
+			if(magnitudeMax>1.0f)
+			{
+				arrayC[(a*4)+0]=1.0f;
+				arrayC[(a*4)+1]=0.0f;
+				arrayC[(a*4)+2]=0.0f;
+			}
 		}
 		else if(xPreview > 1.0f)
 		{
@@ -1297,39 +1214,33 @@ Turntable_DrawWaveform
 
 	LGL_ClipRectDisable();
 
-	float hzRatio = sound->GetHz()/44100.0f;
-
 	//Entire Wave Array
 	if(loaded)
 	{
-		for(int a=0;a<10;a++)
+		for(;;)
 		{
 			if(entireWaveArrayFillIndex<entireWaveArrayCount)
 			{
 				float zeroCrossingFactor;
 				float magnitudeAve;
 				float magnitudeMax;
-				bool overdrivenNow;
 
-				long sampleNow=(long)(entireWaveArrayFillIndex*(2*soundLengthSeconds*sound->GetHz()/(double)(entireWaveArrayCount*2)));
-				long sampleLast=sampleNow+(hzRatio*2*soundLengthSeconds*sound->GetHz()/entireWaveArrayCount)-1;
-				int sampleSkipFactor=16;
+				long sampleNow=(long)(entireWaveArrayFillIndex*(2*soundLengthSeconds*44100.0f/(double)(entireWaveArrayCount*2)));
+				long sampleLast=sampleNow+(2*soundLengthSeconds*44100.0f/entireWaveArrayCount)-1;
 
-				analyzeWaveSegment
+				bool ret=sound->GetMetadata
 				(
-					buf16,
-					len16,
-					loaded,
-					sound->GetHz(),
-					sampleNow,
-					sampleLast,
-					sampleSkipFactor,
-					1.0f,
+					sampleNow/44100.0f,
+					sampleLast/44100.0f,
 					zeroCrossingFactor,
 					magnitudeAve,
-					magnitudeMax,
-					overdrivenNow
+					magnitudeMax
 				);
+
+				if(ret==false)
+				{
+					break;
+				}
 
 				entireWaveArrayMagnitudeAve[entireWaveArrayFillIndex]=magnitudeAve;
 				entireWaveArrayMagnitudeMax[entireWaveArrayFillIndex]=magnitudeMax;
@@ -1341,7 +1252,7 @@ Turntable_DrawWaveform
 			{
 				break;
 			}
-		}
+		}	
 	}
 
 	if(entireWaveArrayFillIndex>0)
@@ -2193,8 +2104,6 @@ Turntable_DrawWaveform
 			str
 		);
 	}
-	
-	sound->UnlockBufferForReading(10);
 }
 
 void

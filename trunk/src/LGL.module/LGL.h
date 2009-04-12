@@ -1329,6 +1329,9 @@ virtual std::vector<LGL_AudioGrain*>	GetApproximateNearestNeighbors
 
 //Audio1
 
+#define	LGL_SOUND_METADATA_ENTRIES_PER_SECOND	(32)
+#define	LGL_SOUND_METADATA_SIZE_MAX		(20*60*LGL_SOUND_METADATA_ENTRIES_PER_SECOND)
+
 class LGL_Sound
 {
 
@@ -1470,6 +1473,22 @@ public:
 	long		GetLengthSamples();
 	bool		GetHogCPU() const;
 	void		SetHogCPU(bool hogCPU=true);
+	void		AnalyzeWaveSegment
+			(
+				long		sampleFirst,
+				long		sampleLast,
+				float&		zeroCrossingFactor,
+				float&		magnitudeAve,
+				float&		magnitudeMax
+			);
+	bool		GetMetadata
+			(
+				float	secondsBegin,
+				float	secondsEnd,
+				float&	zeroCrossingFactor,
+				float&	magnitudeAve,
+				float&	magnitudeMax
+			);
 	void		LoadToMemory();
 	bool		IsLoaded();
 	bool		IsUnloadable();
@@ -1524,6 +1543,11 @@ private:
 	bool		DestructorHint;
 	bool		DeleteOK;
 	SDL_Thread*	PrepareForDeleteThread;
+
+	float		MetadataVolumeAve[LGL_SOUND_METADATA_SIZE_MAX];
+	float		MetadataVolumeMax[LGL_SOUND_METADATA_SIZE_MAX];
+	float		MetadataFreqFactor[LGL_SOUND_METADATA_SIZE_MAX];
+	int		MetadataFilledSize;
 
 public:
 

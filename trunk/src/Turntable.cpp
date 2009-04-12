@@ -1490,8 +1490,11 @@ NextFrame
 			PauseMultiplier=0;
 			Pitchbend=1;
 			PitchbendLastSetBySlider=false;
-			printf("BPMMaster: %.2f\n",BPMMaster);
-			if(BPMMaster>0)
+			if
+			(
+				GetBPM()>0 &&
+				BPMMaster>0
+			)
 			{
 				Pitchbend = BPMMaster/GetBPM();
 			}
