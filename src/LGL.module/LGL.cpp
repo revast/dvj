@@ -71,6 +71,12 @@
 //<V4L>
 #endif //LGL_LINUX_VIDCAM
 
+#define	LGL_PRIORITY_X			(0.1f)
+#define	LGL_PRIORITY_MAIN		(0.1f)
+#define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(-0.2f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(-0.2f)
+
 #define LGL_EQ_SAMPLES_FFT	(512)
 #define LGL_SAMPLESIZE		(256)
 unsigned int LGL_SAMPLESIZE_SDL;
@@ -291,7 +297,7 @@ typedef struct
 
 	//M-Audio MIDI Devices
 
-	LGL_MidiDevice*		Xponent;
+	LGL_MidiDeviceXponent*	Xponent;
 	LGL_MidiDevice*		Xsession;
 	LGL_MidiDevice*		TriggerFinger;
 	LGL_MidiDevice*		JP8k;
@@ -827,16 +833,9 @@ LGL_InitJack()
 
 	jack_output_port_fl = jack_port_register(jack_client,"output_fl",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
 	jack_output_port_fr = jack_port_register(jack_client,"output_fr",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
-	if(LGL.AudioSpec->channels==4)
-	{
-		jack_output_port_bl = jack_port_register(jack_client,"output_bl",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
-		jack_output_port_br = jack_port_register(jack_client,"output_br",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
-	}
-	else
-	{
-		jack_output_port_bl = jack_port_register(jack_client,"output_bl",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
-		jack_output_port_br = jack_port_register(jack_client,"output_br",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
-	}
+	jack_output_port_bl = jack_port_register(jack_client,"output_bl",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
+	jack_output_port_br = jack_port_register(jack_client,"output_br",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
+
 	//jack_input_port = jack_port_register(jack_client,"input",JACK_DEFAULT_AUDIO_TYPE,JackPortIsInput,0);
 
 	if
@@ -922,7 +921,16 @@ LGL_Init
 	const char*	inWindowTitle
 )
 {
+	//Setup initial RT priorities
 	mlockall(MCL_CURRENT | MCL_FUTURE);
+
+	if(inVideoFullScreen)
+	{
+		char cmd[2048];
+		sprintf(cmd,"chrt -p %i `pgrep X`",(int)(LGL_PRIORITY_X*99));
+		system(cmd);
+	}
+	LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 
 	for(int a=0;a<1024;a++)
 	{
@@ -1123,12 +1131,12 @@ LGL_Init
 #ifdef	LGL_JACK
 	if(inAudioChannels>0)
 	{
-		LGL_ThreadSetPriority(1.0f);
+		LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
 		if(LGL_InitJack())
 		{
 			//
 		}
-		LGL_ThreadSetPriority(-0.1f);
+		LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 	}
 #endif	//LGL_JACK
 
@@ -1512,7 +1520,7 @@ LGL_Init
 		if(strcmp(LGL_MidiDeviceName(a),"Xponent MIDI 1")==0)
 		{
 			//We have an Xponent!
-			LGL.Xponent = new LGL_MidiDevice;
+			LGL.Xponent = new LGL_MidiDeviceXponent;
 			LGL.Xponent->DeviceID = a;
 		}
 		else if(strcmp(LGL_MidiDeviceName(a),"USB X-Session MIDI 1")==0)
@@ -1801,7 +1809,7 @@ LGL_Init
 	strcpy(LGL.GPURenderer,(char*)(glGetString(GL_RENDERER)));
 #endif	//LGL_NO_GRAPHICS
 
-	LGL_ThreadSetPriority(-0.05f);
+	LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 
 	return(true);
 }
@@ -7028,7 +7036,7 @@ lgl_video_thread
 )
 {
 	//LGL_ThreadSetCPUAffinity(0);
-	LGL_ThreadSetPriority(-0.1f);
+	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_DECODE,"VideoDecode");
 	LGL_Video* video=(LGL_Video*)object;
 	if(!video)
 	{
@@ -10943,7 +10951,7 @@ lgl_SoundDecoderThread
 )
 {
 	//LGL_ThreadSetCPUAffinity(0);
-	LGL_ThreadSetPriority(-0.2f);
+	LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_DECODE,"AudioDecode");
 	LGL_Sound* sound=(LGL_Sound*)object;
 	sound->LoadToMemory();
 	sound->DeleteSemaphore.Unlock();
@@ -16548,7 +16556,113 @@ LGL_INTERNAL_SwapBuffers()
 	BackBufferSemaphore.Unlock();
 }
 
-LGL_MidiDevice*
+LGL_MidiDeviceXponent::
+LGL_MidiDeviceXponent()
+{
+	TurntableTweakIndex=0;
+	for(int a=0;a<lgl_turntable_tweak_history_size;a++)
+	{
+		TurntableTweakHistoryL[a]=false;
+		TurntableTweakHistoryR[a]=false;
+	}
+}
+
+LGL_MidiDeviceXponent::
+~LGL_MidiDeviceXponent()
+{
+	//
+}
+
+void
+LGL_MidiDeviceXponent::
+LGL_INTERNAL_SwapBuffers()
+{
+	//Right Turntable
+	TurntableTweakHistoryL[TurntableTweakIndex]=KnobTweakBack[22];
+	TurntableTweakHistoryR[TurntableTweakIndex]=KnobTweakBack[122];
+	TurntableTweakIndex++;
+	if(TurntableTweakIndex==lgl_turntable_tweak_history_size)
+	{
+		TurntableTweakIndex=0;
+	}
+
+	if
+	(
+		KnobStatusBack[22]>66 ||
+		KnobStatusBack[22]<62
+	)
+	{
+		for(int a=0;a<lgl_turntable_tweak_history_size;a++)
+		{
+			TurntableTweakHistoryL[a]=true;
+		}
+	}
+	if
+	(
+		KnobStatusBack[122]>66 ||
+		KnobStatusBack[122]<62
+	)
+	{
+		for(int a=0;a<lgl_turntable_tweak_history_size;a++)
+		{
+			TurntableTweakHistoryR[a]=true;
+		}
+	}
+
+	int tweakCountL=0;
+	int tweakCountR=0;
+	for(int a=0;a<lgl_turntable_tweak_history_size;a++)
+	{
+		if(TurntableTweakHistoryL[a])
+		{
+			tweakCountL++;
+		}
+		if(TurntableTweakHistoryR[a])
+		{
+			tweakCountR++;
+		}
+	}
+	float tweakPercentL=tweakCountL/(float)(lgl_turntable_tweak_history_size);
+	float tweakPercentR=tweakCountR/(float)(lgl_turntable_tweak_history_size);
+
+	if
+	(
+		KnobStatusBack[22]>=62 &&
+		KnobStatusBack[22]<=63
+	)
+	{
+		KnobStatusBack[22]=63-tweakPercentL;
+	}
+	if
+	(
+		KnobStatusBack[22]>=65 &&
+		KnobStatusBack[22]<=66
+	)
+	{
+		KnobStatusBack[22]=65+tweakPercentL;
+	}
+
+	if
+	(
+		KnobStatusBack[122]>=62 &&
+		KnobStatusBack[122]<=63
+	)
+	{
+		KnobStatusBack[122]=63-tweakPercentR;
+	}
+	if
+	(
+		KnobStatusBack[122]>=65 &&
+		KnobStatusBack[122]<=66
+	)
+	{
+		KnobStatusBack[122]=65+tweakPercentR;
+	}
+
+	LGL_MidiDevice::LGL_INTERNAL_SwapBuffers();
+}
+
+LGL_MidiDeviceXponent*
 LGL_GetXponent()
 {
 	return(LGL.Xponent);
@@ -22488,7 +22602,8 @@ LGL_ThreadKill
 void
 LGL_ThreadSetPriority
 (
-	float	priority
+	float		priority,
+	const char*	threadName
 )
 {
 	priority = LGL_Clamp(-1.0f,priority,1.0f);
@@ -22499,16 +22614,19 @@ LGL_ThreadSetPriority
 		//Vanilla Process Priority
 		int p=(int)(-20+(-priority*20));
 		setpriority(PRIO_PROCESS,0,p);
+		//printf("LGL_ThreadSetPriority(%.2f, '%s'): setpriority(%i) (A)\n",priority,threadName?threadName:"NULL",p);
 	}
 	else
 	{
 		setpriority(PRIO_PROCESS,0,-20);
+		//printf("LGL_ThreadSetPriority(%.2f, '%s'): setpriority(%i) (B)\n",priority,threadName?threadName:"NULL",-20);
 	}
 	
 	if(priority<=0.0f)
 	{
 		//Not realtime
 		schedParam.sched_priority = 0;
+		//printf("LGL_ThreadSetPriority(%.2f, '%s'): sched_setscheduler(%i) (OTHER)\n",priority,threadName?threadName:"NULL",schedParam.sched_priority);
 		sched_setscheduler(0,SCHED_OTHER,&schedParam);
 	}
 	else if(priority<1.0f)
@@ -22518,6 +22636,7 @@ LGL_ThreadSetPriority
 		int pmax = sched_get_priority_max(SCHED_RR);
 		int pint = (int)(pmin + priority*(pmax-pmin));
 		schedParam.sched_priority = pint;
+		//printf("LGL_ThreadSetPriority(%.2f, '%s'): sched_setscheduler(%i) (RR)\n",priority,threadName?threadName:"NULL",schedParam.sched_priority);
 		sched_setscheduler(0,SCHED_RR,&schedParam);
 	}
 	else
@@ -22525,6 +22644,7 @@ LGL_ThreadSetPriority
 		//Realtime, maximum priority
 		int pmax = sched_get_priority_max(SCHED_FIFO);
 		schedParam.sched_priority = pmax;
+		//printf("LGL_ThreadSetPriority(%.2f, '%s'): sched_setscheduler(%i) (FIFO)\n",priority,threadName?threadName:"NULL",schedParam.sched_priority);
 		sched_setscheduler(0,SCHED_FIFO,&schedParam);
 	}
 }
@@ -22825,7 +22945,7 @@ lgl_AudioOutCallbackGenerator
 
 		//Use Only One CPU
 		//LGL_ThreadSetCPUAffinity(1);
-		LGL_ThreadSetPriority(1.0f);	//It's really that important!
+		LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut");	//It's really that important!
 
 		soundRealtimePrioritySet=true;
 	}
@@ -22833,9 +22953,6 @@ lgl_AudioOutCallbackGenerator
 
 	if(LGL.AudioQuitting)
 	{
-#ifndef	LGL_JACK
-		LGL_ThreadSetPriority(-0.1f);
-#endif	//LGL_JACK
 		return;
 	}
 
@@ -23806,5 +23923,7 @@ printf("LockAudio() 5\n");
 #endif	//LGL_WIN32
 		system(command);
 	}
+
+	system("chrt -o -p 0 `pgrep X`");
 }
 

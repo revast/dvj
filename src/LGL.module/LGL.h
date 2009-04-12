@@ -227,7 +227,7 @@ int		LGL_CPUTemp();				//Returns Celsius
 SDL_Thread*	LGL_ThreadCreate(int (*fn)(void*), void* data=NULL);
 int		LGL_ThreadWait(SDL_Thread* target);
 void		LGL_ThreadKill(SDL_Thread* target);
-void		LGL_ThreadSetPriority(float priority);	//0 is lowest, 1 is highest
+void		LGL_ThreadSetPriority(float priority, const char* threadName=NULL);	//0 is lowest, 1 is highest
 void		LGL_ThreadSetCPUAffinity(int cpu);
 
 class LGL_Semaphore
@@ -1800,12 +1800,32 @@ public:
 	float		KnobStatusBack[LGL_MIDI_CONTROL_MAX];
 
 	LGL_Semaphore	BackBufferSemaphore;
-	void		LGL_INTERNAL_SwapBuffers();
+virtual	void		LGL_INTERNAL_SwapBuffers();
 };
 
 //Xponent
 
-LGL_MidiDevice*
+#define	lgl_turntable_tweak_history_size (8)
+
+class LGL_MidiDeviceXponent : public LGL_MidiDevice
+{
+
+public:
+
+			LGL_MidiDeviceXponent();
+			~LGL_MidiDeviceXponent();
+
+//private:
+
+	int		TurntableTweakIndex;
+	bool		TurntableTweakHistoryL[lgl_turntable_tweak_history_size];
+	bool		TurntableTweakHistoryR[lgl_turntable_tweak_history_size];
+
+virtual	void		LGL_INTERNAL_SwapBuffers();
+
+};
+
+LGL_MidiDeviceXponent*
 LGL_GetXponent();
 
 #define	LGL_XPONENT_BUTTON_LEFT_RECORD		22
