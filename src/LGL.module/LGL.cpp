@@ -71,8 +71,8 @@
 //<V4L>
 #endif //LGL_LINUX_VIDCAM
 
-#define	LGL_PRIORITY_X			(0.1f)
-#define	LGL_PRIORITY_MAIN		(0.1f)
+//#define	LGL_PRIORITY_X			(-0.1f)
+#define	LGL_PRIORITY_MAIN		(-0.1f)
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(-0.2f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(-0.2f)
@@ -921,15 +921,18 @@ LGL_Init
 	const char*	inWindowTitle
 )
 {
+	inAudioChannels=4;
 	//Setup initial RT priorities
 	mlockall(MCL_CURRENT | MCL_FUTURE);
 
+/*
 	if(inVideoFullScreen)
 	{
 		char cmd[2048];
 		sprintf(cmd,"chrt -p %i `pgrep X`",(int)(LGL_PRIORITY_X*99));
 		system(cmd);
 	}
+*/
 	LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 
 	for(int a=0;a<1024;a++)
@@ -11017,6 +11020,7 @@ LGL_Sound
 	strcpy(PathShort,ptr);
 
 	Loaded=false;
+	MetadataFilledSize=0;
 
 	if(LoadInNewThread)
 	{
@@ -11059,6 +11063,8 @@ LGL_Sound
 
 	Channels=channels;
 	Hz=44100;
+
+	MetadataFilledSize=0;
 
 	strcpy(Path,"Memory Buffer");
 	strcpy(PathShort,Path);
@@ -12254,6 +12260,162 @@ SetHogCPU
 
 void
 LGL_Sound::
+AnalyzeWaveSegment
+(
+	long		sampleFirst,
+	long		sampleLast,
+	float&		zeroCrossingFactor,
+	float&		magnitudeAve,
+	float&		magnitudeMax
+)
+{
+	LockBufferForReading(10);
+	const Sint16* buf16=(Sint16*)GetBuffer();
+	unsigned long len16=(GetBufferLength()/2);
+	bool loaded=IsLoaded();
+	int hz=Hz;
+	int sampleAdvanceFactor=1;
+
+	assert(sampleLast>=sampleFirst);
+	zeroCrossingFactor=0.0f;
+	magnitudeAve=0.0f;
+	magnitudeMax=0.0f;
+
+	float magnitudeTotal=0.0f;
+	int zeroCrossings=0;
+
+	for(int a=0;a<2;a++)
+	{
+		unsigned int myIndex = sampleFirst+a;
+		if(myIndex>len16-1) myIndex=len16-1;
+		int zeroCrossingSign=(int)LGL_Sign(buf16[myIndex]);
+
+		for(long b=sampleFirst*2+a;b<sampleLast*2;b+=2*sampleAdvanceFactor)
+		{
+			long index=b;
+			if
+			(
+				loaded ||
+				(
+					index>=0 &&
+					(unsigned long)index<len16
+				)
+			)
+			{
+				while(index<0) index+=len16;
+				Sint16 sampleMag=SWAP16(buf16[index%len16]);
+				float sampleMagAbs = fabsf(sampleMag);
+				magnitudeTotal+=sampleMagAbs;
+				if(sampleMagAbs>magnitudeMax)
+				{
+					magnitudeMax=sampleMagAbs;
+				}
+				if(zeroCrossingSign*sampleMag<0)
+				{
+					zeroCrossingSign*=-1;
+					zeroCrossings++;
+				}
+			}
+		}
+	}
+
+	zeroCrossings = (int)(zeroCrossings * (hz/44100.0f));
+
+	int samplesScanned=(int)(sampleLast-sampleFirst);
+	float samplesScannedFactor=samplesScanned/128.0f;
+	magnitudeAve=(magnitudeTotal/(samplesScanned/sampleAdvanceFactor))/(1<<16);
+	if(magnitudeAve>1.0f)
+	{
+		magnitudeAve=1.0f;
+	}
+	magnitudeMax/=(1<<16);
+	if(magnitudeMax>1.0f)
+	{
+		magnitudeMax=1.0f;
+	}
+
+	float zeroCrossingHiThreashold=(50.0f*samplesScannedFactor)/(sqrtf(sampleAdvanceFactor));
+	zeroCrossingFactor=LGL_Min(1.0f,(zeroCrossings/zeroCrossingHiThreashold))*LGL_Min(1.0f,magnitudeAve*20);
+
+	UnlockBufferForReading(10);
+}
+	
+bool
+LGL_Sound::
+GetMetadata
+(
+	float	secondsBegin,
+	float	secondsEnd,
+	float&	zeroCrossingFactor,
+	float&	magnitudeAve,
+	float&	magnitudeMax
+)
+{
+	zeroCrossingFactor=0.0f;
+	magnitudeAve=0.0f;
+	magnitudeMax=0.0f;
+
+	float lengthSeconds=GetLengthSeconds();
+	secondsBegin = LGL_Clamp(0.0f,secondsBegin,lengthSeconds);
+	secondsEnd = LGL_Clamp(0.0f,secondsEnd,lengthSeconds);
+	if(secondsBegin==secondsEnd)
+	{
+		return(false);
+	}
+
+	float secondsAnalyzed=MetadataFilledSize/(float)LGL_SOUND_METADATA_ENTRIES_PER_SECOND;
+	if(secondsEnd>secondsAnalyzed)
+	{
+		AnalyzeWaveSegment
+		(
+			secondsBegin*Hz,
+			secondsEnd*Hz,
+			zeroCrossingFactor,
+			magnitudeAve,
+			magnitudeMax
+		);
+		return(true);
+	}
+
+	float entriesUsed=0.0f;
+	float entryDelta=1.0f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND;
+	for(float entryBegin=floorf(secondsBegin);entryBegin<secondsEnd;entryBegin+=entryDelta)
+	{
+		float entryEnd=entryBegin+entryDelta;
+		float pctOverlap=1.0f;
+		if(entryEnd<secondsBegin)
+		{
+			continue;
+		}
+		else if(entryBegin<secondsBegin)
+		{
+			pctOverlap=(entryEnd-secondsBegin)/entryDelta;
+		}
+
+		int entryIndex=(int)(entryBegin*LGL_SOUND_METADATA_ENTRIES_PER_SECOND);
+
+		zeroCrossingFactor+=pctOverlap*MetadataFreqFactor[entryIndex];
+		magnitudeAve+=pctOverlap*MetadataVolumeAve[entryIndex];
+
+		if(magnitudeMax<MetadataVolumeMax[entryIndex])
+		{
+			magnitudeMax=MetadataVolumeMax[entryIndex];
+		}
+
+		entriesUsed+=pctOverlap;
+	}
+
+	if(entriesUsed!=0.0f)
+	{
+		zeroCrossingFactor/=entriesUsed;
+		magnitudeAve/=entriesUsed;
+	}
+
+	return(true);
+}
+
+void
+LGL_Sound::
 LoadToMemory()
 {
 	//ffmpeg implementation
@@ -12455,6 +12617,25 @@ LoadToMemory()
 				{
 					//Too big!
 					break;
+				}
+
+				float secondsLoaded=GetLengthSeconds();
+				float secondsMetadataAlpha=MetadataFilledSize/(float)LGL_SOUND_METADATA_ENTRIES_PER_SECOND;
+				float secondsMetadataDelta=1.0f/(float)LGL_SOUND_METADATA_ENTRIES_PER_SECOND;
+				while(secondsMetadataAlpha+secondsMetadataDelta<secondsLoaded)
+				{
+					long sampleFirst=secondsMetadataAlpha*Hz;
+					long sampleLast=(secondsMetadataAlpha+secondsMetadataDelta)*Hz;
+					AnalyzeWaveSegment
+					(
+						sampleFirst,
+						sampleLast,
+						MetadataFreqFactor[MetadataFilledSize],
+						MetadataVolumeAve[MetadataFilledSize],
+						MetadataVolumeMax[MetadataFilledSize]
+					);
+					MetadataFilledSize++;
+					secondsMetadataAlpha=MetadataFilledSize/(float)LGL_SOUND_METADATA_ENTRIES_PER_SECOND;
 				}
 			}
 
@@ -23924,6 +24105,6 @@ printf("LockAudio() 5\n");
 		system(command);
 	}
 
-	system("chrt -o -p 0 `pgrep X`");
+	//system("chrt -o -p 0 `pgrep X`");
 }
 
