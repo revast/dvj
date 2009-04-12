@@ -123,6 +123,8 @@ TurntableObj
 	MovieClipPrefix[0]='\0';
 	Visualizer=NULL;
 
+	BPMMaster=0.0f;
+
 	TrackListFileUpdates.clear();
 
 	VideoFront=NULL;
@@ -1488,6 +1490,11 @@ NextFrame
 			PauseMultiplier=0;
 			Pitchbend=1;
 			PitchbendLastSetBySlider=false;
+			printf("BPMMaster: %.2f\n",BPMMaster);
+			if(BPMMaster>0)
+			{
+				Pitchbend = BPMMaster/GetBPM();
+			}
 			Nudge=0;
 			NudgeFromMixer=0;
 			GlitchPure=false;
@@ -3189,7 +3196,6 @@ SelectNewVideo
 {
 	char videoFileName[1024];
 	sprintf(videoFileName,"data/video/tracks/%s.mjpeg.avi",SoundName);
-printf("Trying '%s'\n",videoFileName);
 	if
 	(
 		forceAmbient ||
