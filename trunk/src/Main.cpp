@@ -47,6 +47,7 @@ bool				VisualizerFullScreen;
 LGL_Image*			ParticleSystemImage;
 ParticleSystemObj*		ParticleSystem;
 bool				ParticleSystemActive=false;
+LGL_Timer			MouseMotionTimer;
 
 ParticleSystemObj*		ParticlePointers[8];
 bool				ParticlePointersActive[8];
@@ -428,6 +429,11 @@ void NextFrame()
 	//Visuals
 	Visualizer->NextFrame(LGL_SecondsSinceLastFrame());
 
+	if(LGL_MouseMotion())
+	{
+		MouseMotionTimer.Reset();
+	}
+
 	//Wiimote
 	if(LGL_MouseMotion() && 0)
 	{
@@ -448,7 +454,7 @@ void NextFrame()
 		{
 			//Sub-frame pointer motion
 			ParticlePointersActive[a]=true;
-			ParticlePointers[a]->ParticlesPerSecond = POINTER_PARTICLES_PER_SECOND;
+			ParticlePointers[a]->ParticlesPerSecond = MouseMotionTimer.SecondsSinceLastReset()<5.0f?POINTER_PARTICLES_PER_SECOND:0.0f;
 			std::vector<LGL_Vector> motion = LGL_GetWiimote(a).GetPointerMotionThisFrame();
 			if(motion.empty()==false)
 			{

@@ -11107,7 +11107,6 @@ void
 LGL_Sound::
 PrepareForDelete()
 {
-	assert(DestructorHint==false);
 	if(DestructorHint)
 	{
 		return;
@@ -12456,6 +12455,7 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): av_open_input_file() couldn't open '%s'\n",Path);
 			BadFile=true;
+			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -12464,6 +12464,7 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): Couldn't find streams for '%s'\n",Path);
 			BadFile=true;
+			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -12481,6 +12482,7 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): Couldn't find audio stream for '%s' in %i streams\n",Path,formatContext->nb_streams);
 			BadFile=true;
+			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -12493,6 +12495,7 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): Couldn't find codec for '%s'\n",Path);
 			BadFile=true;
+			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -12505,6 +12508,7 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): Invalid channel found for '%s': %i\n",Path,channels);
 			BadFile=true;
+			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -12517,6 +12521,7 @@ LoadToMemory()
 			av_close_input_file(formatContext);
 			LGL.AVCodecSemaphore->Unlock();
 			BadFile=true;
+			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 	}
