@@ -816,8 +816,8 @@ Turntable_DrawWaveform
 
 			sound->GetMetadata
 			(
-				sampleNow/44100.0f,
-				sampleLast/44100.0f,
+				sampleNow/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
+				sampleLast/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
 				zeroCrossingFactor,
 				magnitudeAve,
 				magnitudeMax
