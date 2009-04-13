@@ -1496,7 +1496,7 @@ NextFrame
 				BPMMaster>0
 			)
 			{
-				Pitchbend = BPMMaster/GetBPM();
+				SetBPMAdjusted(BPMMaster);
 			}
 			Nudge=0;
 			NudgeFromMixer=0;
