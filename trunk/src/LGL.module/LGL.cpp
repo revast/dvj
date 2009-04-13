@@ -12519,7 +12519,6 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): Couldn't open codec for '%s'\n",Path);
 			av_close_input_file(formatContext);
-			LGL.AVCodecSemaphore->Unlock();
 			BadFile=true;
 			LGL.AVCodecSemaphore->Unlock();
 			return;
