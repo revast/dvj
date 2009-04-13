@@ -454,7 +454,8 @@ void NextFrame()
 		{
 			//Sub-frame pointer motion
 			ParticlePointersActive[a]=true;
-			ParticlePointers[a]->ParticlesPerSecond = MouseMotionTimer.SecondsSinceLastReset()<5.0f?POINTER_PARTICLES_PER_SECOND:0.0f;
+			ParticlePointers[a]->ParticlesPerSecond = POINTER_PARTICLES_PER_SECOND;
+printf("A\n");
 			std::vector<LGL_Vector> motion = LGL_GetWiimote(a).GetPointerMotionThisFrame();
 			if(motion.empty()==false)
 			{
@@ -488,7 +489,8 @@ void NextFrame()
 			//Fall back on LGL_Mouse
 
 			ParticlePointersActive[a]=true;
-			ParticlePointers[a]->ParticlesPerSecond = POINTER_PARTICLES_PER_SECOND;
+			ParticlePointers[a]->ParticlesPerSecond = (MouseMotionTimer.SecondsSinceLastReset()<5.0f)?POINTER_PARTICLES_PER_SECOND:0.0f;
+printf("B: %.2f (%.2f)\n",ParticlePointers[a]->ParticlesPerSecond,MouseMotionTimer.SecondsSinceLastReset());
 			ParticlePointers[a]->PosPrev=ParticlePointers[a]->Pos;
 			ParticlePointers[a]->Pos.SetXY
 			(

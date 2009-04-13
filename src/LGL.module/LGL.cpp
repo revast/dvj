@@ -13161,6 +13161,8 @@ LGL_ProcessInput()
 
 	//Reset mouse State
 	
+	LGL.MouseDX=0.0f;
+	LGL.MouseDY=0.0f;
 	for(a=0;a<3;a++)
 	{
 		LGL.MouseStroke[a]=false;
