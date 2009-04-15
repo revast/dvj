@@ -3506,8 +3506,8 @@ GetSolo()
 
 void
 TurntableObj::
-BlankFilterText()
+BlankFilterTextIfMode0()
 {
-	FilterText.SetString();
+	if(Mode==0) FilterText.SetString();
 }
 

@@ -278,7 +278,7 @@ public:
 	double				GetPercentOfCurrentMeasure(float measureMultiplier=1.0f);
 	double				GetBeginningOfCurrentMeasureSeconds(float measureMultiplier=1.0f);
 	bool				GetSolo();
-	void				BlankFilterText();
+	void				BlankFilterTextIfMode0();
 
 };
 
