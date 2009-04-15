@@ -655,6 +655,9 @@ Turntable_DrawWaveform
 	float soundLengthSamplesHalf = 0.5f*soundLengthSamples;
 	float soundLengthSeconds = soundLengthSamples / sound->GetHz();
 	float soundPositionSeconds = soundPositionSamples / sound->GetHz();
+	soundPositionSamples = soundPositionSamples * 44100.0f/sound->GetHz();
+	glitchBegin=glitchBegin*44100.0f/sound->GetHz();
+	glitchLength=glitchLength*44100.0f/sound->GetHz();
 
 	//Draw Waveform
 
@@ -665,7 +668,7 @@ Turntable_DrawWaveform
 		(0.0f+grainStreamCrossfader) * (3.0f/4.0f)*grainStreamLength +
 		(1.0f-grainStreamCrossfader) * 0.005f;
 
-	float sampleRadiusMultiplier=SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
+	float sampleRadiusMultiplier=SAMPLE_RADIUS_MULTIPLIER;
 	
 	needleDeltaL/=sampleRadiusMultiplier;
 	needleDeltaR/=sampleRadiusMultiplier;
@@ -678,7 +681,7 @@ Turntable_DrawWaveform
 		}
 	}
 
-	long pos=(long)(soundPositionSamples*44100.0f/sound->GetHz());
+	long pos=(long)soundPositionSamples;
 
 	//Smooth Zooming Waveform Renderer
 
@@ -686,7 +689,6 @@ Turntable_DrawWaveform
 	if(pitchBend!=0.0f)
 	{
 		zoom=1.0f/pitchBend;
-		zoom*=44100.0f/sound->GetHz();
 	}
 
 	long pointResolution=256+1;
@@ -1057,9 +1059,9 @@ Turntable_DrawWaveform
 	//Draw BPM Lines
 	if(bpm>0)
 	{
-		float centerSample=soundPositionSamples*(44100.0f/sound->GetHz());
-		float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
-		float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
+		float centerSample=soundPositionSamples;
+		float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+		float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
 		double secondsPerBeat=(60.0/bpm);
 
 		if(leftSample<0)
@@ -1159,9 +1161,9 @@ Turntable_DrawWaveform
 	{
 		if(savePointSeconds[a]>=0.0f)
 		{
-			float centerSample=soundPositionSamples*(44100.0f/sound->GetHz());
-			float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
-			float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
+			float centerSample=soundPositionSamples;
+			float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+			float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
 			float widthSample=rightSample-leftSample;
 
 			long savePointSamples = (long)(savePointSeconds[a]*44100);
@@ -1371,7 +1373,7 @@ Turntable_DrawWaveform
 
 		if(cachedLengthSeconds!=0)
 		{
-			float pos=soundPositionSamples/(cachedLengthSeconds*sound->GetHz());
+			float pos=soundPositionSeconds/cachedLengthSeconds;
 			LGL_DrawLineToScreen
 			(
 				viewPortLeft+pos*viewPortWidth,

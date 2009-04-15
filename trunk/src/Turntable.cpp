@@ -1173,10 +1173,10 @@ NextFrame
 			{
 				//Lumin Scratch
 				float centerSample=Sound->GetPositionSamples(Channel);
-				float leftSample=centerSample-64*512*Pitchbend*2;
-				float rightSample=centerSample+64*512*Pitchbend*2;
+				float leftSample=centerSample-64*512*Pitchbend*2*Sound->GetHz()/44100.0f;
+				float rightSample=centerSample+64*512*Pitchbend*2*Sound->GetHz()/44100.0f;
 
-				float gSamplePercent=0.5f+(Input.WaveformPointerScratch(target)-0.5f);
+				float gSamplePercent=0.5f+1.05f*(Input.WaveformPointerScratch(target)-0.5f);
 				gSamplePercent = LGL_Clamp(0,(gSamplePercent-0.2f)*(1.0f/0.6f),1);
 
 				LuminScratch=true;
