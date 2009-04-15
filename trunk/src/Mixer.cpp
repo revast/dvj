@@ -915,6 +915,13 @@ SetLowRez
 
 void
 MixerObj::
+BlankFocusFilterText()
+{
+	Turntable[Focus]->BlankFilterText();
+}
+
+void
+MixerObj::
 DrawStatus
 (
 	float	glow,

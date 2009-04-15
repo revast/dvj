@@ -304,6 +304,18 @@ NextFrame
 		//File Select
 		bool filterDelta = false;
 
+		if(LGL_KeyDown(SDLK_BACKSPACE))
+		{
+			if(Mode0BackspaceTimer.SecondsSinceLastReset()>0.5f)
+			{
+				FilterText.SetString();
+			}
+		}
+		else
+		{
+			Mode0BackspaceTimer.Reset();
+		}
+
 		BadFileFlash=LGL_Max(0.0f,BadFileFlash-2.0f*LGL_SecondsSinceLastFrame());
 
 		if(Focus)
@@ -1111,6 +1123,7 @@ NextFrame
 			Sound=NULL;
 			DatabaseEntryNow=NULL;
 			Mode=0;
+			Mode0BackspaceTimer.Reset();
 		}
 		else
 		{
@@ -3489,5 +3502,12 @@ TurntableObj::
 GetSolo()
 {
 	return(VolumeSolo);
+}
+
+void
+TurntableObj::
+BlankFilterText()
+{
+	FilterText.SetString();
 }
 

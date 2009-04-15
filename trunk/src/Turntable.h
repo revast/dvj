@@ -262,6 +262,8 @@ static	LGL_Image*			NoiseImage[NOISE_IMAGE_COUNT_256_64];
 	int				EntireWaveArrayFillIndex;
 	float				CachedLengthSeconds;
 
+	LGL_Timer			Mode0BackspaceTimer;
+
 public:
 
 	void				SwapVideos();
@@ -276,6 +278,7 @@ public:
 	double				GetPercentOfCurrentMeasure(float measureMultiplier=1.0f);
 	double				GetBeginningOfCurrentMeasureSeconds(float measureMultiplier=1.0f);
 	bool				GetSolo();
+	void				BlankFilterText();
 
 };
 
