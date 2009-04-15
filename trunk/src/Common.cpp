@@ -678,7 +678,7 @@ Turntable_DrawWaveform
 		}
 	}
 
-	long pos=(long)soundPositionSamples;
+	long pos=(long)(soundPositionSamples*44100.0f/sound->GetHz());
 
 	//Smooth Zooming Waveform Renderer
 
@@ -735,7 +735,7 @@ Turntable_DrawWaveform
 	{
 		float gleftSample=glitchBegin-glitchLength;
 		float grightSample=glitchBegin+glitchLength;
-		
+
 		float centerSample=soundPositionSamples;
 		float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
 		float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
@@ -1058,8 +1058,8 @@ Turntable_DrawWaveform
 	if(bpm>0)
 	{
 		float centerSample=soundPositionSamples*(44100.0f/sound->GetHz());
-		float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
-		float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+		float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
+		float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
 		double secondsPerBeat=(60.0/bpm);
 
 		if(leftSample<0)
@@ -1160,8 +1160,8 @@ Turntable_DrawWaveform
 		if(savePointSeconds[a]>=0.0f)
 		{
 			float centerSample=soundPositionSamples*(44100.0f/sound->GetHz());
-			float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
-			float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+			float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
+			float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER*sound->GetHz()/44100.0f;
 			float widthSample=rightSample-leftSample;
 
 			long savePointSamples = (long)(savePointSeconds[a]*44100);
