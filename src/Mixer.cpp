@@ -917,7 +917,7 @@ void
 MixerObj::
 BlankFocusFilterText()
 {
-	Turntable[Focus]->BlankFilterText();
+	Turntable[Focus]->BlankFilterTextIfMode0();
 }
 
 void
