@@ -800,17 +800,21 @@ Turntable_DrawWaveform
 	int pointsToDrawIndexStart=0;
 	int pointsToDrawIndexEnd=pointResolution;
 
+	float vertLeft = wavLeft-0.05f;
+	float vertRight= wavRight+0.05f;
+
 	//Experimental frequency-sensitive renderer
-	for(int a=0;a<pointResolution*2;a++)
+	for(int z=-pointResolution;z<pointResolution*2;z++)
 	{
-		float xPreview = pointLeft + a/(float)(pointResolution-2)*pointWidth;
+		int a=z+pointResolution;
+		float xPreview = pointLeft + z/(float)(pointResolution-2)*pointWidth;
 		if
 		(
-			xPreview >= 0.0f &&
-			xPreview <= 1.0f
+			xPreview >= vertLeft &&
+			xPreview <= vertRight
 		)
 		{
-			long sampleNow=(long)(sampleLeftBase+deltaSample*a);
+			long sampleNow=(long)(sampleLeftBase+deltaSample*z);
 			const long sampleLast=(long)(sampleNow+deltaSample);
 			float zeroCrossingFactor;
 			float magnitudeAve;
@@ -828,10 +832,10 @@ Turntable_DrawWaveform
 			magnitudeAve*=volumeMultiplierNow;
 			magnitudeMax*=volumeMultiplierNow;
 
-			double sampleNowDouble=(sampleLeft+sampleWidth*(a/(double)pointResolution));
+			double sampleNowDouble=(sampleLeft+sampleWidth*(z/(double)pointResolution));
 			float xOffset=1.0f-(sampleNow-sampleNowDouble)/(float)deltaSample;
 
-			arrayV[(a*2)+0]=pointLeft+((a-xOffset)/(float)pointResolution)*pointWidth;
+			arrayV[(a*2)+0]=pointLeft+((z-xOffset)/(float)pointResolution)*pointWidth;
 			arrayV[(a*2)+1]=pointBottom+(0.5f+0.5f*magnitudeAve)*pointHeight;
 
 			float glitchDelta = -0.35f*(glitchSampleRight-glitchSampleLeft);
@@ -888,14 +892,14 @@ Turntable_DrawWaveform
 				arrayC[(a*4)+2]=0.0f;
 			}
 		}
-		else if(xPreview > 1.0f)
+		else if(xPreview < vertLeft)
+		{
+			pointsToDrawIndexStart=a+2;
+		}
+		else if(xPreview > vertRight)
 		{
 			pointsToDrawIndexEnd=a-1;
 			break;
-		}
-		else if(xPreview < 0.0f)
-		{
-			pointsToDrawIndexStart=a+2;
 		}
 	}
 
@@ -936,7 +940,7 @@ Turntable_DrawWaveform
 
 	//Linestrop Bottom!
 
-	for(int a=0;a<pointsToDrawIndexEnd-pointsToDrawIndexStart;a++)
+	for(int a=pointsToDrawIndexStart;a<pointsToDrawIndexEnd;a++)
 	{
 		arrayV[(a*2)+1]=(pointBottom+0.5f*pointHeight)-(arrayV[(a*2)+1]-(pointBottom+0.5f*pointHeight));
 	}
