@@ -400,9 +400,14 @@ void NextFrame()
 			delete Mixer;
 			exit(0);
 		}
-		if(LGL_KeyStroke(SDLK_n))
+		if
+		(
+			LGL_KeyStroke(SDLK_n) ||
+			LGL_KeyStroke(SDLK_ESCAPE)
+		)
 		{
 			ExitPrompt=false;
+			Mixer->BlankFocusFilterText();
 		}
 	}
 
