@@ -245,7 +245,9 @@ WaveformNudge
 		return
 		(
 			(LGL_KeyDown(SDLK_LEFT) ? -DELTA : 0) +
-			(LGL_KeyDown(SDLK_RIGHT) ? DELTA : 0)
+			(LGL_KeyDown(SDLK_RIGHT) ? DELTA : 0) +
+			(LGL_KeyDown(SDLK_KP7) ? -DELTA : 0) +
+			(LGL_KeyDown(SDLK_KP9) ? DELTA : 0)
 		);
 	}
 	else
@@ -676,7 +678,27 @@ WaveformSavePointShift
 	unsigned int	target
 )	const
 {
-	return(0.0f);
+	const float SPEED = 0.025f;
+	float percent=0.0f;
+
+	if((target & TARGET_BOTTOM))
+	{
+		percent+=LGL_SecondsSinceLastFrame()*SPEED*
+		(
+			(LGL_KeyDown(SDLK_KP3) ? 1 : 0) -
+			(LGL_KeyDown(SDLK_KP1) ? 1 : 0)
+		);
+	}
+	else if((target & TARGET_TOP))
+	{
+		percent+=LGL_SecondsSinceLastFrame()*SPEED*
+		(
+			(LGL_KeyDown(SDLK_KP3) ? 1 : 0) -
+			(LGL_KeyDown(SDLK_KP1) ? 1 : 0)
+		);
+	}
+
+	return(percent);
 }
 
 float
