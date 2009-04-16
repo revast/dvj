@@ -827,8 +827,7 @@ NextFrame
 			Input.WaveformSavePointJumpAtMeasure(target) &&
 			SavePointSeconds[SavePointIndex]!=-1.0f &&
 			GetBPM()!=0 &&
-			PauseMultiplier!=0 &&
-			SecondsNow>=GetBPMFirstBeatSeconds()
+			PauseMultiplier!=0
 		)
 		{
 			LoopStartSeconds=-1.0;
@@ -838,6 +837,10 @@ NextFrame
 				//Jump at start of next measure
 				double beatStart=GetBPMFirstBeatSeconds();
 				double measureLength=(1.0f/GetBPM())*60.0f*(4.0f);
+				while(beatStart>0)
+				{
+					beatStart-=measureLength;
+				}
 				double savePointSecondsQuantized=beatStart;
 				double closest=99999.0;
 				for(double test=beatStart;test<savePointSeconds+2*measureLength;test+=0.25*measureLength)
