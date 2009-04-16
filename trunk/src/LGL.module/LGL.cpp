@@ -8159,6 +8159,8 @@ const	char	*string,
 		xNow+=fixedWidthOn ? ((fixedWidth>width) ? fixedWidth : width) : width;
 	}
 
+	glDisable(GL_POLYGON_SMOOTH);
+
 	glMatrixMode(GL_TEXTURE);
 	glPushMatrix();
 	glLoadIdentity();
@@ -8213,6 +8215,8 @@ const	char	*string,
 	glDisable(GL_TEXTURE_2D);
 
 	glPopMatrix();
+	
+	glEnable(GL_POLYGON_SMOOTH);
 
 	return(xNow);
 }
