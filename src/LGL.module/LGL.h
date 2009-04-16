@@ -912,12 +912,12 @@ const	char*		GetPathShort() const;
 	int		GlyphSideLength;
 	int		TextureSideLength;
 	GLuint		TextureGL;
-	float		GlyphTexLeft[256];
-	float		GlyphTexRight[256];
-	float		GlyphTexBottom[256];
-	float		GlyphTexTop[256];
-	float		GlyphTexWidth[256];
-	float		GlyphTexHeight[256];
+	int		GlyphTexLeft[256];
+	int		GlyphTexRight[256];
+	int		GlyphTexBottom[256];
+	int		GlyphTexTop[256];
+	int		GlyphTexWidth[256];
+	int		GlyphTexHeight[256];
 	float		GlyphTexWidthHeightRatio[256];
 };
 

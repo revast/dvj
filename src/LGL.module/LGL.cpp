@@ -2398,6 +2398,9 @@ int	lgl_MidiUpdate(void* nothing);	//Internal LGL function
 float lgl_font_gl_buffer[FONT_BUFFER_SIZE];
 float* lgl_font_gl_buffer_ptr;
 
+int lgl_font_gl_buffer_int[FONT_BUFFER_SIZE];
+int* lgl_font_gl_buffer_int_ptr;
+
 void
 LGL_SwapBuffers()
 {
@@ -2779,6 +2782,7 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 #endif	//LGL_NO_GRAPHICS
 
 	lgl_font_gl_buffer_ptr = &(lgl_font_gl_buffer[0]);
+	lgl_font_gl_buffer_int_ptr = &(lgl_font_gl_buffer_int[0]);
 
 	if(LGL.RecordMovie)
 	{
@@ -7903,7 +7907,7 @@ LGL_Font
 			GlyphTexBottom[a]=y+Glyph[a]->h;
 			GlyphTexTop[a]=y;
 			GlyphTexWidth[a]=GlyphTexRight[a]-GlyphTexLeft[a];
-			GlyphTexHeight[a]=fabsf(GlyphTexTop[a]-GlyphTexBottom[a]);
+			GlyphTexHeight[a]=GlyphTexBottom[a]-GlyphTexTop[a];
 			GlyphTexWidthHeightRatio[a]=(float)GlyphTexWidth[a]/(float)GlyphTexHeight[a];
 
 			x+=GlyphSideLength;
@@ -7949,6 +7953,15 @@ lgl_GetFontBuffer(int floatCount)
 	float* ret = lgl_font_gl_buffer_ptr;
 	lgl_font_gl_buffer_ptr = &(lgl_font_gl_buffer_ptr[floatCount]);
 	assert(lgl_font_gl_buffer_ptr < lgl_font_gl_buffer + FONT_BUFFER_SIZE);
+	return(ret);
+}
+
+int*
+lgl_GetFontBufferInt(int intCount)
+{
+	int* ret = lgl_font_gl_buffer_int_ptr;
+	lgl_font_gl_buffer_int_ptr = &(lgl_font_gl_buffer_int_ptr[intCount]);
+	assert(lgl_font_gl_buffer_int_ptr < lgl_font_gl_buffer_int + FONT_BUFFER_SIZE);
 	return(ret);
 }
 
@@ -8035,9 +8048,8 @@ const	char	*string,
 	int textureArraySize=vertexArraySize;
 	int colorArraySize=vertexArraySize*2;	//XY => RGBA
 
-	//TODO: Why allocate on the fly when we can just keep these in the object?
 	float* vertexArray=lgl_GetFontBuffer(vertexArraySize);
-	float* textureArray=lgl_GetFontBuffer(textureArraySize);
+	int* textureArray=lgl_GetFontBufferInt(textureArraySize);
 	float* colorArray=lgl_GetFontBuffer(colorArraySize);
 
 	assert(Glyph[32]);
@@ -8110,28 +8122,28 @@ const	char	*string,
 		vertexArray[(a*16)+14] = right;			//RB.x
 		vertexArray[(a*16)+15] = bottom;		//RB.y
 
-		float texLeft = GlyphTexLeft[ch]/(float)TextureSideLength;
-		float texRight = GlyphTexRight[ch]/(float)TextureSideLength;
-		float texBottom = GlyphTexBottom[ch]/(float)TextureSideLength;
-		float texTop = GlyphTexTop[ch]/(float)TextureSideLength;
+		int texLeft = GlyphTexLeft[ch];///(float)TextureSideLength;
+		int texRight = GlyphTexRight[ch];///(float)TextureSideLength;
+		int texBottom = GlyphTexBottom[ch];///(float)TextureSideLength;
+		int texTop = GlyphTexTop[ch];///(float)TextureSideLength;
 
 		textureArray[(a*16)+0] = texLeft;	//LB.x
-		textureArray[(a*16)+1] = texBottom;	//LB.y
+		textureArray[(a*16)+1] = (ch==' ') ? texTop : texBottom;	//LB.y
 		textureArray[(a*16)+2] = texLeft;	//LT.x
 		textureArray[(a*16)+3] = texTop;	//LT.y
 		textureArray[(a*16)+4] = texRight;	//RT.x
 		textureArray[(a*16)+5] = texTop;	//RT.y
 		textureArray[(a*16)+6] = texRight;	//RB.x
-		textureArray[(a*16)+7] = texBottom;	//RB.y
+		textureArray[(a*16)+7] = (ch==' ') ? texTop : texBottom;	//RB.y
 
 		textureArray[(a*16)+8] = texLeft;	//LB.x
-		textureArray[(a*16)+9] = texBottom;	//LB.y
+		textureArray[(a*16)+9] = (ch==' ') ? texTop : texBottom;	//LB.y
 		textureArray[(a*16)+10] = texLeft;	//LT.x
 		textureArray[(a*16)+11] = texTop;	//LT.y
 		textureArray[(a*16)+12] = texRight;	//RT.x
 		textureArray[(a*16)+13] = texTop;	//RT.y
 		textureArray[(a*16)+14] = texRight;	//RB.x
-		textureArray[(a*16)+15] = texBottom;	//RB.y
+		textureArray[(a*16)+15] = (ch==' ') ? texTop : texBottom;	//RB.y
 
 		for(int z=0;z<2;z++)
 		{
@@ -8146,6 +8158,11 @@ const	char	*string,
 
 		xNow+=fixedWidthOn ? ((fixedWidth>width) ? fixedWidth : width) : width;
 	}
+
+	glMatrixMode(GL_TEXTURE);
+	glPushMatrix();
+	glLoadIdentity();
+	glScalef(1.0f/TextureSideLength, 1.0f/TextureSideLength, 1);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
@@ -8170,7 +8187,7 @@ const	char	*string,
 	glTexCoordPointer
 	(
 		2,
-		GL_FLOAT,
+		GL_INT,
 		0,
 		textureArray
 	);
@@ -8189,19 +8206,13 @@ const	char	*string,
 		len*8
 	);
 
-	/*
-	for(unsigned int a=0;a<8*len;a++)
-	{
-		printf("vertexArray[%i]: %.2f, %.2f\n",a,vertexArray[(a*2)+0],vertexArray[(a*2)+1]);
-	}
-	exit(0);
-	*/
-
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
 
 	glDisable(GL_TEXTURE_2D);
+
+	glPopMatrix();
 
 	return(xNow);
 }
