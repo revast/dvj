@@ -475,7 +475,6 @@ NextFrame
 				if(LGL_FileExists(filename))
 				{
 					LGL_DrawLogWrite("!dvj::NewSound|%s|%i\n",filename,Which);
-					LoadMetaData();
 					Sound=new LGL_Sound
 					(
 						 filename,
@@ -515,6 +514,7 @@ NextFrame
 							SavePointUnsetNoisePercent[a]=0.0f;
 							SavePointUnsetFlashPercent[a]=0.0f;
 						}
+						LoadMetaData();
 						FilterText.ReleaseFocus();
 						ClearRecallOrigin();
 
