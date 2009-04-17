@@ -12370,6 +12370,34 @@ GetMetadata
 	magnitudeMax=0.0f;
 
 	float lengthSeconds=GetLengthSeconds();
+	float secondsDelta = secondsEnd-secondsBegin;
+	if(IsLoaded())
+	{
+		if(secondsBegin<0)
+		{
+			//Protect against infini-looping
+			if(secondsBegin+100*lengthSeconds>0)
+			{
+				while(secondsBegin<0)
+				{
+					secondsBegin+=lengthSeconds;
+				}
+				secondsEnd=secondsBegin+secondsDelta;
+			}
+		}
+		else if(secondsBegin>lengthSeconds)
+		{
+			if(secondsBegin-100*lengthSeconds<0)
+			{
+				while(secondsBegin>lengthSeconds)
+				{
+					secondsBegin-=lengthSeconds;
+				}
+				secondsEnd=secondsBegin+secondsDelta;
+			}
+		}
+	}
+
 	secondsBegin = LGL_Clamp(0.0f,secondsBegin,lengthSeconds);
 	secondsEnd = LGL_Clamp(0.0f,secondsEnd,lengthSeconds);
 	if(secondsBegin==secondsEnd)
