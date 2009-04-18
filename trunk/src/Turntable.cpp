@@ -1736,7 +1736,10 @@ NextFrame
 	if(Mode==2)
 	{
 		float vol = VolumeKill ? 0.0f : 0.5f*VolumeSlider*VolumeMultiplierNow*(1.0f-GrainStreamCrossfader);
-		vol *= (1.0f-NoiseFactor);
+		if(FinalSpeed!=0.0f)
+		{
+			vol *= (1.0f-NoiseFactor);
+		}
 		float volFront = VolumeInvertBinary ?
 			(MixerVolumeFront==0.0f ? 1.0f : 0.0f) :
 			MixerVolumeFront;
