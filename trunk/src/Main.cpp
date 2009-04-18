@@ -286,8 +286,6 @@ void NextFrame()
 
 	mouseMotionEver|=LGL_MouseMotion();
 
-	bool presentTitle = false;
-
 	if
 	(
 		LGL_KeyStroke(SDLK_F7) &&
@@ -451,7 +449,6 @@ void NextFrame()
 	}
 	LGL_SetRecordDVJToFileVolume(OmniFader);
 	Mixer->SetVolumeMaster(OmniFader);
-	if(presentTitle) PresentTitle();
 	LGL_DrawLogWrite("dvj::OmniFader|%.3f\n",OmniFader);
 }
 
