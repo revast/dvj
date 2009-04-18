@@ -115,12 +115,8 @@ void InitializeGlobals()
 	QuadrentSplitX=.5f;
 	QuadrentSplitY=.5f;
 	ExitPrompt=false;
-
-	Visualizer=new VisualizerObj;
-	Mixer=new MixerObj;
-	Mixer->SetVisualizer(Visualizer);
-
 	VisualizerFullScreen=false;
+
 	ParticleSystemImage=new LGL_Image("data/particle.png");
 	for(int a=0;a<8;a++)
 	{
@@ -141,6 +137,10 @@ void InitializeGlobals()
 		);
 		ParticlePointersActive[a]=false;
 	}
+
+	Visualizer=new VisualizerObj;
+	Mixer=new MixerObj;
+	Mixer->SetVisualizer(Visualizer);
 }
 
 void
@@ -716,6 +716,33 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	}
 }
 
+LGL_Image* logo=NULL;
+
+void
+DrawLoadScreen()
+{
+	if(logo==NULL)
+	{
+		logo = new LGL_Image("data/logo.png");
+	}
+	float height=0.03f;
+	float aspect = LGL_VideoAspectRatio();
+	logo->DrawToScreen
+	(
+		0.5f-0.5f*height,	0.5f+0.5f*height,
+		0.5f-0.5f*height*aspect,0.5f+0.5f*height*aspect
+	);
+	LGL_GetFont().DrawString
+	(
+		.5,.3,.02,
+		1,1,1,1,
+		true,
+		.75,
+		" loading..."
+	);
+	LGL_SwapBuffers();
+}
+
 int main(int argc, char** argv)
 {
 	//Initialize LGL
@@ -792,6 +819,8 @@ int main(int argc, char** argv)
 		LGL_FullScreenToggle();
 	}
 
+	DrawLoadScreen();
+
 	VerifyMusicDir();
 
 	InitializeGlobals();
@@ -818,6 +847,9 @@ int main(int argc, char** argv)
 		ParticleSystemImage->GetPath(),
 		600			//Particles Per Second
 	);
+
+	DrawLoadScreen();
+	DrawLoadScreen();
 
 	for(;;)
 	{
