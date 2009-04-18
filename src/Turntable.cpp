@@ -135,8 +135,8 @@ TurntableObj
 
 	ClearRecallOrigin();
 
-	WhiteFactor=0.0f;
-	NoiseFactor=0.0f;
+	WhiteFactor=1.0f;
+	NoiseFactor=1.0f;
 	NoiseFactorVideo=0.0f;
 	if(NoiseImage[0]==NULL)
 	{

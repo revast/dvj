@@ -2917,6 +2917,12 @@ LGL_VideoResolutionY()
 	return(LGL.VideoResolutionY);
 }
 
+float
+LGL_VideoAspectRatio()
+{
+	return(LGL.VideoResolutionX/(float)LGL.VideoResolutionY);
+}
+
 inline
 void
 lgl_glScreenify2D()
