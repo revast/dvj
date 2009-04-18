@@ -196,78 +196,6 @@ VerifyMusicDir()
 #endif	//LGL_WIN32
 }
 
-void PresentTitle()
-{
-	LGL_DelayMS(100);
-	LGL_Timer titleTimer;
-	LGL_ViewPortScreen(0,2,-1,1);
-	LGL_DrawLogWrite("!dvjTitleScreenAlpha\n");
-	for(;;)
-	{
-		LGL_ProcessInput();
-
-		if(titleTimer.SecondsSinceLastReset()>2.0f)
-		{
-			break;
-		}
-		LGL_GetFont().DrawString
-		(
-			0.5f,0.9f,0.06f,
-			1,1,1,1,
-			true,
-			1.0f,
-			"Musefuse"
-		);
-		LGL_GetFont().DrawString
-		(
-			0.5f,0.85f,0.03f,
-			1,1,1,1,
-			true,
-			1.0f,
-			"Wiimote DJ/VJ Software"
-		);
-
-		LGL_GetFont().DrawString
-		(
-			0.5f,0.55f,0.06f,
-			1,1,1,1,
-			true,
-			1.0f,
-			"GDC Performance"
-		);
-		LGL_GetFont().DrawString
-		(
-			0.5f,0.45f,0.06f,
-			1,1,1,1,
-			true,
-			1.0f,
-			"March 7, 2007"
-		);
-
-		LGL_GetFont().DrawString
-		(
-			0.5f,0.1f,0.03f,
-			1,1,1,1,
-			true,
-			1.0f,
-			"http://musefuse.org"
-		);
-		LGL_GetFont().DrawString
-		(
-			0.5f,0.025f,0.03f,
-			1,1,1,1,
-			true,
-			1.0f,
-			"interim.descriptor at gmail.com"
-		);
-
-		LGL_DelaySeconds(1.0f/240.0f-LGL_SecondsSinceThisFrame());
-		LGL_SwapBuffers();
-	}
-	LGL_DrawLogWrite("!dvjTitleScreenOmega\n");
-	LGL_ViewPortScreen(0,1,0,1);
-}
-
 void WarnVsync()
 {
 	printf("dvj: Error! OpenGL V-Sync must be enabled!\n");
@@ -819,9 +747,9 @@ int main(int argc, char** argv)
 		LGL_FullScreenToggle();
 	}
 
-	DrawLoadScreen();
-
 	VerifyMusicDir();
+
+	DrawLoadScreen();
 
 	InitializeGlobals();
 
