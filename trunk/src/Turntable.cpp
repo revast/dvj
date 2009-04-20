@@ -751,7 +751,7 @@ NextFrame
 				SavePointUnsetNoisePercent[SavePointIndex]=LGL_Max
 				(
 					SavePointUnsetNoisePercent[SavePointIndex],
-					LGL_Min(1,Input.WaveformSavePointUnsetPercent(target)*2.0f)
+					LGL_Min(1,(SavePointSeconds[SavePointIndex]>-1.0f) ? (Input.WaveformSavePointUnsetPercent(target)*2.0f) : 0)
 				);
 			}
 		}
@@ -1810,7 +1810,11 @@ DrawFrame
 	}
 
 	float rectAlpha=1.0f;
-	if(GetVideo()!=NULL)
+	if
+	(
+		Mode==2 &&
+		GetVideo()!=NULL
+	)
 	{
 		//On Left
 		float left=	ViewPortLeft;
