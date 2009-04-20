@@ -1278,7 +1278,7 @@ Turntable_DrawWaveform
 			entireWaveArrayLine1Points[a*2+1]=LGL_Clamp
 			(
 				waveBottom,
-				waveBottom+(0.5f+1.0f*magnitudeAve*volumeMultiplierNow)*waveHeight,
+				waveBottom+(0.5f+0.5f*magnitudeAve*volumeMultiplierNow)*waveHeight,
 				waveTop
 			);
 
