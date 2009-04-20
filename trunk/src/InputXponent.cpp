@@ -338,6 +338,28 @@ FileScroll
 			}
 		}
 
+		//Fast button scrolling
+		{
+			const float RATE = 40.0f;
+
+			if(target & TARGET_BOTTOM)
+			{
+				scroll+=
+				(
+					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_FAST_FORWARD) ? LGL_SecondsSinceLastFrame()*RATE : 0) +
+					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_REWIND) ? -LGL_SecondsSinceLastFrame()*RATE : 0)
+				);
+			}
+			else if (target & TARGET_TOP)
+			{
+				scroll+=
+				(
+					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_FAST_FORWARD) ? LGL_SecondsSinceLastFrame()*RATE : 0) +
+					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_REWIND) ? -LGL_SecondsSinceLastFrame()*RATE : 0)
+				);
+			}
+		}
+
 		//Unitary button scrolling
 		{
 			if(target & TARGET_BOTTOM)
