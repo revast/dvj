@@ -163,8 +163,8 @@ MatchesFilter
 			return(false);
 		}
 
-		float top = filter->BPMCenter + filter->BPMRange;
-		float bottom = filter->BPMCenter - filter->BPMRange;
+		float top = filter->BPMCenter + filter->BPMRange+0.5f;
+		float bottom = filter->BPMCenter - filter->BPMRange-0.5f;
 		if
 		(
 			filter->BPMCenter==0 ||
