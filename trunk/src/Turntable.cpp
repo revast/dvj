@@ -304,7 +304,11 @@ NextFrame
 		//File Select
 		bool filterDelta = false;
 
-		if(LGL_KeyDown(SDLK_BACKSPACE))
+		if
+		(
+			Focus &&
+			LGL_KeyDown(SDLK_BACKSPACE)
+		)
 		{
 			if(Mode0BackspaceTimer.SecondsSinceLastReset()>0.5f)
 			{
@@ -1506,14 +1510,6 @@ NextFrame
 			PauseMultiplier=0;
 			Pitchbend=1;
 			PitchbendLastSetBySlider=false;
-			if
-			(
-				GetBPM()>0 &&
-				BPMMaster>0
-			)
-			{
-				SetBPMAdjusted(BPMMaster);
-			}
 			Nudge=0;
 			NudgeFromMixer=0;
 			GlitchPure=false;
