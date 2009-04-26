@@ -7643,7 +7643,7 @@ MaybeChangeVideo()
 		//Find streams
 		if(av_find_stream_info(fc)<0)
 		{
-			printf("LGL_Video::MaybeChangeVideo(): Couldn't find streams for '%s'\n",Path);
+			//printf("LGL_Video::MaybeChangeVideo(): Couldn't find streams for '%s'\n",Path);
 			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
