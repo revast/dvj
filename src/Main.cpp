@@ -741,7 +741,7 @@ int main(int argc, char** argv)
 	if(fullscreen)
 	{
 		//This seems weird, but it keeps us at fullscreen and lets us rotate our Compiz Cube
-		LGL_FullScreenToggle();
+		//LGL_FullScreenToggle();
 	}
 
 	VerifyMusicDir();
