@@ -63,8 +63,8 @@
 
 extern "C"
 {
-	#include <ffmpeg/avformat.h>
-	#include <ffmpeg/swscale.h>
+	#include <libavformat/avformat.h>
+	#include <libswscale/swscale.h>
 }
 
 #define LGL_PI	3.1415926535
