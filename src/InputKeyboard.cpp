@@ -681,15 +681,7 @@ WaveformSavePointShift
 	const float SPEED = 0.025f;
 	float percent=0.0f;
 
-	if((target & TARGET_BOTTOM))
-	{
-		percent+=LGL_SecondsSinceLastFrame()*SPEED*
-		(
-			(LGL_KeyDown(SDLK_KP3) ? 1 : 0) -
-			(LGL_KeyDown(SDLK_KP1) ? 1 : 0)
-		);
-	}
-	else if((target & TARGET_TOP))
+	if((target & TARGET_FOCUS))
 	{
 		percent+=LGL_SecondsSinceLastFrame()*SPEED*
 		(
