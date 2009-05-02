@@ -682,7 +682,7 @@ int main(int argc, char** argv)
 		}
 		else if(strcasecmp(argv[a],"--480p")==0)
 		{
-			resX=853;
+			resX=852;
 			resY=480;
 		}
 		else if(strcasecmp(argv[a],"--drawFPS")==0)
