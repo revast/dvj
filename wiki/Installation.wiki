@@ -22,7 +22,7 @@ You'll also need to compile + install SDL_audioin:
  sudo mv sdl_audioin-0.3-rc1 /usr/src/
 }}}
 
-Finally, you'll need JACK 0.116.1, which is likely more recent than the version your distro provides:
+Finally, you'll need this *exact* version of JACK, 0.116.1, which is likely not the version your distro provides:
 {{{
 wget http://jackaudio.org/downloads/jack-audio-connection-kit-0.116.1.tar.gz
 tar -zxf jack-audio-connection-kit-0.116.1.tar.gz 
@@ -68,7 +68,7 @@ cd dvj/data
 ln -s ~/mp3s music
 }}}
 
-Ensure vsync is enable for OpenGL. For nvidia cards, run `nvidia-settings`, click "OpenGL Settings", then click the checkbox for "Sync to VBlank".
+Ensure vsync is enabled for OpenGL. For nvidia cards, run `nvidia-settings`, click "OpenGL Settings", then click the checkbox for "Sync to VBlank".
 
 You'll also need to ensure this setting is loaded each time you log in. You'd expect this to happen automatically, but it doesn't. Do this:
  # *System* => *Preferences* => *Sessions*
@@ -93,7 +93,18 @@ The following should be pasted into an empty ~/.jackrc if you're using a 2-chann
 
 *IMPORTANT*: Do not attempt to use the -R or -P flags in this file. dvj handles assigning JACK realtime priority. This is necessary because JACK doesn't respect its own -Z flag, when invoked with the -R flag. If you use the -R flag, JACK might disconnect dvj. Lame, huh?
 
-You should experiment tweaking the numbers associated with the -p and -n parameters, to optimize latency for your system. A realtime linux kernel is highly recommended, but beyond the scope of this document.
+You should experiment tweaking the numbers associated with the -p and -n parameters, to optimize latency for your system.
+
+A realtime linux kernel is highly recommended, but beyond the scope of this document. If you're running Ubuntu, you can install their realtime kernel like so:
+{{{
+apt-get install linux-rt
+}}}
+
+Beware: Ubuntu's realtime kernel is notoriously crashy. The following page guides you through compiling your own, non-crashy realtime kernel:
+
+http://izanbardprince.wordpress.com/2009/03/26/how-to-fix-ubuntu-jaunty-warning-hacks-ahead/
+
+
 
 ===~/.asoundrc===
 The following should be pasted into an empty ~/.asoundrc, and will support 4-channel output on an M-Audio Xponent. Use this file even if you don't own an Xponent.
