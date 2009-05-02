@@ -547,7 +547,7 @@ WaveformNudge
 	unsigned int	target
 )	const
 {
-	const float RATE = 0.04f;
+	const float rate = 0.04f;
 
 	float nudge=0.0f;
 
@@ -555,13 +555,13 @@ WaveformNudge
 	{
 		if(target & TARGET_BOTTOM)
 		{
-			nudge-=RATE*(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LEFT));
-			nudge+=RATE*(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_RIGHT));
+			nudge-=rate*(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LEFT));
+			nudge+=rate*(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_RIGHT));
 		}
 		else if(target & TARGET_TOP)
 		{
-			nudge-=RATE*(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LEFT));
-			nudge+=RATE*(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_RIGHT));
+			nudge-=rate*(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LEFT));
+			nudge+=rate*(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_RIGHT));
 		}
 	}
 
@@ -696,6 +696,7 @@ WaveformEQLow
 			low = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_LOW);
 		}
 	}
+
 	return(low);
 }
 
@@ -970,16 +971,16 @@ WaveformVolumeSlider
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_BUTTON_RIGHT_VOLUME))
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_RIGHT_VOLUME))
 			{
-				volume=LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_BUTTON_RIGHT_VOLUME);
+				volume=LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_RIGHT_VOLUME);
 			}
 		}
 		else if(target & TARGET_TOP)
 		{
-			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_BUTTON_LEFT_VOLUME))
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_LEFT_VOLUME))
 			{
-				volume=LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_BUTTON_LEFT_VOLUME);
+				volume=LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_VOLUME);
 			}
 		}
 	}
@@ -1054,30 +1055,32 @@ WaveformRewindFF
 	unsigned int	target
 )	const
 {
+	float rate = 32.0f;
+
 	float rewindff=0.0f;
 
 	if(LGL_GetXponent())
 	{
-		if((target & TARGET_BOTTOM))
+		if(target & TARGET_BOTTOM)
 		{
 			if(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_REWIND))
 			{
-				rewindff-=32.0f;
+				rewindff-=rate;
 			}
 			if(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_FAST_FORWARD))
 			{
-				rewindff+=32.0f;
+				rewindff+=rate;
 			}
 		}
 		else if(target & TARGET_TOP)
 		{
 			if(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_REWIND))
 			{
-				rewindff-=32.0f;
+				rewindff-=rate;
 			}
 			if(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_FAST_FORWARD))
 			{
-				rewindff+=32.0f;
+				rewindff+=rate;
 			}
 		}
 	}

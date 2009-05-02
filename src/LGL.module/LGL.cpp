@@ -790,7 +790,7 @@ typedef void (*gl2DeleteBuffers_Func)
 gl2DeleteBuffers_Func gl2DeleteBuffers=NULL;
 
 bool
-LGL_InitJack()
+LGL_JackInit()
 {
 	printf("\n\nLGL JACK Initialization\n");
 	printf("---\n");
@@ -803,17 +803,17 @@ LGL_InitJack()
 	jack_client=jack_client_open(client_name,jack_options,&status,server_name);
 	if(jack_client==NULL)
 	{
-		printf("LGL_InitJack(): Error! jack_client_open() failed! status = 0x%2.0x\n",status);
+		printf("LGL_JackInit(): Error! jack_client_open() failed! status = 0x%2.0x\n",status);
 		return(false);
 	}
 	if(status & JackServerStarted)
 	{
-		printf("LGL_InitJack(): JACK server started...\n");
+		printf("LGL_JackInit(): JACK server started...\n");
 	}
 	if(status & JackNameNotUnique)
 	{
 		client_name = jack_get_client_name(jack_client);
-		printf("LGL_InitJack(): Unique name '%s' assigned...\n",client_name);
+		printf("LGL_JackInit(): Unique name '%s' assigned...\n",client_name);
 	}
 
 	//Tell JACK about our main callback
@@ -825,7 +825,7 @@ LGL_InitJack()
 	//Tell JACK about our callback if JACK ever quits or drops us
 	jack_on_shutdown(jack_client,lgl_AudioShutdownCallbackJack,0);
 
-	printf("LGL_InitJack(): Sample Rate: %i\n",jack_get_sample_rate(jack_client));
+	printf("LGL_JackInit(): Sample Rate: %i\n",jack_get_sample_rate(jack_client));
 
 	jack_output_port_fl = jack_port_register(jack_client,"output_fl",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
 	jack_output_port_fr = jack_port_register(jack_client,"output_fr",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
@@ -841,7 +841,7 @@ LGL_InitJack()
 		//|| jack_input_port==NULL
 	)
 	{
-		printf("LGL_InitJack(): Error! Couldn't acquire JACK port(s)!\n");
+		printf("LGL_JackInit(): Error! Couldn't acquire JACK port(s)!\n");
 		exit(-1);
 	}
 
@@ -852,7 +852,7 @@ LGL_InitJack()
 	//Fire it up!
 	if(jack_activate(jack_client)!=0)
 	{
-		printf("LGL_InitJack(): Error! jack_activate() failed!\n");
+		printf("LGL_JackInit(): Error! jack_activate() failed!\n");
 		exit(-1);
 	}
 
@@ -862,7 +862,7 @@ LGL_InitJack()
 	const char** jack_ports = jack_get_ports(jack_client, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
 	if(jack_ports==NULL)
 	{
-		printf("LGL_InitJack(): Error! No physical playback ports!\n");
+		printf("LGL_JackInit(): Error! No physical playback ports!\n");
 		exit(-1);
 	}
 	LGL.AudioSpec->channels=0;
@@ -885,14 +885,14 @@ LGL_InitJack()
 		else if(a==3)	whichPort=jack_output_port_br;
 		if(jack_connect(jack_client,jack_port_name(whichPort),jack_ports[a])!=0)
 		{
-			printf("LGL_InitJack(): Error! Cannot connect to output port %i!\n",a);
+			printf("LGL_JackInit(): Error! Cannot connect to output port %i!\n",a);
 			exit(-1);
 		}
 		LGL.AudioSpec->channels=a+1;
 	}
 	if(LGL.AudioSpec->channels==0)
 	{
-		printf("LGL_InitJack(): Error! Cannot connect to any output port!\n");
+		printf("LGL_JackInit(): Error! Cannot connect to any output port!\n");
 		exit(-1);
 	}
 
@@ -902,7 +902,7 @@ LGL_InitJack()
 
 	free(jack_ports);
 
-	printf("LGL_InitJack(): Success! (%i channels)\n",LGL.AudioSpec->channels);
+	printf("LGL_JackInit(): Success! (%i channels)\n",LGL.AudioSpec->channels);
 	printf("---\n\n");
 
 	return(true);
@@ -917,7 +917,11 @@ LGL_Init
 	const char*	inWindowTitle
 )
 {
-	inAudioChannels=4;
+	if(inAudioChannels!=0)
+	{
+		inAudioChannels=4;
+	}
+
 	//Setup initial RT priorities
 	mlockall(MCL_CURRENT | MCL_FUTURE);
 
@@ -1055,18 +1059,14 @@ LGL_Init
 
 	if(inAudioChannels>0)
 	{
-		if(LGL_FileExists("diskWriter.lin"))
-		{
-			char filename[1024];
-			sprintf(filename,"data/record/%s.mp3",LGL_DateAndTimeOfDayOfExecution());
-
-			char command[1024];
-			sprintf(command,"./diskWriter.lin \"%s\" --lame --freq %i",filename,LGL.AudioSpec->freq);
-			LGL.RecordFileDescriptor=popen(command,"w");
-		}
+		bool pulserunning = !system("pgrep pulseaudio > /dev/null");
 
 		LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
-		if(LGL_InitJack())
+		if
+		(
+			pulserunning==false &&
+			LGL_JackInit()
+		)
 		{
 			//Huzzah!
 		}
@@ -1132,13 +1132,17 @@ LGL_Init
 
 			//setenv("SDL_AUDIODRIVER", audioDriver, 1);
 
+			if(pulserunning && inAudioChannels==4)
+			{
+				//For pulse, channels 3 and 4 are Center and LFE, so we need 6 channels to get to rear left and rear right.
+				//6 channels isn't working... Not clear why. Downmix to 2, for now.
+				inAudioChannels=2;
+				LGL.AudioSpec->channels=inAudioChannels;
+			}
+
 			LGL_SAMPLESIZE_SDL = 1024;
 			SDL_AudioSpec* AudioObtained=(SDL_AudioSpec*)malloc(sizeof(SDL_AudioSpec));;
-			if
-			(
-				inAudioChannels>0 &&
-				SDL_OpenAudio(LGL.AudioSpec,AudioObtained)==0
-			)
+			if(SDL_OpenAudio(LGL.AudioSpec,AudioObtained)==0)
 			{
 				LGL.AudioAvailable=true;
 
@@ -1185,6 +1189,18 @@ LGL_Init
 			}
 		}
 		LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
+	}
+	if(LGL.AudioAvailable)
+	{
+		if(LGL_FileExists("diskWriter.lin"))
+		{
+			char filename[1024];
+			sprintf(filename,"data/record/%s.mp3",LGL_DateAndTimeOfDayOfExecution());
+
+			char command[1024];
+			sprintf(command,"./diskWriter.lin \"%s\" --lame --freq %i &2>/dev/null",filename,LGL.AudioSpec->freq);
+			LGL.RecordFileDescriptor=popen(command,"w");
+		}
 	}
 
 	SDL_WM_SetCaption(inWindowTitle,inWindowTitle);
@@ -12943,7 +12959,7 @@ LGL_AttemptAudioRevive()
 	if(LGL_AudioAvailable()) return(true);
 	if(LGL.AudioUsingJack)
 	{
-		return(LGL_InitJack());
+		return(LGL_JackInit());
 	}
 	else
 	{
@@ -23131,9 +23147,9 @@ lgl_AudioOutCallbackGenerator
 	int	len8
 );
 
-Uint8 audioOutResult[4*2*LGL_SAMPLESIZE*16];
-Uint8 audioOutBuffer[4*2*LGL_SAMPLESIZE*16];
-long audioOutBufferSizeBytes=0;
+Uint8 audioOutResult[6*2*LGL_SAMPLESIZE*64];
+Uint8 audioOutBuffer[6*2*LGL_SAMPLESIZE*64];
+long audioOutBufferFilledBytes=0;
 
 void
 lgl_AudioOutCallback
@@ -23146,13 +23162,13 @@ lgl_AudioOutCallback
 	bool mix4to6 = LGL.AudioSpec->channels==6;
 	for(;;)
 	{
-		if(audioOutBufferSizeBytes>=len8)
+		if(audioOutBufferFilledBytes>=len8)
 		{
 			break;
 		}
-		int vChannels=LGL.AudioSpec->channels;
-		if(mix4to6) vChannels=4;
-		const int decodeBytes=vChannels*2*LGL_SAMPLESIZE;
+		int renderChannels=LGL.AudioSpec->channels;
+		if(mix4to6) renderChannels=4;
+		const int decodeBytes=renderChannels*2*LGL_SAMPLESIZE;
 		const int decodeBytesOut=LGL.AudioSpec->channels*2*LGL_SAMPLESIZE;
 		memset(audioOutResult,0,decodeBytes);
 		lgl_AudioOutCallbackGenerator
@@ -23175,6 +23191,8 @@ lgl_AudioOutCallback
 				//Center/Sub
 				audioOutBuffer16[6*a+2]=LGL.AudioSpec->silence;
 				audioOutBuffer16[6*a+3]=LGL.AudioSpec->silence;
+				audioOutBuffer16[6*a+2]=audioOutResult16[4*a+0];
+				audioOutBuffer16[6*a+3]=audioOutResult16[4*a+1];
 
 				//Rear
 				audioOutBuffer16[6*a+4]=audioOutResult16[4*a+2];
@@ -23183,20 +23201,21 @@ lgl_AudioOutCallback
 		}
 		else
 		{
-			memcpy(&(audioOutBuffer[audioOutBufferSizeBytes]),audioOutResult,decodeBytesOut);
+			memcpy(&(audioOutBuffer[audioOutBufferFilledBytes]),audioOutResult,decodeBytesOut);
 		}
-		audioOutBufferSizeBytes+=decodeBytesOut;
+		audioOutBufferFilledBytes+=decodeBytesOut;
 	}
 	memcpy(stream8,audioOutBuffer,len8);
 
+	//Save any leftovers for the next time we hit this function.
 	Uint8* copyPtr=&(audioOutBuffer[len8]);
-	long copySize=audioOutBufferSizeBytes-len8;
+	long copySize=audioOutBufferFilledBytes-len8;
 	if(copySize)
 	{
 		memcpy(audioOutResult,copyPtr,copySize);
 		memcpy(audioOutBuffer,audioOutResult,copySize);
 	}
-	audioOutBufferSizeBytes=copySize;
+	audioOutBufferFilledBytes=copySize;
 }
 
 float volumeArrayFL[LGL_SAMPLESIZE];
@@ -23231,12 +23250,12 @@ lgl_AudioOutCallbackGenerator
 		return;
 	}
 
-	unsigned int vChannels=LGL_AudioChannels();
-	if(vChannels==6) vChannels=4;
+	unsigned int renderChannels=LGL_AudioChannels();
+	if(renderChannels==6) renderChannels=4;
 
 	Sint16* stream16=(Sint16*)stream8;
 	int len16=len8/2;
-	int decodeLen=len8/(vChannels/2);//vChannels==2 ? len8 : len8/2;
+	int decodeLen=len8/(renderChannels/2);//renderChannels==2 ? len8 : len8/2;
 	assert(decodeLen/4==LGL_SAMPLESIZE);
 
 	if(tempStream16Silence==NULL)
@@ -24011,7 +24030,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 		}
 
 		int top=2*LGL_SAMPLESIZE;
-		if(vChannels==2)
+		if(renderChannels==2)
 		{
 			for(int l=0,lHalf=0;l<top;l+=2,lHalf++)
 			{
@@ -24027,7 +24046,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 				}
 			}
 		}
-		else if(vChannels==4)
+		else if(renderChannels==4)
 		{
 			int max=top/2;
 			for(int l=0;l<max;l++)

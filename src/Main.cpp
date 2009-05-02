@@ -32,6 +32,7 @@
 #include "InputKeyboard.h"
 #include "InputMouse.h"
 #include "InputXponent.h"
+#include "InputXsession.h"
 #include "InputWiimote.h"
 
 //Global Variables
@@ -110,6 +111,7 @@ void InitializeGlobals()
 	Input.AddChild(new InputKeyboardObj);
 	Input.AddChild(new InputMouseObj);
 	Input.AddChild(new InputXponentObj);
+	Input.AddChild(new InputXsessionObj);
 	Input.AddChild(new InputWiimoteObj);
 
 	QuadrentSplitX=.5f;
