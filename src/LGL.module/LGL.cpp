@@ -223,6 +223,8 @@ typedef struct
 	bool			AudioWasOnceAvailable;
 	bool			AudioQuitting;
 
+	bool			AudioUsingJack;
+
 	SDL_AudioSpec*		AudioSpec;
 	LGL_SoundChannel	SoundChannel[LGL_SOUND_CHANNEL_NUMBER];
 	int			AudioBufferPos;
@@ -383,9 +385,6 @@ typedef struct
 
 LGL_State LGL;
 
-#define	LGL_JACK
-#ifdef	LGL_JACK
-
 #include <jack/jack.h>
 #include <jack/statistics.h>
 #include <jack/thread.h>
@@ -463,8 +462,6 @@ lgl_AudioShutdownCallbackJack
 	printf("lgl_AudioShutdownCallbackJack(): Dropped by JACK! Did it crash...?\n");
 	LGL.AudioAvailable=false;
 }
-
-#endif	//LGL_JACK
 
 void lgl_ClearAudioChannel
 (
@@ -947,6 +944,7 @@ LGL_Init
 	LGL.AudioAvailable=false;
 	LGL.AudioWasOnceAvailable=false;
 	LGL.AudioQuitting=false;
+	LGL.AudioUsingJack=true;
 
 	int a;
 	for(a=0;a<512;a++)
@@ -988,68 +986,6 @@ LGL_Init
 	atexit(LGL_ShutDown);
 
 	//Initialize SDL
-#ifndef	LGL_JACK
-	char audioDriver[1024];
-
-	//strcpy(audioDriver, "pulse");
-	//strcpy(audioDriver, "alsa");
-	//strcpy(audioDriver, "oss");
-	//strcpy(audioDriver, "esd");
-	char dspPath[64];
-	dspPath[0]='\0';
-
-	if(inAudioChannels>=4)
-	{
-		strcpy(audioDriver, "dsp");
-		//setenv("SDL_AUDIODRIVER", "alsa", 1);
-		if(LGL_FileExists("/dev/dsp1"))
-		{
-			strcpy(dspPath, "/dev/dsp1");
-		}
-		else if(LGL_FileExists("/dev/dsp2"))
-		{
-			strcpy(dspPath, "/dev/dsp2");
-		}
-		else if(LGL_FileExists("/dev/dsp3"))
-		{
-			strcpy(dspPath, "/dev/dsp3");
-		}
-		else if(LGL_FileExists("/dev/dsp4"))
-		{
-			strcpy(dspPath, "/dev/dsp4");
-		}
-		else if(LGL_FileExists("/dev/dsp5"))
-		{
-			strcpy(dspPath, "/dev/dsp5");
-		}
-		else if(LGL_FileExists("/dev/dsp6"))
-		{
-			strcpy(dspPath, "/dev/dsp6");
-		}
-		else if(LGL_FileExists("/dev/dsp7"))
-		{
-			strcpy(dspPath, "/dev/dsp7");
-		}
-		else if(LGL_FileExists("/dev/dsp8"))
-		{
-			strcpy(dspPath, "/dev/dsp8");
-		}
-		else
-		{
-			printf("LGL_Init(): Warning! /dev/dsp1+ not found! Falling back to stereo on /dev/dsp...\n");
-			strcpy(dspPath, "/dev/dsp");
-		}
-
-		setenv("SDL_PATH_DSP", dspPath, 1);
-	}
-	else if(inAudioChannels==2)
-	{
-		strcpy(audioDriver, "pulse");
-	}
-
-	setenv("SDL_AUDIODRIVER", audioDriver, 1);
-#endif	//LGL_JACK
-
 	if
 	(
 		SDL_Init
@@ -1075,6 +1011,7 @@ LGL_Init
 		//printf("LGL: SDL_Init() Success!\n");
 	}
 
+#ifndef	LGL_NO_GRAPHICS
 	if
 	(
 		inVideoResolutionX==9999 &&
@@ -1093,9 +1030,23 @@ LGL_Init
 		LGL.VideoResolutionX=inVideoResolutionX;
 		LGL.VideoResolutionY=inVideoResolutionY;
 	}
-
-	SDL_WM_SetCaption(inWindowTitle,inWindowTitle);
-	SDL_EnableUNICODE(1);
+#endif	//LGL_NO_GRAPHICS
+	
+	LGL.AudioSpec->freq=44100;
+	LGL.AudioSpec->format=AUDIO_S16;
+	LGL.AudioSpec->channels=inAudioChannels;
+	LGL.AudioSpec->samples=LGL_SAMPLESIZE_SDL;
+	LGL.AudioSpec->callback=lgl_AudioOutCallback;
+	LGL.AudioSpec->userdata=malloc(LGL.AudioSpec->samples);
+	LGL.RecordActive=false;
+	LGL.RecordFileDescriptor=NULL;
+	LGL.RecordVolume=1.0f;
+	LGL.RecordSamplesWritten=0;
+	
+	char dspPath[1024];
+	dspPath[0]='\0';
+	char audioDriver[1024];
+	audioDriver[0]='\0';
 
 	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
 	{
@@ -1103,7 +1054,138 @@ LGL_Init
 	}
 	LGL.AudioStreamListSemaphore=new LGL_Semaphore("Audio Stream List");
 	LGL.AudioBufferPos=0;
-	
+
+	if(inAudioChannels>0)
+	{
+		if(LGL_FileExists("diskWriter.lin"))
+		{
+			char filename[1024];
+			sprintf(filename,"data/record/%s.mp3",LGL_DateAndTimeOfDayOfExecution());
+
+			char command[1024];
+			sprintf(command,"./diskWriter.lin \"%s\" --lame --freq %i",filename,LGL.AudioSpec->freq);
+			LGL.RecordFileDescriptor=popen(command,"w");
+		}
+
+		LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
+		if(LGL_InitJack())
+		{
+			//Huzzah!
+		}
+		else
+		{
+			LGL.AudioUsingJack=false;
+
+			//strcpy(audioDriver, "pulse");
+			//strcpy(audioDriver, "alsa");
+			//strcpy(audioDriver, "oss");
+			//strcpy(audioDriver, "esd");
+
+			if(inAudioChannels>=4)
+			{
+				strcpy(audioDriver, "dsp");
+				//setenv("SDL_AUDIODRIVER", "alsa", 1);
+				if(LGL_FileExists("/dev/dsp1"))
+				{
+					strcpy(dspPath, "/dev/dsp1");
+				}
+				else if(LGL_FileExists("/dev/dsp2"))
+				{
+					strcpy(dspPath, "/dev/dsp2");
+				}
+				else if(LGL_FileExists("/dev/dsp3"))
+				{
+					strcpy(dspPath, "/dev/dsp3");
+				}
+				else if(LGL_FileExists("/dev/dsp4"))
+				{
+					strcpy(dspPath, "/dev/dsp4");
+				}
+				else if(LGL_FileExists("/dev/dsp5"))
+				{
+					strcpy(dspPath, "/dev/dsp5");
+				}
+				else if(LGL_FileExists("/dev/dsp6"))
+				{
+					strcpy(dspPath, "/dev/dsp6");
+				}
+				else if(LGL_FileExists("/dev/dsp7"))
+				{
+					strcpy(dspPath, "/dev/dsp7");
+				}
+				else if(LGL_FileExists("/dev/dsp8"))
+				{
+					strcpy(dspPath, "/dev/dsp8");
+				}
+				else
+				{
+					printf("LGL_Init(): Warning! /dev/dsp1+ not found! Falling back to stereo on /dev/dsp...\n");
+					strcpy(dspPath, "/dev/dsp");
+				}
+
+				setenv("SDL_PATH_DSP", dspPath, 1);
+			}
+			else if(inAudioChannels==2)
+			{
+				strcpy(audioDriver, "pulse");
+			}
+
+			//setenv("SDL_AUDIODRIVER", audioDriver, 1);
+
+			LGL_SAMPLESIZE_SDL = 1024;
+			SDL_AudioSpec* AudioObtained=(SDL_AudioSpec*)malloc(sizeof(SDL_AudioSpec));;
+			if
+			(
+				inAudioChannels>0 &&
+				SDL_OpenAudio(LGL.AudioSpec,AudioObtained)==0
+			)
+			{
+				LGL.AudioAvailable=true;
+
+				assert(LGL.AudioSpec->format==AUDIO_S16);
+				assert(LGL.AudioSpec->freq==AudioObtained->freq);
+				if(LGL.AudioSpec->samples!=LGL_SAMPLESIZE_SDL)
+				{
+					printf("\nLGL_SAMPLESIZE_SDL not respected. Got %i. Wanted %i.\n\n",LGL.AudioSpec->samples,LGL_SAMPLESIZE_SDL);
+					//assert(LGL.AudioSpec->samples==LGL_SAMPLESIZE);
+					//LGL.AudioAvailable=false;
+				}
+
+				assert(AudioObtained->format==AUDIO_S16);
+				if(AudioObtained->channels!=inAudioChannels)
+				{
+					if(AudioObtained->channels==4 && inAudioChannels==6)
+					{
+						printf("6to4 audio channel conversion active...\n");
+						inAudioChannels=4;
+						LGL.AudioSpec->channels=inAudioChannels;
+					}
+					else
+					{
+						if(AudioObtained->channels!=inAudioChannels)
+						{
+							printf("LGL_Init(): Error! Requested %i audio channels, got %i\n",inAudioChannels,AudioObtained->channels);
+							assert(AudioObtained->channels==inAudioChannels);
+						}
+					}
+				}
+				//assert(AudioObtained->samples==LGL_SAMPLESIZE);
+				assert(LGL.AudioStreamListSemaphore);
+
+				SDL_PauseAudio(0);
+			}
+			else
+			{
+				printf("SDL_OpenAudio failed(): '%s'\n",SDL_GetError());
+				LGL.AudioAvailable=false;
+			}
+		}
+		LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
+	}
+
+	SDL_WM_SetCaption(inWindowTitle,inWindowTitle);
+	SDL_EnableUNICODE(1);
+
 	//Time
 
 	LGL.FPS=0;
@@ -1136,18 +1218,6 @@ LGL_Init
 		year,month,date,
 		hours,minutes,seconds
 	);
-
-#ifdef	LGL_JACK
-	if(inAudioChannels>0)
-	{
-		LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
-		if(LGL_InitJack())
-		{
-			//
-		}
-		LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
-	}
-#endif	//LGL_JACK
 
 	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
 	{
@@ -1313,91 +1383,7 @@ LGL_Init
 	//LGL_Assert(inAudioChannels==0 || inAudioChannels==2 || inAudioChannels==4);
 
 	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec Open/Close");
-
-#ifndef	LGL_JACK
-	if(strcmp("pulse",audioDriver)==0)
-	{
-		//Fuck pulse.
-		LGL_SAMPLESIZE_SDL = 1024;
-	}
-	else
-	{
-		LGL_SAMPLESIZE_SDL = 512;
-	}
-#endif	//LGL_JACK
-	
-	LGL.AudioSpec->freq=44100;
-	LGL.AudioSpec->format=AUDIO_S16;
-	LGL.AudioSpec->channels=inAudioChannels;
-	LGL.AudioSpec->samples=LGL_SAMPLESIZE_SDL;
-	LGL.AudioSpec->callback=lgl_AudioOutCallback;
-	LGL.AudioSpec->userdata=malloc(LGL.AudioSpec->samples);
-	LGL.RecordActive=false;
-	LGL.RecordFileDescriptor=NULL;
-	LGL.RecordVolume=1.0f;
-	LGL.RecordSamplesWritten=0;
-
-	if(LGL_FileExists("diskWriter.lin"))
-	{
-		char filename[1024];
-		sprintf(filename,"data/record/%s.mp3",LGL_DateAndTimeOfDayOfExecution());
-
-		char command[1024];
-		sprintf(command,"./diskWriter.lin \"%s\" --lame --freq %i",filename,LGL.AudioSpec->freq);
-		LGL.RecordFileDescriptor=popen(command,"w");
-	}
-
-#ifdef	LGL_JACK
-	//Already initialized
-#else
-	SDL_AudioSpec* AudioObtained=(SDL_AudioSpec*)malloc(sizeof(SDL_AudioSpec));;
-	if
-	(
-		inAudioChannels>0 &&
-		SDL_OpenAudio(LGL.AudioSpec,AudioObtained)==0
-	)
-	{
-		LGL.AudioAvailable=true;
-
-		assert(LGL.AudioSpec->format==AUDIO_S16);
-		assert(LGL.AudioSpec->freq==AudioObtained->freq);
-		if(LGL.AudioSpec->samples!=LGL_SAMPLESIZE_SDL)
-		{
-			printf("\nLGL_SAMPLESIZE_SDL not respected. Got %i. Wanted %i.\n\n",LGL.AudioSpec->samples,LGL_SAMPLESIZE_SDL);
-			//assert(LGL.AudioSpec->samples==LGL_SAMPLESIZE);
-			//LGL.AudioAvailable=false;
-		}
-
-		assert(AudioObtained->format==AUDIO_S16);
-		if(AudioObtained->channels!=inAudioChannels)
-		{
-			if(AudioObtained->channels==4 && inAudioChannels==6)
-			{
-				printf("6to4 audio channel conversion active...\n");
-				inAudioChannels=4;
-				LGL.AudioSpec->channels=inAudioChannels;
-			}
-			else
-			{
-				if(AudioObtained->channels!=inAudioChannels)
-				{
-					printf("LGL_Init(): Error! Requested %i audio channels, got %i\n",inAudioChannels,AudioObtained->channels);
-					assert(AudioObtained->channels==inAudioChannels);
-				}
-			}
-		}
-		//assert(AudioObtained->samples==LGL_SAMPLESIZE);
-		assert(LGL.AudioStreamListSemaphore);
-
-		SDL_PauseAudio(0);
-	}
-	else
-	{
-		printf("SDL_OpenAudio failed(): '%s'\n",SDL_GetError());
-		LGL.AudioAvailable=false;
-	}
-#endif	//LGL_JACK
-	
+		
 	//Initialize AudioIn
 	LGL.AudioInAvailable=false;
 #ifdef	LGL_LINUX
@@ -1737,46 +1723,58 @@ LGL_Init
 		SDL_Linked_Version()->patch
 	);
 
-#ifdef	LGL_JACK
-	if(LGL_AudioAvailable())
+	if
+	(
+		LGL_AudioAvailable() &&
+		LGL.AudioUsingJack
+	)
 	{
 		printf
 		(
-			"JACK\t\t\t%i channels, %ihz. %.1fms latency. RT Priority: %i\n",
+			"JACK\t\t\t%i channels, %ihz. %.1fms latency.\n",// RT Priority: %i\n",
 			LGL.AudioSpec->channels,
 			jack_get_sample_rate(jack_client),
-			1000.0f*LGL_SAMPLESIZE_SDL/(44100.0f),
-			jack_client_real_time_priority(jack_client)
+			1000.0f*LGL_SAMPLESIZE_SDL/(44100.0f)
+			//jack_client_real_time_priority(jack_client)
 		);
 	}
 	else
 	{
 		printf("JACK\t\t\tInit FAILED\n");
 		printf("\t\t\tAre your ~/.jackrc and ~/.asoundrc correct?\n");
+		printf("\t\t\tDid you remember to killall pulseaudio?\n");
+		printf("\t\t\tAre any other programs using your soundcard?\n");
 	}
-#else
-	if(dspPath[0]=='\0')
+
+	if
+	(
+		LGL_AudioAvailable() &&
+		LGL.AudioUsingJack==false
+	)
 	{
-		printf
-		(
-			"SDL_AudioOut\t\t%i channels. %i samples. %s.\n",
-			LGL.AudioSpec->channels,
-			LGL.AudioSpec->samples,
-			audioDriver
-		);
+		SDL_AudioDriverName(audioDriver,1024);
+		if(dspPath[0]=='\0')
+		{
+			printf
+			(
+				"SDL_AudioOut\t\t%i channels. %i samples. %s.\n",
+				LGL.AudioSpec->channels,
+				LGL.AudioSpec->samples,
+				audioDriver
+			);
+		}
+		else
+		{
+			printf
+			(
+				"SDL_AudioOut\t\t%i channels. %i samples. %s. (%s)\n",
+				LGL.AudioSpec->channels,
+				LGL.AudioSpec->samples,
+				audioDriver,
+				dspPath
+			);
+		}
 	}
-	else
-	{
-		printf
-		(
-			"SDL_AudioOut\t\t%i channels. %i samples. %s. (%s)\n",
-			LGL.AudioSpec->channels,
-			LGL.AudioSpec->samples,
-			audioDriver,
-			dspPath
-		);
-	}
-#endif	//LGL_JACK
 
 	printf("SDL_AudioIn\t\t%s\n",LGL.AudioInAvailable?"Present":"Absent");
 	printf("MIDI Devices\t\t");
@@ -12933,11 +12931,14 @@ bool
 LGL_AttemptAudioRevive()
 {
 	if(LGL_AudioAvailable()) return(true);
-#ifdef	LGL_JACK
-	return(LGL_InitJack());
-#else
-	return(false);
-#endif	//LGL_JACK
+	if(LGL.AudioUsingJack)
+	{
+		return(LGL_InitJack());
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 float
@@ -23189,18 +23190,19 @@ lgl_AudioOutCallbackGenerator
 	int	len8
 )
 {
-#ifndef	LGL_JACK
-	if(soundRealtimePrioritySet==false)
+	if(LGL.AudioUsingJack==false)
 	{
-		setpriority(PRIO_PROCESS,0,-20);
+		if(soundRealtimePrioritySet==false)
+		{
+			setpriority(PRIO_PROCESS,0,-20);
 
-		//Use Only One CPU
-		//LGL_ThreadSetCPUAffinity(1);
-		LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut");	//It's really that important!
+			//Use Only One CPU
+			//LGL_ThreadSetCPUAffinity(1);
+			LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut");	//It's really that important!
 
-		soundRealtimePrioritySet=true;
+			soundRealtimePrioritySet=true;
+		}
 	}
-#endif	//LGL_JACK
 
 	if(LGL.AudioQuitting)
 	{
@@ -24105,15 +24107,19 @@ LGL_ShutDown()
 
 	LGL.AudioQuitting=true;
 printf("LockAudio() 5\n");
-#ifndef	LGL_JACK
-	SDL_LockAudio();
-#endif	//LGL_JACK
+
+	if(LGL.AudioUsingJack==false)
+	{
+		SDL_LockAudio();
+	}
 	{
 		LGL.AudioAvailable=false;
 	}
-#ifndef	LGL_JACK
-	SDL_UnlockAudio();
-#endif	//LGL_JACK
+	if(LGL.AudioUsingJack==false)
+	{
+		SDL_UnlockAudio();
+	}
+
 	if(LGL.AudioStreamListSemaphore!=NULL)
 	{
 		delete LGL.AudioStreamListSemaphore;
@@ -24124,11 +24130,15 @@ printf("LockAudio() 5\n");
 		delete LGL.Font;
 		LGL.Font=NULL;
 	}
-#ifdef	LGL_JACK
-	jack_client_close(jack_client);
-#else
-	SDL_CloseAudio();
-#endif	//LGL_JACK
+
+	if(LGL.AudioUsingJack)
+	{
+		jack_client_close(jack_client);
+	}
+	else
+	{
+		SDL_CloseAudio();
+	}
 	SDLNet_Quit();
 
 	if(LGL.DrawLogFD!=0)
