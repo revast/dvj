@@ -8055,7 +8055,7 @@ const	char	*string,
 	int colorArraySize=vertexArraySize*2;	//XY => RGBA
 
 	float* vertexArray=lgl_GetFontBuffer(vertexArraySize);
-	int* textureArray=lgl_GetFontBufferInt(textureArraySize);
+	float* textureArray=lgl_GetFontBuffer(textureArraySize);
 	float* colorArray=lgl_GetFontBuffer(colorArraySize);
 
 	assert(Glyph[32]);
@@ -8128,28 +8128,37 @@ const	char	*string,
 		vertexArray[(a*16)+14] = right;			//RB.x
 		vertexArray[(a*16)+15] = bottom;		//RB.y
 
-		int texLeft = GlyphTexLeft[ch];///(float)TextureSideLength;
-		int texRight = GlyphTexRight[ch];///(float)TextureSideLength;
-		int texBottom = GlyphTexBottom[ch];///(float)TextureSideLength;
-		int texTop = GlyphTexTop[ch];///(float)TextureSideLength;
+		/*
+		int texLeft = GlyphTexLeft[ch];
+		int texRight = GlyphTexRight[ch];
+		int texBottom = GlyphTexBottom[ch];
+		int texTop = GlyphTexTop[ch];
+		*/
+
+		const float safety=0.01f;
+		
+		float texLeft = (GlyphTexLeft[ch]+safety)/(float)TextureSideLength;
+		float texRight = (GlyphTexRight[ch]-safety)/(float)TextureSideLength;
+		float texBottom = (GlyphTexBottom[ch]-safety)/(float)TextureSideLength;	//Mote: bottom is numerically greater than top, here.
+		float texTop = (GlyphTexTop[ch]+safety)/(float)TextureSideLength;
 
 		textureArray[(a*16)+0] = texLeft;	//LB.x
-		textureArray[(a*16)+1] = (ch==' ') ? texTop : texBottom;	//LB.y
+		textureArray[(a*16)+1] = texBottom;	//LB.y
 		textureArray[(a*16)+2] = texLeft;	//LT.x
 		textureArray[(a*16)+3] = texTop;	//LT.y
 		textureArray[(a*16)+4] = texRight;	//RT.x
 		textureArray[(a*16)+5] = texTop;	//RT.y
 		textureArray[(a*16)+6] = texRight;	//RB.x
-		textureArray[(a*16)+7] = (ch==' ') ? texTop : texBottom;	//RB.y
+		textureArray[(a*16)+7] = texBottom;	//RB.y
 
 		textureArray[(a*16)+8] = texLeft;	//LB.x
-		textureArray[(a*16)+9] = (ch==' ') ? texTop : texBottom;	//LB.y
+		textureArray[(a*16)+9] = texBottom;	//LB.y
 		textureArray[(a*16)+10] = texLeft;	//LT.x
 		textureArray[(a*16)+11] = texTop;	//LT.y
 		textureArray[(a*16)+12] = texRight;	//RT.x
 		textureArray[(a*16)+13] = texTop;	//RT.y
 		textureArray[(a*16)+14] = texRight;	//RB.x
-		textureArray[(a*16)+15] = (ch==' ') ? texTop : texBottom;	//RB.y
+		textureArray[(a*16)+15] = texBottom;	//RB.y
 
 		for(int z=0;z<2;z++)
 		{
@@ -8167,10 +8176,10 @@ const	char	*string,
 
 	glDisable(GL_POLYGON_SMOOTH);
 
-	glMatrixMode(GL_TEXTURE);
-	glPushMatrix();
-	glLoadIdentity();
-	glScalef(1.0f/TextureSideLength, 1.0f/TextureSideLength, 1);
+	//glMatrixMode(GL_TEXTURE);
+	//glPushMatrix();
+	//glLoadIdentity();
+	//glScalef(1.0f/TextureSideLength, 1.0f/TextureSideLength, 1);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
@@ -8195,7 +8204,7 @@ const	char	*string,
 	glTexCoordPointer
 	(
 		2,
-		GL_INT,
+		GL_FLOAT,
 		0,
 		textureArray
 	);
@@ -8220,8 +8229,8 @@ const	char	*string,
 
 	glDisable(GL_TEXTURE_2D);
 
-	glPopMatrix();
-	
+	//glPopMatrix();
+
 	glEnable(GL_POLYGON_SMOOTH);
 
 	return(xNow);
