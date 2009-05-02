@@ -60,6 +60,7 @@ MixerObj() : Database("data/music")
 	Recording=false;
 	RecordingSecondsSinceExecution=0.0f;
 	RecordingTrackListFile=NULL;
+	RecordingFailedTimer=0.0f;
 
 	VideoAdvancedLastFrame=0;
 
@@ -765,6 +766,8 @@ DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent)
 	);
 	LGL_DrawLogPause(false);
 
+	RecordingFailedTimer=LGL_Max(0.0f,RecordingFailedTimer-LGL_SecondsSinceLastFrame());
+
 	DrawStatus(glow,visualizerQuadrent,visualizerZoomOutPercent);
 }
 
@@ -903,6 +906,13 @@ GetRecording()	const
 
 void
 MixerObj::
+SetRecordingFailed()
+{
+	RecordingFailedTimer=3.0f;
+}
+
+void
+MixerObj::
 SetViewPortStatus
 (
 	float	left,	float	right,
@@ -1005,6 +1015,18 @@ DrawStatus
 			false,.5f,
 			"%.2i:%.2i.%.2i",
 			hours,minutes,seconds
+		);
+	}
+	else if(RecordingFailedTimer>0.0f)
+	{
+		LGL_GetFont().DrawString
+		(
+			l+.025f*w,
+			b+.95f*h,
+			.015f,
+			RecordingFailedTimer,0.0f,0.0f,RecordingFailedTimer,
+			false,.5f,
+			"Recording failed"
 		);
 	}
 

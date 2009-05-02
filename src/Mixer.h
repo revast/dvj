@@ -54,6 +54,7 @@ public:
 	
 	void				SetRecording(bool inRecording=true);
 	bool				GetRecording() const;
+	void				SetRecordingFailed();
 	
 	void				SetViewPortStatus
 					(
@@ -105,6 +106,7 @@ private:
 	bool				Recording;
 	float				RecordingSecondsSinceExecution;
 	FILE*				RecordingTrackListFile;
+	float				RecordingFailedTimer;
 
 	int				VideoAdvancedLastFrame;
 

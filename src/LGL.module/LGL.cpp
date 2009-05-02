@@ -237,6 +237,7 @@ typedef struct
 	float			FreqBufferL[512];
 	float			FreqBufferR[512];
 	bool			RecordActive;
+	char			RecordFilePath[1024];
 	FILE*			RecordFileDescriptor;
 	unsigned long		RecordSamplesWritten;
 	Uint8			RecordBuffer[LGL_SAMPLESIZE*4*2];
@@ -1034,6 +1035,41 @@ LGL_Init
 	}
 #endif	//LGL_NO_GRAPHICS
 	
+	//Time
+
+	LGL.FPS=0;
+	LGL.FPSTimer.Reset();
+	for(int a=0;a<60;a++)
+	{
+		LGL.FPSGraph[a]=0;
+	}
+	LGL.FPSGraphTimer.Reset();
+	LGL.Font=NULL;
+
+	LGL.SecondsSinceLastFrame=0;
+	LGL.SecondsSinceLastFrameTimer.Reset();
+	LGL.SecondsSinceExecution=0;
+	LGL.SecondsSinceExecutionTimer.Reset();
+	LGL.FramesSinceExecution=0;
+
+	time_t tim=time(NULL);
+	struct tm TM=*localtime(&tim);
+	int seconds=TM.tm_sec;
+	int minutes=TM.tm_min;
+	int hours=TM.tm_hour;
+	int date=TM.tm_mday;
+	int month=TM.tm_mon+1;
+	int year=1900+TM.tm_year;
+	sprintf
+	(
+		LGL.DateAndTimeOfDayOfExecution,
+		"%04i.%02i.%02i - %02i:%02i.%02i",
+		year,month,date,
+		hours,minutes,seconds
+	);
+
+	//Audio
+	
 	LGL.AudioSpec->freq=44100;
 	LGL.AudioSpec->format=AUDIO_S16;
 	LGL.AudioSpec->channels=inAudioChannels;
@@ -1056,6 +1092,14 @@ LGL_Init
 	}
 	LGL.AudioStreamListSemaphore=new LGL_Semaphore("Audio Stream List");
 	LGL.AudioBufferPos=0;
+
+	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
+	{
+		LGL.SoundChannel[a].SampleRateConverterL = NULL;
+		LGL.SoundChannel[a].SampleRateConverterR = NULL;
+	}
+	LGL.SoundChannel[a].SampleRateConverterBufferStartSamples=-1;
+	LGL.SoundChannel[a].SampleRateConverterBufferValidSamples=-1;
 
 	if(inAudioChannels>0)
 	{
@@ -1190,62 +1234,21 @@ LGL_Init
 		}
 		LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 	}
+
+	sprintf(LGL.RecordFilePath,"data/record/%s.mp3",LGL_DateAndTimeOfDayOfExecution());
+
 	if(LGL.AudioAvailable)
 	{
 		if(LGL_FileExists("diskWriter.lin"))
 		{
-			char filename[1024];
-			sprintf(filename,"data/record/%s.mp3",LGL_DateAndTimeOfDayOfExecution());
-
 			char command[1024];
-			sprintf(command,"./diskWriter.lin \"%s\" --lame --freq %i &2>/dev/null",filename,LGL.AudioSpec->freq);
+			sprintf(command,"./diskWriter.lin \"%s\" --lame --freq %i",LGL.RecordFilePath,LGL.AudioSpec->freq);
 			LGL.RecordFileDescriptor=popen(command,"w");
 		}
 	}
 
 	SDL_WM_SetCaption(inWindowTitle,inWindowTitle);
 	SDL_EnableUNICODE(1);
-
-	//Time
-
-	LGL.FPS=0;
-	LGL.FPSTimer.Reset();
-	for(int a=0;a<60;a++)
-	{
-		LGL.FPSGraph[a]=0;
-	}
-	LGL.FPSGraphTimer.Reset();
-	LGL.Font=NULL;
-
-	LGL.SecondsSinceLastFrame=0;
-	LGL.SecondsSinceLastFrameTimer.Reset();
-	LGL.SecondsSinceExecution=0;
-	LGL.SecondsSinceExecutionTimer.Reset();
-	LGL.FramesSinceExecution=0;
-
-	time_t tim=time(NULL);
-	struct tm TM=*localtime(&tim);
-	int seconds=TM.tm_sec;
-	int minutes=TM.tm_min;
-	int hours=TM.tm_hour;
-	int date=TM.tm_mday;
-	int month=TM.tm_mon+1;
-	int year=1900+TM.tm_year;
-	sprintf
-	(
-		LGL.DateAndTimeOfDayOfExecution,
-		"%04i.%02i.%02i - %02i:%02i.%02i",
-		year,month,date,
-		hours,minutes,seconds
-	);
-
-	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
-	{
-		LGL.SoundChannel[a].SampleRateConverterL = NULL;
-		LGL.SoundChannel[a].SampleRateConverterR = NULL;
-	}
-	LGL.SoundChannel[a].SampleRateConverterBufferStartSamples=-1;
-	LGL.SoundChannel[a].SampleRateConverterBufferValidSamples=-1;
 
 	//Initialize Video
 
@@ -13192,13 +13195,25 @@ LGL_FreqBufferMono
 	return(.5*(LGL_FreqBufferL(index,width)+LGL_FreqBufferR(index,width)));
 }
 
-void
+bool
 LGL_RecordDVJToFileStart()
 {
 	if(LGL.RecordFileDescriptor)
 	{
-		LGL.RecordActive=true;
+		if(LGL_FileExists(LGL.RecordFilePath)==false)
+		{
+			pclose(LGL.RecordFileDescriptor);
+			LGL.RecordFileDescriptor=NULL;
+			return(false);
+		}
+		else
+		{
+			LGL.RecordActive=true;
+			return(true);
+		}
 	}
+
+	return(false);
 }
 
 void

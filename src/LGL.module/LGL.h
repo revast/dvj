@@ -1576,7 +1576,7 @@ float		LGL_FreqMono(float freq);
 float		LGL_FreqBufferL(int index, int width=0);	//index [0,512)
 float		LGL_FreqBufferR(int index, int width=0);
 float		LGL_FreqBufferMono(int index, int width=0);
-void		LGL_RecordDVJToFileStart();
+bool		LGL_RecordDVJToFileStart();
 void		LGL_SetRecordDVJToFileVolume(float volume);
 
 //Input

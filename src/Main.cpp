@@ -295,20 +295,26 @@ void NextFrame()
 	)
 	{
 		//Start recording!
-		LGL_RecordDVJToFileStart();
-		Mixer->SetRecording();
-
-		if(LGL_FileExists("data/record/drawlog.txt"))
+		if(LGL_RecordDVJToFileStart())
 		{
-			LGL_FileDelete("data/record/drawlog.txt");
-		}
-		LGL_DrawLogStart("data/record/drawlog.txt");
+			Mixer->SetRecording();
 
-		LGL_DrawLogWrite
-		(
-			"!dvj::Record.mp3|data/record/%s.mp3\n",
-			LGL_DateAndTimeOfDayOfExecution()
-		);
+			if(LGL_FileExists("data/record/drawlog.txt"))
+			{
+				LGL_FileDelete("data/record/drawlog.txt");
+			}
+			LGL_DrawLogStart("data/record/drawlog.txt");
+
+			LGL_DrawLogWrite
+			(
+				"!dvj::Record.mp3|data/record/%s.mp3\n",
+				LGL_DateAndTimeOfDayOfExecution()
+			);
+		}
+		else
+		{
+			Mixer->SetRecordingFailed();
+		}
 	}
 
 	//Globals
