@@ -23696,11 +23696,10 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 
 				//Volume
 				float tmpFact = LGL_Min(1.0f,fabsf(sc->SpeedNow)/0.02f);
-				float terp=0.995f;
+				float terp=0.95f;
 				sc->SpeedVolumeFactor =
 					(0.0f + terp) * sc->SpeedVolumeFactor +
 					(1.0f - terp) * tmpFact;
-				sc->SpeedVolumeFactor = 1.0f;
 
 				//Default to linear interpolation
 				double myFL = (Lnp*(1.0-closenessPercentInvNow) + Lnn*closenessPercentInvNow);
@@ -23862,7 +23861,26 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 				lRecord+=myLStereo;
 				rRecord+=myRStereo;
 
-				float lerp=0.2f;
+				/*
+				if(sc->VolumeFrontLeftDesired==0.0f)
+				{
+					sc->VolumeFrontLeft=sc->VolumeFrontLeftDesired;
+				}
+				if(sc->VolumeFrontRightDesired==0.0f)
+				{
+					sc->VolumeFrontRight=sc->VolumeFrontRightDesired;
+				}
+				if(sc->VolumeBackLeftDesired==0.0f)
+				{
+					sc->VolumeBackLeft=sc->VolumeBackLeftDesired;
+				}
+				if(sc->VolumeBackRightDesired==0.0f)
+				{
+					sc->VolumeBackRight=sc->VolumeBackRightDesired;
+				}
+				*/
+
+				float lerp=0.05f;
 				sc->VolumeFrontLeft=
 					(1.0f-lerp) * sc->VolumeFrontLeft +
 					(0.0f+lerp) * sc->VolumeFrontLeftDesired;
