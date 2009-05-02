@@ -986,6 +986,7 @@ DrawVisuals
 		}
 	}
 
+	//The ACTUAL videos we're drawing.
 	for(int videoNow=0;videoNow<2;videoNow++)
 	{
 		if(Videos[videoNow])

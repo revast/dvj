@@ -60,15 +60,23 @@ Main_DrawGlowLines
 		);
 	}
 
+	LGL_DrawLineToScreen
+	(
+		quadrentSplitX,quadrentSplitY,
+		quadrentSplitX,1,
+		0,0,glow,glow,
+		1,
+		false
+	);
+
 	for(float a=1;a<7;a++)
 	{
-		LGL_DrawLineToScreen
+		LGL_ClipRectEnable
 		(
-			quadrentSplitX,quadrentSplitY,
-			quadrentSplitX,1,
-			0,0,glow*a/7.0,glow*a/7.0,
-			7-a,
-			false
+			0.0f,
+			1.0f,
+			0.0f,
+			0.5f
 		);
 		LGL_DrawLineToScreen
 		(
@@ -78,6 +86,7 @@ Main_DrawGlowLines
 			7-a,
 			false
 		);
+		LGL_ClipRectDisable();
 		if(EIGHT_WAY)
 		{
 			LGL_DrawLineToScreen
