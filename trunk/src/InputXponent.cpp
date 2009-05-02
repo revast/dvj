@@ -614,6 +614,7 @@ WaveformPitchbendDelta
 {
 	float delta=0.0f;
 
+	/*
 	if(LGL_GetXponent())
 	{
 		unsigned int which=0;
@@ -662,6 +663,7 @@ WaveformPitchbendDelta
 			delta=factor*LGL_SecondsSinceLastFrame();
 		}
 	}
+	*/
 
 	return(delta);
 }
