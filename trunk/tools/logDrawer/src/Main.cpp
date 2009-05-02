@@ -114,7 +114,7 @@ int main(int argc, char** argv)
 		}
 		if(strcasecmp(argv[a],"--480p")==0)
 		{
-			ResX=640;
+			ResX=854;
 			ResY=480;
 		}
 		if(strcasecmp(argv[a],"--240p")==0)
@@ -194,7 +194,6 @@ int main(int argc, char** argv)
 	LGL_Init
 	(
 		ResX,ResY,
-		false,
 		0,
 		"Luminescence | logDrawer"
 	);

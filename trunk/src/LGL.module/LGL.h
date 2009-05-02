@@ -84,7 +84,6 @@ bool		LGL_Init
 		(
 			int		inVideoResolutionX,
 			int		inVideoResolutionY,
-			bool		inVideoFullScreen,
 			int		inAudioChannels,
 			const char*	inWindowTitle
 		);
