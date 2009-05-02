@@ -948,7 +948,7 @@ NextFrame
 		}
 
 		//Loop
-		if(BPMAvailable())
+		if(BPMAvailable() && 0)
 		{
 			if(Input.WaveformLoopBegin(target))
 			{
