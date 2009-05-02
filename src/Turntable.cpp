@@ -2038,14 +2038,10 @@ DrawFrame
 		double currentSample=Sound->GetPositionSamples(Channel);
 		double diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
 		double diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
-		if
-		(
-			PauseMultiplier==0 ||
-			LGL_SecondsSinceLastFrame()>0.25f
-		)
+		if(LGL_SecondsSinceLastFrame()>0.25f)
 		{
 			//A chance to seek to the exact sample!
-			diff=99999;
+			diff=999999;
 			badFlash=1.0f;
 		}
 
