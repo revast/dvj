@@ -464,14 +464,17 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		LGL_DrawLogWrite("vqcre|T\n");
 	}
 
-	//Draw Mixer
-	if(VisualizerFullScreen==false)
+	if(ExitPrompt==false)
 	{
-		if(LogEverything==false) LGL_DrawLogPause();
-		Mixer->DrawFrame(visualsQuadrent, visualizerZoomOutPercent);
-		if(LogEverything==false) LGL_DrawLogPause(false);
+		//Draw Mixer
+		if(VisualizerFullScreen==false)
+		{
+			if(LogEverything==false) LGL_DrawLogPause();
+			Mixer->DrawFrame(visualsQuadrent, visualizerZoomOutPercent);
+			if(LogEverything==false) LGL_DrawLogPause(false);
+		}
 	}
-	
+
 	//Draw Quadrent Lines
 	if(VisualizerFullScreen==false)
 	{
@@ -491,12 +494,6 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 			1.0f
 		);
 	}
-	LGL_DrawRectToScreen
-	(
-		0.0f,0.5f,
-		0.5f,1.0f,
-		0,0,0,1
-	);
 	if(visualsQuadrent)
 	{
 		LGL_ClipRectDisable();
@@ -565,39 +562,6 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
 	}
 
-	if(LogEverything==false) LGL_DrawLogPause();
-	if(ExitPrompt)
-	{
-		//FIXME: This next line is stupid. We should instead NOT draw here in the first place.
-		if(VisualizerFullScreen==false)
-		{
-			LGL_DrawRectToScreen
-			(
-				0.0f,1.0f,
-				0.0f,QuadrentSplitY,
-				0.0f,0.0f,0.0f,1.0f
-			);
-		}
-
-		LGL_GetFont().DrawString
-		(
-			0.5f,0.26f,0.03f,
-			1.0f,1.0f,1.0f,1.0f,
-			true,
-			0.75f,
-			"Exit?"
-		);
-		LGL_GetFont().DrawString
-		(
-			0.5f,0.20f,0.03f,
-			1.0f,1.0f,1.0f,1.0f,
-			true,
-			0.75f,
-			"[Y] / [N]"
-		);
-	}
-	if(LogEverything==false) LGL_DrawLogPause(false);
-
 	if(visualsQuadrent)
 	{
 		LGL_ClipRectEnable
@@ -636,6 +600,28 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	{
 		LGL_DrawLogWrite("vqcre|F\n");
 	}
+
+	if(LogEverything==false) LGL_DrawLogPause();
+	if(ExitPrompt)
+	{
+		LGL_GetFont().DrawString
+		(
+			0.5f,0.26f,0.03f,
+			1.0f,1.0f,1.0f,1.0f,
+			true,
+			0.75f,
+			"Exit?"
+		);
+		LGL_GetFont().DrawString
+		(
+			0.5f,0.20f,0.03f,
+			1.0f,1.0f,1.0f,1.0f,
+			true,
+			0.75f,
+			"[Y] / [N]"
+		);
+	}
+	if(LogEverything==false) LGL_DrawLogPause(false);
 }
 
 LGL_Image* logo=NULL;
