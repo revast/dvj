@@ -947,6 +947,8 @@ DrawStatus
 	float	visualizerZoomOutPercent
 )
 {
+	bool drawEverything=false;
+
 	float l=ViewPortStatusLeft;
 	float r=ViewPortStatusRight;
 	float b=ViewPortStatusBottom;
@@ -974,7 +976,7 @@ DrawStatus
 	);
 	*/
 
-	if(Recording)
+	if(Recording || drawEverything)
 	{
 		int seconds=(int)
 			(
@@ -1007,7 +1009,7 @@ DrawStatus
 	}
 
 	float freeMemPercent = LGL_MemoryFreePercent();
-	if(freeMemPercent<0.05f)
+	if(freeMemPercent<0.05f || drawEverything)
 	{
 		LGL_GetFont().DrawString
 		(
@@ -1049,7 +1051,8 @@ DrawStatus
 		(
 			cpuTemp>=CPU_TEMP_DANGER &&
 			cpuTemp!=999
-		)
+		) ||
+		drawEverything
 	)
 	{
 		float R,G,B;
@@ -1121,7 +1124,7 @@ DrawStatus
 		}
 	}
 
-	if(LGL_BatteryChargeDraining())
+	if(LGL_BatteryChargeDraining() || drawEverything)
 	{
 		LGL_GetFont().DrawString
 		(
@@ -1145,7 +1148,7 @@ DrawStatus
 	}
 
 	float freeMB = LGL_FilesystemFreeSpaceMB();
-	if(freeMB<1000)
+	if(freeMB<1000 || drawEverything)
 	{
 		LGL_GetFont().DrawString
 		(
@@ -1186,14 +1189,17 @@ DrawStatus
 
 	if
 	(
-		CanDisplayJackWarning &&
-		LGL_AudioUsingJack()==false
+		(
+			CanDisplayJackWarning &&
+			LGL_AudioUsingJack()==false
+		) ||
+		drawEverything
 	)
 	{
 		LGL_GetFont().DrawString
 		(
 			l+.05f*w,
-			b+.65f*h,
+			b+.45f*h,
 			.03f,
 			1.0f,0,0,1.0f,
 			false,.5f,
@@ -1202,7 +1208,7 @@ DrawStatus
 		LGL_GetFont().DrawString
 		(
 			l+.05f*w,
-			b+.45f*h,
+			b+.25f*h,
 			.015f,
 			1.0f,0,0,1.0f,
 			false,.5f,
@@ -1211,7 +1217,7 @@ DrawStatus
 		LGL_GetFont().DrawString
 		(
 			l+.05f*w,
-			b+.40f*h,
+			b+.20f*h,
 			.015f,
 			1.0f,0,0,1.0f,
 			false,.5f,
