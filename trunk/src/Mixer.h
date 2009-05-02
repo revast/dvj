@@ -110,6 +110,7 @@ private:
 
 	unsigned int			CPUSpeedHighest;
 	bool				LowRez;
+	bool				CanDisplayJackWarning;
 
 	LGL_Timer			SongTitleAsScrollTextTimer;
 
