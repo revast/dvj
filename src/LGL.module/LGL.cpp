@@ -12967,6 +12967,12 @@ LGL_AttemptAudioRevive()
 	}
 }
 
+bool
+LGL_AudioUsingJack()
+{
+	return(LGL.AudioUsingJack);
+}
+
 int
 LGL_AudioRate()
 {

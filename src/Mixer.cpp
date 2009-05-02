@@ -64,6 +64,7 @@ MixerObj() : Database("data/music")
 	VideoAdvancedLastFrame=0;
 
 	LowRez=false;
+	CanDisplayJackWarning=true;
 
 	SetViewPortStatus(0.5f,1.0f,0.5f,1.0f);
 }
@@ -95,6 +96,23 @@ NextFrame
 	//Process Input
 
 	assert(Focus>=0);
+
+	if(CanDisplayJackWarning)
+	{
+		for(int a=0;a<2;a++)
+		{
+			if(Turntable[a]->GetMode()!=0)
+			{
+				CanDisplayJackWarning=false;
+			}
+		}
+
+		if(LGL_KeyStroke(SDLK_F4))
+		{
+			system("firefox http://code.google.com/p/dvj/wiki/JACK &");
+			exit(0);
+		}
+	}
 
 	if(Input.FocusChange())
 	{
@@ -1165,6 +1183,41 @@ DrawStatus
 		glow
 	);
 	*/
+
+	if
+	(
+		CanDisplayJackWarning &&
+		LGL_AudioUsingJack()==false
+	)
+	{
+		LGL_GetFont().DrawString
+		(
+			l+.05f*w,
+			b+.65f*h,
+			.03f,
+			1.0f,0,0,1.0f,
+			false,.5f,
+			"WARNING: Not using JACK"
+		);
+		LGL_GetFont().DrawString
+		(
+			l+.05f*w,
+			b+.45f*h,
+			.015f,
+			1.0f,0,0,1.0f,
+			false,.5f,
+			"Audio can lag & skip"
+		);
+		LGL_GetFont().DrawString
+		(
+			l+.05f*w,
+			b+.40f*h,
+			.015f,
+			1.0f,0,0,1.0f,
+			false,.5f,
+			"Press [F4] for more info"
+		);
+	}
 
 	LGL_ClipRectDisable();
 }
