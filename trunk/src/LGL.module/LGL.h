@@ -1557,6 +1557,8 @@ public:
 bool		LGL_AudioAvailable();
 bool		LGL_AudioWasOnceAvailable();
 bool		LGL_AttemptAudioRevive();
+int		LGL_AudioRate();
+int		LGL_AudioCallbackSamples();
 float		LGL_AudioSampleLeft(int sample);
 float*		LGL_AudioSampleLeftArray();
 float		LGL_AudioSampleRight(int sample);
