@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	LGL_Init(1024,768,false,0,"importMusicVideo");
+	LGL_Init(1280,720,0,"importMusicVideo");
 	mencoderSemaphore=new LGL_Semaphore("baka");
 
 	bool dvdFound=false;

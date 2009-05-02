@@ -31,7 +31,6 @@ main
 	LGL_Init
 	(
 		640,480,
-		false,
 		2,
 		"testFrameRate"
 	);

@@ -186,7 +186,7 @@ typedef struct
 	
 	int			VideoResolutionX;
 	int			VideoResolutionY;
-	bool			VideoFullScreen;
+	bool			VideoFullscreen;
 
 	float			ViewPortLeft;
 	float			ViewPortRight;
@@ -916,7 +916,6 @@ LGL_Init
 (
 	int		inVideoResolutionX,
 	int		inVideoResolutionY,
-	bool		inVideoFullScreen,
 	int		inAudioChannels,
 	const char*	inWindowTitle
 )
@@ -925,14 +924,6 @@ LGL_Init
 	//Setup initial RT priorities
 	mlockall(MCL_CURRENT | MCL_FUTURE);
 
-/*
-	if(inVideoFullScreen)
-	{
-		char cmd[2048];
-		sprintf(cmd,"chrt -p %i `pgrep X`",(int)(LGL_PRIORITY_X*99));
-		system(cmd);
-	}
-*/
 	LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 
 	for(int a=0;a<1024;a++)
@@ -942,13 +933,9 @@ LGL_Init
 	}
 	myPstate=0;
 	//Initialize LGL_State
-	
-	srand((unsigned)time(NULL));
-				
-	LGL.VideoResolutionX=inVideoResolutionX;
-	LGL.VideoResolutionY=inVideoResolutionY;
-	LGL.VideoFullScreen=inVideoFullScreen;
 
+	srand((unsigned)time(NULL));
+	
 	LGL_ViewPortScreen(0,1,0,1);
 	LGL_ViewPortWorld
 	(
@@ -1088,6 +1075,25 @@ LGL_Init
 		//printf("LGL: SDL_Init() Success!\n");
 	}
 
+	if
+	(
+		inVideoResolutionX==9999 &&
+		inVideoResolutionY==9999
+	)
+	{
+		LGL.VideoFullscreen=true;
+		const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo();
+		assert(videoInfo);
+		LGL.VideoResolutionX=videoInfo->current_w;
+		LGL.VideoResolutionY=videoInfo->current_h;
+	}
+	else
+	{
+		LGL.VideoFullscreen=false;
+		LGL.VideoResolutionX=inVideoResolutionX;
+		LGL.VideoResolutionY=inVideoResolutionY;
+	}
+
 	SDL_WM_SetCaption(inWindowTitle,inWindowTitle);
 	SDL_EnableUNICODE(1);
 
@@ -1154,7 +1160,7 @@ LGL_Init
 	//Initialize Video
 
 	unsigned int Flags=SDL_OPENGL;
-	if(LGL.VideoFullScreen==true)
+	if(LGL.VideoFullscreen==true)
 	{
 		Flags=Flags|SDL_FULLSCREEN;
 		Flags=Flags|SDL_NOFRAME;
@@ -2889,7 +2895,7 @@ LGL_FullScreenToggle()
 			SDL_GetError()
 		);
 	}
-	LGL.VideoFullScreen=!LGL.VideoFullScreen;
+	LGL.VideoFullscreen=!LGL.VideoFullscreen;
 }
 
 void
@@ -2898,9 +2904,9 @@ LGL_FullScreen
 	bool	inFullScreen
 )
 {
-	if(inFullScreen!=LGL.VideoFullScreen)
+	if(inFullScreen!=LGL.VideoFullscreen)
 	{
-		LGL.VideoFullScreen=!LGL.VideoFullScreen;
+		LGL.VideoFullscreen=!LGL.VideoFullscreen;
 		LGL_FullScreenToggle();
 	}
 }

@@ -473,15 +473,12 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	}
 	
 	//Draw Quadrent Lines
-	if(eeepc==false)
+	if(VisualizerFullScreen==false)
 	{
-		if(VisualizerFullScreen==false)
-		{
-			LGL_DrawLogWrite("dvj::MainDrawGlowLines|%c|%.3f\n",visualsQuadrent?'T':'F',visualizerZoomOutPercent);
-			LGL_DrawLogPause();
-			Main_DrawGlowLines(LGL_SecondsSinceExecution(),1.0f,visualsQuadrent,visualizerZoomOutPercent);
-			LGL_DrawLogPause(false);
-		}
+		LGL_DrawLogWrite("dvj::MainDrawGlowLines|%c|%.3f\n",visualsQuadrent?'T':'F',visualizerZoomOutPercent);
+		LGL_DrawLogPause();
+		Main_DrawGlowLines(LGL_SecondsSinceExecution(),1.0f,visualsQuadrent,visualizerZoomOutPercent);
+		LGL_DrawLogPause(false);
 	}
 
 	if(visualsQuadrent)
@@ -671,17 +668,20 @@ DrawLoadScreen()
 int main(int argc, char** argv)
 {
 	//Initialize LGL
-	int channels=2;
-	bool hd=false;
-	bool fullscreen=false;
-	bool projector=false;
-	bool tiny=false;
+	int channels=4;
+	bool fullscreen=true;
 	bool drawFPS=false;
 	float drawFPSSpike=0.0f;
+	int resX=9999;
+	int resY=9999;
 
 	for(int a=0;a<argc;a++)
 	{
-		if(strcasecmp(argv[a],"--channels=4")==0)
+		if(strcasecmp(argv[a],"--channels=2")==0)
+		{
+			channels=2;
+		}
+		else if(strcasecmp(argv[a],"--channels=4")==0)
 		{
 			channels=4;
 		}
@@ -689,25 +689,15 @@ int main(int argc, char** argv)
 		{
 			channels=6;
 		}
-		else if(strcasecmp(argv[a],"--hd")==0)
+		else if(strcasecmp(argv[a],"--720p")==0)
 		{
-			hd=true;
+			resX=1280;
+			resY=720;
 		}
-		else if(strcasecmp(argv[a],"--fullscreen")==0)
+		else if(strcasecmp(argv[a],"--480p")==0)
 		{
-			fullscreen=true;
-		}
-		else if(strcasecmp(argv[a],"--projector")==0)
-		{
-			projector=true;
-		}
-		else if(strcasecmp(argv[a],"--tiny")==0)
-		{
-			tiny=true;
-		}
-		else if(strcasecmp(argv[a],"--eeepc")==0)
-		{
-			eeepc=true;
+			resX=853;
+			resY=480;
 		}
 		else if(strcasecmp(argv[a],"--drawFPS")==0)
 		{
@@ -719,19 +709,8 @@ int main(int argc, char** argv)
 
 	LGL_Init
 	(
-		projector ? 1600 :
-			( hd ? 1920-(fullscreen?0:160) : 
-				(tiny ? 320 :
-					(eeepc ? 800 : 1024)
-				)
-			),
-		projector ? 1200 :
-			( hd ? 1200-(fullscreen?0:90) :
-				(tiny ? 240 :
-					(eeepc ? 480 : 768)
-				)
-			),
-		fullscreen,
+		resX,
+		resY,
 		channels,
 		"dvj"
 	);
