@@ -1181,7 +1181,6 @@ LGL_Init
 			}
 			else
 			{
-				printf("SDL_OpenAudio failed(): '%s' (Driver: %s)\n",SDL_GetError(),SDL_AudioDriverName(audioDriver,1024));
 				LGL.AudioAvailable=false;
 			}
 		}
@@ -1779,6 +1778,12 @@ LGL_Init
 				dspPath
 			);
 		}
+	}
+
+	if(LGL_AudioAvailable()==false)
+	{
+		printf("SDL_AudioOut\t\tInit FAILED\n");
+		printf("\t\t\t%s (Driver: %s)\n",SDL_GetError(),SDL_AudioDriverName(audioDriver,1024));
 	}
 
 	printf("SDL_AudioIn\t\t%s\n",LGL.AudioInAvailable?"Present":"Absent");
