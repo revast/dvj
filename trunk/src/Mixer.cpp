@@ -1023,7 +1023,7 @@ DrawStatus
 
 	CPUSpeedHighest=(int)LGL_Max(LGL_CPUSpeed(),CPUSpeedHighest);
 
-	int cpuTemp=LGL_CPUTemp();
+	int cpuTemp=999;//LGL_CPUTemp();
 
 	if
 	(
@@ -1089,7 +1089,7 @@ DrawStatus
 				R,G,B,1.0f,
 				false,.5f,
 				"%i                                                                      C",	//Goofy hack to disable monospace
-				LGL_CPUTemp()
+				cpuTemp
 			);
 			LGL_GetFont().DrawString
 			(
