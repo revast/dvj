@@ -97,7 +97,7 @@ encodeVideo
 	char**	argv
 );
 
-const int ResX=854;
+const int ResX=852;
 const int ResY=480;
 
 int

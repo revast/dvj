@@ -114,7 +114,7 @@ int main(int argc, char** argv)
 		}
 		if(strcasecmp(argv[a],"--480p")==0)
 		{
-			ResX=854;
+			ResX=852;
 			ResY=480;
 		}
 		if(strcasecmp(argv[a],"--240p")==0)
