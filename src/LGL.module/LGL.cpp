@@ -71,7 +71,6 @@
 //<V4L>
 #endif //LGL_LINUX_VIDCAM
 
-//#define	LGL_PRIORITY_X			(-0.1f)
 #define	LGL_PRIORITY_MAIN		(-0.1f)
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(-0.2f)
@@ -899,6 +898,7 @@ LGL_InitJack()
 
 	LGL.AudioAvailable=true;
 	LGL.AudioWasOnceAvailable=true;
+	LGL.AudioSpec->freq = jack_get_sample_rate(jack_client);
 
 	free(jack_ports);
 
@@ -920,8 +920,6 @@ LGL_Init
 	inAudioChannels=4;
 	//Setup initial RT priorities
 	mlockall(MCL_CURRENT | MCL_FUTURE);
-
-	LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 
 	for(int a=0;a<1024;a++)
 	{
@@ -1081,6 +1079,7 @@ LGL_Init
 			//strcpy(audioDriver, "oss");
 			//strcpy(audioDriver, "esd");
 
+			/*
 			if(inAudioChannels>=4)
 			{
 				strcpy(audioDriver, "dsp");
@@ -1129,6 +1128,7 @@ LGL_Init
 			{
 				strcpy(audioDriver, "pulse");
 			}
+			*/
 
 			//setenv("SDL_AUDIODRIVER", audioDriver, 1);
 
@@ -1173,10 +1173,15 @@ LGL_Init
 				assert(LGL.AudioStreamListSemaphore);
 
 				SDL_PauseAudio(0);
+/*
+				char cmd[2048];
+				sprintf(cmd,"chrt -p %i `pgrep pulseaudio`",(int)(LGL_PRIORITY_AUDIO_OUT*99));
+				system(cmd);
+*/
 			}
 			else
 			{
-				printf("SDL_OpenAudio failed(): '%s'\n",SDL_GetError());
+				printf("SDL_OpenAudio failed(): '%s' (Driver: %s)\n",SDL_GetError(),SDL_AudioDriverName(audioDriver,1024));
 				LGL.AudioAvailable=false;
 			}
 		}
@@ -12941,6 +12946,18 @@ LGL_AttemptAudioRevive()
 	}
 }
 
+int
+LGL_AudioRate()
+{
+	return(LGL.AudioSpec->freq);
+}
+
+int
+LGL_AudioCallbackSamples()
+{
+	return(LGL_SAMPLESIZE_SDL);
+}
+
 float
 LGL_AudioSampleLeft
 (
@@ -23209,9 +23226,6 @@ lgl_AudioOutCallbackGenerator
 		return;
 	}
 
-	//Allow for any output sampling rate
-	double timeAdvancementMultiplier = 44100.0/LGL.AudioSpec->freq;
-
 	unsigned int vChannels=LGL_AudioChannels();
 	if(vChannels==6) vChannels=4;
 
@@ -23336,6 +23350,7 @@ lgl_AudioOutCallbackGenerator
 		memcpy(tempStreamRecR,tempStreamSilenceFloat,size);
 
 		float vuNext=0.0f;
+		double timeAdvancementMultiplier = sc->Hz/LGL.AudioSpec->freq;
 		
 		if(sc->FuturePositionSamplesNow>=0)
 		{
@@ -23706,7 +23721,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 								srcData.data_out=srcBufOut;
 								srcData.input_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;
 								srcData.output_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;
-								srcData.src_ratio=(1.0f/LGL_Max(0.01f,fabsf(sc->SpeedNow)))*(44100.f/sc->Hz);
+								srcData.src_ratio=(1.0f/LGL_Max(0.01f,fabsf(sc->SpeedNow)))*(LGL.AudioSpec->freq/(float)sc->Hz);
 								srcData.end_of_input=0;
 
 								src_set_ratio((c==0)?sc->SampleRateConverterL:sc->SampleRateConverterR,srcData.src_ratio);
@@ -23851,7 +23866,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 				sc->PositionSamplesPrev=
 					sc->PositionSamplesNow;
 				sc->PositionSamplesNow+=
-					sc->SpeedNow*timeAdvancementMultiplier*(sc->Hz/44100.0f);
+					sc->SpeedNow*(sc->Hz/(float)LGL.AudioSpec->freq);
 				if(sc->PositionSamplesNow<0)
 				{
 					if
@@ -24184,7 +24199,5 @@ printf("LockAudio() 5\n");
 #endif	//LGL_WIN32
 		system(command);
 	}
-
-	//system("chrt -o -p 0 `pgrep X`");
 }
 

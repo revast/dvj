@@ -2034,20 +2034,14 @@ DrawFrame
 	{
 		//Smooth waveform scrolling
 
-		double proposedDelta = (LGL_AudioAvailable()?1:0)*Sound->GetSpeed(Channel)*Sound->GetHz()*(LGL_SecondsSinceLastFrame())*1.0f;
+		double proposedDelta = (LGL_AudioAvailable()?1:0)*Sound->GetSpeed(Channel)*Sound->GetHz()*(1.0f/60.0f);
 		double currentSample=Sound->GetPositionSamples(Channel);
-		double diff=fabsf(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
-		double diffMax=1024*2;
+		double diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
+		double diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
 		if
 		(
 			PauseMultiplier==0 ||
-			(
-				diff>=1024 &&
-				(
-					FinalSpeed!=PauseMultiplier*(Pitchbend+NudgeFromMixer)+Nudge ||
-					FinalSpeed!=Sound->GetSpeed(Channel)
-				)
-			)
+			LGL_SecondsSinceLastFrame()>0.25f
 		)
 		{
 			//A chance to seek to the exact sample!
@@ -2075,25 +2069,35 @@ if(badFlash<0) badFlash=0.0f;
 LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 #endif
 
-		if(diff<diffMax/2)
+		float constantThreashold=1024;//diffMax/2;
+		if(diff<constantThreashold)
 		{
 			//We're accurate enough
 			SmoothWaveformScrollingSample+=proposedDelta;
-			currentSample=SmoothWaveformScrollingSample;
 		}
 		else if(diff<diffMax)
 		{
 			//Let's change our scrolling speed to get more accurate
-			float deltaFactor=(diff/2048.0f)*0.5f;
-			SmoothWaveformScrollingSample+=proposedDelta *
-				((currentSample>SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor) );
-			currentSample=SmoothWaveformScrollingSample;
+			float deltaFactor=(diff-constantThreashold)/(diffMax-constantThreashold);
+			float deltaMultiplier;
+			if(Sound->GetSpeed(Channel)>0.0f)
+			{
+				deltaMultiplier=(currentSample>SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor);
+			}
+			else
+			{
+				deltaMultiplier=(currentSample<SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor);
+			}
+			//deltaMultiplier=powf(deltaMultiplier,2);
+			proposedDelta*=deltaMultiplier;
+			SmoothWaveformScrollingSample+=proposedDelta;
 		}
 		else
 		{
 			//Fuck, we're really far off. Screw smooth scrolling, just jump to currentSample
 			SmoothWaveformScrollingSample=currentSample;
 		}
+		currentSample=SmoothWaveformScrollingSample;
 
 		unsigned int savePointBitfield=0;
 		for(int a=0;a<18;a++)
