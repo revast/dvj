@@ -902,7 +902,7 @@ WaveformGain
 		)
 		{
 			gain = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_RIGHT_GAIN)*2;
-			gain*=gain*gain*gain;
+			gain*=gain;
 		}
 		else if
 		(
@@ -911,7 +911,7 @@ WaveformGain
 		)
 		{
 			gain = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_GAIN)*2;
-			gain*=gain*gain*gain;
+			gain*=gain;
 		}
 	}
 
