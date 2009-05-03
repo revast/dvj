@@ -826,6 +826,7 @@ NextFrame
 			if(Sound->GetLengthSeconds()>savePointSeconds)
 			{
 				Sound->SetPositionSeconds(Channel,savePointSeconds);
+				SmoothWaveformScrollingSample=savePointSeconds*Sound->GetHz();
 			}
 		}
 		if
@@ -2043,16 +2044,15 @@ DrawFrame
 		double diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
 		if
 		(
-			diff>1024 &&
 			PauseMultiplier==0 &&
 			RecordScratch==false &&
 			fabsf(Sound->GetSpeed(Channel))<1.0f
 		)
 		{
 			proposedDelta=(LGL_AudioAvailable()?1:0)*LGL_Sign(currentSample-SmoothWaveformScrollingSample)*1.0f*Sound->GetHz()*(1.0f/60.0f);
-			if(fabsf(proposedDelta)>1024)
+			if(fabsf(proposedDelta)>fabsf(diff))
 			{
-				proposedDelta=1024*LGL_Sign(proposedDelta);
+				proposedDelta=fabsf(diff)*LGL_Sign(proposedDelta);
 			}
 
 			diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
@@ -2122,6 +2122,7 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 			//Fuck, we're really far off. Screw smooth scrolling, just jump to currentSample
 			SmoothWaveformScrollingSample=currentSample;
 		}
+		SmoothWaveformScrollingSample=LGL_Clamp(0,SmoothWaveformScrollingSample,Sound->GetLengthSamples());
 		currentSample=SmoothWaveformScrollingSample;
 
 		unsigned int savePointBitfield=0;
