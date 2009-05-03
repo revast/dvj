@@ -179,6 +179,7 @@ private:
 	float				Nudge;
 	float				NudgeFromMixer;
 	float				FinalSpeed;
+	float				FinalSpeedLastFrame;
 	bool				RewindFF;
 	LGL_Timer			RecordHoldReleaseTimer;
 	bool				RecordScratch;
