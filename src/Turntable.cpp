@@ -90,6 +90,7 @@ TurntableObj
 	Nudge=0;
 	NudgeFromMixer=0;
 	FinalSpeed=0.0f;
+	FinalSpeedLastFrame=0.0f;
 	RewindFF=false;
 	LuminScratch=false;
 	LuminScratchSamplePositionDesired=-10000;
@@ -239,6 +240,7 @@ NextFrame
 	float localVolumeMultiplier=1.0f;
 	bool noiseIncreasing=false;
 	bool glitchPurePrev=GlitchPure;
+	FinalSpeedLastFrame=FinalSpeed;
 
 	//Volume
 	candidate=Input.WaveformVolumeSlider(target);
@@ -1785,7 +1787,7 @@ NextFrame
 }
 
 long lastSampleLeft=0;
-float badFlash=0.0f;
+//float badFlash=0.0f;
 
 void
 TurntableObj::
@@ -2033,16 +2035,39 @@ DrawFrame
 	if(Mode==2)
 	{
 		//Smooth waveform scrolling
-
-		double proposedDelta = (LGL_AudioAvailable()?1:0)*Sound->GetSpeed(Channel)*Sound->GetHz()*(1.0f/60.0f);
+		
+		float speed=Sound->GetSpeed(Channel);
+		double proposedDelta = (LGL_AudioAvailable()?1:0)*speed*Sound->GetHz()*(1.0f/60.0f);
 		double currentSample=Sound->GetPositionSamples(Channel);
 		double diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
 		double diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
-		if(LGL_SecondsSinceLastFrame()>0.25f)
+		if
+		(
+			diff>1024 &&
+			PauseMultiplier==0 &&
+			RecordScratch==false &&
+			fabsf(Sound->GetSpeed(Channel))<1.0f
+		)
+		{
+			proposedDelta=(LGL_AudioAvailable()?1:0)*LGL_Sign(currentSample-SmoothWaveformScrollingSample)*1.0f*Sound->GetHz()*(1.0f/60.0f);
+			if(fabsf(proposedDelta)>1024)
+			{
+				proposedDelta=1024*LGL_Sign(proposedDelta);
+			}
+
+			diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
+			diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
+		}
+
+		if
+		(
+			LGL_SecondsSinceLastFrame()>0.25f ||
+			fabsf(FinalSpeedLastFrame-FinalSpeed)>1.5f
+		)
 		{
 			//A chance to seek to the exact sample!
 			diff=999999;
-			badFlash=1.0f;
+			//badFlash=1.0f;
 		}
 
 #if 0
@@ -2079,6 +2104,10 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 			if(Sound->GetSpeed(Channel)>0.0f)
 			{
 				deltaMultiplier=(currentSample>SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor);
+			}
+			else if (Sound->GetSpeed(Channel)==0.0f)
+			{
+				deltaMultiplier=1.0f;
 			}
 			else
 			{
