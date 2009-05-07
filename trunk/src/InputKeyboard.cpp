@@ -710,7 +710,23 @@ WaveformSavePointShiftAllHere
 	unsigned int	target
 )	const
 {
-	return(false);
+printf("ABC: %i %i %i\n",
+			LGL_KeyDown(SDLK_KP4),
+			LGL_KeyDown(SDLK_KP6),
+			LGL_KeyStroke(SDLK_KP5));
+	if(target & TARGET_FOCUS)
+	{
+		return
+		(
+			LGL_KeyDown(SDLK_KP4) &&
+			LGL_KeyDown(SDLK_KP6) &&
+			LGL_KeyStroke(SDLK_KP5)
+		);
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 bool
