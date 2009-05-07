@@ -780,20 +780,18 @@ int main(int argc, char** argv)
 		);
 		*/
 		drawFPSSpike = LGL_Max(0.0f,drawFPSSpike-LGL_SecondsSinceLastFrame());
-		if(LGL_FPS()<50 || LGL_KeyStroke(SDLK_g))
+		if(LGL_FPS()<50)
 		{
 			drawFPSSpike=5.0f;
 		}
 		if
 		(
-			(
-				drawFPS ||
-				drawFPSSpike > 0.0f
-			) &&
-			VisualizerFullScreen==false &&
-			LGL_SecondsSinceExecution()>15.0f
+			drawFPS &&
+			VisualizerFullScreen==false //&&
+			//LGL_SecondsSinceExecution()>15.0f
 		)
 		{
+			drawFPSSpike=5.0f;
 			LGL_DrawFPSGraph
 			(
 				0.875f,0.975f,
