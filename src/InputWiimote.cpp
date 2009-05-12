@@ -173,6 +173,14 @@ SyncTopToBottom()	const
 	return(sync);
 }
 
+int
+InputWiimoteObj::
+MasterToHeadphones()	const
+{
+	int to=-1;
+	return(to);
+}
+
 bool
 InputWiimoteObj::
 SyncBottomToTop()	const

@@ -1578,6 +1578,7 @@ float		LGL_FreqBufferR(int index, int width=0);
 float		LGL_FreqBufferMono(int index, int width=0);
 bool		LGL_RecordDVJToFileStart();
 void		LGL_SetRecordDVJToFileVolume(float volume);
+void		LGL_AudioMasterToHeadphones(bool copy=true);
 
 //Input
 

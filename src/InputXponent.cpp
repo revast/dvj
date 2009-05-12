@@ -262,6 +262,21 @@ SyncTopToBottom()	const
 	return(false);
 }
 
+int
+InputXponentObj::
+MasterToHeadphones()	const
+{
+	int to=-1;
+
+	if(LGL_GetXponent())
+	{
+		if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_CUE)) to=0;
+		if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_XFADER)) to=1;
+	}
+
+	return(to);
+}
+
 bool
 InputXponentObj::
 SyncBottomToTop()	const

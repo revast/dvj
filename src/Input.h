@@ -58,6 +58,7 @@ virtual float	XfaderHeadphones()					const;	//Crossfader for headphones
 virtual float	XfaderHeadphonesDelta()					const;	//Crossfader for headphones (change)
 virtual	bool	SyncTopToBottom()					const;	//Sync top turntable to bottom
 virtual	bool	SyncBottomToTop()					const;	//Sync bottom turntable to top
+virtual int	MasterToHeadphones()					const;	//Headphones hears what's being output to master
 
 	//Mode 0: File Selection
 
