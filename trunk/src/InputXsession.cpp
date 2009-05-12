@@ -182,6 +182,14 @@ SyncTopToBottom()	const
 	return(sync);
 }
 
+int
+InputXsessionObj::
+MasterToHeadphones()	const
+{
+	int to=-1;
+	return(to);
+}
+
 bool
 InputXsessionObj::
 SyncBottomToTop()	const

@@ -118,6 +118,14 @@ SyncBottomToTop()	const
 	return(sync);
 }
 
+int
+InputMouseObj::
+MasterToHeadphones()	const
+{
+	int to=-1;
+	return(to);
+}
+
 //Mode 0: File Selection
 
 float

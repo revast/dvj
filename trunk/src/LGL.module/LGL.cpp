@@ -246,6 +246,7 @@ typedef struct
 				AudioStreamList;
 	LGL_Semaphore*		AudioStreamListSemaphore;
 	LGL_Semaphore*		AVCodecSemaphore;
+	bool			AudioMasterToHeadphones;
 
 	//AudioIn
 
@@ -1080,6 +1081,7 @@ LGL_Init
 	LGL.RecordFileDescriptor=NULL;
 	LGL.RecordVolume=1.0f;
 	LGL.RecordSamplesWritten=0;
+	LGL.AudioMasterToHeadphones=false;
 	
 	char dspPath[1024];
 	dspPath[0]='\0';
@@ -13225,6 +13227,15 @@ LGL_SetRecordDVJToFileVolume
 	LGL.RecordVolume = LGL_Clamp(0.0f,volume,1.0f);
 }
 
+void
+LGL_AudioMasterToHeadphones
+(
+	bool	copy
+)
+{
+	LGL.AudioMasterToHeadphones=copy;
+}
+
 //Input
 
 void
@@ -24095,8 +24106,16 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 				stream16[4*l+1]=(Sint16)LGL_Clamp(-32767,stream16[4*l+1]+tempStreamFR[l],32767);
 
 				//Mix in the back channels
-				stream16[4*l+2]=(Sint16)LGL_Clamp(-32767,stream16[4*l+2]+tempStreamBL[l],32767);	//SWAP16()?
-				stream16[4*l+3]=(Sint16)LGL_Clamp(-32767,stream16[4*l+3]+tempStreamBR[l],32767);
+				if(LGL.AudioMasterToHeadphones)
+				{
+					stream16[4*l+2]=(Sint16)LGL_Clamp(-32767,stream16[4*l+2]+tempStreamFL[l],32767);	//SWAP16()?
+					stream16[4*l+3]=(Sint16)LGL_Clamp(-32767,stream16[4*l+3]+tempStreamFR[l],32767);
+				}
+				else
+				{
+					stream16[4*l+2]=(Sint16)LGL_Clamp(-32767,stream16[4*l+2]+tempStreamBL[l],32767);	//SWAP16()?
+					stream16[4*l+3]=(Sint16)LGL_Clamp(-32767,stream16[4*l+3]+tempStreamBR[l],32767);
+				}
 
 				//And the recording channels (front).
 				stream16rec[2*l+0]=(Sint16)LGL_Clamp(-32767,stream16rec[2*l+0]+tempStreamRecL[l]*LGL.RecordVolume,32767);

@@ -195,6 +195,24 @@ SyncBottomToTop()	const
 	return(sync);
 }
 
+int
+InputObj::
+MasterToHeadphones()	const
+{
+	int to=-1;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		int candidate=Children[a]->MasterToHeadphones();
+		if(candidate!=-1)
+		{
+			to=candidate;
+		}
+	}
+
+	return(to);
+}
+
 //Mode 0: File Selection
 
 float
@@ -1047,4 +1065,5 @@ WaveformPointerScratch
 
 	return(targetX);
 }
+
 

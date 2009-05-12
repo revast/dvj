@@ -110,6 +110,14 @@ SyncTopToBottom()	const
 	return(sync);
 }
 
+int
+InputNullObj::
+MasterToHeadphones()	const
+{
+	int to=-1;
+	return(to);
+}
+
 bool
 InputNullObj::
 SyncBottomToTop()	const
