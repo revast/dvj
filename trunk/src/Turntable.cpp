@@ -38,6 +38,117 @@ int ENTIRE_WAVE_ARRAY_COUNT;
 VisualizerObj* TurntableObj::Visualizer;
 LGL_Image* TurntableObj::NoiseImage[NOISE_IMAGE_COUNT_256_64];
 
+int
+videoEncoderThread
+(
+	void*	ptr
+)
+{
+	TurntableObj* tt = (TurntableObj*)ptr;
+	LGL_ThreadSetPriority(-0.5f,"videoEncoderThread");
+
+	//TODO: Change this infinite loop so it waits for a hint to return
+
+	for(;;)
+	{
+		char encoderSrc[2048];
+		tt->VideoEncoderSemaphore->Lock("videoEncoderThread","Accessing VideoEncoderPathSrc");
+		{
+			strcpy(encoderSrc,tt->VideoEncoderPathSrc);
+		}
+		tt->VideoEncoderSemaphore->Unlock();
+
+		if
+		(
+			encoderSrc[0]!='\0' &&
+			LGL_FileExists(encoderSrc)
+		)
+		{
+			//We've been requested to encode a video. Joy!
+
+			if(LGL_DirectoryExists("data/video")==false)
+			{
+				LGL_DirectoryCreate("data/video");
+			}
+			if(LGL_DirectoryExists("data/video/tmp")==false)
+			{
+				LGL_DirectoryCreate("data/video/tmp");
+			}
+			if(LGL_DirectoryExists("data/video/tracks")==false)
+			{
+				LGL_DirectoryCreate("data/video/tracks");
+			}
+
+			char encoderDstTmp[2048];
+			sprintf(encoderDstTmp,"data/video/tmp/dvj-deleteme-mjpeg-encode-%i.avi",LGL_RandInt(0,32768));
+
+			char encoderDst[2048];
+			sprintf
+			(
+				encoderDst,
+				"data/video/tracks/%s.mjpeg.avi",
+				&(strrchr(encoderSrc,'/')[1])
+			);
+
+			LGL_VideoEncoder* encoder = new LGL_VideoEncoder
+			(
+				encoderSrc,
+				encoderDstTmp
+			);
+
+			//Video Encoding Loop
+
+			if
+			(
+				LGL_FileExists(encoderDst)==false &&
+				encoder->IsValid()
+			)
+			{
+				for(;;)
+				{
+					char videoEncoderPathSrc[2048];
+					tt->VideoEncoderSemaphore->Lock("videoEncoderThread","Accessing VidoEncoderPathSrc");
+					{
+						strcpy(videoEncoderPathSrc,tt->VideoEncoderPathSrc);
+					}
+					tt->VideoEncoderSemaphore->Unlock();
+					if(strcmp(encoderSrc,videoEncoderPathSrc)!=0)
+					{
+						//Turntable has decided it doesn't want the video we're currently encodeing. Pity.
+						LGL_FileDelete(encoderDstTmp);
+						tt->VideoEncoderPercent=-1.0f;
+						break;
+					}
+
+					encoder->Encode(1);
+					tt->VideoEncoderPercent=encoder->GetPercentFinished();
+					if(encoder->IsFinished())
+					{
+						LGL_FileDirMove(encoderDstTmp,encoderDst);
+						break;
+					}
+
+					//TODO: LGL_Delay()?
+				}
+			}
+
+			tt->VideoEncoderSemaphore->Lock("videoEncoderThread","Accessing VideoEncoderPathSrc");
+			{
+				if(strcmp(encoderSrc,tt->VideoEncoderPathSrc)==0)
+				{
+					tt->VideoEncoderPathSrc[0]='\0';
+				}
+			}
+			tt->VideoEncoderSemaphore->Unlock();
+			tt->VideoEncoderPercent=2.0f;
+
+			delete encoder;
+		}
+
+		LGL_DelayMS(1000/60);
+	}
+}
+
 TurntableObj::
 TurntableObj
 (
@@ -170,6 +281,11 @@ TurntableObj
 	}
 	FileSelectInt=FileTop;
 	FileSelectFloat=(float)FileTop;
+
+	VideoEncoderSemaphore=new LGL_Semaphore("VideoEncoderSemaphore");
+	VideoEncoderPercent=-1.0f;
+	VideoEncoderPathSrc[0]='\0';
+	VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
 }
 
 TurntableObj::
@@ -504,6 +620,11 @@ NextFrame
 					else
 					{
 						Mode=1;
+						VideoEncoderSemaphore->Lock("main","Writing VideoEncoderPathSrc");
+						{
+							strcpy(VideoEncoderPathSrc,filename);
+						}
+						VideoEncoderSemaphore->Unlock();
 						DatabaseEntryNow=DatabaseFilteredEntries[FileSelectInt];
 						DecodeTimer.Reset();
 						SecondsLast=0.0f;
@@ -1026,6 +1147,22 @@ NextFrame
 		}
 
 		//Video
+		if(VideoEncoderPercent==2.0f)
+		{
+			VideoEncoderPercent=-1.0f;
+			char videoFileName[1024];
+			sprintf(videoFileName,"data/video/tracks/%s.mjpeg.avi",SoundName);
+			VideoFileExists=LGL_FileExists(videoFileName);
+			if(VideoFileExists)
+			{
+				VideoSwitchInterval=0.0f;
+				SelectNewVideo();
+			}
+			else
+			{
+				VideoSwitchInterval=1.0f;
+			}
+		}
 		if(Input.WaveformVideoSelect(target))
 		{
 			SelectNewVideo();
@@ -1132,6 +1269,7 @@ NextFrame
 			delete Sound;
 			Sound=NULL;
 			DatabaseEntryNow=NULL;
+			VideoEncoderPathSrc[0]='\0';
 			Mode=0;
 			Mode0BackspaceTimer.Reset();
 		}
@@ -1525,6 +1663,8 @@ NextFrame
 			SmoothWaveformScrollingSample=0.0f;
 			VideoOffsetSeconds=LGL_RandFloat(0,1000.0f);
 
+			VideoEncoderPercent=-1.0f;
+
 			LoadAllCachedData();
 
 			char videoFileName[1024];
@@ -1808,83 +1948,114 @@ DrawFrame
 		LGL_ClipRectEnable(0.0f,0.5f,0.5f,1.0f);
 	}
 
+	//On Left
+	float left=	ViewPortLeft;
+	float right=	0.5f-0.501f*WAVE_WIDTH_PERCENT*ViewPortWidth;
+	float width=	right-left;
+
+	float bottom=	ViewPortBottom+0.125*ViewPortHeight;
+	float top=	ViewPortBottom+0.875*ViewPortHeight;
+	float height=	top-bottom;
+
 	float rectAlpha=1.0f;
-	if
-	(
-		Mode==2 &&
-		GetVideo()!=NULL
-	)
+	if(Mode==2)
 	{
-		//On Left
-		float left=	ViewPortLeft;
-		float right=	0.5f-0.501f*WAVE_WIDTH_PERCENT*ViewPortWidth;
-
-		float bottom=	ViewPortBottom+0.125*ViewPortHeight;
-		float top=	ViewPortBottom+0.875*ViewPortHeight;
-
-		LGL_Image* image=GetVideo()->LockImage();
-		if(image!=NULL)
+		if(VideoEncoderPercent!=-1.0f)
 		{
-			rectAlpha=0.0f;
-			image->DrawToScreen
+			float centerX=0.5f*(right+left);
+			LGL_GetFont().DrawString
 			(
-				left,
-				right,
-				bottom,
-				top
+				centerX,bottom+0.90f*height,.015,
+				1,1,1,1,
+				true,.5,
+				"Caching Video..."
 			);
-		}
-		GetVideo()->UnlockImage(image);
-
-		bool videoReady = VideoFront->GetImageDecodedSinceVideoChange();
-		if(videoReady)
-		{
-			NoiseFactorVideo=LGL_Max(0.0f,NoiseFactorVideo-4.0f*LGL_SecondsSinceLastFrame());
-		}
-		else
-		{
-			NoiseFactorVideo=1.0f;
-		}
-
-		if(NoiseFactorVideo>0.0f)
-		{
-			int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_256_64-1);
-			NoiseImage[which]->DrawToScreen
-			(
-				left,
-				right,
-				bottom,
-				top,
-				0,
-				NoiseFactorVideo,
-				NoiseFactorVideo,
-				NoiseFactorVideo,
-				NoiseFactorVideo,
-				false,false,0,0,0,
-				0.0f,
-				0.25f,
-				0.0f,
-				1.0f
-			);
-		}
-
-		float secondsSinceVideoChange = VideoFront->GetSecondsSinceVideoChange();
-		float whiteFactor=LGL_Max(0.0f,1.0f-4.0f*secondsSinceVideoChange);
-		if(whiteFactor>0.0f)
-		{
+			float pct=LGL_Clamp(0.0f,VideoEncoderPercent,1.0f);
 			LGL_DrawRectToScreen
 			(
-				left,
-				right,
-				bottom,
-				top,
-				whiteFactor,
-				whiteFactor,
-				whiteFactor,
-				0.0f
+				left,left+pct*width*0.5f,
+				bottom,bottom+0.1f*height,
+				.4f*pct,.2f*pct,0.5f+0.5f*pct,1.0f
+			);
+			LGL_DrawRectToScreen
+			(
+				right,right-pct*width*0.5f,
+				bottom,bottom+0.1f*height,
+				.4f*pct,.2f*pct,0.5f+0.5f*pct,1.0f
+			);
+			LGL_GetFont().DrawString
+			(
+				centerX+0.05f*width,bottom+0.5f*height-0.5f*0.025f,0.02f,
+				1,1,1,1,
+				true,0.5f,
+				"%.0f%%",LGL_Clamp(0.0f,VideoEncoderPercent,0.99f)*100.0f
 			);
 		}
+		else if(GetVideo()!=NULL)
+		{
+			LGL_Image* image=GetVideo()->LockImage();
+			if(image!=NULL)
+			{
+				rectAlpha=0.0f;
+				image->DrawToScreen
+				(
+					left,
+					right,
+					bottom,
+					top
+				);
+			}
+			GetVideo()->UnlockImage(image);
 
+			bool videoReady = VideoFront->GetImageDecodedSinceVideoChange();
+			if(videoReady)
+			{
+				NoiseFactorVideo=LGL_Max(0.0f,NoiseFactorVideo-4.0f*LGL_SecondsSinceLastFrame());
+			}
+			else
+			{
+				NoiseFactorVideo=1.0f;
+			}
+
+			if(NoiseFactorVideo>0.0f)
+			{
+				int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_256_64-1);
+				NoiseImage[which]->DrawToScreen
+				(
+					left,
+					right,
+					bottom,
+					top,
+					0,
+					NoiseFactorVideo,
+					NoiseFactorVideo,
+					NoiseFactorVideo,
+					NoiseFactorVideo,
+					false,false,0,0,0,
+					0.0f,
+					0.25f,
+					0.0f,
+					1.0f
+				);
+			}
+
+			float secondsSinceVideoChange = VideoFront->GetSecondsSinceVideoChange();
+			float whiteFactor=LGL_Max(0.0f,1.0f-4.0f*secondsSinceVideoChange);
+			if(whiteFactor>0.0f)
+			{
+				LGL_DrawRectToScreen
+				(
+					left,
+					right,
+					bottom,
+					top,
+					whiteFactor,
+					whiteFactor,
+					whiteFactor,
+					0.0f
+				);
+			}
+		}
 		rectAlpha=0.0f;
 	}
 

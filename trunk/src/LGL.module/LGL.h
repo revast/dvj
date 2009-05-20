@@ -860,6 +860,79 @@ private:
 	SDL_Thread*		DecoderThread;
 };
 
+class LGL_VideoEncoder
+{
+
+public:
+
+				LGL_VideoEncoder
+				(
+					const char*	src,
+					const char*	dst
+				);
+				~LGL_VideoEncoder();
+
+	bool			IsValid();
+	void			Encode(int frames);
+	float			GetPercentFinished();
+	bool			IsFinished();
+
+private:
+
+	bool			Valid;
+
+	//Src
+
+	char			SrcPath[2048];
+	AVFormatContext*	SrcFormatContext;
+	AVCodecContext*		SrcCodecContext;
+	AVCodecContext*		SrcAudioCodecContext;
+	AVCodec*		SrcCodec;
+	AVCodec*		SrcAudioCodec;
+	AVFrame*		SrcFrame;
+	AVFrame*		SrcFrameRGB;
+	uint8_t*		SrcBufferRGB;
+	AVPacket		SrcPacket;
+	int			SrcPacketPosMax;
+	int			SrcAudioStreamIndex;
+	int			SrcVideoStreamIndex;
+	long			SrcFileBytes;
+
+	unsigned char*		SrcBufferRGBBack;
+	unsigned int		SrcBufferBytes;
+	unsigned int		SrcBufferWidth;
+	unsigned int		SrcBufferHeight;
+
+	long			SrcFrameNow;
+	double			SrcSecondsNow;
+
+	//Convert
+	
+	SwsContext*		SwsConvertContext;
+
+	//Dst
+
+	char			DstPath[2048];
+	AVOutputFormat*		DstOutputFormat;
+	AVFormatContext*	DstFormatContext;
+	AVCodecContext*		DstCodecContext;
+	AVCodec*		DstCodec;
+	AVStream*		DstStream;
+	AVFrame*		DstFrameYUV;
+	uint8_t*		DstBuffer;
+	AVPacket		DstPacket;
+
+	char			DstMp3Path[2048];
+	AVOutputFormat*		DstMp3OutputFormat;
+	AVFormatContext*	DstMp3FormatContext;
+	AVCodecContext*		DstMp3CodecContext;
+	AVCodec*		DstMp3Codec;
+	AVStream*		DstMp3Stream;
+	int16_t*		DstMp3Buffer;
+	uint8_t*		DstMp3Buffer2;
+	AVPacket		DstMp3Packet;
+};
+
 class LGL_Font
 {
 
