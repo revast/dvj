@@ -239,6 +239,15 @@ static	VisualizerObj*			Visualizer;
 	float				VideoOffsetSeconds;
 	float				VideoAdvanceRate;
 
+public:
+
+	SDL_Thread*			VideoEncoderThread;
+	LGL_Semaphore*			VideoEncoderSemaphore;
+	float				VideoEncoderPercent;
+	char				VideoEncoderPathSrc[2048];
+
+private:
+
 	float				BPM;
 	bool				BPMRecalculationRequired;
 	float				BPMMaster;

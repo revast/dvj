@@ -717,8 +717,8 @@ NextFrame
 
 		Visualizer->SetVideos
 		(
-			Turntable[0]->GetVideo(),
-			Turntable[1]->GetVideo(),
+			Turntable[0]->VideoEncoderPercent==-1.0f ? Turntable[0]->GetVideo() : NULL,
+			Turntable[1]->VideoEncoderPercent==-1.0f ? Turntable[1]->GetVideo() : NULL,
 			Turntable[0]->GetMixerVolumeFront()*((Turntable[0]->GetPaused() && Turntable[0]->GetRecordScratch()==false)?0.0f:1.0f)*(LGL_AudioAvailable()?1:0)*(1.0f-soloFactor[1]),
 			Turntable[1]->GetMixerVolumeFront()*((Turntable[1]->GetPaused() && Turntable[1]->GetRecordScratch()==false)?0.0f:1.0f)*(LGL_AudioAvailable()?1:0)*(1.0f-soloFactor[0])
 		);
