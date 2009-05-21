@@ -91,7 +91,7 @@ The following should be pasted into an empty ~/.jackrc if you're using a 2-chann
 /usr/local/bin/jackd -Z -dalsa -r44100 -p512 -n4 -s -M
 }}}
 
-*IMPORTANT*: Do not attempt to use the -R or -P flags in this file. dvj handles assigning JACK realtime priority. This is necessary because JACK doesn't respect its own -Z flag, when invoked with the -R flag. If you use the -R flag, JACK might disconnect dvj. Lame, huh?
+*IMPORTANT*: Do not attempt to use the -R or -P flags in this file. dvj handles assigning JACK realtime priority. This is necessary because JACK's watchdog thread will still kick off late clients, even when using the -Z flag, when JACK is invoked with the -R flag. If you use the -R flag, JACK might disconnect dvj.
 
 You should experiment tweaking the numbers associated with the -p and -n parameters, to optimize latency for your system.
 
