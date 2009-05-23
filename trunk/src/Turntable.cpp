@@ -1755,6 +1755,95 @@ NextFrame
 			//
 		}
 
+		//Smooth waveform scrolling
+		
+		float speed=Sound->GetSpeed(Channel);
+		double proposedDelta = (LGL_AudioAvailable()?1:0)*speed*Sound->GetHz()*(1.0f/60.0f);
+		double currentSample=Sound->GetPositionSamples(Channel);
+		double diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
+		double diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
+		if
+		(
+			PauseMultiplier==0 &&
+			RecordScratch==false &&
+			fabsf(Sound->GetSpeed(Channel))<1.0f
+		)
+		{
+			proposedDelta=(LGL_AudioAvailable()?1:0)*LGL_Sign(currentSample-SmoothWaveformScrollingSample)*1.0f*Sound->GetHz()*(1.0f/60.0f);
+			if(fabsf(proposedDelta)>fabsf(diff))
+			{
+				proposedDelta=fabsf(diff)*LGL_Sign(proposedDelta);
+			}
+
+			diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
+			diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
+		}
+
+		if
+		(
+			LGL_SecondsSinceLastFrame()>0.25f ||
+			fabsf(FinalSpeedLastFrame-FinalSpeed)>1.5f
+		)
+		{
+			//A chance to seek to the exact sample!
+			diff=999999;
+			//badFlash=1.0f;
+		}
+
+#if 0
+LGL_ClipRectDisable();
+double diffSigned=currentSample-(SmoothWaveformScrollingSample+proposedDelta);
+LGL_DrawLineToScreen
+(
+	0.75f-0.25f*diffSigned/diffMax,0.6f,
+	0.75f-0.25f*diffSigned/diffMax,0.7f,
+	1,1,1,1
+);
+LGL_DrawRectToScreen
+(
+	0.7f,0.8f,
+	0.7f,0.8f,
+	badFlash,0,0,1
+);
+badFlash-=LGL_SecondsSinceLastFrame();
+if(badFlash<0) badFlash=0.0f;
+LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
+#endif
+
+		float constantThreashold=1024;//diffMax/2;
+		if(diff<constantThreashold)
+		{
+			//We're accurate enough
+			SmoothWaveformScrollingSample+=proposedDelta;
+		}
+		else if(diff<diffMax)
+		{
+			//Let's change our scrolling speed to get more accurate
+			float deltaFactor=(diff-constantThreashold)/(diffMax-constantThreashold);
+			float deltaMultiplier;
+			if(Sound->GetSpeed(Channel)>0.0f)
+			{
+				deltaMultiplier=(currentSample>SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor);
+			}
+			else if (Sound->GetSpeed(Channel)==0.0f)
+			{
+				deltaMultiplier=1.0f;
+			}
+			else
+			{
+				deltaMultiplier=(currentSample<SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor);
+			}
+			//deltaMultiplier=powf(deltaMultiplier,2);
+			proposedDelta*=deltaMultiplier;
+			SmoothWaveformScrollingSample+=proposedDelta;
+		}
+		else
+		{
+			//Fuck, we're really far off. Screw smooth scrolling, just jump to currentSample
+			SmoothWaveformScrollingSample=currentSample;
+		}
+		SmoothWaveformScrollingSample=LGL_Clamp(0,SmoothWaveformScrollingSample,Sound->GetLengthSamples());
+
 		if
 		(
 			GlitchDuo ||
@@ -2242,95 +2331,7 @@ DrawFrame
 	}
 	if(Mode==2)
 	{
-		//Smooth waveform scrolling
-		
-		float speed=Sound->GetSpeed(Channel);
-		double proposedDelta = (LGL_AudioAvailable()?1:0)*speed*Sound->GetHz()*(1.0f/60.0f);
-		double currentSample=Sound->GetPositionSamples(Channel);
-		double diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
-		double diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
-		if
-		(
-			PauseMultiplier==0 &&
-			RecordScratch==false &&
-			fabsf(Sound->GetSpeed(Channel))<1.0f
-		)
-		{
-			proposedDelta=(LGL_AudioAvailable()?1:0)*LGL_Sign(currentSample-SmoothWaveformScrollingSample)*1.0f*Sound->GetHz()*(1.0f/60.0f);
-			if(fabsf(proposedDelta)>fabsf(diff))
-			{
-				proposedDelta=fabsf(diff)*LGL_Sign(proposedDelta);
-			}
-
-			diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
-			diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
-		}
-
-		if
-		(
-			LGL_SecondsSinceLastFrame()>0.25f ||
-			fabsf(FinalSpeedLastFrame-FinalSpeed)>1.5f
-		)
-		{
-			//A chance to seek to the exact sample!
-			diff=999999;
-			//badFlash=1.0f;
-		}
-
-#if 0
-LGL_ClipRectDisable();
-double diffSigned=currentSample-(SmoothWaveformScrollingSample+proposedDelta);
-LGL_DrawLineToScreen
-(
-	0.75f-0.25f*diffSigned/diffMax,0.6f,
-	0.75f-0.25f*diffSigned/diffMax,0.7f,
-	1,1,1,1
-);
-LGL_DrawRectToScreen
-(
-	0.7f,0.8f,
-	0.7f,0.8f,
-	badFlash,0,0,1
-);
-badFlash-=LGL_SecondsSinceLastFrame();
-if(badFlash<0) badFlash=0.0f;
-LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
-#endif
-
-		float constantThreashold=1024;//diffMax/2;
-		if(diff<constantThreashold)
-		{
-			//We're accurate enough
-			SmoothWaveformScrollingSample+=proposedDelta;
-		}
-		else if(diff<diffMax)
-		{
-			//Let's change our scrolling speed to get more accurate
-			float deltaFactor=(diff-constantThreashold)/(diffMax-constantThreashold);
-			float deltaMultiplier;
-			if(Sound->GetSpeed(Channel)>0.0f)
-			{
-				deltaMultiplier=(currentSample>SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor);
-			}
-			else if (Sound->GetSpeed(Channel)==0.0f)
-			{
-				deltaMultiplier=1.0f;
-			}
-			else
-			{
-				deltaMultiplier=(currentSample<SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor);
-			}
-			//deltaMultiplier=powf(deltaMultiplier,2);
-			proposedDelta*=deltaMultiplier;
-			SmoothWaveformScrollingSample+=proposedDelta;
-		}
-		else
-		{
-			//Fuck, we're really far off. Screw smooth scrolling, just jump to currentSample
-			SmoothWaveformScrollingSample=currentSample;
-		}
-		SmoothWaveformScrollingSample=LGL_Clamp(0,SmoothWaveformScrollingSample,Sound->GetLengthSamples());
-		currentSample=SmoothWaveformScrollingSample;
+		double currentSample=SmoothWaveformScrollingSample;
 
 		unsigned int savePointBitfield=0;
 		for(int a=0;a<18;a++)
@@ -2856,7 +2857,8 @@ GetTimeSeconds()
 		}
 		else
 		{
-			return(Sound->GetPositionSeconds(Channel));
+			return(SmoothWaveformScrollingSample/Sound->GetHz());
+			//return(Sound->GetPositionSeconds(Channel));
 		}
 	}
 }
