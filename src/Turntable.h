@@ -242,9 +242,9 @@ static	VisualizerObj*			Visualizer;
 public:
 
 	SDL_Thread*			VideoEncoderThread;
-	LGL_Semaphore*			VideoEncoderSemaphore;
 	float				VideoEncoderPercent;
 	char				VideoEncoderPathSrc[2048];
+	int				VideoEncoderTerminateSignal;
 
 private:
 

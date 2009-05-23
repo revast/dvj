@@ -47,106 +47,112 @@ videoEncoderThread
 	TurntableObj* tt = (TurntableObj*)ptr;
 	LGL_ThreadSetPriority(-0.5f,"videoEncoderThread");
 
-	//TODO: Change this infinite loop so it waits for a hint to return
+	char encoderSrc[2048];
+	strcpy(encoderSrc,tt->VideoEncoderPathSrc);
 
-	for(;;)
+	if
+	(
+		encoderSrc[0]!='\0' &&
+		LGL_FileExists(encoderSrc)
+	)
 	{
-		char encoderSrc[2048];
-		tt->VideoEncoderSemaphore->Lock("videoEncoderThread","Accessing VideoEncoderPathSrc");
+		//We've been requested to encode a video. Joy!
+
+		if(LGL_DirectoryExists("data/video")==false)
 		{
-			strcpy(encoderSrc,tt->VideoEncoderPathSrc);
+			LGL_DirectoryCreate("data/video");
 		}
-		tt->VideoEncoderSemaphore->Unlock();
+		if(LGL_DirectoryExists("data/video/tmp")==false)
+		{
+			LGL_DirectoryCreate("data/video/tmp");
+		}
+		if(LGL_DirectoryExists("data/video/tracks")==false)
+		{
+			LGL_DirectoryCreate("data/video/tracks");
+		}
+
+		char encoderDstTmp[2048];
+		sprintf(encoderDstTmp,"data/video/tmp/dvj-deleteme-mjpeg-encode-%i.avi",LGL_RandInt(0,32768));
+
+		char encoderDst[2048];
+		sprintf
+		(
+			encoderDst,
+			"data/video/tracks/%s.mjpeg.avi",
+			&(strrchr(encoderSrc,'/')[1])
+		);
+
+		LGL_VideoEncoder* encoder = new LGL_VideoEncoder
+		(
+			encoderSrc,
+			encoderDstTmp
+		);
+
+		//Video Encoding Loop
 
 		if
 		(
-			encoderSrc[0]!='\0' &&
-			LGL_FileExists(encoderSrc)
+			LGL_FileExists(encoderDst)==false &&
+			encoder->IsValid()
 		)
 		{
-			//We've been requested to encode a video. Joy!
-
-			if(LGL_DirectoryExists("data/video")==false)
+			for(;;)
 			{
-				LGL_DirectoryCreate("data/video");
-			}
-			if(LGL_DirectoryExists("data/video/tmp")==false)
-			{
-				LGL_DirectoryCreate("data/video/tmp");
-			}
-			if(LGL_DirectoryExists("data/video/tracks")==false)
-			{
-				LGL_DirectoryCreate("data/video/tracks");
-			}
+printf("SIG: %i\n",tt->VideoEncoderTerminateSignal);
 
-			char encoderDstTmp[2048];
-			sprintf(encoderDstTmp,"data/video/tmp/dvj-deleteme-mjpeg-encode-%i.avi",LGL_RandInt(0,32768));
-
-			char encoderDst[2048];
-			sprintf
-			(
-				encoderDst,
-				"data/video/tracks/%s.mjpeg.avi",
-				&(strrchr(encoderSrc,'/')[1])
-			);
-
-			LGL_VideoEncoder* encoder = new LGL_VideoEncoder
-			(
-				encoderSrc,
-				encoderDstTmp
-			);
-
-			//Video Encoding Loop
-
-			if
-			(
-				LGL_FileExists(encoderDst)==false &&
-				encoder->IsValid()
-			)
-			{
-				for(;;)
+				if(tt->VideoEncoderTerminateSignal==1)
 				{
-					char videoEncoderPathSrc[2048];
-					tt->VideoEncoderSemaphore->Lock("videoEncoderThread","Accessing VidoEncoderPathSrc");
-					{
-						strcpy(videoEncoderPathSrc,tt->VideoEncoderPathSrc);
-					}
-					tt->VideoEncoderSemaphore->Unlock();
-					if(strcmp(encoderSrc,videoEncoderPathSrc)!=0)
-					{
-						//Turntable has decided it doesn't want the video we're currently encodeing. Pity.
-						LGL_FileDelete(encoderDstTmp);
-						tt->VideoEncoderPercent=-1.0f;
-						break;
-					}
-
-					encoder->Encode(1);
-					tt->VideoEncoderPercent=encoder->GetPercentFinished();
-					if(encoder->IsFinished())
-					{
-						LGL_FileDirMove(encoderDstTmp,encoderDst);
-						break;
-					}
-
-					//TODO: LGL_Delay()?
+					break;
 				}
-			}
-
-			tt->VideoEncoderSemaphore->Lock("videoEncoderThread","Accessing VideoEncoderPathSrc");
-			{
-				if(strcmp(encoderSrc,tt->VideoEncoderPathSrc)==0)
+				char videoEncoderPathSrc[2048];
+				strcpy(videoEncoderPathSrc,tt->VideoEncoderPathSrc);
+				if(strcmp(encoderSrc,videoEncoderPathSrc)!=0)
 				{
-					tt->VideoEncoderPathSrc[0]='\0';
+					//Turntable has decided it doesn't want the video we're currently encodeing. Pity.
+					LGL_FileDelete(encoderDstTmp);
+					tt->VideoEncoderPercent=-1.0f;
+					break;
 				}
-			}
-			tt->VideoEncoderSemaphore->Unlock();
-			tt->VideoEncoderPercent=2.0f;
 
-			delete encoder;
+				encoder->Encode(1);
+				tt->VideoEncoderPercent=encoder->GetPercentFinished();
+				if(encoder->IsFinished())
+				{
+					LGL_FileDirMove(encoderDstTmp,encoderDst);
+					break;
+				}
+
+				//TODO: LGL_Delay()?
+			}
+
+			if(LGL_FileExists(encoderDstTmp))
+			{
+				LGL_FileDelete(encoderDstTmp);
+			}
 		}
 
-		LGL_DelayMS(1000/60);
+		if(strcmp(encoderSrc,tt->VideoEncoderPathSrc)==0)
+		{
+			tt->VideoEncoderPathSrc[0]='\0';
+		}
+
+		if(LGL_FileExists(encoderDst))
+		{
+			tt->VideoEncoderPercent=2.0f;
+		}
+		else
+		{
+			tt->VideoEncoderPercent=-1.0f;
+		}
+
+		delete encoder;
 	}
+
+	tt->VideoEncoderTerminateSignal=-1;
+
+	printf("GONE! %i\n",tt->VideoEncoderTerminateSignal);
+
+	return(0);
 }
 
 TurntableObj::
@@ -282,15 +288,31 @@ TurntableObj
 	FileSelectInt=FileTop;
 	FileSelectFloat=(float)FileTop;
 
-	VideoEncoderSemaphore=new LGL_Semaphore("VideoEncoderSemaphore");
 	VideoEncoderPercent=-1.0f;
 	VideoEncoderPathSrc[0]='\0';
-	VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
+	VideoEncoderThread=NULL;
+	VideoEncoderTerminateSignal=0;
 }
 
 TurntableObj::
 ~TurntableObj()
 {
+	if(VideoEncoderThread)
+	{
+		VideoEncoderTerminateSignal=1;
+		for(;;)
+		{
+			if(VideoEncoderTerminateSignal==-1)
+			{
+				LGL_ThreadWait(VideoEncoderThread);
+				VideoEncoderThread=NULL;
+				VideoEncoderTerminateSignal=0;
+				break;
+			}
+			LGL_DelayMS(60.0f/1000.0f);
+		}
+	}
+
 	for(unsigned int a=0;a<TrackListFileUpdates.size();a++)
 	{
 		delete TrackListFileUpdates[a];
@@ -620,11 +642,6 @@ NextFrame
 					else
 					{
 						Mode=1;
-						VideoEncoderSemaphore->Lock("main","Writing VideoEncoderPathSrc");
-						{
-							strcpy(VideoEncoderPathSrc,filename);
-						}
-						VideoEncoderSemaphore->Unlock();
 						DatabaseEntryNow=DatabaseFilteredEntries[FileSelectInt];
 						DecodeTimer.Reset();
 						SecondsLast=0.0f;
@@ -1264,7 +1281,22 @@ NextFrame
 	}
 	else if(Mode==3)
 	{
-		if(Sound->ReadyForDelete())
+		if(VideoEncoderTerminateSignal==0)
+		{
+			VideoEncoderTerminateSignal=1;
+		}
+		if(VideoEncoderTerminateSignal==-1)
+		{
+			LGL_ThreadWait(VideoEncoderThread);
+			VideoEncoderThread=NULL;
+			VideoEncoderTerminateSignal=0;
+		}
+
+		if
+		(
+			VideoEncoderThread==NULL &&
+			Sound->ReadyForDelete()
+		)
 		{
 			delete Sound;
 			Sound=NULL;
@@ -1623,6 +1655,10 @@ NextFrame
 			Mode=2;
 
 			BPMRecalculationRequired=true;
+
+			VideoEncoderTerminateSignal=0;
+			strcpy(VideoEncoderPathSrc,Sound->GetPath());
+			VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
 
 			//Load Video if possible
 			SelectNewVideo();
