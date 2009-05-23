@@ -3449,8 +3449,7 @@ void
 TurntableObj::
 SelectNewVideo
 (
-	bool	forceAmbient,
-	bool	forceMellow
+	bool	forceAmbient
 )
 {
 	char videoFileName[1024];
@@ -3463,14 +3462,7 @@ SelectNewVideo
 	{
 		//Get next ambient video from Visualizer.
 		char path[2048];
-		if(forceMellow)
-		{
-			Visualizer->GetNextVideoPathAmbientMellow(path);
-		}
-		else
-		{
-			Visualizer->GetNextVideoPathAmbient(path);
-		}
+		Visualizer->GetNextVideoPathAmbient(path);
 
 		if(path[0]!='\0')
 		{
@@ -3488,7 +3480,6 @@ SelectNewVideo
 			//There aren't any videos available. That's fine.
 			return;
 		}
-		VideoIsMellow=forceMellow;
 
 		VideoOffsetSeconds=LGL_RandFloat(0,1000.0f);
 
@@ -3513,7 +3504,6 @@ SelectNewVideo
 		{
 			VideoBack->SetVideo(videoFileName);
 		}
-		VideoIsMellow=false;
 		VideoOffsetSeconds=0;
 	}
 	assert(VideoBack);
