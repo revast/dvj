@@ -234,7 +234,6 @@ static	VisualizerObj*			Visualizer;
 
 	LGL_Video*			VideoFront;
 	LGL_Video*			VideoBack;
-	bool				VideoIsMellow;
 	float				VideoSwitchInterval;
 	float				VideoOffsetSeconds;
 	float				VideoAdvanceRate;
@@ -277,7 +276,7 @@ static	LGL_Image*			NoiseImage[NOISE_IMAGE_COUNT_256_64];
 public:
 
 	void				SwapVideos();
-	void				SelectNewVideo(bool forceAmbient=false, bool forceMellow=false);
+	void				SelectNewVideo(bool forceAmbient=false);
 	bool				BPMAvailable();
 	float				GetBPM();
 	float				GetBPMAdjusted();
