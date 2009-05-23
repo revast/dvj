@@ -842,7 +842,6 @@ private:
 	LGL_Semaphore*		BufferRGBFrontSemaphore;
 
 	bool			ImageDecodeRequired;
-	bool			ImageDecodedSinceVideoChange;
 	LGL_Image*		ImageFront;
 	LGL_Image*		ImageBack;
 	LGL_Semaphore*		ImageFrontSemaphore;
