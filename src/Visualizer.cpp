@@ -994,7 +994,7 @@ DrawVisuals
 					NoiseFactor[videoNow]*VideoBrightness[videoNow],
 					NoiseFactor[videoNow]*VideoBrightness[videoNow],
 					NoiseFactor[videoNow]*VideoBrightness[videoNow],
-					0.0f
+					NoiseFactor[videoNow]*VideoBrightness[videoNow]
 				);
 			}
 

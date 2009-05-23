@@ -7225,7 +7225,6 @@ SetVideo
 		ptr=&(strstr(ptr,"/")[1]);
 	}
 	strcpy(PathNextShort,ptr);
-	ImageDecodedSinceVideoChange=false;
 	VideoChangeTimer.Reset();
 }
 
@@ -7274,10 +7273,25 @@ bool
 LGL_Video::
 ImageUpToDate()	const
 {
+	bool rightVid=true;
+	if(ImageFront)
+	{
+		char frontPath[2048];
+		strcpy(frontPath,&(ImageFront->GetPath()[1]));
+		strrchr(frontPath,'!')[0]='\0';
+		if(strcmp(frontPath,PathNext)!=0)
+		{
+			rightVid=false;
+		}
+	}
+
 	return
 	(
-		SecondsNow==SecondsNext ||
-		ImageDecodeRequired==false
+		rightVid &&
+		(
+			SecondsNow==SecondsNext ||
+			ImageDecodeRequired==false
+		)
 	);
 }
 
@@ -7825,7 +7839,18 @@ bool
 LGL_Video::
 GetImageDecodedSinceVideoChange()
 {
-	return(ImageDecodedSinceVideoChange);
+	bool rightVid=true;
+	if(ImageFront)
+	{
+		char frontPath[2048];
+		strcpy(frontPath,&(ImageFront->GetPath()[1]));
+		strrchr(frontPath,'!')[0]='\0';
+		if(strcmp(frontPath,PathNext)!=0)
+		{
+			rightVid=false;
+		}
+	}
+	return(rightVid);
 }
 
 void
@@ -7840,7 +7865,6 @@ SwapImages()
 			LGL_Image* imageTemp=ImageFront;
 			ImageFront=ImageBack;
 			ImageBack=imageTemp;
-			ImageDecodedSinceVideoChange=true;
 		}
 		ImageBackSemaphore->Unlock();
 	}
