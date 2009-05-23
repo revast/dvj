@@ -1401,7 +1401,7 @@ virtual std::vector<LGL_AudioGrain*>	GetApproximateNearestNeighbors
 
 //Audio1
 
-#define	LGL_SOUND_METADATA_ENTRIES_PER_SECOND	(32)
+#define	LGL_SOUND_METADATA_ENTRIES_PER_SECOND	(64)
 #define	LGL_SOUND_METADATA_SIZE_MAX		(20*60*LGL_SOUND_METADATA_ENTRIES_PER_SECOND)
 
 class LGL_Sound
