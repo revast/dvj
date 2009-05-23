@@ -138,38 +138,6 @@ VisualizerObj()
 
 	random_shuffle(VideoAmbientQueue.rbegin(),VideoAmbientQueue.rend());
 	VideoAmbientGetCount=0;
-	
-	//Prepare Ambient Mellow Video Queue
-
-	LGL_DirTree videoAmbientMellowDirTree;
-	if(LGL_DirectoryExists("data/video/ambient/mellow"))
-	{
-		videoAmbientMellowDirTree.SetPath("data/video/ambient/mellow");
-		VideoAvailable=true;
-	}
-	else if(LGL_DirectoryExists("data/video/ambient"))
-	{
-		videoAmbientMellowDirTree.SetPath("data/video/ambient");
-		VideoAvailable=true;
-	}
-	else
-	{
-		VideoAvailable=false;
-	}
-	videoAmbientMellowDirTree.WaitOnWorkerThread();
-	videoAmbientMellowDirTree.SetFilterText("mjpeg");
-	strcpy(VideoAmbientMellowPath,videoAmbientMellowDirTree.GetPath());
-
-	for(unsigned int a=0;a<videoAmbientMellowDirTree.GetFilteredFileCount();a++)
-	{
-		sprintf(tmp,"%s",videoAmbientMellowDirTree.GetFilteredFileName(a));
-		char* str=new char[strlen(tmp)+1];
-		strcpy(str,tmp);
-		VideoAmbientMellowQueue.push_back(str);
-	}
-
-	random_shuffle(VideoAmbientMellowQueue.rbegin(),VideoAmbientMellowQueue.rend());
-	VideoAmbientMellowGetCount=0;
 
 	if(NoiseImage[0]==NULL)
 	{
@@ -1534,29 +1502,6 @@ GetNextVideoPathAmbient(char* path)
 	}
 }
 
-void
-VisualizerObj::
-GetNextVideoPathAmbientMellow(char* path)
-{
-	if(VideoAmbientMellowQueue.empty())
-	{
-		path[0]='\0';
-		return;
-	}
-
-	sprintf(path,"%s/%s",VideoAmbientMellowPath,VideoAmbientMellowQueue[0]);
-	char* str=VideoAmbientMellowQueue[0];
-	VideoAmbientMellowQueue.erase((std::vector<char*>::iterator)(&(VideoAmbientMellowQueue[0])));
-	VideoAmbientMellowQueue.push_back(str);
-
-	VideoAmbientMellowGetCount++;
-	if(VideoAmbientMellowGetCount==VideoAmbientMellowQueue.size())
-	{
-		random_shuffle(VideoAmbientMellowQueue.rbegin(),VideoAmbientMellowQueue.rend());
-		VideoAmbientMellowGetCount=0;
-	}
-}
-
 //Privates
 
 int
@@ -1858,26 +1803,7 @@ ForceVideoToBackOfAmbientQueue
 				break;
 			}
 		}
-	}
-	
-	//If we're drawing a video to the screen, then we want to put it at the end of the ambient mellow list.
-	if
-	(
-		VideoAmbientMellowQueue.size()>1 &&
-		strcmp(pathShort,VideoAmbientMellowQueue[VideoAmbientMellowQueue.size()-1])!=0
-	)
-	{
-		for(int a=VideoAmbientMellowQueue.size()-1;a>=0;a--)
-		{
-			if(strcmp(pathShort,VideoAmbientMellowQueue[a])==0)
-			{
-				char* tmp=VideoAmbientMellowQueue[a];
-				VideoAmbientMellowQueue.erase((std::vector<char*>::iterator)(&(VideoAmbientMellowQueue[a])));
-				VideoAmbientMellowQueue.push_back(tmp);
-				break;
-			}
-		}
-	}
+	}	
 }
 
 void
