@@ -98,8 +98,6 @@ videoEncoderThread
 		{
 			for(;;)
 			{
-printf("SIG: %i\n",tt->VideoEncoderTerminateSignal);
-
 				if(tt->VideoEncoderTerminateSignal==1)
 				{
 					break;
@@ -149,8 +147,6 @@ printf("SIG: %i\n",tt->VideoEncoderTerminateSignal);
 	}
 
 	tt->VideoEncoderTerminateSignal=-1;
-
-	printf("GONE! %i\n",tt->VideoEncoderTerminateSignal);
 
 	return(0);
 }
@@ -299,7 +295,11 @@ TurntableObj::
 {
 	if(VideoEncoderThread)
 	{
-		VideoEncoderTerminateSignal=1;
+		if(VideoEncoderTerminateSignal==0)
+		{
+			VideoEncoderTerminateSignal=1;
+		}
+
 		for(;;)
 		{
 			if(VideoEncoderTerminateSignal==-1)
