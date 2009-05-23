@@ -159,10 +159,6 @@ private:
 	std::vector<char*>	VideoAmbientQueue;
 	unsigned int		VideoAmbientGetCount;
 	
-	char			VideoAmbientMellowPath[1024];
-	std::vector<char*>	VideoAmbientMellowQueue;
-	unsigned int		VideoAmbientMellowGetCount;
-
 	float			NoiseFactor[2];
 static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
 
