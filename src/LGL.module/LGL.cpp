@@ -844,7 +844,7 @@ LGL_JackInit()
 	)
 	{
 		printf("LGL_JackInit(): Error! Couldn't acquire JACK port(s)!\n");
-		exit(-1);
+		return(false);
 	}
 
 	LGL_SAMPLESIZE_SDL = jack_get_buffer_size(jack_client);
@@ -855,7 +855,7 @@ LGL_JackInit()
 	if(jack_activate(jack_client)!=0)
 	{
 		printf("LGL_JackInit(): Error! jack_activate() failed!\n");
-		exit(-1);
+		return(false);
 	}
 
 	//LGL_SAMPLESIZE_SDL=512;
@@ -865,7 +865,7 @@ LGL_JackInit()
 	if(jack_ports==NULL)
 	{
 		printf("LGL_JackInit(): Error! No physical playback ports!\n");
-		exit(-1);
+		return(false);
 	}
 	LGL.AudioSpec->channels=0;
 	int portCount=0;
@@ -888,14 +888,14 @@ LGL_JackInit()
 		if(jack_connect(jack_client,jack_port_name(whichPort),jack_ports[a])!=0)
 		{
 			printf("LGL_JackInit(): Error! Cannot connect to output port %i!\n",a);
-			exit(-1);
+			return(false);
 		}
 		LGL.AudioSpec->channels=a+1;
 	}
 	if(LGL.AudioSpec->channels==0)
 	{
 		printf("LGL_JackInit(): Error! Cannot connect to any output port!\n");
-		exit(-1);
+		return(false);
 	}
 
 	LGL.AudioAvailable=true;
