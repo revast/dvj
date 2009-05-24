@@ -3541,88 +3541,95 @@ SelectNewVideo
 	bool	forceAmbient
 )
 {
-	//Change the freq-videos
 	char path[2048];
-	Visualizer->GetNextVideoPathAmbient(path);
-	if(VideoLo==NULL)
+	if(VideoFrequencySensitiveMode)
 	{
-		VideoLo=new LGL_Video(path);
-	}
-	else
-	{
-		VideoLo->SetVideo(path);
-	}
-
-	Visualizer->GetNextVideoPathAmbient(path);
-	if(VideoHi==NULL)
-	{
-		VideoHi=new LGL_Video(path);
-	}
-	else
-	{
-		VideoHi->SetVideo(path);
-	}
-
-	//Change the normal videos
-	char videoFileName[1024];
-	sprintf(videoFileName,"data/video/tracks/%s.mjpeg.avi",SoundName);
-	if
-	(
-		forceAmbient ||
-		VideoFileExists==false
-	)
-	{
-		//Get next ambient video from Visualizer.
+		//Change the freq-videos
 		Visualizer->GetNextVideoPathAmbient(path);
-
-		if(path[0]!='\0')
+		if(VideoLo==NULL)
 		{
-			if(VideoBack==NULL)
+			VideoLo=new LGL_Video(path);
+		}
+		else
+		{
+			VideoLo->SetVideo(path);
+		}
+
+		Visualizer->GetNextVideoPathAmbient(path);
+		if(VideoHi==NULL)
+		{
+			VideoHi=new LGL_Video(path);
+		}
+		else
+		{
+			VideoHi->SetVideo(path);
+		}
+		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoLo->GetPath());
+		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoHi->GetPath());
+	}
+	else
+	{
+		//Change the normal videos
+		char videoFileName[1024];
+		sprintf(videoFileName,"data/video/tracks/%s.mjpeg.avi",SoundName);
+		if
+		(
+			forceAmbient ||
+			VideoFileExists==false
+		)
+		{
+			//Get next ambient video from Visualizer.
+			Visualizer->GetNextVideoPathAmbient(path);
+
+			if(path[0]!='\0')
 			{
-				VideoBack=new LGL_Video(path);
+				if(VideoBack==NULL)
+				{
+					VideoBack=new LGL_Video(path);
+				}
+				else
+				{
+					VideoBack->SetVideo(path);
+				}
 			}
 			else
 			{
-				VideoBack->SetVideo(path);
+				//There aren't any videos available. That's fine.
+				return;
 			}
+
+			VideoOffsetSeconds=LGL_RandFloat(0,1000.0f);
+
+			assert(VideoBack);
 		}
 		else
 		{
-			//There aren't any videos available. That's fine.
-			return;
+			if
+			(
+				VideoFront &&
+				strcmp(VideoFront->GetPath(),videoFileName)==0
+			)
+			{
+				return;
+			}
+
+			VideoFrequencySensitiveMode=false;
+
+			if(VideoBack==NULL)
+			{
+				VideoBack=new LGL_Video(videoFileName);
+			}
+			else
+			{
+				VideoBack->SetVideo(videoFileName);
+			}
+			VideoOffsetSeconds=0;
 		}
-
-		VideoOffsetSeconds=LGL_RandFloat(0,1000.0f);
-
 		assert(VideoBack);
+		SwapVideos();
+		assert(VideoFront);
+		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoFront->GetPath());
 	}
-	else
-	{
-		if
-		(
-			VideoFront &&
-			strcmp(VideoFront->GetPath(),videoFileName)==0
-		)
-		{
-			return;
-		}
-
-		VideoFrequencySensitiveMode=false;
-
-		if(VideoBack==NULL)
-		{
-			VideoBack=new LGL_Video(videoFileName);
-		}
-		else
-		{
-			VideoBack->SetVideo(videoFileName);
-		}
-		VideoOffsetSeconds=0;
-	}
-	assert(VideoBack);
-	SwapVideos();
-	assert(VideoFront);
-	LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoFront->GetPath());
 }
 
 bool
