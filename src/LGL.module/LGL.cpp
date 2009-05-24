@@ -7403,6 +7403,13 @@ GetLengthSeconds()
 	}
 }
 
+float
+LGL_Video::
+GetTime()
+{
+	return(SecondsNext);
+}
+
 void
 LGL_Video::
 SetTime
@@ -7942,7 +7949,7 @@ LGL_VideoEncoder
 		}
 		if(SrcVideoStreamIndex==-1)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find video stream for '%s' in %i streams\n",src,fc->nb_streams);
+			//printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find video stream for '%s' in %i streams\n",src,fc->nb_streams);
 			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
@@ -11705,6 +11712,7 @@ LGL_Sound
 	strcpy(PathShort,ptr);
 
 	Loaded=false;
+	MetadataVolumePeak=0.0f;
 	MetadataFilledSize=0;
 
 	if(LoadInNewThread)
@@ -11749,6 +11757,7 @@ LGL_Sound
 	Channels=channels;
 	Hz=44100;
 
+	MetadataVolumePeak=0.0f;
 	MetadataFilledSize=0;
 
 	strcpy(Path,"Memory Buffer");
@@ -13126,6 +13135,20 @@ GetMetadata
 	return(true);
 }
 
+float
+LGL_Sound::
+GetVolumePeak()
+{
+	if(Loaded || 1)
+	{
+		return(MetadataVolumePeak);
+	}
+	else
+	{
+		return(1.0f);
+	}
+}
+
 void
 LGL_Sound::
 LoadToMemory()
@@ -13351,6 +13374,10 @@ LoadToMemory()
 						MetadataVolumeAve[MetadataFilledSize],
 						MetadataVolumeMax[MetadataFilledSize]
 					);
+					if(MetadataVolumeMax[MetadataFilledSize]>MetadataVolumePeak)
+					{
+						MetadataVolumePeak=MetadataVolumeMax[MetadataFilledSize];
+					}
 					MetadataFilledSize++;
 					secondsMetadataAlpha=MetadataFilledSize/(float)LGL_SOUND_METADATA_ENTRIES_PER_SECOND;
 				}

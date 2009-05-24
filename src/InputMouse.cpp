@@ -639,6 +639,17 @@ WaveformVideoAdvanceRate
 
 bool
 InputMouseObj::
+WaveformVideoToggleFreqSense
+(
+	unsigned int	target
+)	const
+{
+	bool toggle=false;
+	return(toggle);
+}
+
+bool
+InputMouseObj::
 WaveformSyncBPM
 (
 	unsigned int	target

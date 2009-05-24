@@ -770,6 +770,17 @@ WaveformVideoAdvanceRate
 
 bool
 InputWiimoteObj::
+WaveformVideoToggleFreqSense
+(
+	unsigned int	target
+)	const
+{
+	bool toggle=false;
+	return(toggle);
+}
+
+bool
+InputWiimoteObj::
 WaveformSyncBPM
 (
 	unsigned int	target

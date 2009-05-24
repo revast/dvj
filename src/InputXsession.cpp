@@ -934,6 +934,17 @@ WaveformVideoAdvanceRate
 
 bool
 InputXsessionObj::
+WaveformVideoToggleFreqSense
+(
+	unsigned int	target
+)	const
+{
+	bool toggle=false;
+	return(toggle);
+}
+
+bool
+InputXsessionObj::
 WaveformSyncBPM
 (
 	unsigned int	target
