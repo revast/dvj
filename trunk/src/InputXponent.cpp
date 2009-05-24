@@ -1712,6 +1712,30 @@ WaveformVideoAdvanceRate
 
 bool
 InputXponentObj::
+WaveformVideoToggleFreqSense
+(
+	unsigned int	target
+)	const
+{
+	bool toggle=false;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			toggle|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES);
+		}
+		else if((target & TARGET_TOP))
+		{
+			toggle|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_HEADPHONES);
+		}
+	}
+
+	return(toggle);
+}
+
+bool
+InputXponentObj::
 WaveformSyncBPM
 (
 	unsigned int	target

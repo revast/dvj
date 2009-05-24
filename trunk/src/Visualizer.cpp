@@ -104,6 +104,10 @@ VisualizerObj()
 		Videos[a]=NULL;
 		NoiseFactor[a]=1.0f;
 	}
+	for(int a=0;a<4;a++)
+	{
+		FreqVideos[a]=NULL;
+	}
 
 	char tmp[2048];
 
@@ -172,6 +176,22 @@ NextFrame
 	float	secondsElapsed
 )
 {
+	//Frequency-sensitive video mixing
+	for(int tt=0;tt<2;tt++)
+	{
+		LGL_Video* vidL=FreqVideos[tt*2+0];
+		LGL_Video* vidH=FreqVideos[tt*2+1];
+		for(int a=0;a<2;a++)
+		{
+			float speedFactor=(a==0) ? 1.0f : 4.0f;
+			LGL_Video* vid = (a==0) ? vidL : vidH;
+			if(vid)
+			{
+				vid->SetTime(vid->GetTime()+speedFactor*(1.0f/60.0f));
+			}
+		}
+	}
+
 	if
 	(
 		ScrollTextCurrentAmbientFileBuffer.empty() &&
@@ -957,63 +977,7 @@ DrawVisuals
 	//The ACTUAL videos we're drawing.
 	for(int videoNow=0;videoNow<2;videoNow++)
 	{
-		if(Videos[videoNow])
-		{
-			LGL_Image* image=Videos[videoNow]->LockImage();
-			if(image!=NULL)
-			{
-				image->DrawToScreen
-				(
-					l,r,b,t,
-					0,
-					VideoBrightness[videoNow],
-					VideoBrightness[videoNow],
-					VideoBrightness[videoNow],
-					0.0f
-				);
-			}
-			Videos[videoNow]->UnlockImage(image);
-
-			bool videoReady = Videos[videoNow]->GetImageDecodedSinceVideoChange();
-			if(videoReady)
-			{
-				NoiseFactor[videoNow]=LGL_Max(0.0f,NoiseFactor[videoNow]-4.0f*LGL_SecondsSinceLastFrame());
-			}
-			else
-			{
-				NoiseFactor[videoNow]=1.0f;
-			}
-
-			if(NoiseFactor[videoNow]>0.0f)
-			{
-				int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_128_128-1);
-				NoiseImage[which]->DrawToScreen
-				(
-					l,r,b,t,
-					0,
-					NoiseFactor[videoNow]*VideoBrightness[videoNow],
-					NoiseFactor[videoNow]*VideoBrightness[videoNow],
-					NoiseFactor[videoNow]*VideoBrightness[videoNow],
-					NoiseFactor[videoNow]*VideoBrightness[videoNow]
-				);
-			}
-
-			float secondsSinceVideoChange = Videos[videoNow]->GetSecondsSinceVideoChange();
-			if(secondsSinceVideoChange<0.25f)
-			{
-				float whiteFactor=LGL_Max(0.0f,1.0f-4.0f*secondsSinceVideoChange);
-				LGL_DrawRectToScreen
-				(
-					l,r,b,t,
-					whiteFactor*VideoBrightness[videoNow],
-					whiteFactor*VideoBrightness[videoNow],
-					whiteFactor*VideoBrightness[videoNow],
-					0.0f
-				);
-			}
-
-			ForceVideoToBackOfAmbientQueue(Videos[videoNow]->GetPathShort());
-		}
+		DrawVideos(videoNow,l,r,b,t);
 	}
 
 	//AccumulationNow->FrameBufferUpdate();
@@ -1458,8 +1422,8 @@ VisualizerObj::
 SetVideos
 (
 	LGL_Video*	video0,
-	LGL_Video*	video1,
 	float		videoBrightness0,
+	LGL_Video*	video1,
 	float		videoBrightness1
 )
 {
@@ -1477,6 +1441,54 @@ GetVideo
 )
 {
 	return(Videos[which]);
+}
+	
+void
+VisualizerObj::
+SetFrequencySensitiveVideos
+(
+	LGL_Video* video0l, LGL_Video* video0h, float volAve0, float volMax0, float freqFactor0, bool enable0,
+	LGL_Video* video1l, LGL_Video* video1h, float volAve1, float volMax1, float freqFactor1, bool enable1
+)
+{
+	FreqVideos[0]=video0l;
+	FreqVideos[1]=video0h;
+	FreqVideos[2]=video1l;
+	FreqVideos[3]=video1h;
+
+	float vol0=LGL_Min(1.0f,volAve0*2);
+	float vol1=LGL_Min(1.0f,volAve1*2);
+
+	//See if we should time-jump in any of our vids
+	for(int a=0;a<4;a++)
+	{
+		LGL_Video* vid=FreqVideos[a];
+		if(vid)
+		{
+			bool getHi=a%2;
+			float oldVol=FreqVolume[a/2];
+			float neoVol=(a<2) ? vol0 : vol1;
+			float oldFreqFactor=FreqFreqFactor[a/2];
+			float neoFreqFactor=(a<2) ? freqFactor0 : freqFactor1;
+			if
+			(
+				GetFreqBrightness(getHi,oldFreqFactor,oldVol)>0.0f &&
+				GetFreqBrightness(getHi,neoFreqFactor,neoVol)==0.0f
+			)
+			{
+				vid->SetTime(LGL_RandFloat(0.0f,vid->GetLengthSeconds()));
+			}
+		}
+	}
+
+	FreqVolume[0]=vol0;
+	FreqVolume[1]=vol1;
+
+	FreqFreqFactor[0]=freqFactor0;
+	FreqFreqFactor[1]=freqFactor1;
+
+	FreqEnabled[0]=enable0;
+	FreqEnabled[1]=enable1;
 }
 
 void
@@ -1869,5 +1881,173 @@ PopulateCharStarBufferWithScrollTextFile
 		}
 		fclose(file);
 	}
+}
+
+void
+VisualizerObj::
+DrawVideos
+(
+	int	which,
+	float	l,
+	float	r,
+	float	b,
+	float	t
+)
+{
+	int videoNow=which;
+
+	if(FreqEnabled[videoNow])
+	{
+		//Frequency-sensitive video mixing
+
+		LGL_Video* vidL=FreqVideos[videoNow*2+0];
+		LGL_Video* vidH=FreqVideos[videoNow*2+1];
+
+		for(int a=0;a<2;a++)
+		{
+			LGL_Video* vid = (a==0) ? vidL : vidH;
+			if(vid)
+			{
+				float vol = FreqVolume[videoNow];
+				float bright = GetFreqBrightness(a,FreqFreqFactor[videoNow],vol);
+				bright*=VideoBrightness[videoNow];
+
+				LGL_Image* image = vid->LockImage();
+				{
+					if(image)
+					{
+						while(bright>0.0f)
+						{
+							image->DrawToScreen
+							(
+								l,r,b,t,
+								0,
+								bright,
+								bright,
+								bright,
+								0.0f
+							);
+							bright-=1.0f;
+						}
+					}
+				}
+				vid->UnlockImage(image);
+			}
+		}
+		/*
+		LGL_DrawRectToScreen
+		(
+			l,r,b,t,
+			(0.0f+FreqFreqFactor[videoNow])*FreqVolume[videoNow],
+			(0.0f+FreqFreqFactor[videoNow])*FreqVolume[videoNow],
+			(1.0f-FreqFreqFactor[videoNow])*FreqVolume[videoNow],
+			0.0f
+		);
+		*/
+	}
+	else if(Videos[videoNow])
+	{
+		LGL_Image* image=Videos[videoNow]->LockImage();
+		if(image!=NULL)
+		{
+			image->DrawToScreen
+			(
+				l,r,b,t,
+				0,
+				VideoBrightness[videoNow],
+				VideoBrightness[videoNow],
+				VideoBrightness[videoNow],
+				0.0f
+			);
+		}
+		Videos[videoNow]->UnlockImage(image);
+
+		bool videoReady = Videos[videoNow]->GetImageDecodedSinceVideoChange();
+		if(videoReady)
+		{
+			NoiseFactor[videoNow]=LGL_Max(0.0f,NoiseFactor[videoNow]-4.0f*LGL_SecondsSinceLastFrame());
+		}
+		else
+		{
+			NoiseFactor[videoNow]=1.0f;
+		}
+
+		if(NoiseFactor[videoNow]>0.0f)
+		{
+			int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_128_128-1);
+			NoiseImage[which]->DrawToScreen
+			(
+				l,r,b,t,
+				0,
+				NoiseFactor[videoNow]*VideoBrightness[videoNow],
+				NoiseFactor[videoNow]*VideoBrightness[videoNow],
+				NoiseFactor[videoNow]*VideoBrightness[videoNow],
+				NoiseFactor[videoNow]*VideoBrightness[videoNow]
+			);
+		}
+
+		float secondsSinceVideoChange = Videos[videoNow]->GetSecondsSinceVideoChange();
+		if(secondsSinceVideoChange<0.25f)
+		{
+			float whiteFactor=LGL_Max(0.0f,1.0f-4.0f*secondsSinceVideoChange);
+			LGL_DrawRectToScreen
+			(
+				l,r,b,t,
+				whiteFactor*VideoBrightness[videoNow],
+				whiteFactor*VideoBrightness[videoNow],
+				whiteFactor*VideoBrightness[videoNow],
+				0.0f
+			);
+		}
+
+		ForceVideoToBackOfAmbientQueue(Videos[videoNow]->GetPathShort());
+	}
+}
+
+float
+VisualizerObj::
+GetFreqBrightness
+(
+	bool 	hi,
+	float	freqFactor,
+	float	vol
+)
+{
+	float freqMag;
+	if(hi==false)
+	{
+		float minVol=0.2f;
+		float volMag=LGL_Max(0,(vol-minVol)/(1.0f-minVol));
+		float myFreqMag=1.0f-freqFactor;
+		float minFreqMag=0.2f;
+		freqMag=LGL_Clamp
+		(
+			0.0f,
+			volMag*(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
+			1.0f
+		);
+	}
+	else
+	{
+		float minVol=0.3f;
+		float volMag=LGL_Max(0,(vol-minVol)/(1.0f-minVol));
+		float myFreqMag=0.0f+freqFactor;
+		float minFreqMag=0.3f;
+		freqMag=LGL_Clamp
+		(
+			0.0f,
+			volMag*(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
+			1.0f
+		);
+		freqMag*=2.0f;
+		if(freqMag>1.0f)
+		{
+			freqMag*=freqMag;
+			freqMag*=4.0f;
+		}
+		freqMag/=2.0f;
+	}
+	float brightFactor = hi ? 4.0f : 0.25f;
+	return(freqMag*brightFactor);
 }
 

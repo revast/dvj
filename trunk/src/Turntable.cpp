@@ -243,7 +243,10 @@ TurntableObj
 
 	VideoFront=NULL;
 	VideoBack=NULL;
+	VideoLo=NULL;
+	VideoHi=NULL;
 	VideoAdvanceRate=1.0f;
+	VideoFrequencySensitiveMode=false;
 
 	ENTIRE_WAVE_ARRAY_COUNT=LGL_VideoResolutionX();
 
@@ -323,6 +326,16 @@ TurntableObj::
 	{
 		delete VideoFront;
 		VideoFront=NULL;
+	}
+	if(VideoBack)
+	{
+		delete VideoBack;
+		VideoBack=NULL;
+	}
+	if(VideoLo)
+	{
+		delete VideoLo;
+		VideoLo=NULL;
 	}
 	if(VideoBack)
 	{
@@ -1184,6 +1197,10 @@ NextFrame
 		{
 			SelectNewVideo();
 		}
+		if(Input.WaveformVideoToggleFreqSense(target))
+		{
+			VideoFrequencySensitiveMode=!VideoFrequencySensitiveMode;
+		}
 
 		float newRate=Input.WaveformVideoAdvanceRate(target);
 		if(newRate!=-1.0f)
@@ -1756,7 +1773,7 @@ NextFrame
 		}
 
 		//Smooth waveform scrolling
-		
+
 		float speed=Sound->GetSpeed(Channel);
 		double proposedDelta = (LGL_AudioAvailable()?1:0)*speed*Sound->GetHz()*(1.0f/60.0f);
 		double currentSample=Sound->GetPositionSamples(Channel);
@@ -2118,66 +2135,55 @@ DrawFrame
 		}
 		else if(GetVideo()!=NULL)
 		{
-			LGL_Image* image=GetVideo()->LockImage();
-			if(image!=NULL)
+			Visualizer->DrawVideos(Which,left,right,bottom,top);
+			if(VideoFrequencySensitiveMode)
 			{
-				rectAlpha=0.0f;
-				image->DrawToScreen
+				float volAve;
+				float volMax;
+				float freqFactor;
+				GetFreqMetaData(volAve,volMax,freqFactor);
+
+				float r=
+					(1.0f-freqFactor)*0.0f+
+					(0.0f+freqFactor)*0.4f;
+				float g=
+					(1.0f-freqFactor)*0.0f+
+					(0.0f+freqFactor)*0.2f;
+				float b=
+					(1.0f-freqFactor)*1.0f+
+					(0.0f+freqFactor)*1.0f;
+
+				LGL_DrawLineToScreen
 				(
-					left,
-					right,
-					bottom,
-					top
+					left,bottom,
+					right,bottom,
+					r,g,b,1.0f,
+					1.0f,
+					true
 				);
-			}
-			GetVideo()->UnlockImage(image);
-
-			bool videoReady = VideoFront->GetImageDecodedSinceVideoChange();
-			if(videoReady)
-			{
-				NoiseFactorVideo=LGL_Max(0.0f,NoiseFactorVideo-4.0f*LGL_SecondsSinceLastFrame());
-			}
-			else
-			{
-				NoiseFactorVideo=1.0f;
-			}
-
-			if(NoiseFactorVideo>0.0f)
-			{
-				int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_256_64-1);
-				NoiseImage[which]->DrawToScreen
+				LGL_DrawLineToScreen
 				(
-					left,
-					right,
-					bottom,
-					top,
-					0,
-					NoiseFactorVideo,
-					NoiseFactorVideo,
-					NoiseFactorVideo,
-					NoiseFactorVideo,
-					false,false,0,0,0,
-					0.0f,
-					0.25f,
-					0.0f,
-					1.0f
+					right,bottom,
+					right,top,
+					r,g,b,1.0f,
+					1.0f,
+					true
 				);
-			}
-
-			float secondsSinceVideoChange = VideoFront->GetSecondsSinceVideoChange();
-			float whiteFactor=LGL_Max(0.0f,1.0f-4.0f*secondsSinceVideoChange);
-			if(whiteFactor>0.0f)
-			{
-				LGL_DrawRectToScreen
+				LGL_DrawLineToScreen
 				(
-					left,
-					right,
-					bottom,
-					top,
-					whiteFactor,
-					whiteFactor,
-					whiteFactor,
-					0.0f
+					right,top,
+					left,top,
+					r,g,b,1.0f,
+					1.0f,
+					true
+				);
+				LGL_DrawLineToScreen
+				(
+					left,top,
+					left,bottom,
+					r,g,b,1.0f,
+					1.0f,
+					true
 				);
 			}
 		}
@@ -2738,6 +2744,13 @@ GetMixerVolumeBack()
 	return(LGL_Clamp(0,MixerVolumeBack,1));
 }
 
+float
+TurntableObj::
+GetGain()
+{
+	return(VolumeMultiplierNow*(VolumeKill?0.0f:1.0f));
+}
+
 void
 TurntableObj::
 SetMixerEQ
@@ -2808,6 +2821,27 @@ GetVideoFront()
 	return(VideoFront);
 }
 
+LGL_Video*
+TurntableObj::
+GetVideoBack()
+{
+	return(VideoBack);
+}
+
+LGL_Video*
+TurntableObj::
+GetVideoLo()
+{
+	return(VideoLo);
+}
+
+LGL_Video*
+TurntableObj::
+GetVideoHi()
+{
+	return(VideoHi);
+}
+
 float
 TurntableObj::
 GetVideoTimeSeconds()
@@ -2860,6 +2894,52 @@ GetTimeSeconds()
 			return(SmoothWaveformScrollingSample/Sound->GetHz());
 			//return(Sound->GetPositionSeconds(Channel));
 		}
+	}
+}
+
+bool
+TurntableObj::
+GetFreqMetaData
+(
+	float&	volAve,
+	float&	volMax,
+	float&	freqFactor
+)
+{
+	if(Sound)
+	{
+		return
+		(
+			Sound->GetMetadata
+			(
+				GetTimeSeconds(),
+				GetTimeSeconds()+1.0f/60.0f,
+				freqFactor,
+				volAve,
+				volMax
+			)
+		);
+	}
+	else
+	{
+		volAve=0.0f;
+		volMax=0.0f;
+		freqFactor=0.0f;
+		return(false);
+	}
+}
+
+float
+TurntableObj::
+GetVolumePeak()
+{
+	if(Sound)
+	{
+		return(Sound->GetVolumePeak());
+	}
+	else
+	{
+		return(1.0f);
 	}
 }
 
@@ -3438,6 +3518,13 @@ UpdateSoundFreqResponse()
 	}
 }
 
+bool
+TurntableObj::
+GetVideoFrequencySensitiveMode()
+{
+	return(VideoFrequencySensitiveMode);
+}
+
 void
 TurntableObj::
 SwapVideos()
@@ -3454,6 +3541,29 @@ SelectNewVideo
 	bool	forceAmbient
 )
 {
+	//Change the freq-videos
+	char path[2048];
+	Visualizer->GetNextVideoPathAmbient(path);
+	if(VideoLo==NULL)
+	{
+		VideoLo=new LGL_Video(path);
+	}
+	else
+	{
+		VideoLo->SetVideo(path);
+	}
+
+	Visualizer->GetNextVideoPathAmbient(path);
+	if(VideoHi==NULL)
+	{
+		VideoHi=new LGL_Video(path);
+	}
+	else
+	{
+		VideoHi->SetVideo(path);
+	}
+
+	//Change the normal videos
 	char videoFileName[1024];
 	sprintf(videoFileName,"data/video/tracks/%s.mjpeg.avi",SoundName);
 	if
@@ -3463,7 +3573,6 @@ SelectNewVideo
 	)
 	{
 		//Get next ambient video from Visualizer.
-		char path[2048];
 		Visualizer->GetNextVideoPathAmbient(path);
 
 		if(path[0]!='\0')
@@ -3497,6 +3606,8 @@ SelectNewVideo
 		{
 			return;
 		}
+
+		VideoFrequencySensitiveMode=false;
 
 		if(VideoBack==NULL)
 		{

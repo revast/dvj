@@ -68,6 +68,7 @@ public:
 
 	float				GetMixerVolumeFront();
 	float				GetMixerVolumeBack();
+	float				GetGain();
 
 	void				SetMixerEQ(float low, float mid, float high);
 	void				SetMixerNudge(float mixerNudge);
@@ -76,9 +77,14 @@ public:
 
 	LGL_Video*			GetVideo();
 	LGL_Video*			GetVideoFront();
+	LGL_Video*			GetVideoBack();
+	LGL_Video*			GetVideoLo();
+	LGL_Video*			GetVideoHi();
 	float				GetVideoTimeSeconds();
 	bool				GetVideoSolo();
 	float				GetTimeSeconds();
+	bool				GetFreqMetaData(float& volAve, float& volMax, float& freqFactor);
+	float				GetVolumePeak();
 
 	bool				GetSavePointIndexAtNull() const;
 
@@ -234,9 +240,12 @@ static	VisualizerObj*			Visualizer;
 
 	LGL_Video*			VideoFront;
 	LGL_Video*			VideoBack;
+	LGL_Video*			VideoLo;
+	LGL_Video*			VideoHi;
 	float				VideoSwitchInterval;
 	float				VideoOffsetSeconds;
 	float				VideoAdvanceRate;
+	bool				VideoFrequencySensitiveMode;
 
 public:
 
@@ -244,6 +253,8 @@ public:
 	float				VideoEncoderPercent;
 	char				VideoEncoderPathSrc[2048];
 	int				VideoEncoderTerminateSignal;
+
+	bool				GetVideoFrequencySensitiveMode();
 
 private:
 

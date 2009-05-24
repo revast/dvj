@@ -792,6 +792,7 @@ public:
 	LGL_Image*		LockImage();
 	void			UnlockImage(LGL_Image* image);
 	float			GetLengthSeconds();
+	float			GetTime();
 	void			SetTime(float seconds);
 	void			SetPrimaryDecoder();
 	bool			GetImageDecodedSinceBecomingPrimaryDecoder();
@@ -1561,6 +1562,7 @@ public:
 				float&	magnitudeAve,
 				float&	magnitudeMax
 			);
+	float		GetVolumePeak();
 	void		LoadToMemory();
 	bool		IsLoaded();
 	bool		IsUnloadable();
@@ -1616,6 +1618,7 @@ private:
 	bool		DeleteOK;
 	SDL_Thread*	PrepareForDeleteThread;
 
+	float		MetadataVolumePeak;
 	float		MetadataVolumeAve[LGL_SOUND_METADATA_SIZE_MAX];
 	float		MetadataVolumeMax[LGL_SOUND_METADATA_SIZE_MAX];
 	float		MetadataFreqFactor[LGL_SOUND_METADATA_SIZE_MAX];

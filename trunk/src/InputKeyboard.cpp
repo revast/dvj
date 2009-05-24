@@ -837,6 +837,24 @@ WaveformVideoAdvanceRate
 
 bool
 InputKeyboardObj::
+WaveformVideoToggleFreqSense
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_KeyStroke(SDLK_SLASH))
+		{
+			return(true);
+		}
+	}
+
+	return(false);
+}
+
+bool
+InputKeyboardObj::
 WaveformSyncBPM
 (
 	unsigned int	target

@@ -57,8 +57,17 @@ public:
 	bool			GetScrollTextEnabled();
 
 	bool			IsVideoAvailable() const;
-	void			SetVideos(LGL_Video* video0, LGL_Video* video1, float videoBrightness0, float videoBrightness1);
+	void			SetVideos
+				(
+					LGL_Video* video0,	float videoBrightness0,
+					LGL_Video* video1,	float videoBrightness1
+				);
 	LGL_Video*		GetVideo(int which);
+	void			SetFrequencySensitiveVideos
+				(
+					LGL_Video* video0l, LGL_Video* video0h, float volAve0, float volMax0, float freqFactor0, bool enable0,
+					LGL_Video* video1l, LGL_Video* video1h, float volAve1, float volMax1, float freqFactor1, bool enable1
+				);
 
 	void			GetNextVideoPathAmbient(char* path);
 	void			GetNextVideoPathAmbientMellow(char* path);
@@ -154,6 +163,17 @@ private:
 
 	LGL_Video*		Videos[2];
 	float			VideoBrightness[2];
+
+	bool			FreqEnabled[2];
+	LGL_Video*		FreqVideos[4];
+	float			FreqVolume[2];
+	float			FreqFreqFactor[2];
+
+public:
+	void			DrawVideos(int which, float l, float r, float b, float t);
+
+private:
+	float			GetFreqBrightness(bool hi, float freqFactor, float vol);
 
 	char			VideoAmbientPath[1024];
 	std::vector<char*>	VideoAmbientQueue;

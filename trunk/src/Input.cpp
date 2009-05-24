@@ -1030,6 +1030,23 @@ WaveformVideoAdvanceRate
 
 bool
 InputObj::
+WaveformVideoToggleFreqSense
+(
+	unsigned int	target
+)	const
+{
+	bool toggle=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		toggle|=Children[a]->WaveformVideoToggleFreqSense(target);
+	}
+
+	return(toggle);
+}
+
+bool
+InputObj::
 WaveformSyncBPM
 (
 	unsigned int	target
