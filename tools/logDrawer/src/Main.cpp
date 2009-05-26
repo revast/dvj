@@ -994,7 +994,7 @@ exit(0);
 		}
 		else if(strcasecmp(fi[0],"dtt")==0)
 		{
-			assert(fi.Size()==35);
+			assert(fi.Size()==36);
 			
 			int which = atoi(fi[1]);
 			assert(which >=0 && which < 10);
@@ -1058,7 +1058,8 @@ exit(0);
 				entireWaveArrayMagnitudeMax,	//41: MagMax
 				entireWaveArrayFreqFactor,	//42: FreqFactor
 				soundList[which]->GetLengthSeconds(),			//43: CachedLengthSeconds
-				NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64]		//44: NoiseImage
+				NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44: NoiseImage
+				atoi(fi[35])			//45: VideoFrequencySensitiveMode
 			);
 		}
 		else if(strcasecmp(fi[0],"MixF")==0)
