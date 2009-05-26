@@ -252,11 +252,12 @@ typedef struct
 
 	bool			AudioInAvailable;
 	std::vector<LGL_AudioGrain*>
+				AudioInGrainListFixedSize;
+	std::vector<LGL_AudioGrain*>
 				AudioInGrainListFront;
 	std::vector<LGL_AudioGrain*>
 				AudioInGrainListBack;
 	LGL_Semaphore*		AudioInSemaphore;
-	LGL_Timer*		AudioInTimer;
 	LGL_AudioGrain*		AudioInFallbackGrain;
 
 	//Keyboard
@@ -395,10 +396,15 @@ jack_port_t *jack_output_port_fl=NULL;
 jack_port_t *jack_output_port_fr=NULL;
 jack_port_t *jack_output_port_bl=NULL;
 jack_port_t *jack_output_port_br=NULL;
+jack_port_t *jack_input_port_l=NULL;
+jack_port_t *jack_input_port_r=NULL;
 jack_client_t *jack_client=NULL;
 
 Uint8 jack_output_buffer8[1024*64];
 Sint16* jack_output_buffer16=(Sint16*)jack_output_buffer8;
+
+Uint8 jack_input_buffer8[1024*64];
+Sint16* jack_input_buffer16=(Sint16*)jack_input_buffer8;
 
 int
 lgl_AudioOutCallbackJackXrun
@@ -434,8 +440,8 @@ lgl_AudioOutCallbackJack
 		assert(out_fr);
 		for(unsigned int a=0;a<nframes;a++)
 		{
-			out_fl[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+0]/(float)(1<<15);
-			out_fr[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+1]/(float)(1<<15);
+			out_fl[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+0]/(float)((1<<16)-1);
+			out_fr[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+1]/(float)((1<<16)-1);
 		}
 	}
 	if(LGL.AudioSpec->channels==4)
@@ -446,9 +452,36 @@ lgl_AudioOutCallbackJack
 		assert(out_br);
 		for(unsigned int a=0;a<nframes;a++)
 		{
-			out_bl[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+2]/(float)(1<<15);
-			out_br[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+3]/(float)(1<<15);
+			out_bl[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+2]/(float)((1<<16)-1);
+			out_br[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+3]/(float)((1<<16)-1);
 		}
+	}
+
+	if
+	(
+		jack_input_port_l &&
+		jack_input_port_r
+	)
+	{
+		jack_default_audio_sample_t* in_l = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_input_port_l,nframes);
+		jack_default_audio_sample_t* in_r = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_input_port_r,nframes);
+		assert(in_l);
+		assert(in_r);
+		jack_default_audio_sample_t* out_fl = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_output_port_fl,nframes);
+		jack_default_audio_sample_t* out_fr = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_output_port_fr,nframes);
+		assert(out_fl);
+		assert(out_fr);
+		for(unsigned int a=0;a<nframes;a++)
+		{
+			jack_input_buffer16[a*2+0] = (Sint16)(in_l[a]*((1<<16)-1));
+			jack_input_buffer16[a*2+1] = (Sint16)(in_r[a]*((1<<16)-1));
+			
+			/*
+			out_fl[a]+=in_l[a];
+			out_fr[a]+=in_r[a];
+			*/
+		}
+		lgl_AudioInCallback(NULL,jack_input_buffer8,nframes*2*2);
 	}
 
 	return(0);
@@ -833,6 +866,8 @@ LGL_JackInit()
 	jack_output_port_fr = jack_port_register(jack_client,"output_fr",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
 	jack_output_port_bl = jack_port_register(jack_client,"output_bl",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
 	jack_output_port_br = jack_port_register(jack_client,"output_br",JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput,0);
+	jack_input_port_l = jack_port_register(jack_client,"input_l",JACK_DEFAULT_AUDIO_TYPE,JackPortIsInput,0);
+	jack_input_port_r = jack_port_register(jack_client,"input_r",JACK_DEFAULT_AUDIO_TYPE,JackPortIsInput,0);
 
 	//jack_input_port = jack_port_register(jack_client,"input",JACK_DEFAULT_AUDIO_TYPE,JackPortIsInput,0);
 
@@ -861,31 +896,63 @@ LGL_JackInit()
 	//LGL_SAMPLESIZE_SDL=512;
 	//jack_set_buffer_size(jack_client,LGL_SAMPLESIZE_SDL);
 
-	const char** jack_ports = jack_get_ports(jack_client, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
-	if(jack_ports==NULL)
+	//AudioIn
+	LGL.AudioInAvailable=false;
+	const char** jack_ports_out = jack_get_ports(jack_client, NULL, NULL, JackPortIsPhysical|JackPortIsOutput);
+	int portCountOut=0;
+	while(jack_ports_out[portCountOut]!=NULL)
+	{
+		printf("Out found: '%s'\n",jack_ports_out[portCountOut]);
+		portCountOut++;
+		if(portCountOut==2)
+		{
+			//We don't care to have > 2 channels
+			break;
+		}
+	}
+	for(int a=0;a<portCountOut;a++)
+	{
+		jack_port_t* whichPort;
+		if(a==0)	whichPort=jack_input_port_l;
+		else if(a==1)	whichPort=jack_input_port_r;
+		else break;
+		if(jack_connect(jack_client,jack_ports_out[a],jack_port_name(whichPort))!=0)
+		{
+			printf("LGL_JackInit(): Warning! Cannot connect to input port %i!\n",a);
+			break;
+		}
+		if(a==1)
+		{
+			LGL.AudioInAvailable=true;
+		}
+	}
+
+	const char** jack_ports_in = jack_get_ports(jack_client, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
+	if(jack_ports_in==NULL)
 	{
 		printf("LGL_JackInit(): Error! No physical playback ports!\n");
 		return(false);
 	}
 	LGL.AudioSpec->channels=0;
-	int portCount=0;
-	while(jack_ports[portCount]!=NULL)
+	int portCountIn=0;
+	while(jack_ports_in[portCountIn]!=NULL)
 	{
-		portCount++;
-		if(portCount==4)
+		portCountIn++;
+		if(portCountIn==4)
 		{
 			//We don't care to have > 4 channels
 			break;
 		}
 	}
-	for(int a=0;a<portCount;a++)
+	for(int a=0;a<portCountIn;a++)
 	{
 		jack_port_t* whichPort;
 		if(a==0)	whichPort=jack_output_port_fl;
 		else if(a==1)	whichPort=jack_output_port_fr;
 		else if(a==2)	whichPort=jack_output_port_bl;
 		else if(a==3)	whichPort=jack_output_port_br;
-		if(jack_connect(jack_client,jack_port_name(whichPort),jack_ports[a])!=0)
+		else break;
+		if(jack_connect(jack_client,jack_port_name(whichPort),jack_ports_in[a])!=0)
 		{
 			printf("LGL_JackInit(): Error! Cannot connect to output port %i!\n",a);
 			return(false);
@@ -902,7 +969,9 @@ LGL_JackInit()
 	LGL.AudioWasOnceAvailable=true;
 	LGL.AudioSpec->freq = jack_get_sample_rate(jack_client);
 
-	free(jack_ports);
+	//MEMLEAK: if we return early, these calls to free() don't happen. Meh.
+	free(jack_ports_in);
+	free(jack_ports_out);
 
 	printf("LGL_JackInit(): Success! (%i channels)\n",LGL.AudioSpec->channels);
 	printf("---\n\n");
@@ -1093,6 +1162,8 @@ LGL_Init
 		lgl_ClearAudioChannelNow(a);
 	}
 	LGL.AudioStreamListSemaphore=new LGL_Semaphore("Audio Stream List");
+	LGL.AudioInSemaphore=new LGL_Semaphore("AudioIn");
+	LGL.AudioInFallbackGrain=new LGL_AudioGrain;
 	LGL.AudioBufferPos=0;
 
 	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
@@ -1408,47 +1479,6 @@ LGL_Init
 	//LGL_Assert(inAudioChannels==0 || inAudioChannels==2 || inAudioChannels==4);
 
 	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec Open/Close");
-		
-	//Initialize AudioIn
-	LGL.AudioInAvailable=false;
-#ifdef	LGL_LINUX
-/*
-	if(audioIn)
-	{
-		LGL.AudioInAvailable=true;
-		LGL.AudioInSemaphore=new LGL_Semaphore("AudioIn");
-		LGL.AudioInTimer=new LGL_Timer;
-		LGL.AudioInFallbackGrain=new LGL_AudioGrain;
-
-		if(SDL_InitAudioIn() < 0)
-		{
-			LGL.AudioInAvailable=false;
-		}
-		else
-		{
-			SDL_AudioSpec specRequested;
-			SDL_AudioSpec specGranted;
-
-			specRequested.format=AUDIO_S16;
-			specRequested.freq=44100;
-			specRequested.callback=lgl_AudioInCallback;
-			specRequested.samples=1024;
-			specRequested.channels=1;
-			specRequested.userdata=&specGranted;	//Why is this line the way it is?
-
-			if(SDL_OpenAudioIn(&specRequested,&specGranted) < 0)
-			{
-				LGL.AudioInAvailable=false;
-			}
-			else
-			{
-				//TODO: Assert that we got our spec
-				SDL_PauseAudioIn(0);
-			}
-		}
-	}
-*/
-#endif	//LGL_LINUX
 
 	//LGL.AudioSpec=AudioObtained;
 	//delete AudioObtained;
@@ -2034,6 +2064,77 @@ LGL_AudioInGrainList()
 	return(LGL.AudioInGrainListFront);
 }
 
+Uint8 audioInMetadataBuffer[1024*4*4];
+
+bool
+LGL_AudioInMetadata
+(
+	float&	volAve,
+	float&	volMax,
+	float&	freqFactor
+)
+{
+	volAve=0.0f;
+	volMax=0.0f;
+	freqFactor=0.0f;
+
+	if(LGL.AudioInAvailable==false)
+	{
+		return(false);
+	}
+
+	std::vector<LGL_AudioGrain*> inGrains=LGL.AudioInGrainListFixedSize;
+	if(inGrains.size()==0)
+	{
+		return(false);
+	}
+	//float weightTotal=0.0f;
+	//float tmpWeight;
+	//float tmpVolAve;
+	//float tmpVolMax;
+	//float tmpFreqFactor;
+	Uint8* bufNow=audioInMetadataBuffer;
+	long bufSamples=0;
+	for(unsigned int a=0;a<inGrains.size();a++)
+	{
+		inGrains[a]->GetWaveformToMemory(bufNow);
+		bufNow+=4*inGrains[a]->GetLengthSamples();
+		bufSamples+=inGrains[a]->GetLengthSamples();
+
+		/*
+		tmpWeight=inGrains[a]->GetLengthSamples();
+		inGrains[a]->GetMetadata
+		(
+			tmpVolAve,
+			tmpVolMax,
+			tmpFreqFactor
+		);
+		weightTotal+=tmpWeight;
+		volAve+=tmpVolAve*tmpWeight;
+		volMax=LGL_Max(volMax,tmpVolMax);
+		freqFactor+=tmpFreqFactor*tmpWeight;
+		*/
+	}
+	LGL_AudioGrain bigGrain;
+	bigGrain.SetWaveformFromMemory
+	(
+		audioInMetadataBuffer,
+		bufSamples
+	);
+	bigGrain.GetMetadata
+	(
+		volAve,
+		volMax,
+		freqFactor
+	);
+	/*
+	volAve/=weightTotal;
+	freqFactor/=weightTotal;
+	*/
+
+	return(true);
+}
+
 void
 LGL_DrawWaveform
 (
@@ -2094,14 +2195,17 @@ LGL_DrawAudioInWaveform
 	{
 		grain=LGL.AudioInGrainListFront[LGL.AudioInGrainListFront.size()-1];
 	}
-	grain->DrawWaveform
-	(
-		left,right,
-		bottom,top,
-		r,g,b,a,
-		thickness,
-		antialias
-	);
+	if(grain)
+	{
+		grain->DrawWaveform
+		(
+			left,right,
+			bottom,top,
+			r,g,b,a,
+			thickness,
+			antialias
+		);
+	}
 }
 
 void
@@ -2278,7 +2382,6 @@ lgl_fftw_init()
 	}
 }
 
-//FIXME: Linking with FFTW infects LGL with GPL license, upon distribution
 void
 LGL_FFT
 (
@@ -2537,20 +2640,89 @@ LGL_SwapBuffers()
 				LGL.AudioInGrainListFront[LGL.AudioInGrainListFront.size()-1]
 			);
 		}
-		for(unsigned int a=0;a<LGL.AudioInGrainListFront.size();a++)
-		{
-			if(LGL.AudioInGrainListFront[a]!=NULL)
-			{
-				delete LGL.AudioInGrainListFront[a];
-			}
-		}
-		LGL.AudioInGrainListFront.clear();
+		std::vector<LGL_AudioGrain*> oldFront = LGL.AudioInGrainListFront;
+		//FIXME: We're blocking our audio thread!! (ever so briefly...)
 		LGL.AudioInSemaphore->Lock("Main","Moving back grains to front");
 		{
 			LGL.AudioInGrainListFront=LGL.AudioInGrainListBack;
 			LGL.AudioInGrainListBack.clear();
 		}
 		LGL.AudioInSemaphore->Unlock();
+
+		std::vector<LGL_AudioGrain*> neoFixedSize;
+		const unsigned int fixedSize=4;
+		for(int a=(int)LGL.AudioInGrainListFront.size()-1;a>=0;a--)
+		{
+			if(neoFixedSize.size()<fixedSize)
+			{
+				neoFixedSize.push_back(LGL.AudioInGrainListFront[a]);
+			}
+			else
+			{
+				break;
+			}
+		}
+		for(int a=(int)LGL.AudioInGrainListFixedSize.size()-1;a>=0;a--)
+		{
+			if(neoFixedSize.size()<fixedSize)
+			{
+				neoFixedSize.push_back(LGL.AudioInGrainListFixedSize[a]);
+			}
+			else
+			{
+				break;
+			}
+		}
+		for(unsigned int a=0;a<oldFront.size();a++)
+		{
+			bool stillAlive=false;
+			for(int b=0;b<(int)neoFixedSize.size();b++)
+			{
+				if(oldFront[a]==neoFixedSize[b])
+				{
+					stillAlive=true;
+					break;
+				}
+			}
+			if(stillAlive==false)
+			{
+				delete oldFront[a];
+				for(unsigned int c=0;c<LGL.AudioInGrainListFixedSize.size();c++)
+				{
+					if(LGL.AudioInGrainListFixedSize[c]==oldFront[a])
+					{
+						LGL.AudioInGrainListFixedSize[c]=NULL;
+					}
+				}
+			}
+		}
+		oldFront.clear();
+
+		for(unsigned int a=0;a<LGL.AudioInGrainListFixedSize.size();a++)
+		{
+			bool stillAlive=false;
+			for(int b=0;b<(int)neoFixedSize.size();b++)
+			{
+				if(LGL.AudioInGrainListFixedSize[a]==neoFixedSize[b])
+				{
+					stillAlive=true;
+					break;
+				}
+			}
+			if(stillAlive==false)
+			{
+				if(LGL.AudioInGrainListFixedSize[a])
+				{
+					delete LGL.AudioInGrainListFixedSize[a];
+				}
+			}
+		}
+		LGL.AudioInGrainListFixedSize.clear();
+		for(int b=(int)neoFixedSize.size()-1;b>=0;b--)
+		{
+			LGL.AudioInGrainListFixedSize.push_back(neoFixedSize[b]);
+		}
+		neoFixedSize.clear();
 	}
 
 	if(LGL.DrawLogFD)
@@ -3134,7 +3306,7 @@ LGL_DrawLineToScreen
 		glDisable(GL_BLEND);
 	}
 
-	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
 	glBegin(GL_LINES);
 	{
 		glNormal3f(0,0,-1);
@@ -3191,12 +3363,12 @@ LGL_DrawLineStripToScreen
 
 	//Slow
 	/*
-	for(int a=0;a<pointCount-1;a++)
+	for(int z=0;z<pointCount-1;z++)
 	{
 		LGL_DrawLineToScreen
 		(
-			pointsXY[((a+0)*2)+0],pointsXY[((a+0)*2)+1],
-			pointsXY[((a+1)*2)+0],pointsXY[((a+1)*2)+1],
+			pointsXY[((z+0)*2)+0],pointsXY[((z+0)*2)+1],
+			pointsXY[((z+1)*2)+0],pointsXY[((z+1)*2)+1],
 			r,g,b,a,
 			thickness,
 			antialias
@@ -3227,7 +3399,7 @@ LGL_DrawLineStripToScreen
 		glDisable(GL_BLEND);
 	}
 
-	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
 
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
@@ -10087,10 +10259,15 @@ DrawWaveform
 	float width=right-left;
 	float height=top-bottom;
 	float* pointsXY=new float[LengthSamples*2];
+	float peak=0.0f;
 	for(int z=0;z<LengthSamples;z++)
 	{
 		pointsXY[2*z+0] = left+width*(z/(float)LengthSamples);
 		pointsXY[2*z+1] = bottom+height*WaveformMonoFloat[z];
+		if(pointsXY[2*z+1]>peak)
+		{
+			peak=pointsXY[2*z+1];
+		}
 	}
 
 	//Draw
@@ -10122,15 +10299,15 @@ DrawSpectrum
 	float* pointsXY=new float[SpectrumSamples*2];
 	for(int z=0;z<SpectrumSamples;z++)
 	{
-		pointsXY[2*z+0] = left+width*(z/(0.5f*SpectrumSamples));
-		pointsXY[2*z+1] = bottom+height*SpectrumMono[z];
+		pointsXY[2*z+0] = left+width*(z/(0.25f*SpectrumSamples));
+		pointsXY[2*z+1] = LGL_Min(top,bottom+height*SpectrumMono[z]);
 	}
 
 	//Draw
 	LGL_DrawLineStripToScreen
 	(
 		pointsXY,
-		SpectrumSamples/2,
+		SpectrumSamples/4,
 		1,1,1,1,
 		1,
 		true
@@ -10158,6 +10335,22 @@ GetSpectrum()
 	CalculateSpectrum();
 
 	return(SpectrumMono);
+}
+
+void
+LGL_AudioGrain::
+GetMetadata
+(
+	float&	volAve,
+	float&	volMax,
+	float&	freqFactor
+)
+{
+	CalculateWaveformDerivatives();
+
+	volAve=VolAve;
+	volMax=VolMax;
+	freqFactor=FreqFactor;
 }
 
 void
@@ -10376,6 +10569,16 @@ MixIntoStream
 	PlaybackPercent=1.0f-(LengthSamples-CurrentPositionSamplesInt)/(float)LengthSamples;
 
 	return(samplesMixed);
+}
+
+void
+LGL_AudioGrain::
+GetWaveformToMemory
+(
+	Uint8*		buffer
+)
+{
+	memcpy(buffer,Waveform,LengthSamples*4);
 }
 
 void
@@ -10879,6 +11082,91 @@ GetDistanceGreaterThanEuclidean
 }
 
 void
+lgl_analyze_wave_segment
+(
+	long		sampleFirst,
+	long		sampleLast,
+	float&		zeroCrossingFactor,
+	float&		magnitudeAve,
+	float&		magnitudeMax,
+	const Sint16*	buf16,
+	unsigned long	len16,
+	bool		loaded,
+	int		hz
+)
+{
+	int sampleAdvanceFactor=1;
+	assert(sampleLast>=sampleFirst);
+	zeroCrossingFactor=0.0f;
+	magnitudeAve=0.0f;
+	magnitudeMax=0.0f;
+
+	float magnitudeTotal=0.0f;
+	int zeroCrossings=0;
+
+	for(int a=0;a<2;a++)
+	{
+		unsigned int myIndex = sampleFirst+a;
+		if(myIndex>len16-1) myIndex=len16-1;
+		int zeroCrossingSign=(int)LGL_Sign(buf16[myIndex]);
+
+		for(long b=sampleFirst*2+a;b<sampleLast*2;b+=2*sampleAdvanceFactor)
+		{
+			long index=b;
+			if
+			(
+				loaded ||
+				(
+					index>=0 &&
+					(unsigned long)index<len16
+				)
+			)
+			{
+				while(index<0) index+=len16;
+				Sint16 sampleMag=SWAP16(buf16[index%len16]);
+				float sampleMagAbs = fabsf(sampleMag);
+				magnitudeTotal+=sampleMagAbs;
+				if(sampleMagAbs>magnitudeMax)
+				{
+					magnitudeMax=sampleMagAbs;
+				}
+				if(zeroCrossingSign*sampleMag<0)
+				{
+					zeroCrossingSign*=-1;
+					zeroCrossings++;
+				}
+			}
+		}
+	}
+
+	int samplesScanned=(int)(sampleLast-sampleFirst);
+	magnitudeAve=(magnitudeTotal/(samplesScanned/sampleAdvanceFactor))/(1<<15);
+	if(magnitudeAve>1.0f)
+	{
+		magnitudeAve=1.0f;
+	}
+	magnitudeMax/=(1<<15);
+	if(magnitudeMax>1.0f)
+	{
+		magnitudeMax=1.0f;
+	}
+
+	float minZeroCrossings=samplesScanned/8;
+
+	if(zeroCrossings<minZeroCrossings)
+	{
+		zeroCrossings=0;
+	}
+	zeroCrossingFactor=LGL_Clamp
+	(
+		0.0f,
+		4.0f*(zeroCrossings-minZeroCrossings)/(2.0f*(samplesScanned-minZeroCrossings)),
+		1.0f
+	);
+	zeroCrossingFactor=sqrtf(zeroCrossingFactor);
+}
+
+void
 LGL_AudioGrain::
 CalculateWaveformDerivatives()
 {
@@ -10902,6 +11190,19 @@ CalculateWaveformDerivatives()
 		WaveformRightFloat[a]=(waveform16[a*2+1]+32768)/65536.0f;
 		WaveformMonoFloat[a]=0.5f*(WaveformLeftFloat[a]+WaveformRightFloat[a]);
 	}
+
+	lgl_analyze_wave_segment
+	(
+		0,
+		LengthSamples,
+		FreqFactor,
+		VolAve,
+		VolMax,
+		waveform16,
+		LengthSamples,
+		true,
+		44100	//HACK
+	);
 }
 
 void
@@ -10931,13 +11232,13 @@ CalculateSpectrum()
 		SpectrumMono[a]=0.0f;
 	}
 
-	float realLeft[1024];
-	float imaginaryLeft[1024];
-	float realRight[1024];
-	float imaginaryRight[1024];
+	float realLeft[512];
+	float imaginaryLeft[512];
+	float realRight[512];
+	float imaginaryRight[512];
 
-	int cycles = (int)floorf(LengthSamples/1024.0f);
-	float cyclesFloat = LengthSamples/1024.0f;
+	int cycles = (int)floorf(LengthSamples/512.0f);
+	float cyclesFloat = LengthSamples/512.0f;
 	int samplesRemaining = LengthSamples;
 
 	for(int c=0;c<cycles;c++)
@@ -10945,23 +11246,23 @@ CalculateSpectrum()
 		assert(samplesRemaining > 0);
 
 		int copySize = samplesRemaining;
-		if(copySize > 1024)
+		if(copySize > 512)
 		{
-			copySize = 1024;
+			copySize = 512;
 		}
 
-		memcpy(realLeft,&(WaveformLeftFloat[c*1024]),copySize*sizeof(float));
-		memcpy(realRight,&(WaveformRightFloat[c*1024]),copySize*sizeof(float));
+		memcpy(realLeft,&(WaveformLeftFloat[c*512]),copySize*sizeof(float));
+		memcpy(realRight,&(WaveformRightFloat[c*512]),copySize*sizeof(float));
 
 		//Zero out the rest of real, all of imaginary
 
-		for(int a=copySize;a<1024;a++)
+		for(int a=copySize;a<512;a++)
 		{
 			realLeft[a]=0.0f;
 			realRight[a]=0.0f;
 		}
 
-		for(int a=0;a<1024;a++)
+		for(int a=0;a<512;a++)
 		{
 			imaginaryLeft[a]=0;
 			imaginaryRight[a]=0;
@@ -10973,7 +11274,7 @@ CalculateSpectrum()
 		(
 			realLeft,
 			imaginaryLeft,
-			10,
+			9,
 			1
 		);
 		
@@ -10981,7 +11282,7 @@ CalculateSpectrum()
 		(
 			realRight,
 			imaginaryRight,
-			10,
+			9,
 			1
 		);
 
@@ -11000,7 +11301,7 @@ CalculateSpectrum()
 
 	//Normalize about cyclesFloat
 
-	if(LengthSamples != 1024)
+	if(LengthSamples != 512)
 	{
 		float multiplier = 1.0f/cyclesFloat;
 		for(int a=0;a<SpectrumSamples;a++)
@@ -12963,73 +13264,25 @@ AnalyzeWaveSegment
 )
 {
 	LockBufferForReading(10);
-	const Sint16* buf16=(Sint16*)GetBuffer();
-	unsigned long len16=(GetBufferLength()/2);
-	bool loaded=IsLoaded();
-	int hz=Hz;
-	int sampleAdvanceFactor=1;
-
-	assert(sampleLast>=sampleFirst);
-	zeroCrossingFactor=0.0f;
-	magnitudeAve=0.0f;
-	magnitudeMax=0.0f;
-
-	float magnitudeTotal=0.0f;
-	int zeroCrossings=0;
-
-	for(int a=0;a<2;a++)
 	{
-		unsigned int myIndex = sampleFirst+a;
-		if(myIndex>len16-1) myIndex=len16-1;
-		int zeroCrossingSign=(int)LGL_Sign(buf16[myIndex]);
+		const Sint16* buf16=(Sint16*)GetBuffer();
+		unsigned long len16=(GetBufferLength()/2);
+		bool loaded=IsLoaded();
+		int hz=Hz;
 
-		for(long b=sampleFirst*2+a;b<sampleLast*2;b+=2*sampleAdvanceFactor)
-		{
-			long index=b;
-			if
-			(
-				loaded ||
-				(
-					index>=0 &&
-					(unsigned long)index<len16
-				)
-			)
-			{
-				while(index<0) index+=len16;
-				Sint16 sampleMag=SWAP16(buf16[index%len16]);
-				float sampleMagAbs = fabsf(sampleMag);
-				magnitudeTotal+=sampleMagAbs;
-				if(sampleMagAbs>magnitudeMax)
-				{
-					magnitudeMax=sampleMagAbs;
-				}
-				if(zeroCrossingSign*sampleMag<0)
-				{
-					zeroCrossingSign*=-1;
-					zeroCrossings++;
-				}
-			}
-		}
+		lgl_analyze_wave_segment
+		(
+			sampleFirst,
+			sampleLast,
+			zeroCrossingFactor,
+			magnitudeAve,
+			magnitudeMax,
+			buf16,
+			len16,
+			loaded,
+			hz
+		);
 	}
-
-	zeroCrossings = (int)(zeroCrossings * (hz/44100.0f));
-
-	int samplesScanned=(int)(sampleLast-sampleFirst);
-	float samplesScannedFactor=samplesScanned/128.0f;
-	magnitudeAve=(magnitudeTotal/(samplesScanned/sampleAdvanceFactor))/(1<<16);
-	if(magnitudeAve>1.0f)
-	{
-		magnitudeAve=1.0f;
-	}
-	magnitudeMax/=(1<<16);
-	if(magnitudeMax>1.0f)
-	{
-		magnitudeMax=1.0f;
-	}
-
-	float zeroCrossingHiThreashold=(50.0f*samplesScannedFactor)/(sqrtf(sampleAdvanceFactor));
-	zeroCrossingFactor=LGL_Min(1.0f,(zeroCrossings/zeroCrossingHiThreashold))*LGL_Min(1.0f,magnitudeAve*20);
-
 	UnlockBufferForReading(10);
 }
 	
@@ -13141,7 +13394,8 @@ GetVolumePeak()
 {
 	if(Loaded || 1)
 	{
-		return(MetadataVolumePeak);
+		//Guard against divide-by-zero during John Cage - 4'33"
+		return((MetadataVolumePeak>0) ? MetadataVolumePeak : 1.0f);
 	}
 	else
 	{
@@ -24798,14 +25052,20 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 	LGL.AudioBufferPos=LGL.AudioBufferPos+LGL_SAMPLESIZE;
 }
 
+Uint8* streamStereo8=NULL;
+Sint16* streamStereo16=NULL;
+
 void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8)
 {
 	Sint16* stream16=(Sint16*)stream;
 	int len16=len8/2;
 	assert(len16==1024);
 
-	Uint8* streamStereo=new Uint8[len8*2];
-	Sint16* streamStereo16=(Sint16*)streamStereo;
+	if(streamStereo8==NULL)
+	{
+		streamStereo8=new Uint8[len8*2];
+		streamStereo16=(Sint16*)streamStereo8;
+	}
 	for(int a=0;a<len16;a++)
 	{
 		streamStereo16[2*a+0]=stream16[a];
@@ -24815,10 +25075,9 @@ void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8)
 	LGL_AudioGrain* grain=new LGL_AudioGrain;
 	grain->SetWaveformFromMemory
 	(
-		streamStereo,
-		len16
+		streamStereo8,
+		len16		//LengthSamples
 	);
-	delete streamStereo;
 	LGL.AudioInSemaphore->Lock("AudioIn","AudioInGrainListBack.push_back()");
 	{
 		LGL.AudioInGrainListBack.push_back(grain);

@@ -835,22 +835,28 @@ WaveformVideoAdvanceRate
 	return(-1.0f);
 }
 
-bool
+int
 InputKeyboardObj::
-WaveformVideoToggleFreqSense
+WaveformVideoFreqSenseMode
 (
 	unsigned int	target
 )	const
 {
+	int mode=-1;
+
 	if(target & TARGET_FOCUS)
 	{
 		if(LGL_KeyStroke(SDLK_SLASH))
 		{
-			return(true);
+			mode=-10;
+		}
+		if(LGL_KeyStroke(SDLK_PERIOD))
+		{
+			mode=-2;
 		}
 	}
 
-	return(false);
+	return(mode);
 }
 
 bool

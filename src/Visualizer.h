@@ -65,8 +65,13 @@ public:
 	LGL_Video*		GetVideo(int which);
 	void			SetFrequencySensitiveVideos
 				(
-					LGL_Video* video0l, LGL_Video* video0h, float volAve0, float volMax0, float freqFactor0, bool enable0,
-					LGL_Video* video1l, LGL_Video* video1h, float volAve1, float volMax1, float freqFactor1, bool enable1
+					LGL_Video* video0l, LGL_Video* video0h, float volAve0, float volMax0, float freqFactor0, int mode0,
+					LGL_Video* video1l, LGL_Video* video1h, float volAve1, float volMax1, float freqFactor1, int mode1
+				);
+	void			SetFrequencySensitiveGainEQ
+				(
+					float	gain0,	float	eqLo0,	float	eqHi0,
+					float	gain1,	float	eqLo1,	float	eqHi1
 				);
 
 	void			GetNextVideoPathAmbient(char* path);
@@ -164,17 +169,18 @@ private:
 	LGL_Video*		Videos[2];
 	float			VideoBrightness[2];
 
-	bool			FreqEnabled[2];
+	int			FreqMode[2];
 	LGL_Video*		FreqVideos[4];
 	float			FreqVolume[2];
 	float			FreqFreqFactor[2];
+	float			FreqGain[2];
+	float			FreqEQLo[2];
+	float			FreqEQHi[2];
 
 public:
-	void			DrawVideos(int which, float l, float r, float b, float t);
+	void			DrawVideos(int which, float l, float r, float b, float t, bool fullBrightness=false);
 
 private:
-	float			GetFreqBrightness(bool hi, float freqFactor, float vol);
-
 	char			VideoAmbientPath[1024];
 	std::vector<char*>	VideoAmbientQueue;
 	unsigned int		VideoAmbientGetCount;

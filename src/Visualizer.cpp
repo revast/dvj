@@ -1447,8 +1447,8 @@ void
 VisualizerObj::
 SetFrequencySensitiveVideos
 (
-	LGL_Video* video0l, LGL_Video* video0h, float volAve0, float volMax0, float freqFactor0, bool enable0,
-	LGL_Video* video1l, LGL_Video* video1h, float volAve1, float volMax1, float freqFactor1, bool enable1
+	LGL_Video* video0l, LGL_Video* video0h, float volAve0, float volMax0, float freqFactor0, int mode0,
+	LGL_Video* video1l, LGL_Video* video1h, float volAve1, float volMax1, float freqFactor1, int mode1
 )
 {
 	FreqVideos[0]=video0l;
@@ -1487,8 +1487,26 @@ SetFrequencySensitiveVideos
 	FreqFreqFactor[0]=freqFactor0;
 	FreqFreqFactor[1]=freqFactor1;
 
-	FreqEnabled[0]=enable0;
-	FreqEnabled[1]=enable1;
+	FreqMode[0]=mode0;
+	FreqMode[1]=mode1;
+}
+
+void
+VisualizerObj::
+SetFrequencySensitiveGainEQ
+(
+	float	gain0,	float	eqLo0,	float	eqHi0,
+	float	gain1,	float	eqLo1,	float	eqHi1
+)
+{
+	FreqGain[0]=gain0;
+	FreqGain[1]=gain1;
+
+	FreqEQLo[0]=eqLo0;
+	FreqEQLo[1]=eqLo1;
+	
+	FreqEQHi[0]=eqHi0;
+	FreqEQHi[1]=eqHi1;
 }
 
 void
@@ -1891,12 +1909,13 @@ DrawVideos
 	float	l,
 	float	r,
 	float	b,
-	float	t
+	float	t,
+	bool	fullBrightness
 )
 {
 	int videoNow=which;
 
-	if(FreqEnabled[videoNow])
+	if(FreqMode[videoNow]>0)
 	{
 		//Frequency-sensitive video mixing
 
@@ -1908,9 +1927,11 @@ DrawVideos
 			LGL_Video* vid = (a==0) ? vidL : vidH;
 			if(vid)
 			{
-				float vol = FreqVolume[videoNow];
-				float bright = GetFreqBrightness(a,FreqFreqFactor[videoNow],vol);
-				bright*=VideoBrightness[videoNow];
+				float vol = LGL_Min(1,FreqVolume[videoNow]*FreqGain[videoNow]);
+				float multFreq = ((a==0) ? FreqEQLo[videoNow] : FreqEQHi[videoNow]);
+				float myFreqFactor=FreqFreqFactor[videoNow];
+				float bright = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
+				if(fullBrightness==false) bright*=VideoBrightness[videoNow];
 
 				LGL_Image* image = vid->LockImage();
 				{
@@ -1934,19 +1955,10 @@ DrawVideos
 				vid->UnlockImage(image);
 			}
 		}
-		/*
-		LGL_DrawRectToScreen
-		(
-			l,r,b,t,
-			(0.0f+FreqFreqFactor[videoNow])*FreqVolume[videoNow],
-			(0.0f+FreqFreqFactor[videoNow])*FreqVolume[videoNow],
-			(1.0f-FreqFreqFactor[videoNow])*FreqVolume[videoNow],
-			0.0f
-		);
-		*/
 	}
 	else if(Videos[videoNow])
 	{
+		float bright = fullBrightness ? 1.0f : VideoBrightness[videoNow];
 		LGL_Image* image=Videos[videoNow]->LockImage();
 		if(image!=NULL)
 		{
@@ -1954,9 +1966,9 @@ DrawVideos
 			(
 				l,r,b,t,
 				0,
-				VideoBrightness[videoNow],
-				VideoBrightness[videoNow],
-				VideoBrightness[videoNow],
+				bright,
+				bright,
+				bright,
 				0.0f
 			);
 		}
@@ -1979,10 +1991,10 @@ DrawVideos
 			(
 				l,r,b,t,
 				0,
-				NoiseFactor[videoNow]*VideoBrightness[videoNow],
-				NoiseFactor[videoNow]*VideoBrightness[videoNow],
-				NoiseFactor[videoNow]*VideoBrightness[videoNow],
-				NoiseFactor[videoNow]*VideoBrightness[videoNow]
+				NoiseFactor[videoNow]*bright,
+				NoiseFactor[videoNow]*bright,
+				NoiseFactor[videoNow]*bright,
+				NoiseFactor[videoNow]*bright
 			);
 		}
 
@@ -1993,61 +2005,14 @@ DrawVideos
 			LGL_DrawRectToScreen
 			(
 				l,r,b,t,
-				whiteFactor*VideoBrightness[videoNow],
-				whiteFactor*VideoBrightness[videoNow],
-				whiteFactor*VideoBrightness[videoNow],
+				whiteFactor*bright,
+				whiteFactor*bright,
+				whiteFactor*bright,
 				0.0f
 			);
 		}
 
 		ForceVideoToBackOfAmbientQueue(Videos[videoNow]->GetPathShort());
 	}
-}
-
-float
-VisualizerObj::
-GetFreqBrightness
-(
-	bool 	hi,
-	float	freqFactor,
-	float	vol
-)
-{
-	float freqMag;
-	if(hi==false)
-	{
-		float minVol=0.2f;
-		float volMag=LGL_Max(0,(vol-minVol)/(1.0f-minVol));
-		float myFreqMag=1.0f-freqFactor;
-		float minFreqMag=0.2f;
-		freqMag=LGL_Clamp
-		(
-			0.0f,
-			volMag*(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
-			1.0f
-		);
-	}
-	else
-	{
-		float minVol=0.3f;
-		float volMag=LGL_Max(0,(vol-minVol)/(1.0f-minVol));
-		float myFreqMag=0.0f+freqFactor;
-		float minFreqMag=0.3f;
-		freqMag=LGL_Clamp
-		(
-			0.0f,
-			volMag*(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
-			1.0f
-		);
-		freqMag*=2.0f;
-		if(freqMag>1.0f)
-		{
-			freqMag*=freqMag;
-			freqMag*=4.0f;
-		}
-		freqMag/=2.0f;
-	}
-	float brightFactor = hi ? 4.0f : 0.25f;
-	return(freqMag*brightFactor);
 }
 

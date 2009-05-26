@@ -246,7 +246,7 @@ TurntableObj
 	VideoLo=NULL;
 	VideoHi=NULL;
 	VideoAdvanceRate=1.0f;
-	VideoFrequencySensitiveMode=false;
+	VideoFrequencySensitiveMode=0;
 
 	ENTIRE_WAVE_ARRAY_COUNT=LGL_VideoResolutionX();
 
@@ -776,6 +776,12 @@ NextFrame
 		float recordSpeed=Input.WaveformRecordSpeed(target);
 		bool recordHold=Input.WaveformRecordHold(target);
 		if(recordHold) RecordHoldReleaseTimer.Reset();
+		if(VideoFrequencySensitiveMode==2)
+		{
+			rewindFFFactor=0.0f;
+			recordSpeed=0.0f;
+			recordHold=false;
+		}
 
 		//Scratch / Queue
 		{
@@ -854,214 +860,224 @@ NextFrame
 		VolumeInvertBinary=Input.WaveformVolumeInvert(target);
 
 		//Save Points
-		if(Input.WaveformSavePointPrev(target))
+		if(VideoFrequencySensitiveMode!=2)
 		{
-			//Prev Save Point
-			SavePointIndex--;
-			if(SavePointIndex<0)
+			if(Input.WaveformSavePointPrev(target))
 			{
-				SavePointIndex=11;
+				//Prev Save Point
+				SavePointIndex--;
+				if(SavePointIndex<0)
+				{
+					SavePointIndex=11;
+				}
 			}
-		}
-		if(Input.WaveformSavePointNext(target))
-		{
-			//Next Save Point
-			SavePointIndex++;
-			if(SavePointIndex>11)
+			if(Input.WaveformSavePointNext(target))
 			{
-				SavePointIndex=0;
+				//Next Save Point
+				SavePointIndex++;
+				if(SavePointIndex>11)
+				{
+					SavePointIndex=0;
+				}
 			}
-		}
-		if
-		(
-			SavePointIndex>=0 &&
-			Input.WaveformSavePointSet(target)
-		)
-		{
-			//Set Save Point
-			if(SavePointSeconds[SavePointIndex]==-1.0f)
+			if
+			(
+				SavePointIndex>=0 &&
+				Input.WaveformSavePointSet(target)
+			)
 			{
-				SavePointSeconds[SavePointIndex]=Sound->GetPositionSeconds(Channel);
+				//Set Save Point
+				if(SavePointSeconds[SavePointIndex]==-1.0f)
+				{
+					SavePointSeconds[SavePointIndex]=Sound->GetPositionSeconds(Channel);
+					SavePointUnsetFlashPercent[SavePointIndex]=1.0f;
+					SaveMetaData();
+				}
+			}
+			if
+			(
+				SavePointIndex>=0 &&
+				Input.WaveformSavePointUnsetPercent(target)==1.0f &&
+				SavePointSeconds[SavePointIndex]!=-1.0f
+			)
+			{
+				//Unset Save Point
+				SavePointSeconds[SavePointIndex]=-1.0f;
 				SavePointUnsetFlashPercent[SavePointIndex]=1.0f;
 				SaveMetaData();
 			}
-		}
-		if
-		(
-			SavePointIndex>=0 &&
-			Input.WaveformSavePointUnsetPercent(target)==1.0f &&
-			SavePointSeconds[SavePointIndex]!=-1.0f
-		)
-		{
-			//Unset Save Point
-			SavePointSeconds[SavePointIndex]=-1.0f;
-			SavePointUnsetFlashPercent[SavePointIndex]=1.0f;
-			SaveMetaData();
-		}
 
-		for(int a=0;a<18;a++)
-		{
-			SavePointUnsetFlashPercent[a]=LGL_Max(0,SavePointUnsetFlashPercent[a]-4.0f*LGL_SecondsSinceLastFrame());
-			SavePointUnsetNoisePercent[a]=LGL_Max(0,SavePointUnsetNoisePercent[a]-2.0f*LGL_SecondsSinceLastFrame());
-			if(a==SavePointIndex)
+			for(int a=0;a<18;a++)
 			{
-				SavePointUnsetNoisePercent[SavePointIndex]=LGL_Max
-				(
-					SavePointUnsetNoisePercent[SavePointIndex],
-					LGL_Min(1,(SavePointSeconds[SavePointIndex]>-1.0f) ? (Input.WaveformSavePointUnsetPercent(target)*2.0f) : 0)
-				);
+				SavePointUnsetFlashPercent[a]=LGL_Max(0,SavePointUnsetFlashPercent[a]-4.0f*LGL_SecondsSinceLastFrame());
+				SavePointUnsetNoisePercent[a]=LGL_Max(0,SavePointUnsetNoisePercent[a]-2.0f*LGL_SecondsSinceLastFrame());
+				if(a==SavePointIndex)
+				{
+					SavePointUnsetNoisePercent[SavePointIndex]=LGL_Max
+					(
+						SavePointUnsetNoisePercent[SavePointIndex],
+						LGL_Min(1,(SavePointSeconds[SavePointIndex]>-1.0f) ? (Input.WaveformSavePointUnsetPercent(target)*2.0f) : 0)
+					);
+				}
 			}
-		}
 
-		if
-		(
-			SavePointIndex>=0 &&
-			SavePointSeconds[SavePointIndex]!=-1.0f
-		)
-		{
-			//Shift current save point
-			candidate=Input.WaveformSavePointShift(target);
+			if
+			(
+				SavePointIndex>=0 &&
+				SavePointSeconds[SavePointIndex]!=-1.0f
+			)
+			{
+				//Shift current save point
+				candidate=Input.WaveformSavePointShift(target);
+				if(candidate!=0.0f)
+				{
+					SavePointSeconds[SavePointIndex]=LGL_Max
+					(
+						-0.99f,
+						SavePointSeconds[SavePointIndex]+candidate
+					);
+					SaveMetaData();
+				}
+			}
+
+			candidate=Input.WaveformSavePointShiftAll(target);
 			if(candidate!=0.0f)
 			{
-				SavePointSeconds[SavePointIndex]=LGL_Max
-				(
-					-0.99f,
-					SavePointSeconds[SavePointIndex]+candidate
-				);
-				SaveMetaData();
-			}
-		}
-
-		candidate=Input.WaveformSavePointShiftAll(target);
-		if(candidate!=0.0f)
-		{
-			//Shift all save points
-			for(int a=0;a<12;a++)
-			{
-				if(SavePointSeconds[a]!=-1.0f)
+				//Shift all save points
+				for(int a=0;a<12;a++)
 				{
-					SavePointSeconds[a]+=candidate;
-				}
-			}
-			SaveMetaData();
-		}
-		if
-		(
-			BPMAvailable() &&
-			Input.WaveformSavePointShiftAllHere(target)
-		)
-		{
-			double delta = Sound->GetPositionSeconds(Channel)-GetBPMFirstBeatSeconds();
-			for(int a=0;a<12;a++)
-			{
-				if(SavePointSeconds[a]!=-1.0f)
-				{
-					SavePointSeconds[a]+=delta;
-				}
-			}
-			SaveMetaData();
-		}
-		if
-		(
-			Input.WaveformSavePointJumpNow(target) &&
-			SavePointSeconds[SavePointIndex]!=-1.0f
-		)
-		{
-			LoopStartSeconds=-1.0;
-			double savePointSeconds=SavePointSeconds[SavePointIndex];
-			if(savePointSeconds < 0.0f)
-			{
-				savePointSeconds=0;
-			}
-
-			if(Sound->GetLengthSeconds()>savePointSeconds)
-			{
-				Sound->SetPositionSeconds(Channel,savePointSeconds);
-				SmoothWaveformScrollingSample=savePointSeconds*Sound->GetHz();
-			}
-		}
-		if
-		(
-			Input.WaveformSavePointJumpAtMeasure(target) &&
-			SavePointSeconds[SavePointIndex]!=-1.0f &&
-			GetBPM()!=0 &&
-			PauseMultiplier!=0
-		)
-		{
-			LoopStartSeconds=-1.0;
-			double savePointSeconds=SavePointSeconds[SavePointIndex];
-			if(savePointSeconds >= 0.0f)
-			{
-				//Jump at start of next measure
-				double beatStart=GetBPMFirstBeatSeconds();
-				double measureLength=(1.0f/GetBPM())*60.0f*(4.0f);
-				while(beatStart>0)
-				{
-					beatStart-=measureLength;
-				}
-				double savePointSecondsQuantized=beatStart;
-				double closest=99999.0;
-				for(double test=beatStart;test<savePointSeconds+2*measureLength;test+=0.25*measureLength)
-				{
-					if(fabsf(test-savePointSeconds)<closest)
+					if(SavePointSeconds[a]!=-1.0f)
 					{
-						closest=fabsf(test-savePointSeconds);
-						savePointSecondsQuantized=test;
+						SavePointSeconds[a]+=candidate;
 					}
 				}
-				double nowSeconds=Sound->GetPositionSeconds(Channel);
-				double savePointMeasureStart=beatStart;
-				while(savePointMeasureStart+measureLength<savePointSecondsQuantized)
+				SaveMetaData();
+			}
+			if
+			(
+				BPMAvailable() &&
+				Input.WaveformSavePointShiftAllHere(target)
+			)
+			{
+				double delta = Sound->GetPositionSeconds(Channel)-GetBPMFirstBeatSeconds();
+				for(int a=0;a<12;a++)
 				{
-					savePointMeasureStart+=measureLength;
+					if(SavePointSeconds[a]!=-1.0f)
+					{
+						SavePointSeconds[a]+=delta;
+					}
 				}
-				double savePointSecondsIntoMeasure=savePointSecondsQuantized-savePointMeasureStart;
-				double nowMeasureStart=beatStart;
-				while(nowMeasureStart+measureLength<nowSeconds)
+				SaveMetaData();
+			}
+			if
+			(
+				Input.WaveformSavePointJumpNow(target) &&
+				SavePointSeconds[SavePointIndex]!=-1.0f
+			)
+			{
+				LoopStartSeconds=-1.0;
+				double savePointSeconds=SavePointSeconds[SavePointIndex];
+				if(savePointSeconds < 0.0f)
 				{
-					nowMeasureStart+=measureLength;
-				}
-				double timeToWarp=nowMeasureStart+savePointSecondsIntoMeasure;
-				while(timeToWarp<nowSeconds)
-				{
-					timeToWarp+=measureLength;
+					savePointSeconds=0;
 				}
 
-				Sound->SetWarpPoint(Channel,timeToWarp,savePointSecondsQuantized);
-				Sound->SetDivergeRecallBegin(Channel,Pitchbend);
+				if(Sound->GetLengthSeconds()>savePointSeconds)
+				{
+					Sound->SetPositionSeconds(Channel,savePointSeconds);
+					SmoothWaveformScrollingSample=savePointSeconds*Sound->GetHz();
+				}
+			}
+			if
+			(
+				Input.WaveformSavePointJumpAtMeasure(target) &&
+				SavePointSeconds[SavePointIndex]!=-1.0f &&
+				GetBPM()!=0 &&
+				PauseMultiplier!=0
+			)
+			{
+				LoopStartSeconds=-1.0;
+				double savePointSeconds=SavePointSeconds[SavePointIndex];
+				if(savePointSeconds >= 0.0f)
+				{
+					//Jump at start of next measure
+					double beatStart=GetBPMFirstBeatSeconds();
+					double measureLength=(1.0f/GetBPM())*60.0f*(4.0f);
+					while(beatStart>0)
+					{
+						beatStart-=measureLength;
+					}
+					double savePointSecondsQuantized=beatStart;
+					double closest=99999.0;
+					for(double test=beatStart;test<savePointSeconds+2*measureLength;test+=0.25*measureLength)
+					{
+						if(fabsf(test-savePointSeconds)<closest)
+						{
+							closest=fabsf(test-savePointSeconds);
+							savePointSecondsQuantized=test;
+						}
+					}
+					double nowSeconds=Sound->GetPositionSeconds(Channel);
+					double savePointMeasureStart=beatStart;
+					while(savePointMeasureStart+measureLength<savePointSecondsQuantized)
+					{
+						savePointMeasureStart+=measureLength;
+					}
+					double savePointSecondsIntoMeasure=savePointSecondsQuantized-savePointMeasureStart;
+					double nowMeasureStart=beatStart;
+					while(nowMeasureStart+measureLength<nowSeconds)
+					{
+						nowMeasureStart+=measureLength;
+					}
+					double timeToWarp=nowMeasureStart+savePointSecondsIntoMeasure;
+					while(timeToWarp<nowSeconds)
+					{
+						timeToWarp+=measureLength;
+					}
+
+					Sound->SetWarpPoint(Channel,timeToWarp,savePointSecondsQuantized);
+					Sound->SetDivergeRecallBegin(Channel,Pitchbend);
+				}
 			}
 		}
 
 		//Pitch
-		Nudge=Input.WaveformNudge(target);
+		if(VideoFrequencySensitiveMode!=2)
+		{
+			Nudge=Input.WaveformNudge(target);
 
-		candidate = Input.WaveformPitchbend(target);
-		if(candidate!=0.0f)
-		{
-			if
-			(
-				PitchbendLastSetBySlider ||
-				fabsf(Pitchbend-candidate)<0.0025f
-			)
+			candidate = Input.WaveformPitchbend(target);
+			if(candidate!=0.0f)
 			{
-				Pitchbend=candidate;
-				PitchbendLastSetBySlider=true;
+				if
+				(
+					PitchbendLastSetBySlider ||
+					fabsf(Pitchbend-candidate)<0.0025f
+				)
+				{
+					Pitchbend=candidate;
+					PitchbendLastSetBySlider=true;
+				}
 			}
-		}
-		candidate=Input.WaveformPitchbendDelta(target);
-		if(candidate!=0.0f)
-		{
-			Pitchbend=LGL_Clamp
-			(
-				0.01f,
-				Pitchbend+candidate,
-				4.0f
-			);
-			PitchbendLastSetBySlider=false;
+			candidate=Input.WaveformPitchbendDelta(target);
+			if(candidate!=0.0f)
+			{
+				Pitchbend=LGL_Clamp
+				(
+					0.01f,
+					Pitchbend+candidate,
+					4.0f
+				);
+				PitchbendLastSetBySlider=false;
+			}
 		}
 
 		//Glitch
-		if(Input.WaveformStutter(target))
+		if
+		(
+			VideoFrequencySensitiveMode!=2 &&
+			Input.WaveformStutter(target)
+		)
 		{
 			bool glitchDuoPrev=GlitchDuo;
 			GlitchDuo=true;
@@ -1102,7 +1118,7 @@ NextFrame
 		}
 
 		//Loop
-		if(BPMAvailable() && 0)
+		if(BPMAvailable() && VideoFrequencySensitiveMode!=2 && 0)
 		{
 			if(Input.WaveformLoopBegin(target))
 			{
@@ -1193,13 +1209,45 @@ NextFrame
 				VideoSwitchInterval=1.0f;
 			}
 		}
+
 		if(Input.WaveformVideoSelect(target))
 		{
 			SelectNewVideo();
 		}
-		if(Input.WaveformVideoToggleFreqSense(target))
+		int mode=Input.WaveformVideoFreqSenseMode(target);
+		if(mode!=-1)
 		{
-			VideoFrequencySensitiveMode=!VideoFrequencySensitiveMode;
+			if(mode>=0)
+			{
+				VideoFrequencySensitiveMode=LGL_Clamp(0,mode,2);
+			}
+			if(mode==-10)
+			{
+				if(VideoFrequencySensitiveMode==0)
+				{
+					VideoFrequencySensitiveMode=1;
+				}
+				else
+				{
+					VideoFrequencySensitiveMode=0;
+				}
+			}
+			if(mode==-2)
+			{
+				if(VideoFrequencySensitiveMode==2)
+				{
+					VideoFrequencySensitiveMode=1;
+				}
+				else
+				{
+					VideoFrequencySensitiveMode=2;
+				}
+			}
+			if(VideoFrequencySensitiveMode==2)
+			{
+				PauseMultiplier=0.0f;
+			}
+			SelectNewVideo();
 		}
 
 		float newRate=Input.WaveformVideoAdvanceRate(target);
@@ -1243,7 +1291,11 @@ NextFrame
 		);
 			
 		//Pause
-		if(Input.WaveformTogglePause(target))
+		if
+		(
+			VideoFrequencySensitiveMode!=2 &&
+			Input.WaveformTogglePause(target)
+		)
 		{
 			//Toggle PauseMultiplier
 			PauseMultiplier=(PauseMultiplier+1)%2;
@@ -2133,15 +2185,31 @@ DrawFrame
 				"%.0f%%",LGL_Clamp(0.0f,VideoEncoderPercent,0.99f)*100.0f
 			);
 		}
-		else if(GetVideo()!=NULL)
+		else
 		{
-			Visualizer->DrawVideos(Which,left,right,bottom,top);
-			if(VideoFrequencySensitiveMode)
+			Visualizer->DrawVideos(Which,left,right,bottom,top,true);
+			if(VideoFrequencySensitiveMode>0)
 			{
 				float volAve;
 				float volMax;
 				float freqFactor;
-				GetFreqMetaData(volAve,volMax,freqFactor);
+				if(VideoFrequencySensitiveMode==1)
+				{
+					GetFreqMetaData(volAve,volMax,freqFactor);
+				}
+				else if(VideoFrequencySensitiveMode==2)
+				{
+					LGL_AudioInMetadata(volAve,volMax,freqFactor);
+				}
+
+				if
+				(
+					GetFreqBrightness(false,freqFactor,2*volAve)==0.0f &&
+					GetFreqBrightness(true,freqFactor,2*volAve)==0.0f
+				)
+				{
+					freqFactor=0.0f;
+				}
 
 				float r=
 					(1.0f-freqFactor)*0.0f+
@@ -2150,7 +2218,7 @@ DrawFrame
 					(1.0f-freqFactor)*0.0f+
 					(0.0f+freqFactor)*0.2f;
 				float b=
-					(1.0f-freqFactor)*1.0f+
+					(1.0f-freqFactor)*0.5f+
 					(0.0f+freqFactor)*1.0f;
 
 				LGL_DrawLineToScreen
@@ -2413,8 +2481,8 @@ DrawFrame
 		);
 		LGL_DrawLogWrite
 		(
-			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34
-			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c\n",
+			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35
+			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i\n",
 			Which,							//01
 			Sound->IsLoaded() ? 'T' : 'F',				//02
 			GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
@@ -2448,14 +2516,15 @@ DrawFrame
 			EQFinal[0],						//31
 			EQFinal[1],						//32
 			EQFinal[2],						//33
-			LowRez ? 'T' : 'F'					//34
+			LowRez ? 'T' : 'F',					//34
+			VideoFrequencySensitiveMode				//35
 			/*
-			EntireWaveArrayFillIndex,				//35
-			ENTIRE_WAVE_ARRAY_COUNT,				//36
-			EntireWaveArrayMagnitudeAve,				//37
-			EntireWaveArrayMagnitudeMax,				//38
-			EntireWaveArrayFreqFactor,				//39
-			CachedLengthSeconds					//40
+			EntireWaveArrayFillIndex,				//36
+			ENTIRE_WAVE_ARRAY_COUNT,				//37
+			EntireWaveArrayMagnitudeAve,				//38
+			EntireWaveArrayMagnitudeMax,				//39
+			EntireWaveArrayFreqFactor,				//40
+			CachedLengthSeconds					//41
 			*/
 		);
 		
@@ -2507,7 +2576,8 @@ DrawFrame
 			EntireWaveArrayMagnitudeMax,				//41
 			EntireWaveArrayFreqFactor,				//42
 			CachedLengthSeconds,					//43
-			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64]		//44
+			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44
+			VideoFrequencySensitiveMode				//45
 		);
 		LGL_DrawLogPause(false);
 		
@@ -3518,11 +3588,32 @@ UpdateSoundFreqResponse()
 	}
 }
 
-bool
+int
 TurntableObj::
 GetVideoFrequencySensitiveMode()
 {
 	return(VideoFrequencySensitiveMode);
+}
+
+float
+TurntableObj::
+GetEQLo()
+{
+	return(EQFinal[0]);
+}
+
+float
+TurntableObj::
+GetEQMid()
+{
+	return(EQFinal[1]);
+}
+
+float
+TurntableObj::
+GetEQHi()
+{
+	return(EQFinal[2]);
 }
 
 void
@@ -3612,8 +3703,6 @@ SelectNewVideo
 			{
 				return;
 			}
-
-			VideoFrequencySensitiveMode=false;
 
 			if(VideoBack==NULL)
 			{

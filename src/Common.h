@@ -137,7 +137,8 @@ Turntable_DrawWaveform
 	float*		entireWaveArrayMagnitudeMax,
 	float*		entireWaveArrayFreqFactor,
 	float		cachedLengthSeconds,
-	LGL_Image*	noiseImage256x64
+	LGL_Image*	noiseImage256x64,
+	int		freqSensitiveMode
 );
 
 void
@@ -146,5 +147,13 @@ Visualizer_DrawWaveform
 	float*	waveformSamples,
 	int	waveformSamplesCount,
 	bool	fullscreen
+);
+
+float
+GetFreqBrightness
+(
+	bool	hi,
+	float	freqFactor,
+	float	vol
 );
 

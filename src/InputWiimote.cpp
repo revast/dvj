@@ -768,15 +768,15 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
-bool
+int
 InputWiimoteObj::
-WaveformVideoToggleFreqSense
+WaveformVideoFreqSenseMode
 (
 	unsigned int	target
 )	const
 {
-	bool toggle=false;
-	return(toggle);
+	int mode=-1;
+	return(mode);
 }
 
 bool

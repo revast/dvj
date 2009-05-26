@@ -44,7 +44,6 @@ NextFrame()
 		{
 			WaveformSavePointUnsetTimerRight.Reset();
 		}
-
 		if
 		(
 			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOCK) ||
@@ -55,6 +54,15 @@ NextFrame()
 		)
 		{
 			WaveformSavePointUnsetTimerLeft.Reset();
+		}
+
+		if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_HEADPHONES))
+		{
+			WaveformHeadphonesDownTimerLeft.Reset();
+		}
+		if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES))
+		{
+			WaveformHeadphonesDownTimerRight.Reset();
 		}
 	}
 }
@@ -1710,28 +1718,50 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
-bool
+int
 InputXponentObj::
-WaveformVideoToggleFreqSense
+WaveformVideoFreqSenseMode
 (
 	unsigned int	target
 )	const
 {
-	bool toggle=false;
+	int mode=-1;
 
 	if(LGL_GetXponent())
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			toggle|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES);
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES))
+			{
+				mode=-10;
+			}
+			else if
+			(
+				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES) &&
+				WaveformHeadphonesDownTimerRight.SecondsSinceLastReset()>=1.0f
+			)
+			{
+				mode=2;
+			}
 		}
 		else if((target & TARGET_TOP))
 		{
-			toggle|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_HEADPHONES);
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_HEADPHONES))
+			{
+				mode=-10;
+			}
+			else if
+			(
+				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_HEADPHONES) &&
+				WaveformHeadphonesDownTimerLeft.SecondsSinceLastReset()>=1.0f
+			)
+			{
+				mode=2;
+			}
 		}
 	}
 
-	return(toggle);
+	return(mode);
 }
 
 bool

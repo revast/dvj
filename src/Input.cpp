@@ -1028,21 +1028,25 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
-bool
+int
 InputObj::
-WaveformVideoToggleFreqSense
+WaveformVideoFreqSenseMode
 (
 	unsigned int	target
 )	const
 {
-	bool toggle=false;
+	int mode=-1;
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		toggle|=Children[a]->WaveformVideoToggleFreqSense(target);
+		int candidate=Children[a]->WaveformVideoFreqSenseMode(target);
+		if(candidate!=-1)
+		{
+			mode=candidate;
+		}
 	}
 
-	return(toggle);
+	return(mode);
 }
 
 bool

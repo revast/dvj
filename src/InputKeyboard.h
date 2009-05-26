@@ -102,7 +102,7 @@ virtual	bool	WaveformLoopDisable		(unsigned int target)	const;	//Exit loop mode
 virtual	int	WaveformLoopMeasures		(unsigned int target)	const;	//Loop end point = Loop start point + N measures
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
-virtual	bool	WaveformVideoToggleFreqSense	(unsigned int target)	const;	//Toggle Frequency-sensitive video mixer
+virtual	int	WaveformVideoFreqSenseMode	(unsigned int target)	const;	//Set Frequency-sensitive video mixer mode
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
 
