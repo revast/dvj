@@ -245,7 +245,7 @@ static	VisualizerObj*			Visualizer;
 	float				VideoSwitchInterval;
 	float				VideoOffsetSeconds;
 	float				VideoAdvanceRate;
-	bool				VideoFrequencySensitiveMode;
+	int				VideoFrequencySensitiveMode;
 
 public:
 
@@ -254,7 +254,10 @@ public:
 	char				VideoEncoderPathSrc[2048];
 	int				VideoEncoderTerminateSignal;
 
-	bool				GetVideoFrequencySensitiveMode();
+	int				GetVideoFrequencySensitiveMode();
+	float				GetEQLo();
+	float				GetEQMid();
+	float				GetEQHi();
 
 private:
 

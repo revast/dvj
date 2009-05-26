@@ -1058,6 +1058,14 @@ LGL_AudioInAvailable();
 std::vector<LGL_AudioGrain*>&
 LGL_AudioInGrainList();
 
+bool
+LGL_AudioInMetadata
+(
+	float&	volAve,
+	float&	volMax,
+	float&	freqFactor
+);
+
 void
 LGL_DrawWaveform
 (
@@ -1216,6 +1224,7 @@ public:
 
 const	float*		GetWaveform();
 const	float*		GetSpectrum();
+	void		GetMetadata(float& volAve, float& volMax, float& freqFactor);
 	
 virtual	void		Update();
 	bool		IsPlaying();
@@ -1229,7 +1238,7 @@ virtual	int		MixIntoStream
 	
 	void		GetWaveformToMemory
 			(
-				Sint16*		channelStereo
+				Uint8*		channelStereo
 			);
 	void		GetWaveformToMemory
 			(
@@ -1317,6 +1326,9 @@ private:
 	float*		SpectrumMono;
 	float**		SpectrumMipMaps;
 	float**		SpectrumMipMapsError;
+	float		VolAve;
+	float		VolMax;
+	float		FreqFactor;
 
 	long		LengthSamples;
 	long		SpectrumSamples;

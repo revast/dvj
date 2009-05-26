@@ -645,7 +645,8 @@ Turntable_DrawWaveform
 	float*		entireWaveArrayMagnitudeMax,
 	float*		entireWaveArrayFreqFactor,
 	float		cachedLengthSeconds,
-	LGL_Image*	noiseImage256x64
+	LGL_Image*	noiseImage256x64,
+	int		freqSensitiveMode
 )
 {
 	float glow = GetGlowFromTime(time);
@@ -719,6 +720,7 @@ Turntable_DrawWaveform
 	float pointBottom=	viewPortBottom+0.125*viewPortHeight;
 	float pointTop=		viewPortBottom+0.875*viewPortHeight;
 	float pointHeight=	pointTop-pointBottom;
+	float pointYMid=	0.5f*(pointBottom+pointTop);
 	
 	float wavLeft = viewPortCenter-0.5f*WAVE_WIDTH_PERCENT*viewPortWidth;
 	float wavRight=	viewPortCenter+0.5f*WAVE_WIDTH_PERCENT*viewPortWidth;
@@ -732,681 +734,730 @@ Turntable_DrawWaveform
 		pointTop+0.01f
 	);
 
-	//Figure out Glitch Lines
-	bool glitchLines=false;
-	float glitchLinesLeft=-1;
-	float glitchLinesRight=-1;
-	float glitchSampleLeft=-1;
-	float glitchSampleRight=-1;
-	if
-	(
-		glitchBegin >= 0 &&
-		glitch
-	)
+	if(freqSensitiveMode==2)
 	{
-		float gleftSample=glitchBegin-glitchLength;
-		float grightSample=glitchBegin+glitchLength;
+		float volAve;
+		float volMax;
+		float freqFactor;
+		LGL_AudioInMetadata(volAve,volMax,freqFactor);
 
-		float centerSample=soundPositionSamples;
-		float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
-		float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
+		float red=0.4f*freqFactor;
+		float green=0.2f*freqFactor;
+		float blue=0.5f+0.5f*freqFactor;
+		if(volMax>=0.99f)
+		{
+			red=1.0f;
+			green=0.0f;
+			blue=0.0f;
+		}
 
 		if
 		(
-			leftSample<0 ||
-			rightSample>soundLengthSamples
+			GetFreqBrightness(false,freqFactor,2*volAve*volumeMultiplierNow) ||
+			GetFreqBrightness(true,freqFactor,2*volAve*volumeMultiplierNow)
 		)
 		{
-			//Deal with wrap around
+			LGL_DrawAudioInWaveform
+			(
+				pointLeft,
+				pointRight,
+				pointYMid-0.5f*volumeMultiplierNow*pointHeight,
+				pointYMid+0.5f*volumeMultiplierNow*pointHeight,
+				red,green,blue,0.0f,
+				3.0f,
+				true
+			);
+		}
+	}
+	else
+	{
+		//Figure out Glitch Lines
+		bool glitchLines=false;
+		float glitchLinesLeft=-1;
+		float glitchLinesRight=-1;
+		float glitchSampleLeft=-1;
+		float glitchSampleRight=-1;
+		if
+		(
+			glitchBegin >= 0 &&
+			glitch
+		)
+		{
+			float gleftSample=glitchBegin-glitchLength;
+			float grightSample=glitchBegin+glitchLength;
 
-			if(centerSample<soundLengthSamplesHalf)
+			float centerSample=soundPositionSamples;
+			float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
+			float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
+
+			if
+			(
+				leftSample<0 ||
+				rightSample>soundLengthSamples
+			)
 			{
-				if(gleftSample>soundLengthSamplesHalf)
+				//Deal with wrap around
+
+				if(centerSample<soundLengthSamplesHalf)
 				{
-					gleftSample-=soundLengthSamples;
+					if(gleftSample>soundLengthSamplesHalf)
+					{
+						gleftSample-=soundLengthSamples;
+					}
+					if(grightSample>soundLengthSamplesHalf)
+					{
+						grightSample-=soundLengthSamples;
+					}
 				}
-				if(grightSample>soundLengthSamplesHalf)
+				else
 				{
-					grightSample-=soundLengthSamples;
+					if(gleftSample<soundLengthSamplesHalf)
+					{
+						gleftSample+=soundLengthSamples;
+					}
+					if(grightSample<soundLengthSamplesHalf)
+					{
+						grightSample+=soundLengthSamples;
+					}
 				}
 			}
-			else
+
+			float gLeftPercent=1.0f-(rightSample-gleftSample)/(rightSample-leftSample);
+			float gRightPercent=1.0f-(rightSample-grightSample)/(rightSample-leftSample);
+
+			glitchLines=true;
+			glitchLinesLeft=	pointLeft+gLeftPercent*pointWidth;
+			glitchLinesRight=	pointLeft+gRightPercent*pointWidth;
+			glitchSampleLeft=gleftSample;
+			glitchSampleRight=grightSample;
+		}
+
+		long sampleLeftExact=sampleLeft;
+		double deltaSample=sampleWidth/(double)pointResolution;
+		deltaSample*=1024;
+		deltaSample=LGL_NextPowerOfTwo(deltaSample);
+		deltaSample/=1024;
+		long deltaSampleLong=(long)deltaSample;
+		if(deltaSampleLong<1) deltaSampleLong=1;
+
+		long sampleLeftBase=sampleLeftExact;
+		sampleLeftBase/=(deltaSampleLong*2);
+		sampleLeftBase*=(deltaSampleLong*2);
+		//bool sampleLeftBaseIsOdd=(sampleLeftBase%(deltaSampleLong*2))!=0;
+
+		int pointsToDrawIndexStart=0;
+		int pointsToDrawIndexEnd=pointResolution;
+
+		float vertLeft = wavLeft-0.05f;
+		float vertRight= wavRight+0.05f;
+
+		//Experimental frequency-sensitive renderer
+		for(int z=-pointResolution;z<pointResolution*2;z++)
+		{
+			int a=z+pointResolution;
+			float xPreview = pointLeft + z/(float)(pointResolution-2)*pointWidth;
+			if
+			(
+				xPreview >= vertLeft &&
+				xPreview <= vertRight
+			)
 			{
-				if(gleftSample<soundLengthSamplesHalf)
+				long sampleNow=(long)(sampleLeftBase+deltaSample*z);
+				const long sampleLast=(long)(sampleNow+deltaSample);
+				float zeroCrossingFactor;
+				float magnitudeAve;
+				float magnitudeMax;
+
+				sound->GetMetadata
+				(
+					sampleNow/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
+					sampleLast/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
+					zeroCrossingFactor,
+					magnitudeAve,
+					magnitudeMax
+				);
+
+				zeroCrossingFactor=GetFreqBrightness(true,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak());
+				if(freqSensitiveMode==1)
 				{
-					gleftSample+=soundLengthSamples;
+					magnitudeAve*=(GetFreqBrightness(false,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak()) + zeroCrossingFactor > 0.0f) ? 1.0f : 0.0f;
 				}
-				if(grightSample<soundLengthSamplesHalf)
+
+				magnitudeAve*=volumeMultiplierNow*0.5f;
+				magnitudeMax*=volumeMultiplierNow*0.5f;
+
+				double sampleNowDouble=(sampleLeft+sampleWidth*(z/(double)pointResolution));
+				float xOffset=1.0f-(sampleNow-sampleNowDouble)/(float)deltaSample;
+
+				arrayV[(a*2)+0]=pointLeft+((z-xOffset)/(float)pointResolution)*pointWidth;
+				arrayV[(a*2)+1]=LGL_Clamp(pointBottom,pointBottom+(0.5f+0.5f*magnitudeAve)*pointHeight,pointTop);
+
+				float glitchDelta = -0.35f*(glitchSampleRight-glitchSampleLeft);
+
+				bool active=
+				(
+					(
+						glitchLines &&
+						sampleNow>glitchSampleLeft-glitchDelta &&
+						sampleNow<glitchSampleRight-glitchDelta
+					) ||
+					(
+						arrayV[(a*2)+0] >= centerX+needleDeltaL*viewPortWidth &&
+						arrayV[(a*2)+0] <= centerX+needleDeltaR*viewPortWidth
+					)
+				);
+
+				arrayC[(a*4)+0]=active?1.0f:(zeroCrossingFactor*0.5f);
+				arrayC[(a*4)+1]=active?1.0f:(zeroCrossingFactor*0.25f);
+				arrayC[(a*4)+2]=0.5f+zeroCrossingFactor*0.5f;
+				arrayC[(a*4)+3]=1.0f;
+
+				//Tristrip!
+			
+				//Top
+				arrayVtri[(a*4)+0]=arrayV[(a*2)+0];
+				arrayVtri[(a*4)+1]=arrayV[(a*2)+1];
+
+				//Bottom
+				arrayVtri[(a*4)+2]=arrayV[(a*2)+0];
+				arrayVtri[(a*4)+3]=(pointBottom+0.5f*pointHeight)-(arrayV[a*2+1]-(pointBottom+0.5f*pointHeight));
+
+				//Top
+				arrayCtri[(a*8)+0]=arrayC[a*4+0]*(0.5f+0.5f*zeroCrossingFactor);
+				arrayCtri[(a*8)+1]=arrayC[a*4+1]*(0.5f+0.5f*zeroCrossingFactor);
+				arrayCtri[(a*8)+2]=arrayC[a*4+2]*(0.5f+0.5f*zeroCrossingFactor);
+				arrayCtri[(a*8)+3]=arrayC[a*4+3];
+
+				//Bottom
+				arrayCtri[(a*8)+4]=arrayC[a*4+0]*(0.5f+0.5f*zeroCrossingFactor);
+				arrayCtri[(a*8)+5]=arrayC[a*4+1]*(0.5f+0.5f*zeroCrossingFactor);
+				arrayCtri[(a*8)+6]=arrayC[a*4+2]*(0.5f+0.5f*zeroCrossingFactor);
+				arrayCtri[(a*8)+7]=arrayC[a*4+3];
+
+				//Silhouette
+				arrayC[(a*4)+0]+=0.5f*zeroCrossingFactor;
+				arrayC[(a*4)+1]+=0.5f*zeroCrossingFactor;
+				arrayC[(a*4)+2]+=0.5f*zeroCrossingFactor;
+
+				if(magnitudeMax>1.0f)
 				{
-					grightSample+=soundLengthSamples;
+					arrayC[(a*4)+0]=1.0f;
+					arrayC[(a*4)+1]=0.0f;
+					arrayC[(a*4)+2]=0.0f;
 				}
+			}
+			else if(xPreview < vertLeft)
+			{
+				pointsToDrawIndexStart=a+2;
+			}
+			else if(xPreview > vertRight)
+			{
+				pointsToDrawIndexEnd=a-1;
+				break;
 			}
 		}
 
-		float gLeftPercent=1.0f-(rightSample-gleftSample)/(rightSample-leftSample);
-		float gRightPercent=1.0f-(rightSample-grightSample)/(rightSample-leftSample);
+		//Tristrip!
 
-		glitchLines=true;
-		glitchLinesLeft=	pointLeft+gLeftPercent*pointWidth;
-		glitchLinesRight=	pointLeft+gRightPercent*pointWidth;
-		glitchSampleLeft=gleftSample;
-		glitchSampleRight=grightSample;
-	}
-
-	long sampleLeftExact=sampleLeft;
-	double deltaSample=sampleWidth/(double)pointResolution;
-	deltaSample*=1024;
-	deltaSample=LGL_NextPowerOfTwo(deltaSample);
-	deltaSample/=1024;
-	long deltaSampleLong=(long)deltaSample;
-	if(deltaSampleLong<1) deltaSampleLong=1;
-
-	long sampleLeftBase=sampleLeftExact;
-	sampleLeftBase/=(deltaSampleLong*2);
-	sampleLeftBase*=(deltaSampleLong*2);
-	//bool sampleLeftBaseIsOdd=(sampleLeftBase%(deltaSampleLong*2))!=0;
-
-	int pointsToDrawIndexStart=0;
-	int pointsToDrawIndexEnd=pointResolution;
-
-	float vertLeft = wavLeft-0.05f;
-	float vertRight= wavRight+0.05f;
-
-	//Experimental frequency-sensitive renderer
-	for(int z=-pointResolution;z<pointResolution*2;z++)
-	{
-		int a=z+pointResolution;
-		float xPreview = pointLeft + z/(float)(pointResolution-2)*pointWidth;
-		if
-		(
-			xPreview >= vertLeft &&
-			xPreview <= vertRight
-		)
+		if(!lowRez)
 		{
-			long sampleNow=(long)(sampleLeftBase+deltaSample*z);
-			const long sampleLast=(long)(sampleNow+deltaSample);
-			float zeroCrossingFactor;
-			float magnitudeAve;
-			float magnitudeMax;
-
-			sound->GetMetadata
+			LGL_DrawTriStripToScreen
 			(
-				sampleNow/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
-				sampleLast/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
-				zeroCrossingFactor,
-				magnitudeAve,
-				magnitudeMax
+				&(arrayVtri[pointsToDrawIndexStart*4]),
+				&(arrayCtri[pointsToDrawIndexStart*8]),
+				2*(pointsToDrawIndexEnd-pointsToDrawIndexStart),
+				!lowRez
 			);
+		}
 
-			magnitudeAve*=volumeMultiplierNow;
-			magnitudeMax*=volumeMultiplierNow;
+		//Linestrip top!
 
-			double sampleNowDouble=(sampleLeft+sampleWidth*(z/(double)pointResolution));
-			float xOffset=1.0f-(sampleNow-sampleNowDouble)/(float)deltaSample;
-
-			arrayV[(a*2)+0]=pointLeft+((z-xOffset)/(float)pointResolution)*pointWidth;
-			arrayV[(a*2)+1]=pointBottom+(0.5f+0.5f*magnitudeAve)*pointHeight;
-
-			float glitchDelta = -0.35f*(glitchSampleRight-glitchSampleLeft);
-
-			bool active=
-			(
-				(
-					glitchLines &&
-					sampleNow>glitchSampleLeft-glitchDelta &&
-					sampleNow<glitchSampleRight-glitchDelta
-				) ||
-				(
-					arrayV[(a*2)+0] >= centerX+needleDeltaL*viewPortWidth &&
-					arrayV[(a*2)+0] <= centerX+needleDeltaR*viewPortWidth
-				)
-			);
-
-			arrayC[(a*4)+0]=active?1.0f:(zeroCrossingFactor*0.5f);
-			arrayC[(a*4)+1]=active?1.0f:(zeroCrossingFactor*0.25f);
-			arrayC[(a*4)+2]=0.5f+zeroCrossingFactor*0.5f;
-			arrayC[(a*4)+3]=1.0f;
-
-			//Tristrip!
-		
-			//Top
-			arrayVtri[(a*4)+0]=arrayV[(a*2)+0];
-			arrayVtri[(a*4)+1]=arrayV[(a*2)+1];
-
-			//Bottom
-			arrayVtri[(a*4)+2]=arrayV[(a*2)+0];
-			arrayVtri[(a*4)+3]=(pointBottom+0.5f*pointHeight)-(arrayV[a*2+1]-(pointBottom+0.5f*pointHeight));
-
-			//Top
-			arrayCtri[(a*8)+0]=arrayC[a*4+0]*(0.5f+0.5f*zeroCrossingFactor);
-			arrayCtri[(a*8)+1]=arrayC[a*4+1]*(0.5f+0.5f*zeroCrossingFactor);
-			arrayCtri[(a*8)+2]=arrayC[a*4+2]*(0.5f+0.5f*zeroCrossingFactor);
-			arrayCtri[(a*8)+3]=arrayC[a*4+3];
-
-			//Bottom
-			arrayCtri[(a*8)+4]=arrayC[a*4+0]*(0.5f+0.5f*zeroCrossingFactor);
-			arrayCtri[(a*8)+5]=arrayC[a*4+1]*(0.5f+0.5f*zeroCrossingFactor);
-			arrayCtri[(a*8)+6]=arrayC[a*4+2]*(0.5f+0.5f*zeroCrossingFactor);
-			arrayCtri[(a*8)+7]=arrayC[a*4+3];
-
-			//Silhouette
-			arrayC[(a*4)+0]+=0.5f*zeroCrossingFactor;
-			arrayC[(a*4)+1]+=0.5f*zeroCrossingFactor;
-			arrayC[(a*4)+2]+=0.5f*zeroCrossingFactor;
-
-			if(magnitudeMax>1.0f)
+		for(int a=0;a<pointsToDrawIndexEnd-pointsToDrawIndexStart;a++)
+		{
+			if(overdriven[a])
 			{
 				arrayC[(a*4)+0]=1.0f;
 				arrayC[(a*4)+1]=0.0f;
 				arrayC[(a*4)+2]=0.0f;
+				arrayC[(a*4)+3]=1.0f;
 			}
 		}
-		else if(xPreview < vertLeft)
-		{
-			pointsToDrawIndexStart=a+2;
-		}
-		else if(xPreview > vertRight)
-		{
-			pointsToDrawIndexEnd=a-1;
-			break;
-		}
-	}
 
-	//Tristrip!
-
-	if(!lowRez)
-	{
-		LGL_DrawTriStripToScreen
+		LGL_DrawLineStripToScreen
 		(
-			&(arrayVtri[pointsToDrawIndexStart*4]),
-			&(arrayCtri[pointsToDrawIndexStart*8]),
-			2*(pointsToDrawIndexEnd-pointsToDrawIndexStart),
+			&(arrayV[pointsToDrawIndexStart*2]),
+			&(arrayC[pointsToDrawIndexStart*4]),
+			pointsToDrawIndexEnd-pointsToDrawIndexStart,
+			3.5f,
 			!lowRez
 		);
-	}
 
-	//Linestrip top!
+		//Linestrop Bottom!
 
-	for(int a=0;a<pointsToDrawIndexEnd-pointsToDrawIndexStart;a++)
-	{
-		if(overdriven[a])
+		for(int a=pointsToDrawIndexStart;a<pointsToDrawIndexEnd;a++)
 		{
-			arrayC[(a*4)+0]=1.0f;
-			arrayC[(a*4)+1]=0.0f;
-			arrayC[(a*4)+2]=0.0f;
-			arrayC[(a*4)+3]=1.0f;
-		}
-	}
-
-	LGL_DrawLineStripToScreen
-	(
-		&(arrayV[pointsToDrawIndexStart*2]),
-		&(arrayC[pointsToDrawIndexStart*4]),
-		pointsToDrawIndexEnd-pointsToDrawIndexStart,
-		3.5f,
-		!lowRez
-	);
-
-	//Linestrop Bottom!
-
-	for(int a=pointsToDrawIndexStart;a<pointsToDrawIndexEnd;a++)
-	{
-		arrayV[(a*2)+1]=(pointBottom+0.5f*pointHeight)-(arrayV[(a*2)+1]-(pointBottom+0.5f*pointHeight));
-	}
-
-	LGL_DrawLineStripToScreen
-	(
-		&(arrayV[pointsToDrawIndexStart*2]),
-		&(arrayC[pointsToDrawIndexStart*4]),
-		pointsToDrawIndexEnd-pointsToDrawIndexStart,
-		3.5f,
-		!lowRez
-	);
-
-	//Draw Center Needle Rectangle
-	LGL_DrawRectToScreen
-	(
-		centerX+needleDeltaL*viewPortWidth,
-		centerX+needleDeltaR*viewPortWidth,
-		pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-		pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-		0.1f,0.05f,0.25f,0.0f
-	);
-
-	//Draw Glitch Rectangle
-	if
-	(
-		glitchBegin >= 0 &&
-		glitch
-	)
-	{
-		float gleftSample=glitchBegin-glitchLength;
-		float grightSample=glitchBegin+glitchLength;
-		
-		float centerSample=soundPositionSamples;
-		float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
-		float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
-
-		if(leftSample<0 || rightSample>soundLengthSamples)
-		{
-			//Deal with wrap around
-
-			if(centerSample<soundLengthSamplesHalf)
-			{
-				if(gleftSample>soundLengthSamplesHalf)
-				{
-					gleftSample-=soundLengthSamples;
-				}
-				if(grightSample>soundLengthSamplesHalf)
-				{
-					grightSample-=soundLengthSamples;
-				}
-			}
-			else
-			{
-				if(gleftSample<soundLengthSamplesHalf)
-				{
-					gleftSample+=soundLengthSamples;
-				}
-				if(grightSample<soundLengthSamplesHalf)
-				{
-					grightSample+=soundLengthSamples;
-				}
-			}
+			arrayV[(a*2)+1]=(pointBottom+0.5f*pointHeight)-(arrayV[(a*2)+1]-(pointBottom+0.5f*pointHeight));
 		}
 
-		float gLeftPercent=1.0-(rightSample-gleftSample)/(rightSample-leftSample);
-		float gRightPercent=1.0-(rightSample-grightSample)/(rightSample-leftSample);
+		LGL_DrawLineStripToScreen
+		(
+			&(arrayV[pointsToDrawIndexStart*2]),
+			&(arrayC[pointsToDrawIndexStart*4]),
+			pointsToDrawIndexEnd-pointsToDrawIndexStart,
+			3.5f,
+			!lowRez
+		);
 
+		//Draw Center Needle Rectangle
+		LGL_DrawRectToScreen
+		(
+			centerX+needleDeltaL*viewPortWidth,
+			centerX+needleDeltaR*viewPortWidth,
+			pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+			pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+			0.1f,0.05f,0.25f,0.0f
+		);
+
+		//Draw Glitch Rectangle
 		if
 		(
-			glitchSampleRight>leftSample &&
-			glitchSampleLeft<rightSample
+			glitchBegin >= 0 &&
+			glitch
 		)
 		{
-			LGL_DrawRectToScreen
+			float gleftSample=glitchBegin-glitchLength;
+			float grightSample=glitchBegin+glitchLength;
+			
+			float centerSample=soundPositionSamples;
+			float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
+			float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
+
+			if(leftSample<0 || rightSample>soundLengthSamples)
+			{
+				//Deal with wrap around
+
+				if(centerSample<soundLengthSamplesHalf)
+				{
+					if(gleftSample>soundLengthSamplesHalf)
+					{
+						gleftSample-=soundLengthSamples;
+					}
+					if(grightSample>soundLengthSamplesHalf)
+					{
+						grightSample-=soundLengthSamples;
+					}
+				}
+				else
+				{
+					if(gleftSample<soundLengthSamplesHalf)
+					{
+						gleftSample+=soundLengthSamples;
+					}
+					if(grightSample<soundLengthSamplesHalf)
+					{
+						grightSample+=soundLengthSamples;
+					}
+				}
+			}
+
+			float gLeftPercent=1.0-(rightSample-gleftSample)/(rightSample-leftSample);
+			float gRightPercent=1.0-(rightSample-grightSample)/(rightSample-leftSample);
+
+			if
 			(
-				pointLeft+gLeftPercent*pointWidth,
-				pointLeft+gRightPercent*pointWidth,
-				pointBottom,
-				pointTop,
-				.1f,.05f,.25f,.0f
-			);
+				glitchSampleRight>leftSample &&
+				glitchSampleLeft<rightSample
+			)
+			{
+				LGL_DrawRectToScreen
+				(
+					pointLeft+gLeftPercent*pointWidth,
+					pointLeft+gRightPercent*pointWidth,
+					pointBottom,
+					pointTop,
+					.1f,.05f,.25f,.0f
+				);
+			}
 		}
-	}
 
-	//Center Needle frame
-	LGL_DrawLineToScreen
-	(
-		centerX+needleDeltaL*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-		centerX+needleDeltaL*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-		.4f,.2f,1,1,
-		1
-	);
-	LGL_DrawLineToScreen
-	(
-		centerX+needleDeltaR*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-		centerX+needleDeltaR*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-		.4f,.2f,1,1,
-		1
-	);
-
-	if(glitchLines)
-	{
+		//Center Needle frame
 		LGL_DrawLineToScreen
 		(
-			glitchLinesLeft,pointBottom,
-			glitchLinesLeft,pointTop,
+			centerX+needleDeltaL*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+			centerX+needleDeltaL*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			.4f,.2f,1,1,
 			1
 		);
 		LGL_DrawLineToScreen
 		(
-			glitchLinesRight,pointBottom,
-			glitchLinesRight,pointTop,
+			centerX+needleDeltaR*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+			centerX+needleDeltaR*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			.4f,.2f,1,1,
 			1
 		);
-	}
-	
-	//Draw BPM Lines
-	if(bpm>0)
-	{
-		float centerSample=soundPositionSamples;
-		float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
-		float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
-		double secondsPerBeat=(60.0/bpm);
 
-		if(leftSample<0)
+		if(glitchLines)
 		{
-			//We can see both the start and end, center is at start
-			float localLeftSample = soundLengthSamples+leftSample;
-			float localRightSample = soundLengthSamples-1;
-			if(loaded)
-			{
-				turntable_DrawBPMLines
-				(
-					localLeftSample,
-					localRightSample,
-					soundLengthSeconds,
-					bpmFirstBeatSeconds,
-					secondsPerBeat,
-					pointBottom,
-					pointTop,
-					wavLeft,
-					wavWidth*(localRightSample-localLeftSample)/(rightSample-leftSample)
-				);
-			}
-
-			float prevWavWidth=wavWidth*(localRightSample-localLeftSample)/(rightSample-leftSample);
-			localLeftSample=0;
-			localRightSample=rightSample;
-			turntable_DrawBPMLines
+			LGL_DrawLineToScreen
 			(
-				localLeftSample,
-				localRightSample,
-				soundLengthSeconds,
-				bpmFirstBeatSeconds,
-				secondsPerBeat,
-				pointBottom,
-				pointTop,
-				wavLeft+prevWavWidth,
-				wavWidth-prevWavWidth
+				glitchLinesLeft,pointBottom,
+				glitchLinesLeft,pointTop,
+				.4f,.2f,1,1,
+				1
+			);
+			LGL_DrawLineToScreen
+			(
+				glitchLinesRight,pointBottom,
+				glitchLinesRight,pointTop,
+				.4f,.2f,1,1,
+				1
 			);
 		}
-		else if(rightSample>=soundLengthSamples)
-		{
-			//We can see both the start and end, center is at end
-			float localLeftSample = leftSample;
-			float localRightSample = soundLengthSamples-1;
-			if(loaded)
-			{
-				turntable_DrawBPMLines
-				(
-					localLeftSample,
-					localRightSample,
-					soundLengthSeconds,
-					bpmFirstBeatSeconds,
-					secondsPerBeat,
-					pointBottom,
-					pointTop,
-					wavLeft,
-					wavWidth*(localRightSample-localLeftSample)/(rightSample-leftSample)
-				);
-			}
-
-			float prevWavWidth=wavWidth*(localRightSample-localLeftSample)/(rightSample-leftSample);
-			localLeftSample=0;
-			localRightSample=rightSample-soundLengthSamples;
-			turntable_DrawBPMLines
-			(
-				localLeftSample,
-				localRightSample,
-				soundLengthSeconds,
-				bpmFirstBeatSeconds,
-				secondsPerBeat,
-				pointBottom,
-				pointTop,
-				wavLeft+prevWavWidth,
-				wavWidth-prevWavWidth
-			);
-		}
-		else
-		{
-			//We can see a continuous section
-			turntable_DrawBPMLines
-			(
-				leftSample,
-				rightSample,
-				soundLengthSeconds,
-				bpmFirstBeatSeconds,
-				secondsPerBeat,
-				pointBottom,
-				pointTop,
-				wavLeft,
-				wavWidth
-			);
-		}
-	}
-
-	//Draw Save Points to large wave
-	for(int a=0;a<18;a++)
-	{
-		if(savePointSeconds[a]>=0.0f)
+		
+		//Draw BPM Lines
+		if(bpm>0)
 		{
 			float centerSample=soundPositionSamples;
 			float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
 			float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
-			float widthSample=rightSample-leftSample;
+			double secondsPerBeat=(60.0/bpm);
 
-			long savePointSamples = (long)(savePointSeconds[a]*44100);
-			if
-			(
-				savePointSamples >= leftSample-(44100/4) &&
-				savePointSamples <= rightSample+(44100/4)
-			)
+			if(leftSample<0)
 			{
-				float savePointPercent = (savePointSamples-leftSample)/(float)widthSample;
-				LGL_DrawLineToScreen
+				//We can see both the start and end, center is at start
+				float localLeftSample = soundLengthSamples+leftSample;
+				float localRightSample = soundLengthSamples-1;
+				if(loaded)
+				{
+					turntable_DrawBPMLines
+					(
+						localLeftSample,
+						localRightSample,
+						soundLengthSeconds,
+						bpmFirstBeatSeconds,
+						secondsPerBeat,
+						pointBottom,
+						pointTop,
+						wavLeft,
+						wavWidth*(localRightSample-localLeftSample)/(rightSample-leftSample)
+					);
+				}
+
+				float prevWavWidth=wavWidth*(localRightSample-localLeftSample)/(rightSample-leftSample);
+				localLeftSample=0;
+				localRightSample=rightSample;
+				turntable_DrawBPMLines
 				(
-					wavLeft+wavWidth*savePointPercent,pointBottom+0.4f*pointHeight,
-					wavLeft+wavWidth*savePointPercent,pointBottom+0.6f*pointHeight,
-					1.0f,1.0f,1.0f,1.0f,
-					3
+					localLeftSample,
+					localRightSample,
+					soundLengthSeconds,
+					bpmFirstBeatSeconds,
+					secondsPerBeat,
+					pointBottom,
+					pointTop,
+					wavLeft+prevWavWidth,
+					wavWidth-prevWavWidth
 				);
-				char str[4];
-				if(a==0)
+			}
+			else if(rightSample>=soundLengthSamples)
+			{
+				//We can see both the start and end, center is at end
+				float localLeftSample = leftSample;
+				float localRightSample = soundLengthSamples-1;
+				if(loaded)
 				{
-					strcpy(str,"[");
+					turntable_DrawBPMLines
+					(
+						localLeftSample,
+						localRightSample,
+						soundLengthSeconds,
+						bpmFirstBeatSeconds,
+						secondsPerBeat,
+						pointBottom,
+						pointTop,
+						wavLeft,
+						wavWidth*(localRightSample-localLeftSample)/(rightSample-leftSample)
+					);
 				}
-				else if(a==1)
-				{
-					strcpy(str,"]");
-				}
-				else if(a<=11)
-				{
-					sprintf(str,"%i",a-2);
-				}
-				else
-				{
-					sprintf(str,"%C",'A'+(((unsigned char)a)-12));
-				}
-				float fontHeight=0.10f*pointHeight;
-				float lDelta=0.02f;
-				LGL_GetFont().DrawString
+
+				float prevWavWidth=wavWidth*(localRightSample-localLeftSample)/(rightSample-leftSample);
+				localLeftSample=0;
+				localRightSample=rightSample-soundLengthSamples;
+				turntable_DrawBPMLines
 				(
-					wavLeft+wavWidth*savePointPercent-lDelta,
-					pointBottom+0.5f*pointHeight-0.5f*fontHeight,
-					fontHeight,
-					1,1,1,1,
-					true,
-					0.75f,
-					str
+					localLeftSample,
+					localRightSample,
+					soundLengthSeconds,
+					bpmFirstBeatSeconds,
+					secondsPerBeat,
+					pointBottom,
+					pointTop,
+					wavLeft+prevWavWidth,
+					wavWidth-prevWavWidth
 				);
+			}
+			else
+			{
+				//We can see a continuous section
+				turntable_DrawBPMLines
+				(
+					leftSample,
+					rightSample,
+					soundLengthSeconds,
+					bpmFirstBeatSeconds,
+					secondsPerBeat,
+					pointBottom,
+					pointTop,
+					wavLeft,
+					wavWidth
+				);
+			}
+		}
+
+		//Draw Save Points to large wave
+		for(int a=0;a<18;a++)
+		{
+			if(savePointSeconds[a]>=0.0f)
+			{
+				float centerSample=soundPositionSamples;
+				float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+				float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+				float widthSample=rightSample-leftSample;
+
+				long savePointSamples = (long)(savePointSeconds[a]*44100);
+				if
+				(
+					savePointSamples >= leftSample-(44100/4) &&
+					savePointSamples <= rightSample+(44100/4)
+				)
+				{
+					float savePointPercent = (savePointSamples-leftSample)/(float)widthSample;
+					LGL_DrawLineToScreen
+					(
+						wavLeft+wavWidth*savePointPercent,pointBottom+0.4f*pointHeight,
+						wavLeft+wavWidth*savePointPercent,pointBottom+0.6f*pointHeight,
+						1.0f,1.0f,1.0f,1.0f,
+						3
+					);
+					char str[4];
+					if(a==0)
+					{
+						strcpy(str,"[");
+					}
+					else if(a==1)
+					{
+						strcpy(str,"]");
+					}
+					else if(a<=11)
+					{
+						sprintf(str,"%i",a-2);
+					}
+					else
+					{
+						sprintf(str,"%C",'A'+(((unsigned char)a)-12));
+					}
+					float fontHeight=0.10f*pointHeight;
+					float lDelta=0.02f;
+					LGL_GetFont().DrawString
+					(
+						wavLeft+wavWidth*savePointPercent-lDelta,
+						pointBottom+0.5f*pointHeight-0.5f*fontHeight,
+						fontHeight,
+						1,1,1,1,
+						true,
+						0.75f,
+						str
+					);
+				}
 			}
 		}
 	}
 
 	LGL_ClipRectDisable();
 
-	//Entire Wave Array
-	if(loaded)
+	if(freqSensitiveMode!=2)
 	{
-		for(;;)
+		//Entire Wave Array
+		if(loaded)
 		{
-			if(entireWaveArrayFillIndex<entireWaveArrayCount)
+			for(;;)
 			{
-				float zeroCrossingFactor;
-				float magnitudeAve;
-				float magnitudeMax;
+				if(entireWaveArrayFillIndex<entireWaveArrayCount)
+				{
+					float zeroCrossingFactor;
+					float magnitudeAve;
+					float magnitudeMax;
 
-				long sampleNow=(long)(entireWaveArrayFillIndex*(2*soundLengthSeconds*44100.0f/(double)(entireWaveArrayCount*2)));
-				long sampleLast=sampleNow+(2*soundLengthSeconds*44100.0f/entireWaveArrayCount)-1;
+					long sampleNow=(long)(entireWaveArrayFillIndex*(2*soundLengthSeconds*44100.0f/(double)(entireWaveArrayCount*2)));
+					long sampleLast=sampleNow+(2*soundLengthSeconds*44100.0f/entireWaveArrayCount)-1;
 
-				bool ret=sound->GetMetadata
-				(
-					sampleNow/44100.0f,
-					sampleLast/44100.0f,
-					zeroCrossingFactor,
-					magnitudeAve,
-					magnitudeMax
-				);
+					bool ret=sound->GetMetadata
+					(
+						sampleNow/44100.0f,
+						sampleLast/44100.0f,
+						zeroCrossingFactor,
+						magnitudeAve,
+						magnitudeMax
+					);
 
-				if(ret==false)
+					if(ret==false)
+					{
+						break;
+					}
+
+					entireWaveArrayMagnitudeAve[entireWaveArrayFillIndex]=magnitudeAve;
+					entireWaveArrayMagnitudeMax[entireWaveArrayFillIndex]=magnitudeMax;
+					entireWaveArrayFreqFactor[entireWaveArrayFillIndex]=zeroCrossingFactor;
+
+					entireWaveArrayFillIndex++;
+				}
+				else
 				{
 					break;
 				}
-
-				entireWaveArrayMagnitudeAve[entireWaveArrayFillIndex]=magnitudeAve;
-				entireWaveArrayMagnitudeMax[entireWaveArrayFillIndex]=magnitudeMax;
-				entireWaveArrayFreqFactor[entireWaveArrayFillIndex]=zeroCrossingFactor;
-
-				entireWaveArrayFillIndex++;
-			}
-			else
-			{
-				break;
-			}
-		}	
-	}
-
-	if(entireWaveArrayFillIndex>0)
-	{
-		float waveBottom=viewPortBottom;
-		float waveTop=pointBottom;
-		float waveHeight=waveTop-waveBottom;
-
-		for(int a=0;a<entireWaveArrayFillIndex;a++)
-		{
-			float zeroCrossingFactor=entireWaveArrayFreqFactor[a];
-			float magnitudeAve=entireWaveArrayMagnitudeAve[a];
-			float magnitudeMax=entireWaveArrayMagnitudeMax[a];
-			bool overdriven=(magnitudeMax*volumeMultiplierNow)>1.0f;
-
-			entireWaveArrayLine1Points[a*2+0]=viewPortLeft+(a/(float)entireWaveArrayCount)*viewPortWidth;
-			entireWaveArrayLine1Points[a*2+1]=LGL_Clamp
-			(
-				waveBottom,
-				waveBottom+(0.5f+0.5f*magnitudeAve*volumeMultiplierNow)*waveHeight,
-				waveTop
-			);
-
-			entireWaveArrayLine1Colors[a*4+0]=zeroCrossingFactor*0.4f;
-			entireWaveArrayLine1Colors[a*4+1]=zeroCrossingFactor*0.2f;
-			entireWaveArrayLine1Colors[a*4+2]=0.5f+zeroCrossingFactor*0.5f;
-			entireWaveArrayLine1Colors[a*4+3]=1.0f;
-
-			entireWaveArrayLine2Points[a*2+0]=viewPortLeft+(a/(float)entireWaveArrayCount)*viewPortWidth;
-			entireWaveArrayLine2Points[a*2+1]=LGL_Clamp
-			(
-				waveBottom,
-				waveBottom+(0.5f-0.5f*magnitudeAve*volumeMultiplierNow)*waveHeight,
-				waveTop
-			);
-
-			entireWaveArrayLine2Colors[a*4+0]=zeroCrossingFactor*0.4f;
-			entireWaveArrayLine2Colors[a*4+1]=zeroCrossingFactor*0.2f;
-			entireWaveArrayLine2Colors[a*4+2]=0.5f+zeroCrossingFactor*0.5f;
-			entireWaveArrayLine2Colors[a*4+3]=1.0f;
-
-			entireWaveArrayTriPoints[a*4+0]=entireWaveArrayLine1Points[a*2+0];
-			entireWaveArrayTriPoints[a*4+1]=entireWaveArrayLine1Points[a*2+1];
-			entireWaveArrayTriPoints[a*4+2]=entireWaveArrayLine2Points[a*2+0];
-			entireWaveArrayTriPoints[a*4+3]=entireWaveArrayLine2Points[a*2+1];
-
-			entireWaveArrayTriColors[a*8+0]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+0];
-			entireWaveArrayTriColors[a*8+1]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+1];
-			entireWaveArrayTriColors[a*8+2]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+2];
-			entireWaveArrayTriColors[a*8+3]=entireWaveArrayLine1Colors[a*4+3];
-
-			entireWaveArrayTriColors[a*8+4]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+0];
-			entireWaveArrayTriColors[a*8+5]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+1];
-			entireWaveArrayTriColors[a*8+6]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+2];
-			entireWaveArrayTriColors[a*8+7]=0.5f*entireWaveArrayLine2Colors[a*4+3];
-
-			if(overdriven)
-			{
-				entireWaveArrayLine1Colors[a*4+0]=1.0f;
-				entireWaveArrayLine1Colors[a*4+1]=0.0f;
-				entireWaveArrayLine1Colors[a*4+2]=0.0f;;
-
-				entireWaveArrayLine2Colors[a*4+0]=1.0f;
-				entireWaveArrayLine2Colors[a*4+1]=0.0f;
-				entireWaveArrayLine2Colors[a*4+2]=0.0f;;
-			}
+			}	
 		}
-	
-		if(!lowRez)
-		{
-			LGL_DrawTriStripToScreen
-			(
-				entireWaveArrayTriPoints,//arrayVtri,
-				entireWaveArrayTriColors,
-				entireWaveArrayFillIndex*2
-			);
-		}
-		LGL_DrawLineStripToScreen
-		(
-			entireWaveArrayLine1Points,
-			entireWaveArrayLine1Colors,
-			entireWaveArrayFillIndex,
-			2.0f,
-			true
-		);
-		LGL_DrawLineStripToScreen
-		(
-			entireWaveArrayLine2Points,
-			entireWaveArrayLine2Colors,
-			entireWaveArrayFillIndex,
-			2.0f,
-			true
-		);
 
-		if(cachedLengthSeconds!=0.0f)
+		if(entireWaveArrayFillIndex>0)
 		{
-			//Draw Save Points to entire wave array
-			for(int a=0;a<18;a++)
+			float waveBottom=viewPortBottom;
+			float waveTop=pointBottom;
+			float waveHeight=waveTop-waveBottom;
+
+			for(int a=0;a<entireWaveArrayFillIndex;a++)
 			{
-				if(savePointSeconds[a]>=0.0f)
+				float zeroCrossingFactor=entireWaveArrayFreqFactor[a];
+				float magnitudeAve=entireWaveArrayMagnitudeAve[a];
+				float magnitudeMax=entireWaveArrayMagnitudeMax[a];
+				bool overdriven=(magnitudeMax*volumeMultiplierNow)>1.0f;
+
+				zeroCrossingFactor=GetFreqBrightness(true,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak());
+
+				entireWaveArrayLine1Points[a*2+0]=viewPortLeft+(a/(float)entireWaveArrayCount)*viewPortWidth;
+				entireWaveArrayLine1Points[a*2+1]=LGL_Clamp
+				(
+					waveBottom,
+					waveBottom+(0.5f+0.5f*magnitudeAve*volumeMultiplierNow)*waveHeight,
+					waveTop
+				);
+
+				entireWaveArrayLine1Colors[a*4+0]=zeroCrossingFactor*0.4f;
+				entireWaveArrayLine1Colors[a*4+1]=zeroCrossingFactor*0.2f;
+				entireWaveArrayLine1Colors[a*4+2]=0.5f+zeroCrossingFactor*0.5f;
+				entireWaveArrayLine1Colors[a*4+3]=1.0f;
+
+				entireWaveArrayLine2Points[a*2+0]=viewPortLeft+(a/(float)entireWaveArrayCount)*viewPortWidth;
+				entireWaveArrayLine2Points[a*2+1]=LGL_Clamp
+				(
+					waveBottom,
+					waveBottom+(0.5f-0.5f*magnitudeAve*volumeMultiplierNow)*waveHeight,
+					waveTop
+				);
+
+				entireWaveArrayLine2Colors[a*4+0]=zeroCrossingFactor*0.4f;
+				entireWaveArrayLine2Colors[a*4+1]=zeroCrossingFactor*0.2f;
+				entireWaveArrayLine2Colors[a*4+2]=0.5f+zeroCrossingFactor*0.5f;
+				entireWaveArrayLine2Colors[a*4+3]=1.0f;
+
+				entireWaveArrayTriPoints[a*4+0]=entireWaveArrayLine1Points[a*2+0];
+				entireWaveArrayTriPoints[a*4+1]=entireWaveArrayLine1Points[a*2+1];
+				entireWaveArrayTriPoints[a*4+2]=entireWaveArrayLine2Points[a*2+0];
+				entireWaveArrayTriPoints[a*4+3]=entireWaveArrayLine2Points[a*2+1];
+
+				entireWaveArrayTriColors[a*8+0]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+0];
+				entireWaveArrayTriColors[a*8+1]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+1];
+				entireWaveArrayTriColors[a*8+2]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+2];
+				entireWaveArrayTriColors[a*8+3]=entireWaveArrayLine1Colors[a*4+3];
+
+				entireWaveArrayTriColors[a*8+4]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+0];
+				entireWaveArrayTriColors[a*8+5]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+1];
+				entireWaveArrayTriColors[a*8+6]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+2];
+				entireWaveArrayTriColors[a*8+7]=0.5f*entireWaveArrayLine2Colors[a*4+3];
+
+				if(overdriven)
 				{
-					long savePointSamples = (long)(savePointSeconds[a]*44100);
-					float savePointPercent = savePointSamples/(double)(cachedLengthSeconds*44100);
-					float bright=(a==savePointIndex)?1.0f:0.5f;
-					LGL_DrawLineToScreen
-					(
-						viewPortLeft+viewPortWidth*savePointPercent,waveBottom,
-						viewPortLeft+viewPortWidth*savePointPercent,waveTop,
-						bright,bright,bright,1.0f,
-						(a==savePointIndex)?3.0f:1.0f,
-						false
-					);
+					entireWaveArrayLine1Colors[a*4+0]=1.0f;
+					entireWaveArrayLine1Colors[a*4+1]=0.0f;
+					entireWaveArrayLine1Colors[a*4+2]=0.0f;;
+
+					entireWaveArrayLine2Colors[a*4+0]=1.0f;
+					entireWaveArrayLine2Colors[a*4+1]=0.0f;
+					entireWaveArrayLine2Colors[a*4+2]=0.0f;;
 				}
 			}
-		}
-
-		if(cachedLengthSeconds!=0)
-		{
-			float pos=soundPositionSeconds/cachedLengthSeconds;
-			LGL_DrawLineToScreen
+		
+			if(!lowRez)
+			{
+				LGL_DrawTriStripToScreen
+				(
+					entireWaveArrayTriPoints,//arrayVtri,
+					entireWaveArrayTriColors,
+					entireWaveArrayFillIndex*2
+				);
+			}
+			LGL_DrawLineStripToScreen
 			(
-				viewPortLeft+pos*viewPortWidth,
-				waveBottom,
-				viewPortLeft+pos*viewPortWidth,
-				waveTop,
-				1,1,1,1,
-				4.0f,
-				false
-			);
-			LGL_DrawLineToScreen
-			(
-				viewPortLeft+pos*viewPortWidth,
-				waveBottom,
-				viewPortLeft+pos*viewPortWidth,
-				waveTop,
-				0.4f,0.2f,1,1,
+				entireWaveArrayLine1Points,
+				entireWaveArrayLine1Colors,
+				entireWaveArrayFillIndex,
 				2.0f,
-				false
+				true
 			);
+			LGL_DrawLineStripToScreen
+			(
+				entireWaveArrayLine2Points,
+				entireWaveArrayLine2Colors,
+				entireWaveArrayFillIndex,
+				2.0f,
+				true
+			);
+
+			if(cachedLengthSeconds!=0.0f)
+			{
+				//Draw Save Points to entire wave array
+				for(int a=0;a<18;a++)
+				{
+					if(savePointSeconds[a]>=0.0f)
+					{
+						long savePointSamples = (long)(savePointSeconds[a]*44100);
+						float savePointPercent = savePointSamples/(double)(cachedLengthSeconds*44100);
+						float bright=(a==savePointIndex)?1.0f:0.5f;
+						LGL_DrawLineToScreen
+						(
+							viewPortLeft+viewPortWidth*savePointPercent,waveBottom,
+							viewPortLeft+viewPortWidth*savePointPercent,waveTop,
+							bright,bright,bright,1.0f,
+							(a==savePointIndex)?3.0f:1.0f,
+							false
+						);
+					}
+				}
+			}
+
+			if(cachedLengthSeconds!=0)
+			{
+				float pos=soundPositionSeconds/cachedLengthSeconds;
+				LGL_DrawLineToScreen
+				(
+					viewPortLeft+pos*viewPortWidth,
+					waveBottom,
+					viewPortLeft+pos*viewPortWidth,
+					waveTop,
+					1,1,1,1,
+					4.0f,
+					false
+				);
+				LGL_DrawLineToScreen
+				(
+					viewPortLeft+pos*viewPortWidth,
+					waveBottom,
+					viewPortLeft+pos*viewPortWidth,
+					waveTop,
+					0.4f,0.2f,1,1,
+					2.0f,
+					false
+				);
+			}
 		}
 	}
 
@@ -1420,6 +1471,10 @@ Turntable_DrawWaveform
 	if(strstr(tmp,".ogg"))
 	{
 		strstr(tmp,".ogg")[0]='\0';
+	}
+	if(freqSensitiveMode==2)
+	{
+		strcpy(tmp,"Audio Input");
 	}
 
 	float txtCenterX=centerX+0.25f*viewPortWidth;
@@ -1504,495 +1559,498 @@ Turntable_DrawWaveform
 	);
 	*/
 
-	if(bpmAdjusted>0)
+	if(freqSensitiveMode!=2)
 	{
+		if(bpmAdjusted>0)
+		{
+			LGL_GetFont().DrawString
+			(
+				//viewPortLeft+.02f*viewPortWidth,
+				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
+				viewPortBottom+.80f*viewPortHeight,
+				0.05f*viewPortHeight,
+				1,1,1,1,
+				false,.5f,
+				"BPM:"
+			);
+			LGL_GetFont().DrawString
+			(
+				//viewPortLeft+.125f*viewPortWidth,
+				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
+				viewPortBottom+.80f*viewPortHeight,
+				0.05f*viewPortHeight,
+				1,1,1,1,
+				false,.5f,
+				"%.2f",
+				bpmAdjusted
+			);
+		}
+		
+		float pbFloat=
+			(1.0f-grainStreamCrossfader) * pitchBend +
+			(0.0f+grainStreamCrossfader) * grainStreamPitch;
+			
+		float pbAbs=fabs((pbFloat-1)*100);
+		if(pbFloat>=1)
+		{
+			sprintf(temp,"+%.2f",pbAbs);
+		}
+		else
+		{
+			sprintf(temp,"-%.2f",pbAbs);
+		}
+		char tempNudge[1024];
+		if(nudge>0)
+		{
+			sprintf(tempNudge,"+%.2f",fabs((nudge)*100));
+		}
+		else if(nudge<0)
+		{
+			sprintf(tempNudge,"-%.2f",fabs((nudge)*100));
+		}
+		else
+		{
+			tempNudge[0]='\0';
+		}
 		LGL_GetFont().DrawString
 		(
 			//viewPortLeft+.02f*viewPortWidth,
 			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-			viewPortBottom+.80f*viewPortHeight,
+			viewPortBottom+.70f*viewPortHeight,
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			false,.5f,
-			"BPM:"
+			"Pitchbend:"
+		);
+		LGL_GetFont().DrawString
+		(
+			//viewPortLeft+.125f*viewPortWidth,
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f-0.0095f,
+			viewPortBottom+.70f*viewPortHeight,
+			0.05f*viewPortHeight,
+			1,1,1,1,
+			false,.5f,
+			"%s%s",
+			temp,
+			tempNudge
+		);
+		
+		/*
+		LGL_GetFont().DrawString
+		(
+			viewPortLeft+.02f*viewPortWidth,
+			viewPortBottom+.60f*viewPortHeight,
+			viewPortHeight/15.0f,
+			1,1,1,1,
+			false,.5f,
+			"Volume:"
+		);
+		LGL_GetFont().DrawString
+		(
+			viewPortLeft+.125f*viewPortWidth,
+			viewPortBottom+.60f*viewPortHeight,
+			viewPortHeight/15.0f,
+			1,1,1,1,
+			false,.5f,
+			"%.2f",fabs((volumeMultiplierNow)*2.0f)
+		);
+		*/
+
+		float minutes=0.0f;
+		float seconds=0.0f;
+		/*
+		if(pitchBend>0.0f)
+		{
+			seconds=soundLengthSeconds/pitchBend;
+			if(seconds>60*999) seconds=999;
+		}
+		while(seconds>60)
+		{
+			seconds-=60;
+			minutes+=1;
+		}
+		if(minutes<10)
+		{
+			if(seconds<10)
+			{
+				sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				sprintf(temp,"0%.0f:%.2f",minutes,seconds);
+			}
+		}
+		else
+		{
+			if(seconds<10)
+			{
+				sprintf(temp,"%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				sprintf(temp,"%.0f:%.2f",minutes,seconds);
+			}
+		}
+
+		LGL_GetFont().DrawString
+		(
+			viewPortLeft+.02f*viewPortWidth,
+			viewPortBottom+.45f*viewPortHeight,
+			viewPortHeight/15.0f,
+			1,1,1,1,
+			false,.5f,
+			"Length:"
+		);
+		LGL_GetFont().DrawString
+		(
+			viewPortLeft+.125f*viewPortWidth,
+			viewPortBottom+.45f*viewPortHeight,
+			viewPortHeight/15.0f,
+			1,1,1,1,
+			false,.5f,
+			temp
+		);
+		*/
+		
+		minutes=0;
+		seconds=soundPositionSeconds/pitchBend;
+		if(seconds>60*999) seconds=999;
+		while(seconds>60)
+		{
+			seconds-=60;
+			minutes+=1;
+		}
+		if(minutes<10)
+		{
+			if(seconds<10)
+			{
+				sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				sprintf(temp,"0%.0f:%.2f",minutes,seconds);
+			}
+		}
+		else
+		{
+			if(seconds<10)
+			{
+				sprintf(temp,"%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				sprintf(temp,"%.0f:%.2f",minutes,seconds);
+			}
+		}
+		/*
+		LGL_GetFont().DrawString
+		(
+			//viewPortLeft+.02f*viewPortWidth,
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
+			viewPortBottom+.25f*viewPortHeight,
+			0.05f*viewPortHeight,
+			1,1,1,1,
+			false,.5f,
+			"Position:"
+		);
+		*/
+		float posElapsedRemainingHeight=viewPortBottom+.15f*viewPortHeight;
+		LGL_GetFont().DrawString
+		(
+			//viewPortLeft+.125f*viewPortWidth,
+			//0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
+			posElapsedRemainingHeight,
+			0.05f*viewPortHeight,
+			1,1,1,1,
+			false,.5f,
+			temp
+		);
+		
+		LGL_GetFont().DrawString
+		(
+			//viewPortLeft+.125f*viewPortWidth,
+			//0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.095f,
+			posElapsedRemainingHeight,
+			0.05f*viewPortHeight,
+			1,1,1,1,
+			false,.5f,
+			"/"
+		);
+
+		minutes=0;
+		seconds=soundLengthSeconds - soundPositionSeconds;
+		seconds/=pitchBend;
+		while(seconds>60)
+		{
+			seconds-=60;
+			minutes+=1;
+		}
+		if(minutes<10)
+		{
+			if(seconds<10)
+			{
+				sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				sprintf(temp,"0%.0f:%.2f",minutes,seconds);
+			}
+		}
+		else
+		{
+			if(seconds<10)
+			{
+				sprintf(temp,"%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				sprintf(temp,"%.0f:%.2f",minutes,seconds);
+			}
+		}
+		/*
+		LGL_GetFont().DrawString
+		(
+			//viewPortLeft+.02f*viewPortWidth,
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
+			viewPortBottom+.15f*viewPortHeight,
+			0.05f*viewPortHeight,
+			1,1,1,1,
+			false,.5f,
+			"Remaining:"
+		);
+		*/
+		LGL_GetFont().DrawString
+		(
+			//viewPortLeft+.125f*viewPortWidth,
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
+			posElapsedRemainingHeight,
+			0.05f*viewPortHeight,
+			1,1,1,1,
+			false,.5f,
+			temp
+		);
+
+		/*
+		float percent=soundPositionSeconds/soundLengthSeconds;
+		LGL_GetFont().DrawString
+		(
+			viewPortLeft+.02f*viewPortWidth,
+			viewPortBottom+.25f*viewPortHeight,
+			viewPortHeight/15.0f,
+			1,1,1,1,
+			false,.5f,
+			"Percent:"
+		);
+		LGL_GetFont().DrawString
+		(
+			viewPortLeft+.125f*viewPortWidth,
+			viewPortBottom+.25f*viewPortHeight,
+			viewPortHeight/15.0f,
+			1,1,1,1,
+			false,.5f,
+			"%.2f",
+			percent*100
+		);
+		*/
+
+		/*
+		minutes=0;
+		seconds=soundLengthSeconds - soundPositionSeconds;
+		seconds/=pitchBend;
+		while(seconds>60)
+		{
+			seconds-=60;
+			minutes+=1;
+		}
+		if(minutes<10)
+		{
+			if(seconds<10)
+			{
+				sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				sprintf(temp,"0%.0f:%.2f",minutes,seconds);
+			}
+		}
+		else
+		{
+			if(seconds<10)
+			{
+				sprintf(temp,"%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				sprintf(temp,"%.0f:%.2f",minutes,seconds);
+			}
+		}
+		LGL_GetFont().DrawString
+		(
+			//viewPortLeft+.02f*viewPortWidth,
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
+			viewPortBottom+.15f*viewPortHeight,
+			0.05f*viewPortHeight,
+			1,1,1,1,
+			false,.5f,
+			"Remaining:"
 		);
 		LGL_GetFont().DrawString
 		(
 			//viewPortLeft+.125f*viewPortWidth,
 			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
-			viewPortBottom+.80f*viewPortHeight,
+			viewPortBottom+.15f*viewPortHeight,
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			false,.5f,
-			"%.2f",
-			bpmAdjusted
+			temp
 		);
-	}
-	
-	float pbFloat=
-		(1.0f-grainStreamCrossfader) * pitchBend +
-		(0.0f+grainStreamCrossfader) * grainStreamPitch;
-		
-	float pbAbs=fabs((pbFloat-1)*100);
-	if(pbFloat>=1)
-	{
-		sprintf(temp,"+%.2f",pbAbs);
-	}
-	else
-	{
-		sprintf(temp,"-%.2f",pbAbs);
-	}
-	char tempNudge[1024];
-	if(nudge>0)
-	{
-		sprintf(tempNudge,"+%.2f",fabs((nudge)*100));
-	}
-	else if(nudge<0)
-	{
-		sprintf(tempNudge,"-%.2f",fabs((nudge)*100));
-	}
-	else
-	{
-		tempNudge[0]='\0';
-	}
-	LGL_GetFont().DrawString
-	(
-		//viewPortLeft+.02f*viewPortWidth,
-		0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-		viewPortBottom+.70f*viewPortHeight,
-		0.05f*viewPortHeight,
-		1,1,1,1,
-		false,.5f,
-		"Pitchbend:"
-	);
-	LGL_GetFont().DrawString
-	(
-		//viewPortLeft+.125f*viewPortWidth,
-		0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f-0.0095f,
-		viewPortBottom+.70f*viewPortHeight,
-		0.05f*viewPortHeight,
-		1,1,1,1,
-		false,.5f,
-		"%s%s",
-		temp,
-		tempNudge
-	);
-	
-	/*
-	LGL_GetFont().DrawString
-	(
-		viewPortLeft+.02f*viewPortWidth,
-		viewPortBottom+.60f*viewPortHeight,
-		viewPortHeight/15.0f,
-		1,1,1,1,
-		false,.5f,
-		"Volume:"
-	);
-	LGL_GetFont().DrawString
-	(
-		viewPortLeft+.125f*viewPortWidth,
-		viewPortBottom+.60f*viewPortHeight,
-		viewPortHeight/15.0f,
-		1,1,1,1,
-		false,.5f,
-		"%.2f",fabs((volumeMultiplierNow)*2.0f)
-	);
-	*/
+		*/
 
-	float minutes=0.0f;
-	float seconds=0.0f;
-	/*
-	if(pitchBend>0.0f)
-	{
-		seconds=soundLengthSeconds/pitchBend;
-		if(seconds>60*999) seconds=999;
-	}
-	while(seconds>60)
-	{
-		seconds-=60;
-		minutes+=1;
-	}
-	if(minutes<10)
-	{
-		if(seconds<10)
-		{
-			sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
-		}
-		else
-		{
-			sprintf(temp,"0%.0f:%.2f",minutes,seconds);
-		}
-	}
-	else
-	{
-		if(seconds<10)
-		{
-			sprintf(temp,"%.0f:0%.2f",minutes,seconds);
-		}
-		else
-		{
-			sprintf(temp,"%.0f:%.2f",minutes,seconds);
-		}
-	}
-
-	LGL_GetFont().DrawString
-	(
-		viewPortLeft+.02f*viewPortWidth,
-		viewPortBottom+.45f*viewPortHeight,
-		viewPortHeight/15.0f,
-		1,1,1,1,
-		false,.5f,
-		"Length:"
-	);
-	LGL_GetFont().DrawString
-	(
-		viewPortLeft+.125f*viewPortWidth,
-		viewPortBottom+.45f*viewPortHeight,
-		viewPortHeight/15.0f,
-		1,1,1,1,
-		false,.5f,
-		temp
-	);
-	*/
-	
-	minutes=0;
-	seconds=soundPositionSeconds/pitchBend;
-	if(seconds>60*999) seconds=999;
-	while(seconds>60)
-	{
-		seconds-=60;
-		minutes+=1;
-	}
-	if(minutes<10)
-	{
-		if(seconds<10)
-		{
-			sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
-		}
-		else
-		{
-			sprintf(temp,"0%.0f:%.2f",minutes,seconds);
-		}
-	}
-	else
-	{
-		if(seconds<10)
-		{
-			sprintf(temp,"%.0f:0%.2f",minutes,seconds);
-		}
-		else
-		{
-			sprintf(temp,"%.0f:%.2f",minutes,seconds);
-		}
-	}
-	/*
-	LGL_GetFont().DrawString
-	(
-		//viewPortLeft+.02f*viewPortWidth,
-		0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-		viewPortBottom+.25f*viewPortHeight,
-		0.05f*viewPortHeight,
-		1,1,1,1,
-		false,.5f,
-		"Position:"
-	);
-	*/
-	float posElapsedRemainingHeight=viewPortBottom+.15f*viewPortHeight;
-	LGL_GetFont().DrawString
-	(
-		//viewPortLeft+.125f*viewPortWidth,
-		//0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
-		0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-		posElapsedRemainingHeight,
-		0.05f*viewPortHeight,
-		1,1,1,1,
-		false,.5f,
-		temp
-	);
-	
-	LGL_GetFont().DrawString
-	(
-		//viewPortLeft+.125f*viewPortWidth,
-		//0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
-		0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.095f,
-		posElapsedRemainingHeight,
-		0.05f*viewPortHeight,
-		1,1,1,1,
-		false,.5f,
-		"/"
-	);
-
-	minutes=0;
-	seconds=soundLengthSeconds - soundPositionSeconds;
-	seconds/=pitchBend;
-	while(seconds>60)
-	{
-		seconds-=60;
-		minutes+=1;
-	}
-	if(minutes<10)
-	{
-		if(seconds<10)
-		{
-			sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
-		}
-		else
-		{
-			sprintf(temp,"0%.0f:%.2f",minutes,seconds);
-		}
-	}
-	else
-	{
-		if(seconds<10)
-		{
-			sprintf(temp,"%.0f:0%.2f",minutes,seconds);
-		}
-		else
-		{
-			sprintf(temp,"%.0f:%.2f",minutes,seconds);
-		}
-	}
-	/*
-	LGL_GetFont().DrawString
-	(
-		//viewPortLeft+.02f*viewPortWidth,
-		0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-		viewPortBottom+.15f*viewPortHeight,
-		0.05f*viewPortHeight,
-		1,1,1,1,
-		false,.5f,
-		"Remaining:"
-	);
-	*/
-	LGL_GetFont().DrawString
-	(
-		//viewPortLeft+.125f*viewPortWidth,
-		0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
-		posElapsedRemainingHeight,
-		0.05f*viewPortHeight,
-		1,1,1,1,
-		false,.5f,
-		temp
-	);
-
-	/*
-	float percent=soundPositionSeconds/soundLengthSeconds;
-	LGL_GetFont().DrawString
-	(
-		viewPortLeft+.02f*viewPortWidth,
-		viewPortBottom+.25f*viewPortHeight,
-		viewPortHeight/15.0f,
-		1,1,1,1,
-		false,.5f,
-		"Percent:"
-	);
-	LGL_GetFont().DrawString
-	(
-		viewPortLeft+.125f*viewPortWidth,
-		viewPortBottom+.25f*viewPortHeight,
-		viewPortHeight/15.0f,
-		1,1,1,1,
-		false,.5f,
-		"%.2f",
-		percent*100
-	);
-	*/
-
-	/*
-	minutes=0;
-	seconds=soundLengthSeconds - soundPositionSeconds;
-	seconds/=pitchBend;
-	while(seconds>60)
-	{
-		seconds-=60;
-		minutes+=1;
-	}
-	if(minutes<10)
-	{
-		if(seconds<10)
-		{
-			sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
-		}
-		else
-		{
-			sprintf(temp,"0%.0f:%.2f",minutes,seconds);
-		}
-	}
-	else
-	{
-		if(seconds<10)
-		{
-			sprintf(temp,"%.0f:0%.2f",minutes,seconds);
-		}
-		else
-		{
-			sprintf(temp,"%.0f:%.2f",minutes,seconds);
-		}
-	}
-	LGL_GetFont().DrawString
-	(
-		//viewPortLeft+.02f*viewPortWidth,
-		0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-		viewPortBottom+.15f*viewPortHeight,
-		0.05f*viewPortHeight,
-		1,1,1,1,
-		false,.5f,
-		"Remaining:"
-	);
-	LGL_GetFont().DrawString
-	(
-		//viewPortLeft+.125f*viewPortWidth,
-		0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
-		viewPortBottom+.15f*viewPortHeight,
-		0.05f*viewPortHeight,
-		1,1,1,1,
-		false,.5f,
-		temp
-	);
-	*/
-
-	/*
-	LGL_GetFont().DrawString
-	(
-		pointLeft+.02f*viewPortWidth,
-		viewPortBottom+.02f*viewPortHeight,
-		viewPortHeight/15.0f,
-		1,1,1,1,
-		false,.5f,
-		"Save Points:"
-	);
-	*/
-
-	bool mySavePointSet[12];
-	for(int a=0;a<12;a++)
-	{
-		mySavePointSet[a]=savePointSetBitfield & (1<<a);
-	}
-
-	//float lft=pointLeft+0.15f*viewPortWidth;
-	float lft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.0075f;
-	float wth=(viewPortWidth*0.25f)/16.0f;
-	//float bot=(viewPortBottom+(0.015f*viewPortHeight);
-	float bot=viewPortBottom+0.24f*viewPortHeight;
-	float top=bot+0.075f*viewPortHeight;
-	float spc=wth*0.75f;
-	for(int i=0;i<12;i++)
-	{
-		int thickness;
-		float r;
-		float g;
-		float b;
-		if(i==savePointIndex)// || i==savePointIndexActual+1)
-		{
-			thickness=((i==savePointIndex)?6:4);
-			r=0.4f+0.1f*glow;
-			g=0.2f+0.1f*glow;
-			b=1.0f;
-		}
-		else
-		{
-			thickness=2;
-			r=0.0f;
-			g=0.0f;
-			b=2*glow;
-		}
-
-		//Left
-		LGL_DrawLineToScreen
+		/*
+		LGL_GetFont().DrawString
 		(
-			lft+i*wth,bot,
-			lft+i*wth,top,
-			r,g,b,1,
-			thickness
+			pointLeft+.02f*viewPortWidth,
+			viewPortBottom+.02f*viewPortHeight,
+			viewPortHeight/15.0f,
+			1,1,1,1,
+			false,.5f,
+			"Save Points:"
 		);
+		*/
 
-		//Right
-		LGL_DrawLineToScreen
-		(
-			lft+i*wth+spc,bot,
-			lft+i*wth+spc,top,
-			r,g,b,1,
-			thickness
-		);
-
-		//Bottom
-		LGL_DrawLineToScreen
-		(
-			lft+i*wth,bot,
-			lft+i*wth+spc,bot,
-			r,g,b,1,
-			thickness
-		);
-
-		//Top
-		LGL_DrawLineToScreen
-		(
-			lft+i*wth,top,
-			lft+i*wth+spc,top,
-			r,g,b,1,
-			thickness
-		);
-
-		LGL_DrawRectToScreen
-		(
-			lft+i*wth,lft+i*wth+spc,
-			bot,top,
-			0,0,mySavePointSet[i]?glow:0,1
-		);
-		noiseImage256x64->DrawToScreen
-		(
-			lft+i*wth,lft+i*wth+spc,
-			bot,top,
-			0,
-			savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],
-			false,false,0,0,0,
-			0,1.0f/32.0f,
-			0,1.0f/8.0f
-		);
-		LGL_DrawRectToScreen
-		(
-			lft+i*wth,lft+i*wth+spc,
-			bot,top,
-			savePointUnsetFlashPercent[i],savePointUnsetFlashPercent[i],savePointUnsetFlashPercent[i],0
-		);
-
-		if(1)//i!=0)
+		bool mySavePointSet[12];
+		for(int a=0;a<12;a++)
 		{
-			char str[4];
+			mySavePointSet[a]=savePointSetBitfield & (1<<a);
+		}
 
-			if(i==0)
+		//float lft=pointLeft+0.15f*viewPortWidth;
+		float lft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.0075f;
+		float wth=(viewPortWidth*0.25f)/16.0f;
+		//float bot=(viewPortBottom+(0.015f*viewPortHeight);
+		float bot=viewPortBottom+0.24f*viewPortHeight;
+		float top=bot+0.075f*viewPortHeight;
+		float spc=wth*0.75f;
+		for(int i=0;i<12;i++)
+		{
+			int thickness;
+			float r;
+			float g;
+			float b;
+			if(i==savePointIndex)// || i==savePointIndexActual+1)
 			{
-				strcpy(str,"[");
-			}
-			else if(i==1)
-			{
-				strcpy(str,"]");
-			}
-			/*
-			else if(i>=19)
-			{
-				strcpy(str,(i==19)?"?":"!");
-			}
-			*/
-			else if(i<=12)
-			{
-				sprintf(str,"%i",i-2);
+				thickness=((i==savePointIndex)?6:4);
+				r=0.4f+0.1f*glow;
+				g=0.2f+0.1f*glow;
+				b=1.0f;
 			}
 			else
 			{
-				sprintf(str,"%C",'A'+(((unsigned char)i)-13));
+				thickness=2;
+				r=0.0f;
+				g=0.0f;
+				b=2*glow;
 			}
 
-			LGL_GetFont().DrawString
+			//Left
+			LGL_DrawLineToScreen
 			(
-				lft+i*wth+.6f*spc,
-				bot+0.25f*0.05f*viewPortHeight,//+0.0275f*viewPortHeight,
-				0.05f*viewPortHeight,
-				1,1,1,1,
-				true,
-				0.75f,
-				str
+				lft+i*wth,bot,
+				lft+i*wth,top,
+				r,g,b,1,
+				thickness
 			);
+
+			//Right
+			LGL_DrawLineToScreen
+			(
+				lft+i*wth+spc,bot,
+				lft+i*wth+spc,top,
+				r,g,b,1,
+				thickness
+			);
+
+			//Bottom
+			LGL_DrawLineToScreen
+			(
+				lft+i*wth,bot,
+				lft+i*wth+spc,bot,
+				r,g,b,1,
+				thickness
+			);
+
+			//Top
+			LGL_DrawLineToScreen
+			(
+				lft+i*wth,top,
+				lft+i*wth+spc,top,
+				r,g,b,1,
+				thickness
+			);
+
+			LGL_DrawRectToScreen
+			(
+				lft+i*wth,lft+i*wth+spc,
+				bot,top,
+				0,0,mySavePointSet[i]?glow:0,1
+			);
+			noiseImage256x64->DrawToScreen
+			(
+				lft+i*wth,lft+i*wth+spc,
+				bot,top,
+				0,
+				savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],
+				false,false,0,0,0,
+				0,1.0f/32.0f,
+				0,1.0f/8.0f
+			);
+			LGL_DrawRectToScreen
+			(
+				lft+i*wth,lft+i*wth+spc,
+				bot,top,
+				savePointUnsetFlashPercent[i],savePointUnsetFlashPercent[i],savePointUnsetFlashPercent[i],0
+			);
+
+			if(1)//i!=0)
+			{
+				char str[4];
+
+				if(i==0)
+				{
+					strcpy(str,"[");
+				}
+				else if(i==1)
+				{
+					strcpy(str,"]");
+				}
+				/*
+				else if(i>=19)
+				{
+					strcpy(str,(i==19)?"?":"!");
+				}
+				*/
+				else if(i<=12)
+				{
+					sprintf(str,"%i",i-2);
+				}
+				else
+				{
+					sprintf(str,"%C",'A'+(((unsigned char)i)-13));
+				}
+
+				LGL_GetFont().DrawString
+				(
+					lft+i*wth+.6f*spc,
+					bot+0.25f*0.05f*viewPortHeight,//+0.0275f*viewPortHeight,
+					0.05f*viewPortHeight,
+					1,1,1,1,
+					true,
+					0.75f,
+					str
+				);
+			}
 		}
 	}
 
@@ -2196,5 +2254,82 @@ Visualizer_DrawWaveform
 	);
 
 	delete arrayDst;
+}
+
+float
+GetFreqBrightness
+(
+	bool	hi,
+	float	freqFactor,
+	float	vol
+)
+{
+	float freqMag;
+	if(hi==false)
+	{
+		float minVol=0.2f;
+		float volMag=LGL_Max(0,(vol-minVol)/(1.0f-minVol));
+		float myFreqMag=1.0f-freqFactor;
+		float minFreqMag=0.5f;
+		freqMag=LGL_Clamp
+		(
+			0.0f,
+			volMag*(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
+			1.0f
+		);
+	}
+	else
+	{
+		float minVol=0.25f;
+		float maxVol=0.5f;
+		float volMag=LGL_Clamp(0,(vol-minVol)/(maxVol-minVol),1);
+		float myFreqMag=0.0f+freqFactor;
+		float minFreqMag=0.2f;
+		freqMag=LGL_Clamp
+		(
+			0.0f,
+			(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
+			1.0f
+		);
+		freqMag*=2.0f;
+		if(freqMag>1.0f)
+		{
+			freqMag*=freqMag;
+		}
+		freqMag/=2.0f;
+		freqMag*=volMag;
+	}
+	float brightFactor = hi ? 4.0f : 0.25f;
+	float ret=freqMag*brightFactor;
+
+	if(hi)
+	{
+		if(ret<0)
+		{
+			ret*=ret;
+		}
+		else
+		{
+			ret=sqrtf(ret);
+		}
+	}
+/*
+if(hi)
+{
+	if(ret>0.0f)
+	{
+		if(ret>0.25f) printf("\t\t");
+		if(ret>0.5f) printf("\t\t");
+		if(ret>1.0f) printf("\t\t");
+		if(ret>2.0f) printf("\t\t");
+		printf("(%.2f,%.2f) => %.2f\n",freqFactor,vol,ret);
+	}
+	else
+	{
+		printf("\n");
+	}
+}
+*/
+	return(ret);
 }
 

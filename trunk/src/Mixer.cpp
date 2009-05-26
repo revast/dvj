@@ -715,42 +715,86 @@ NextFrame
 		soloFactor[0] = Turntable[0]->GetVideoSolo() && !Turntable[1]->GetVideoSolo();
 		soloFactor[1] = Turntable[1]->GetVideoSolo() && !Turntable[0]->GetVideoSolo();
 
-		Visualizer->SetVideos
-		(
-			Turntable[0]->VideoEncoderPercent==-1.0f ? Turntable[0]->GetVideo() : NULL,
-			Turntable[0]->GetMixerVolumeFront()*((Turntable[0]->GetPaused() && Turntable[0]->GetRecordScratch()==false)?0.0f:1.0f)*(LGL_AudioAvailable()?1:0)*(1.0f-soloFactor[1]),
-			Turntable[1]->VideoEncoderPercent==-1.0f ? Turntable[1]->GetVideo() : NULL,
-			Turntable[1]->GetMixerVolumeFront()*((Turntable[1]->GetPaused() && Turntable[1]->GetRecordScratch()==false)?0.0f:1.0f)*(LGL_AudioAvailable()?1:0)*(1.0f-soloFactor[0])
-		);
-
 		float volAve[2];
 		float volMax[2];
 		float freqFactor[2];
 		float peak[2];
 		LGL_Video* vidBack[2];
 		LGL_Video* vidFront[2];
-		bool enable[2];
+		int mode[2];
+		float eqLo[2];
+		float eqHi[2];
+		float gain[2];
 
 		for(int a=0;a<2;a++)
 		{
 			Turntable[a]->GetFreqMetaData(volAve[a],volMax[a],freqFactor[a]);
 			peak[a]=Turntable[a]->GetVolumePeak();
-			if(peak[a]==0.0f)
-			{
-				//Guard against divide-by-zero during John Cage - 4'33"
-				peak[a]=1.0f;
-			}
 			vidBack[a]=Turntable[a]->GetVideoLo();
 			vidFront[a]=Turntable[a]->GetVideoHi();
-			volAve[a]=LGL_Min(1.0f,(1.0f/peak[a])*volAve[a]);
-			volMax[a]=LGL_Min(1.0f,(1.0f/peak[a])*volMax[a]);
-			enable[a]=Turntable[a]->GetVideoFrequencySensitiveMode();
+			volAve[a]=LGL_Min(1.0f,0.5f*(volAve[a]/peak[a]));
+			volMax[a]=LGL_Min(1.0f,0.5f*(volMax[a]/peak[a]));
+			mode[a]=Turntable[a]->GetVideoFrequencySensitiveMode();
+
+			if(mode[a]==2)
+			{
+				LGL_AudioInMetadata(volAve[a],volMax[a],freqFactor[a]);
+				eqLo[a]=Turntable[0]->GetEQLo();
+				eqHi[a]=Turntable[0]->GetEQHi();
+				gain[a]=Turntable[0]->GetGain();
+			}
+			else
+			{
+				eqLo[a]=1.0f;
+				eqHi[a]=1.0f;
+				gain[a]=1.0f;
+			}
 		}
 
 		Visualizer->SetFrequencySensitiveVideos
 		(
-			vidBack[0], vidFront[0], volAve[0], volMax[0], freqFactor[0], enable[0],
-			vidBack[1], vidFront[1], volAve[1], volMax[1], freqFactor[1], enable[1]
+			vidBack[0], vidFront[0], volAve[0], volMax[0], freqFactor[0], mode[0],
+			vidBack[1], vidFront[1], volAve[1], volMax[1], freqFactor[1], mode[1]
+		);
+		Visualizer->SetFrequencySensitiveGainEQ
+		(
+			gain[0],eqLo[0],eqHi[0],
+			gain[1],eqLo[1],eqHi[1]
+		);
+
+		float ttVideoBrightness[2];
+		for(int a=0;a<2;a++)
+		{
+			if(mode[a]==2)
+			{
+				ttVideoBrightness[a]=1;
+			}
+			else
+			{
+				int notA=(a==0) ? 1 : 0;
+				ttVideoBrightness[a]=
+					(
+						(
+							(Turntable[a]->GetPaused() && Turntable[a]->GetRecordScratch()==false) ?
+							0.0f :
+							1.0f
+						) *
+						(
+							LGL_AudioAvailable() ?
+							1 :
+							0
+						) *
+						(1.0f-soloFactor[notA])
+					);
+			}
+		}
+
+		Visualizer->SetVideos
+		(
+			Turntable[0]->VideoEncoderPercent==-1.0f ? Turntable[0]->GetVideo() : NULL,
+			Turntable[0]->GetMixerVolumeFront()*ttVideoBrightness[0],
+			Turntable[1]->VideoEncoderPercent==-1.0f ? Turntable[1]->GetVideo() : NULL,
+			Turntable[1]->GetMixerVolumeFront()*ttVideoBrightness[1]
 		);
 	}
 }
