@@ -1300,6 +1300,9 @@ Turntable_DrawWaveform
 						magnitudeMax
 					);
 
+					magnitudeAve*=0.5f;
+					magnitudeMax*=0.5f;
+
 					if(ret==false)
 					{
 						break;

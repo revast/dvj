@@ -475,11 +475,10 @@ lgl_AudioOutCallbackJack
 		{
 			jack_input_buffer16[a*2+0] = (Sint16)(in_l[a]*((1<<16)-1));
 			jack_input_buffer16[a*2+1] = (Sint16)(in_r[a]*((1<<16)-1));
-			
-			/*
+/*			
 			out_fl[a]+=in_l[a];
 			out_fr[a]+=in_r[a];
-			*/
+*/
 		}
 		lgl_AudioInCallback(NULL,jack_input_buffer8,nframes*2*2);
 	}
