@@ -110,6 +110,8 @@ private:
 
 	LGL_Timer
 		WaveformSavePointUnsetTimer;
+	LGL_Timer
+		WaveformFreqSenseMode2Timer;
 
 };
 
