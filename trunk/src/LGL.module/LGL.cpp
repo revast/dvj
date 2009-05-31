@@ -899,31 +899,39 @@ LGL_JackInit()
 	LGL.AudioInAvailable=false;
 	const char** jack_ports_out = jack_get_ports(jack_client, NULL, NULL, JackPortIsPhysical|JackPortIsOutput);
 	int portCountOut=0;
-	while(jack_ports_out[portCountOut]!=NULL)
+	if(jack_ports_out)
 	{
-		printf("Out found: '%s'\n",jack_ports_out[portCountOut]);
-		portCountOut++;
-		if(portCountOut==2)
+		while(jack_ports_out[portCountOut]!=NULL)
 		{
-			//We don't care to have > 2 channels
-			break;
+			printf("Out found: '%s'\n",jack_ports_out[portCountOut]);
+			portCountOut++;
+			if(portCountOut==2)
+			{
+				//We don't care to have > 2 channels
+				break;
+			}
+		}
+		for(int a=0;a<portCountOut;a++)
+		{
+			jack_port_t* whichPort;
+			if(a==0)	whichPort=jack_input_port_l;
+			else if(a==1)	whichPort=jack_input_port_r;
+			else break;
+			if(jack_connect(jack_client,jack_ports_out[a],jack_port_name(whichPort))!=0)
+			{
+				printf("LGL_JackInit(): Warning! Cannot connect to input port %i!\n",a);
+				break;
+			}
+			if(a==1)
+			{
+				LGL.AudioInAvailable=true;
+			}
 		}
 	}
-	for(int a=0;a<portCountOut;a++)
+	else
 	{
-		jack_port_t* whichPort;
-		if(a==0)	whichPort=jack_input_port_l;
-		else if(a==1)	whichPort=jack_input_port_r;
-		else break;
-		if(jack_connect(jack_client,jack_ports_out[a],jack_port_name(whichPort))!=0)
-		{
-			printf("LGL_JackInit(): Warning! Cannot connect to input port %i!\n",a);
-			break;
-		}
-		if(a==1)
-		{
-			LGL.AudioInAvailable=true;
-		}
+		jack_input_port_l=NULL;
+		jack_input_port_r=NULL;
 	}
 
 	const char** jack_ports_in = jack_get_ports(jack_client, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
