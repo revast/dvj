@@ -39,6 +39,10 @@ NextFrame()
 	{
 		WaveformSavePointUnsetTimer.Reset();
 	}
+	if(LGL_KeyDown(SDLK_PERIOD)==false)
+	{
+		WaveformFreqSenseMode2Timer.Reset();
+	}
 }
 
 //Global Input
@@ -850,9 +854,13 @@ WaveformVideoFreqSenseMode
 		{
 			mode=-10;
 		}
-		if(LGL_KeyStroke(SDLK_PERIOD))
+		if
+		(
+			LGL_KeyDown(SDLK_PERIOD) &&
+			WaveformFreqSenseMode2Timer.SecondsSinceLastReset()>=1.0f
+		)
 		{
-			mode=-2;
+			mode=2;
 		}
 	}
 
