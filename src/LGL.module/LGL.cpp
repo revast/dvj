@@ -43,7 +43,6 @@
 #include <fcntl.h>
 
 #ifdef	LGL_LINUX
-#define	LGL_LINUX_WIIMOTE
 
 #include <sys/ioctl.h>
 #include <sys/time.h>		//LGL_Memory*
@@ -16786,11 +16785,11 @@ bool
 LGL_Wiimote::
 INTERNAL_Connect()
 {
+#ifdef	LGL_LINUX_WIIMOTE
 	bdaddr_t bdany;
 	for(int a=0;a<6;a++) bdany.b[a]=0;	//Want to use BDADDR_ANY, but that results in a compiler warning... Hmm...
 
 	Wiimote = NULL;
-#ifdef	LGL_LINUX_WIIMOTE
 	Wiimote = cwiid_open(&bdany,0);
 
 	if(Wiimote)
