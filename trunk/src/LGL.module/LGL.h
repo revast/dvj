@@ -27,6 +27,7 @@
 #define DEFINE_LGL
 
 #ifdef	LGL_LINUX
+#define	LGL_LINUX_WIIMOTE
 #include <cwiid.h>
 
 //Next three for midi devices
@@ -1807,11 +1808,15 @@ public:
 	int		GetExtension();
 
 	bool		INTERNAL_Connect();					//DON'T CALL THIS FROM USER-LAND! Use ListenForConnection() instead!
+#ifdef	LGL_LINUX_WIIMOTE
 	void		INTERNAL_Callback(union cwiid_mesg* mesg);		//DON'T CALL THIS!!!
+#endif	//LGL_LINUX_WIIMOTE
 	void		INTERNAL_ProcessInput();				//DON'T CALL THIS EITHER!!!
 	void		INTERNAL_UpdateButton(int which, bool pressed);		//DON'T CALL THIS ESPECIALLY!!!
+#ifdef	LGL_LINUX_WIIMOTE
 	cwiid_wiimote_t*
 			INTERNAL_GetWiimote();					//DON'T CALL THIS, JERKFACE!!
+#endif	//LGL_LINUX_WIIMOTE
 	LGL_Semaphore*	INTERNAL_GetWiimoteSemaphore();
 
 private:
@@ -1821,7 +1826,11 @@ private:
 	int		ID;
 static	int		IDCounter;
 
+#ifdef	LGL_LINUX_WIIMOTE
 	cwiid_wiimote_t*
+#else
+	void*
+#endif	//LGL_LINUX_WIIMOTE
 			Wiimote;
 	LGL_Semaphore	WiimoteSemaphore;
 	SDL_Thread*	ConnecterThread;
