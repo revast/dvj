@@ -43,6 +43,7 @@
 #include <fcntl.h>
 
 #ifdef	LGL_LINUX
+#define	LGL_LINUX_WIIMOTE
 
 #include <sys/ioctl.h>
 #include <sys/time.h>		//LGL_Memory*
@@ -16361,6 +16362,8 @@ LGL_JoyReset
 
 //Wiimote
 
+#ifdef	LGL_LINUX_WIIMOTE
+
 void
 lgl_WiimoteCallbackGeneric
 (
@@ -16386,6 +16389,8 @@ void lgl_WiimoteCallback4(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg 
 void lgl_WiimoteCallback5(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(5,count,mesg); }
 void lgl_WiimoteCallback6(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(6,count,mesg); }
 void lgl_WiimoteCallback7(cwiid_wiimote_t* wiimote, int count, union cwiid_mesg *mesg, timespec* ts) { lgl_WiimoteCallbackGeneric(7,count,mesg); }
+
+#endif	//LGL_LINUX_WIIMOTE
 
 int
 lgl_WiimoteListenThread
@@ -16508,12 +16513,15 @@ Disconnect()
 		return;
 	}
 
+#ifdef	LGL_LINUX_WIIMOTE
 	WiimoteSemaphore.Lock("?","Calling cwiid_close()");
 	{
 		cwiid_close(Wiimote);
 		Wiimote=NULL;
 	}
 	WiimoteSemaphore.Unlock();
+#endif	//LGL_LINUX_WIIMOTE
+
 }
 
 int
@@ -16522,14 +16530,15 @@ lgl_Wiimote_SetRumble
 	void* wiimotePtr
 )
 {
+#ifdef	LGL_LINUX_WIIMOTE
 	LGL_Wiimote* wiimote = (LGL_Wiimote*)wiimotePtr;
 	LGL_Semaphore* semaphore = wiimote->INTERNAL_GetWiimoteSemaphore();
-
 	semaphore->Lock("?","Calling cwiid_command() from lgl_Wiimote_SetRumble()");
 	{
 		cwiid_command(wiimote->INTERNAL_GetWiimote(), CWIID_CMD_RUMBLE, wiimote->GetRumble());
 	}
 	semaphore->Unlock();
+#endif	//LGL_LINUX_WIIMOTE
 
 	return(0);
 }
@@ -16546,11 +16555,13 @@ SetRumble
 	RumbleSeconds=seconds;
 	if(Wiimote)
 	{
+#ifdef	LGL_LINUX_WIIMOTE
 		WiimoteSemaphore.Lock("Main","Calling cwiid_command() from LGL_Wiimote::SetRumble()");
 		{
 			cwiid_command(Wiimote, CWIID_CMD_RUMBLE, Rumble);
 		}
 		WiimoteSemaphore.Unlock();
+#endif	//LGL_LINUX_WIIMOTE
 	}
 }
 
@@ -16564,6 +16575,7 @@ SetLED
 {
 	LEDState[which] = status;
 
+#ifdef	LGL_LINUX_WIIMOTE
 	if(Wiimote)
 	{
 		unsigned char ledState=0;
@@ -16578,6 +16590,7 @@ SetLED
 		}
 		WiimoteSemaphore.Unlock();
 	}
+#endif	//LGL_LINUX_WIIMOTE
 }
 
 bool
@@ -16775,6 +16788,9 @@ INTERNAL_Connect()
 {
 	bdaddr_t bdany;
 	for(int a=0;a<6;a++) bdany.b[a]=0;	//Want to use BDADDR_ANY, but that results in a compiler warning... Hmm...
+
+	Wiimote = NULL;
+#ifdef	LGL_LINUX_WIIMOTE
 	Wiimote = cwiid_open(&bdany,0);
 
 	if(Wiimote)
@@ -16811,9 +16827,12 @@ INTERNAL_Connect()
 			SetLED(a,a==ID);
 		}
 	}
+#endif
 
 	return(Wiimote!=NULL);
 }
+
+#ifdef	LGL_LINUX_WIIMOTE
 
 void
 LGL_Wiimote::
@@ -16976,8 +16995,9 @@ INTERNAL_Callback
 	{
 		printf("WTF?\n");
 	}
-
 }
+
+#endif	//LGL_LINUX_WIIMOTE
 
 void
 LGL_Wiimote::
@@ -17062,6 +17082,7 @@ LGL_Wiimote::Reset()
 	}
 	if(LGL.WiimoteSemaphore) LGL.WiimoteSemaphore->Unlock();
 
+#ifdef	LGL_LINUX_WIIMOTE
 	if(Wiimote)
 	{
 		unsigned char accelCalibration[7];
@@ -17076,6 +17097,7 @@ LGL_Wiimote::Reset()
 			}
 		}
 	}
+#endif	//LGL_LINUX_WIIMOTE
 }
 
 void
@@ -17095,12 +17117,16 @@ INTERNAL_UpdateButton
 	ButtonDownArrayBack[which] = (ButtonDownArrayBack[which] || pressed) && !justReleased;
 }
 
+#ifdef	LGL_LINUX_WIIMOTE
+
 cwiid_wiimote_t*
 LGL_Wiimote::
 INTERNAL_GetWiimote()
 {
 	return(Wiimote);
 }
+
+#endif	//LGL_LINUX_WIIMOTE
 
 LGL_Semaphore*
 LGL_Wiimote::
