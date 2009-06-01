@@ -27,8 +27,11 @@
 #define DEFINE_LGL
 
 #ifdef	LGL_LINUX
+
+#ifndef	LGL_OSX
 #define	LGL_LINUX_WIIMOTE
 #include <cwiid.h>
+#endif	//LGL_OSX
 
 //Next three for midi devices
 #include <sys/soundcard.h>
