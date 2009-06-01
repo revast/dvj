@@ -1001,7 +1001,11 @@ LGL_Init
 	}
 
 	//Setup initial RT priorities
+#ifdef	LGL_LINUX
+#ifndef	LGL_OSX
 	mlockall(MCL_CURRENT | MCL_FUTURE);
+#endif	//LGL_OSX
+#endif	//LGL_LINUX
 
 	for(int a=0;a<1024;a++)
 	{
