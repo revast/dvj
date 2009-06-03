@@ -31,10 +31,9 @@
 #include <string.h>
 #include <ctype.h>	//isapha(), ispunct(), etc
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
-#include <SDL/SDL_net.h>
-#include <SDL/SDL_endian.h>
+#include <SDL_image.h>
+#include <SDL_net.h>
+#include <SDL_endian.h>
 
 #include <stdlib.h>		//malloc()
 #include <unistd.h>		//read(), LGL_Memory*
@@ -83,7 +82,6 @@ unsigned int LGL_SAMPLESIZE_SDL;
 void lgl_AudioOutCallback(void* userdata, Uint8* stream, int len8);
 
 #ifdef	LGL_LINUX
-//#include <SDL/SDL_audioin.h>
 void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8);
 #endif	//LGL_LINUX
 
@@ -13241,6 +13239,7 @@ long
 LGL_Sound::
 GetLengthSamples()
 {
+	//FIXME: This fails for Flashbulb / Flight 404...
 	//if(LGL.AudioAvailable==false) return(0);
 	int BPS=Channels*2;
 	return(BufferLength/BPS);
