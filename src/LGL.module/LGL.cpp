@@ -4770,7 +4770,7 @@ SetVertAttributeFloatPrivate
 			"Could not resolve Attribute '%s' for program %i...\n",
 			Description,
 			name,
-			ProgramObject
+			(int)ProgramObject
 		);
 		for(GLuint a=0;a<16;a++)
 		{
@@ -23869,6 +23869,9 @@ LGL_ThreadSetPriority
 	const char*	threadName
 )
 {
+#ifdef	LGL_OSX
+	printf("LGL_ThreadSetPriority(): Not implemented in OSX!\n");
+#else
 	priority = LGL_Clamp(-1.0f,priority,1.0f);
 
 	struct sched_param schedParam;
@@ -23910,6 +23913,7 @@ LGL_ThreadSetPriority
 		//printf("LGL_ThreadSetPriority(%.2f, '%s'): sched_setscheduler(%i) (FIFO)\n",priority,threadName?threadName:"NULL",schedParam.sched_priority);
 		sched_setscheduler(0,SCHED_FIFO,&schedParam);
 	}
+#endif	//LGL_OSX
 }
 
 void
@@ -23918,10 +23922,14 @@ LGL_ThreadSetCPUAffinity
 	int	cpu
 )
 {
+#ifdef	LGL_OSX
+	printf("LGL_ThreadSetCPUAffinity(): Not implemented in OSX!\n");
+#else
 	cpu_set_t cpuSet;
 	CPU_ZERO(&cpuSet);
 	CPU_SET(cpu,&cpuSet);
 	sched_setaffinity(0,sizeof(cpu_set_t),&cpuSet);
+#endif	//LGL_OSX
 }
 
 LGL_Semaphore::
