@@ -1542,6 +1542,8 @@ LGL_Init
 	
 	//MIDI
 
+	LGL.MidiFD = -1;
+#ifndef	LGL_OSX
 	LGL.MidiFD = open("/dev/sequencer",O_RDWR);
 	if(LGL.MidiFD != -1)
 	{
@@ -1566,6 +1568,7 @@ LGL_Init
 		//close(LGL.MidiFD);
 		//LGL.MidiFD=-1;
 	}
+#endif	//LGL_OSX
 
 	//M-Audio MIDI Devices
 
@@ -17222,6 +17225,7 @@ int lgl_MidiUpdate
 		}
 	}
 #endif	//MIDI_DUMP
+#ifndef	LGL_OSX
 	for(;;)
 	{
 		int result = read(LGL.MidiFD, &readPacket, sizeof(readPacket));
@@ -17677,6 +17681,7 @@ printf("knob %i @ %i\n",knob,value);
 			}
 		}
 	}
+#endif	//LGL_OSX
 
 	return(0);
 }
