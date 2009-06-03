@@ -44,13 +44,14 @@
 #define	strcasecmp	strcmpi
 #endif	//WIN32
 
+#include <SDL_opengl.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
+#define	GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_main.h>
-#include <SDL/SDL_opengl.h>
-#include <SDL/SDL_thread.h>
+#include <SDL.h>
+#include <SDL_main.h>
+#include <SDL_thread.h>
 
 #include <fftw3.h>
 
