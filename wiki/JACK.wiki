@@ -2,7 +2,7 @@
 
 =Installing JACK=
 
-You'll need this *exact* version of JACK, 0.116.1, which is likely not the version your distro provides:
+You'll need JACK. I'm using version 0.116.1 which is what's in Ubuntu's repositories. If you happen to need to compile your own JACK, use these commands: 
 {{{
 wget http://jackaudio.org/downloads/jack-audio-connection-kit-0.116.1.tar.gz
 tar -zxf jack-audio-connection-kit-0.116.1.tar.gz 
