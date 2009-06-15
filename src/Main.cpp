@@ -100,8 +100,6 @@ void InitializeGlobalsPreLGL()
 			}
 		}
 	}
-
-	dirTreeMusic.SetPath("music");
 #endif	//LGL_LINUX
 }
 
@@ -143,6 +141,7 @@ void InitializeGlobals()
 	Visualizer=new VisualizerObj;
 	Mixer=new MixerObj;
 	Mixer->SetVisualizer(Visualizer);
+	dirTreeMusic.SetPath("music");
 }
 
 void
@@ -152,7 +151,11 @@ VerifyMusicDir()
 	while(LGL_DirectoryExists("data/music")==false)
 	{
 		LGL_InputBuffer outputBuffer;
+#ifdef	LGL_OSX
+		outputBuffer.SetString("/Users/");
+#else
 		outputBuffer.SetString("/home/");
+#endif	//LGL_OSX
 		outputBuffer.GrabFocus();
 		for(;;)
 		{
