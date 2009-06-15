@@ -2271,7 +2271,7 @@ lgl_fftw_init_draw()
 	const char* fftWisdomPath="data/fft_wisdom.jpg";
 	if(LGL_FileExists(fftWisdomPath))
 	{
-		LGL_Image fftImage(fftWisdomPath);
+		LGL_Image fftImage(fftWisdomPath);	//FIXME: This loads the image anew each frame... ouch!
 		fftImage.DrawToScreen(0.25f,0.75f,0.25f,0.75f);
 	}
 	LGL_GetFont().DrawString
@@ -9529,7 +9529,13 @@ LGL_INTERNAL_ProcessInput()
 	for(unsigned int a=0;a<strlen(LGL_KeyStream());a++)
 	{
 		int length=strlen(Buffer);
-		if(LGL_KeyStream()[a]=='\b' && length>0)
+		if
+		(
+			(
+				LGL_KeyStream()[a]=='\b' ||
+				LGL_KeyStream()[a]==127	//OSX Delete
+			) && length>0
+		)
 		{
 			Buffer[length-1]='\0';
 		}
