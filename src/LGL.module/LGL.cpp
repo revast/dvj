@@ -1777,7 +1777,11 @@ LGL_Init
 	printf("\nLGL Initialization\n");
 	printf("---\n");
 #ifdef	LGL_LINUX
+#ifdef	LGL_OSX
+	printf("OS\t\t\tOSX\n");
+#else
 	printf("OS\t\t\tLinux\n");
+#endif	//LGL_OSX
 #endif	//LGL_LINUX
 #ifdef	LGL_WIN32
 	printf("OS\t\t\tWin32\n");
