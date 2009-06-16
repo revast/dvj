@@ -1185,7 +1185,12 @@ LGL_Init
 
 	if(inAudioChannels>0)
 	{
-		bool pulserunning = !system("pgrep pulseaudio > /dev/null");
+		bool pulserunning = false;
+#ifdef	LGL_LINUX
+#ifndef	LGL_OSX
+		pulserunning=!system("pgrep pulseaudio > /dev/null");
+#endif	//LGL_OSX
+#endif	//LGL_LINUX
 
 		LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
 		if
