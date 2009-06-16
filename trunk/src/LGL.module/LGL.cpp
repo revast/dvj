@@ -2251,7 +2251,7 @@ LGL_DrawAudioInSpectrum
 float lgl_fftw_wisdom_creation_percent_complete=0.0f;
 
 void
-lgl_fftw_init_draw()
+lgl_fftw_init_draw(LGL_Image* img)
 {
 	//Warn user that we're calculating optimal FFTs
 	LGL_GetFont().DrawString
@@ -2268,11 +2268,9 @@ lgl_fftw_init_draw()
 		true,1,
 		"For Your CPU"
 	);
-	const char* fftWisdomPath="data/fft_wisdom.jpg";
-	if(LGL_FileExists(fftWisdomPath))
+	if(img)
 	{
-		LGL_Image fftImage(fftWisdomPath);	//FIXME: This loads the image anew each frame... ouch!
-		fftImage.DrawToScreen(0.25f,0.75f,0.25f,0.75f);
+		img->DrawToScreen(0.25f,0.75f,0.25f,0.75f);
 	}
 	LGL_GetFont().DrawString
 	(
@@ -2351,12 +2349,19 @@ lgl_fftw_init()
 
 	if(wisdomLoaded==false)
 	{
+		LGL_Image* fft_img=NULL;
+		const char* fftWisdomPath="data/fft_wisdom.jpg";
+		if(LGL_FileExists(fftWisdomPath))
+		{
+			fft_img = new LGL_Image(fftWisdomPath);
+		}
+		LGL_Image fftImage(fftWisdomPath);	//FIXME: This loads the image anew each frame... ouch!
 		LGL_SwapBuffers();
-		lgl_fftw_init_draw();
+		lgl_fftw_init_draw(fft_img);
 		LGL_ThreadCreate(lgl_fftw_wisdom_creation_thread);
 		while(lgl_fftw_wisdom_creation_thread_status!=-1)
 		{
-			lgl_fftw_init_draw();
+			lgl_fftw_init_draw(fft_img);
 			const float addMe=0.00005f;
 			if
 			(
@@ -2379,11 +2384,17 @@ lgl_fftw_init()
 			fclose(fd);
 		}
 		lgl_fftw_wisdom_creation_percent_complete=1.0f;
-		lgl_fftw_init_draw();
+		lgl_fftw_init_draw(fft_img);
 
 		//Finish warning user that we're calculating optimal FFTs
 		LGL_DelaySeconds(0.25f);
 		LGL_SwapBuffers();
+
+		if(fft_img)
+		{
+			delete fft_img;
+			fft_img=NULL;
+		}
 	}
 	else
 	{
