@@ -189,6 +189,7 @@ VerifyMusicDir()
 					sprintf(cmd,"ln -s \"%s\" data/music",outputBuffer.GetString());
 					system(cmd);
 				}
+				LGL_SwapBuffers();
 				break;
 			}
 
