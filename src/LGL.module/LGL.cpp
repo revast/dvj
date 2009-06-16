@@ -1517,7 +1517,7 @@ LGL_Init
 
 	LGL.JoyNumber=SDL_NumJoysticks();
 #ifdef	LGL_OSX
-	LGL.JoyNumber=(int)floor(SDL_JoystickNumButtons(LGL.Joystick[0])/12.0);
+	//LGL.JoyNumber=(int)floor(SDL_JoystickNumButtons(LGL.Joystick[0])/12.0);
 #endif	//LGL_OSX
 
 	LGL.WiimoteSemaphore = new LGL_Semaphore("Wiimote");
