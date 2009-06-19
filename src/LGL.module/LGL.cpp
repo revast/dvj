@@ -832,8 +832,7 @@ LGL_JackInit()
 
 	//Open a client connection to the JACK server
 	const char* client_name = "dvj";
-	const char* server_name = NULL;
-	jack_client=jack_client_open(client_name,jack_options,&status,server_name);
+	jack_client=jack_client_open(client_name,jack_options,&status);
 	if(jack_client==NULL)
 	{
 		printf("LGL_JackInit(): Error! jack_client_open() failed! status = 0x%2.0x\n",status);
@@ -23896,12 +23895,29 @@ LGL_ThreadSetPriority
 	const char*	threadName
 )
 {
-#ifdef	LGL_OSX
-	printf("LGL_ThreadSetPriority(): Not implemented in OSX!\n");
-#else
 	priority = LGL_Clamp(-1.0f,priority,1.0f);
-
 	struct sched_param schedParam;
+#ifdef	LGL_OSX
+	int policy;
+	pthread_t thread = pthread_self();
+	pthread_getschedparam(thread, &policy, &schedParam);
+
+	if(priority<0.0f)
+	{
+		policy=SCHED_OTHER;
+	}
+	else if(priority<1.0f)
+	{
+		policy=SCHED_RR;
+	}
+	else
+	{
+		policy=SCHED_FIFO;
+	}
+	float priorityScalar = 0.5f*(priority+1.0f);
+	schedParam.sched_priority =  (int)(sched_get_priority_min(policy) + priorityScalar*(sched_get_priority_max(policy)-sched_get_priority_min(policy)));
+	pthread_setschedparam(thread, policy, &schedParam);
+#else
 	if(priority<=0.0f && priority!=-1.0f)
 	{
 		//Vanilla Process Priority
