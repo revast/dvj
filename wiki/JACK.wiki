@@ -18,12 +18,12 @@ sudo mv jack-audio-connection-kit-0.116.1 /usr/src/
 
 =Configuring JACK=
 
-===~/.jackrc===
-The following should be pasted into an empty ~/.jackrc, if you're using an Xponent:
+===~/.jackdrc===
+The following should be pasted into an empty ~/.jackdrc, if you're using an Xponent:
 {{{
 /usr/local/bin/jackd -Z -dalsa -d xponent -o4 -r44100 -p768 -n2 -s -M
 }}}
-The following should be pasted into an empty ~/.jackrc if you're using a 2-channel soundcard:
+The following should be pasted into an empty ~/.jackdrc if you're using a 2-channel soundcard:
 {{{
 /usr/local/bin/jackd -Z -dalsa -r44100 -p512 -n4 -s -M
 }}}
