@@ -27,6 +27,10 @@ The following should be pasted into an empty ~/.jackdrc if you're using a 2-chan
 {{{
 /usr/local/bin/jackd -Z -dalsa -r44100 -p512 -n4 -s -M
 }}}
+If you're using OSX, this should be your ~/.jackdrc:
+{{{
+/usr/local/bin/jackd -Z -R -t5000 -dcoreaudio
+}}}
 
 *IMPORTANT*: Do not attempt to use the -R or -P flags in this file. dvj handles assigning JACK realtime priority. This is necessary because JACK's watchdog thread will still kick off late clients, even when using the -Z flag, when JACK is invoked with the -R flag. If you use the -R flag, JACK might disconnect dvj.
 
