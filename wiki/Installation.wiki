@@ -32,19 +32,6 @@ cd dvj
 make
 }}}
 
-*NOTE*: In Gentoo, ffmpeg's header files aren't where dvj expects them to be. If you get a compile error involving libavformat.h and/or libswscale.h, then ensure the following symlinks are pointing to these files:
-{{{
-/usr/local/include/ffmpeg/avformat.h
-/usr/local/include/ffmpeg/swscale.h
-}}}
-
-If my memory is correct, these commands will cause that to happen:
-{{{
-sudo mkdir /usr/local/include/ffmpeg
-sudo ln -s /usr/include/libavformat/avformat.h /usr/local/include/ffmpeg/avformat.h
-sudo ln -s /usr/include/libswscale/swscale.h /usr/local/include/ffmpeg/swscale.h
-}}}
-
 
 
 =Configuration=
