@@ -53,6 +53,7 @@
 #include <SDL.h>
 #include <SDL_main.h>
 #include <SDL_thread.h>
+#include <pthread.h>
 
 #include <fftw3.h>
 
