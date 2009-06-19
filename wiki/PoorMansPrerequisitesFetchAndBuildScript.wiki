@@ -52,7 +52,7 @@ cd ..
 curl http://ffmpeg.org/releases/ffmpeg-0.5.tar.bz2 >ffmpeg-0.5.tar.bz2
 tar -jxf ffmpeg-0.5.tar.bz2
 cd ffmpeg-0.5
-./configure --enable-swscale --enable-gpl
+./configure --enable-swscale --enable-gpl --disable-sse
 sudo make install
 cd ..
  
