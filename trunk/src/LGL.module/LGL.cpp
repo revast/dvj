@@ -826,6 +826,7 @@ LGL_JackInit()
 {
 	printf("\n\nLGL JACK Initialization\n");
 	printf("---\n");
+	LGL.AudioSpec->silence=0;
 	jack_options_t jack_options = JackNullOption;
 	jack_status_t status;
 
