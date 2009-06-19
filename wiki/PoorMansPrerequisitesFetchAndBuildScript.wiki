@@ -1,4 +1,4 @@
-#summary This page contains a simple shell script that should work on stock Linux and MacOSX machines. The one caveat is that for OSX you must have the Developer Tools installed so that gcc et all will be available.
+#summary This page contains a simple shell script that should work on stock Linux and MacOSX machines. The one caveat is that for OSX you must have Xcode installed so gcc et all will be available.
 
 = Introduction =
 
