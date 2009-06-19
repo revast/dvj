@@ -1,0 +1,85 @@
+#summary This page contains a simple shell script that should work on stock Linux and MacOSX machines. The one caveat is that for OSX you must have the Developer Tools installed so that gcc et all will be available.
+
+= Introduction =
+
+This script will download via curl all the prerequisites to get dvj running, the version numbers are current as of June 18th 2009 but will undoubtedly change in the future. For developers starting out, this will give you a quick route to satisfy the basics so that you can get dvj compiled up and running.
+
+Be warned, this script contains no error checking, it's about as bare-bones as you can get. 
+
+* If you don't understand how it works from looking at it, don't run it. 
+
+= bash script = 
+
+{{{
+#!/bin/bash
+
+mkdir -p /usr/local/src/vj/support/
+cd /usr/local/src/vj/support/
+
+curl http://www.ijg.org/files/jpegsrc.v6b.tar.gz >jpegsrc.v6b.tar.gz
+tar -zvxf jpegsrc.v6b.tar.gz
+cd jpeg-6b/
+ln -s `which glibtool` ./libtool
+./configure
+sudo make install
+cd ..
+
+curl http://www.mega-nerd.com/SRC/libsamplerate-0.1.7.tar.gz >libsamplerate-0.1.7.tar.gz
+tar -zxf libsamplerate-0.1.7.tar.gz
+cd libsamplerate-0.1.7
+./configure
+sudo make install
+cd ..
+
+# FFMPEG
+curl http://ffmpeg.org/releases/ffmpeg-0.5.tar.bz2 >ffmpeg-0.5.tar.bz2
+tar -jxf ffmpeg-0.5.tar.bz2
+cd ffmpeg-0.5
+./configure --enable-swscale --enable-gpl
+sudo make install
+cd ..
+ 
+curl http://www.libsdl.org/release/SDL-1.2.13.tar.gz >SDL-1.2.13.tar.gz
+tar -zxf SDL-1.2.13.tar.gz
+cd SDL-1.2.13
+./configure
+sudo make install
+cd ..
+
+curl http://www.fftw.org/fftw-3.2.1.tar.gz >fftw-3.2.1.tar.gz
+tar -zxf fftw-3.2.1.tar.gz
+cd fftw-3.2.1
+./configure --enable-float
+sudo make install
+cd ..
+
+curl http://superb-west.dl.sourceforge.net/sourceforge/libpng/libpng-1.2.37.tar.gz >libpng-1.2.37.tar.gz
+tar -zxf libpng-1.2.37.tar.gz
+cd libpng-1.2.37
+./configure
+sudo make install
+cd ..
+
+curl http://www.libsdl.org/projects/SDL_image/release/SDL_image-1.2.7.tar.gz >SDL_image-1.2.7.tar.gz
+tar -zxf SDL_image-1.2.7.tar.gz
+cd SDL_image-1.2.7
+./configure
+sudo make install
+cd ..
+
+curl http://www.libsdl.org/projects/SDL_net/release/SDL_net-1.2.7.tar.gz >SDL_net-1.2.7.tar.gz
+tar -zxf SDL_net-1.2.7.tar.gz
+cd SDL_net-1.2.7
+./configure
+sudo make install
+cd ..
+
+curl http://jackaudio.org/downloads/jack-audio-connection-kit-0.116.2.tar.gz >jack-audio-connection-kit-0.116.2.tar.gz
+tar -zxf jack-audio-connection-kit-0.116.2.tar.gz
+cd jack-audio-connection-key-0.116.2
+./configure
+sudo make install
+cd ..
+
+echo "DONE"
+}}}
