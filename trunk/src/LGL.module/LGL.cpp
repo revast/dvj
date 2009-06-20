@@ -1347,6 +1347,7 @@ LGL_Init
 	}
 
 #ifndef	LGL_NO_GRAPHICS
+	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 	if
 	(
 		SDL_SetVideoMode
@@ -1386,8 +1387,6 @@ LGL_Init
 	}
 	
 	//GL Settings
-
-	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 
 	glDrawBuffer(GL_BACK);
 	glReadBuffer(GL_FRONT);
