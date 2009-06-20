@@ -22526,18 +22526,19 @@ float
 LGL_FilesystemFreeSpaceMB()
 {
 #ifdef	LGL_LINUX
-	struct statvfs fiData;
-	if(statvfs(".",&fiData)>=0)
+	struct statvfs s;
+	if(statvfs(".",&s)>=0)
 	{
-		return(fiData.f_frsize*fiData.f_bavail/(1024*1024));
+		float blockSize = s.f_frsize;
+		float blockAvail = s.f_bavail;
+		return(blockAvail*blockSize/(1024.0f*1024.0f));
 	}
 	else
 	{
 		return(9999.0f);
 	}
-#else	//LGL_LINUX
-	return(9999.0f);
 #endif	//LGL_LINUX
+	return(9999.0f);
 }
 
 void
