@@ -992,7 +992,7 @@ Turntable_DrawWaveform
 			!lowRez
 		);
 
-		//Linestrop Bottom!
+		//Linestrip bottom!
 
 		for(int a=pointsToDrawIndexStart;a<pointsToDrawIndexEnd;a++)
 		{
@@ -1275,6 +1275,12 @@ Turntable_DrawWaveform
 
 	LGL_ClipRectDisable();
 
+	float percentLoaded = 1.0f;
+	if(cachedLengthSeconds!=0.0f)
+	{
+		percentLoaded = soundLengthSeconds/cachedLengthSeconds;
+	}
+
 	if(freqSensitiveMode!=2)
 	{
 		//Entire Wave Array
@@ -1333,6 +1339,7 @@ Turntable_DrawWaveform
 				float magnitudeAve=entireWaveArrayMagnitudeAve[a];
 				float magnitudeMax=entireWaveArrayMagnitudeMax[a];
 				bool overdriven=(magnitudeMax*volumeMultiplierNow)>1.0f;
+				float entirePercent = a/(float)(entireWaveArrayCount-1);
 
 				zeroCrossingFactor=GetFreqBrightness(true,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak());
 
@@ -1367,14 +1374,16 @@ Turntable_DrawWaveform
 				entireWaveArrayTriPoints[a*4+2]=entireWaveArrayLine2Points[a*2+0];
 				entireWaveArrayTriPoints[a*4+3]=entireWaveArrayLine2Points[a*2+1];
 
-				entireWaveArrayTriColors[a*8+0]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+0];
-				entireWaveArrayTriColors[a*8+1]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+1];
-				entireWaveArrayTriColors[a*8+2]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+2];
+				float loadedScalar = (entirePercent<=percentLoaded) ? 1.0f : 0.0f;
+
+				entireWaveArrayTriColors[a*8+0]=loadedScalar*(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+0];
+				entireWaveArrayTriColors[a*8+1]=loadedScalar*(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+1];
+				entireWaveArrayTriColors[a*8+2]=loadedScalar*(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine1Colors[a*4+2];
 				entireWaveArrayTriColors[a*8+3]=entireWaveArrayLine1Colors[a*4+3];
 
-				entireWaveArrayTriColors[a*8+4]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+0];
-				entireWaveArrayTriColors[a*8+5]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+1];
-				entireWaveArrayTriColors[a*8+6]=(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+2];
+				entireWaveArrayTriColors[a*8+4]=loadedScalar*(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+0];
+				entireWaveArrayTriColors[a*8+5]=loadedScalar*(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+1];
+				entireWaveArrayTriColors[a*8+6]=loadedScalar*(0.5f+0.5f*zeroCrossingFactor)*entireWaveArrayLine2Colors[a*4+2];
 				entireWaveArrayTriColors[a*8+7]=0.5f*entireWaveArrayLine2Colors[a*4+3];
 
 				if(overdriven)
@@ -1783,7 +1792,7 @@ Turntable_DrawWaveform
 		);
 
 		minutes=0;
-		seconds=soundLengthSeconds - soundPositionSeconds;
+		seconds=((cachedLengthSeconds!=0.0f) ? cachedLengthSeconds : soundLengthSeconds) - soundPositionSeconds;
 		seconds/=pitchBend;
 		while(seconds>60)
 		{
