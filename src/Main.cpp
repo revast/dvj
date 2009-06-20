@@ -675,17 +675,10 @@ int main(int argc, char** argv)
 
 	for(int a=0;a<argc;a++)
 	{
-		if(strcasecmp(argv[a],"--channels=2")==0)
+		if(strcasecmp(argv[a],"--1080p")==0)
 		{
-			channels=2;
-		}
-		else if(strcasecmp(argv[a],"--channels=4")==0)
-		{
-			channels=4;
-		}
-		else if(strcasecmp(argv[a],"--channels=6")==0)
-		{
-			channels=6;
+			resX=1920;
+			resY=1080;
 		}
 		else if(strcasecmp(argv[a],"--720p")==0)
 		{
@@ -700,6 +693,12 @@ int main(int argc, char** argv)
 		else if(strcasecmp(argv[a],"--drawFPS")==0)
 		{
 			drawFPS=true;
+		}
+		else if(strcasecmp(argv[a],"--help")==0)
+		{
+			printf("dvj, svn pre-release\n\n");
+			printf("usage: dvj [--480p] [--720p] [--1080p] [--drawFPS] [--help]\n\n");
+			exit(0);
 		}
 	}
 
