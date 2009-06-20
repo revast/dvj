@@ -3150,7 +3150,7 @@ LoadAllCachedData()
 	if(cachedDataValid)
 	{
 		LoadWaveArrayData();
-		LoadCachedLength();
+		LoadCachedMetadata();
 	}
 	else
 	{
@@ -3162,7 +3162,7 @@ LoadAllCachedData()
 			char cachedFileLengthPath[1024];
 
 			sprintf(waveArrayDataPath,"data/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
-			sprintf(cachedLengthPath,"data/cache/length/%s.dvj-length.txt",Sound->GetPathShort());
+			sprintf(cachedLengthPath,"data/cache/metadata/%s.dvj-metadata.txt",Sound->GetPathShort());
 			sprintf(cachedFileLengthPath,"data/cache/filelength/%s.dvj-filelength.txt",Sound->GetPathShort());
 
 			if(LGL_FileExists(waveArrayDataPath))
@@ -3186,7 +3186,7 @@ TurntableObj::
 SaveAllCachedData()
 {
 	SaveWaveArrayData();
-	SaveCachedLength();
+	SaveCachedMetadata();
 	SaveCachedFileLength();
 }
 
@@ -3259,7 +3259,7 @@ SaveWaveArrayData()
 
 void
 TurntableObj::
-LoadCachedLength()
+LoadCachedMetadata()
 {
 	if(Sound==NULL)
 	{
@@ -3267,7 +3267,7 @@ LoadCachedLength()
 	}
 
 	char cachedLengthPath[1024];
-	sprintf(cachedLengthPath,"data/cache/length/%s.dvj-length.txt",Sound->GetPathShort());
+	sprintf(cachedLengthPath,"data/cache/metadata/%s.dvj-metadata.txt",Sound->GetPathShort());
 
 	FILE* fd=fopen(cachedLengthPath,"r");
 	if(fd)
@@ -3275,13 +3275,15 @@ LoadCachedLength()
 		char buf[1024];
 		fgets(buf,1024,fd);
 		CachedLengthSeconds=atof(buf);
+		fgets(buf,1024,fd);
+		Sound->SetVolumePeak(atof(buf));
 		fclose(fd);
 	}
 }
 
 void
 TurntableObj::
-SaveCachedLength()
+SaveCachedMetadata()
 {
 	if
 	(
@@ -3299,17 +3301,18 @@ SaveCachedLength()
 		LGL_DirectoryCreate("data/cache");
 	}
 
-	if(LGL_DirectoryExists("data/cache/length")==false)
+	if(LGL_DirectoryExists("data/cache/metadata")==false)
 	{
-		LGL_DirectoryCreate("data/cache/length");
+		LGL_DirectoryCreate("data/cache/metadata");
 	}
 
 	char cachedLengthPath[1024];
-	sprintf(cachedLengthPath,"data/cache/length/%s.dvj-length.txt",Sound->GetPathShort());
+	sprintf(cachedLengthPath,"data/cache/metadata/%s.dvj-metadata.txt",Sound->GetPathShort());
 	FILE* fd=fopen(cachedLengthPath,"w");
 	if(fd)
 	{
 		fprintf(fd,"%.3f\n",CachedLengthSeconds);
+		fprintf(fd,"%f\n",Sound->GetVolumePeak());
 		fclose(fd);
 	}
 }

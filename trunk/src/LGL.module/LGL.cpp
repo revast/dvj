@@ -13444,6 +13444,14 @@ GetVolumePeak()
 
 void
 LGL_Sound::
+SetVolumePeak(float volumePeak)
+{
+	//Guard against stupid users
+	MetadataVolumePeak=LGL_Clamp(0.0f,volumePeak,1.0f);
+}
+
+void
+LGL_Sound::
 LoadToMemory()
 {
 	//ffmpeg implementation

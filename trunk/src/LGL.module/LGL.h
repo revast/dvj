@@ -1582,6 +1582,7 @@ public:
 				float&	magnitudeMax
 			);
 	float		GetVolumePeak();
+	void		SetVolumePeak(float volumePeak);
 	void		LoadToMemory();
 	bool		IsLoaded();
 	bool		IsUnloadable();

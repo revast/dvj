@@ -98,8 +98,8 @@ public:
 	void				LoadWaveArrayData();
 	void				SaveWaveArrayData();
 
-	void				LoadCachedLength();
-	void				SaveCachedLength();
+	void				LoadCachedMetadata();
+	void				SaveCachedMetadata();
 
 	bool				LoadCachedFileLength();
 	void				SaveCachedFileLength();
