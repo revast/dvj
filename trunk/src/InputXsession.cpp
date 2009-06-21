@@ -259,6 +259,17 @@ FileSelect
 
 bool
 InputXsessionObj::
+FileMarkUnopened
+(
+	unsigned int	target
+)	const
+{
+	bool mark=false;
+	return(mark);
+}
+
+bool
+InputXsessionObj::
 FileRefresh
 (
 	unsigned int	target

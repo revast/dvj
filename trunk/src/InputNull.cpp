@@ -152,6 +152,17 @@ FileSelect
 
 bool
 InputNullObj::
+FileMarkUnopened
+(
+	unsigned int	target
+)	const
+{
+	bool mark=false;
+	return(mark);
+}
+
+bool
+InputNullObj::
 FileRefresh
 (
 	unsigned int	target

@@ -173,6 +173,23 @@ FileSelect
 
 bool
 InputKeyboardObj::
+FileMarkUnopened
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(SDLK_BACKQUOTE));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
 FileRefresh
 (
 	unsigned int	target

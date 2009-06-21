@@ -152,6 +152,17 @@ FileSelect
 
 bool
 InputMouseObj::
+FileMarkUnopened
+(
+	unsigned int	target
+)	const
+{
+	bool mark=false;
+	return(mark);
+}
+
+bool
+InputMouseObj::
 FileRefresh
 (
 	unsigned int	target

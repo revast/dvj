@@ -248,6 +248,17 @@ FileSelect
 
 bool
 InputWiimoteObj::
+FileMarkUnopened
+(
+	unsigned int	target
+)	const
+{
+	bool mark=false;
+	return(mark);
+}
+
+bool
+InputWiimoteObj::
 FileRefresh
 (
 	unsigned int	target
