@@ -640,6 +640,7 @@ NextFrame
 						 SoundBuffer,
 						 SoundBufferLength
 					);
+					DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed=true;
 					if(Sound->IsUnloadable())
 					{
 						LGL_DrawLogWrite("!dvj::DeleteSound|%i\n",Which);
@@ -2275,18 +2276,20 @@ DrawFrame
 		unsigned int fileNum=DatabaseFilteredEntries.size();
 		const char* nameArray[5];
 		bool isDirBits[5];
+		bool alreadyPlayedBits[5];
 		float bpm[5];
 		for(unsigned int a=(unsigned int)FileTop;a<(unsigned int)FileTop+5 && a<fileNum;a++)
 		{
 			nameArray[a-FileTop]=DatabaseFilteredEntries[a]->PathShort;
 			isDirBits[a-FileTop]=DatabaseFilteredEntries[a]->IsDir;
+			alreadyPlayedBits[a-FileTop]=DatabaseFilteredEntries[a]->AlreadyPlayed;
 			bpm[a-FileTop]=DatabaseFilteredEntries[a]->BPM;
 		}
 
 		LGL_DrawLogWrite
 		(
-			//             01  02 03 04 05 06 07 08 09 10 11  12    13   14   15   16   17   18   19
-			"DirTreeDraw|%.3f|%s|%s|%s|%s|%s|%s|%s|%i|%i|%i|%.4f|%.4f|%.3f|%.2f|%.2f|%.2f|%.2f|%.2f\n",
+			//             01 02 03 04 05 06 07 08 09 10 11 12   13   14   15   16   17   18   19  20
+			"DirTreeDraw|%.3f|%s|%s|%s|%s|%s|%s|%s|%i|%i|%i|%i|%.4f|%.4f|%.3f|%.2f|%.2f|%.2f|%.2f|%.2f\n",
 			LGL_SecondsSinceExecution()*Focus,		//01
 			FilterText.GetString(),				//02
 			DatabaseFilter.Dir,				//03
@@ -2302,16 +2305,23 @@ DrawFrame
 				(isDirBits[3]<<3) +
 				(isDirBits[4]<<4)
 			),
-			fileNum-FileTop,				//10
-			FileSelectInt-FileTop,				//11
-			ViewPortBottom,					//12
-			ViewPortTop,					//13
-			BadFileFlash,					//14
-			bpm[0],						//15
-			bpm[1],						//16
-			bpm[2],						//17
-			bpm[3],						//18
-			bpm[4]						//19
+			(
+				(alreadyPlayedBits[0]<<0) +		//10
+				(alreadyPlayedBits[1]<<1) +
+				(alreadyPlayedBits[2]<<2) +
+				(alreadyPlayedBits[3]<<3) +
+				(alreadyPlayedBits[4]<<4)
+			),
+			fileNum-FileTop,				//11
+			FileSelectInt-FileTop,				//12
+			ViewPortBottom,					//13
+			ViewPortTop,					//14
+			BadFileFlash,					//15
+			bpm[0],						//16
+			bpm[1],						//17
+			bpm[2],						//18
+			bpm[3],						//19
+			bpm[4]						//20
 		);
 		LGL_DrawLogPause();
 		Turntable_DrawDirTree
@@ -2321,6 +2331,7 @@ DrawFrame
 			DatabaseFilter.Dir,
 			nameArray,
 			isDirBits,
+			alreadyPlayedBits,
 			fileNum-FileTop,
 			FileSelectInt-FileTop,
 			ViewPortBottom,

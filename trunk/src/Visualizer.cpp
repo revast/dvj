@@ -1476,7 +1476,11 @@ SetFrequencySensitiveVideos
 				GetFreqBrightness(getHi,neoFreqFactor,neoVol)==0.0f
 			)
 			{
-				vid->SetTime(LGL_RandFloat(0.0f,vid->GetLengthSeconds()));
+				float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+				if(min<0.0f) min=0.0f;
+				float max=vid->GetLengthSeconds()-10.0f;
+				if(max<0.0f) max=vid->GetLengthSeconds();
+				vid->SetTime(LGL_RandFloat(min,max));
 			}
 		}
 	}

@@ -380,6 +380,7 @@ Turntable_DrawDirTree
 	const char*	path,
 	const char**	nameArray,
 	bool*		isDirBits,
+	bool*		alreadyPlayedBits,
 	int		fileNum,
 	int		fileSelectInt,
 	float		viewPortBottom,
@@ -421,6 +422,12 @@ Turntable_DrawDirTree
 			R=0.0f;
 			G=0.0f;
 			B=1.0f;
+		}
+		else if(alreadyPlayedBits[b])
+		{
+			R=0.5f;
+			G=0.5f;
+			B=0.5f;
 		}
 
 		if(strlen(fileNow)>0)
@@ -2280,9 +2287,10 @@ GetFreqBrightness
 	if(hi==false)
 	{
 		float minVol=0.2f;
-		float volMag=LGL_Max(0,(vol-minVol)/(1.0f-minVol));
+		float maxVol=0.5f;
+		float volMag=LGL_Clamp(0,(vol-minVol)/(maxVol-minVol),1);
 		float myFreqMag=1.0f-freqFactor;
-		float minFreqMag=0.5f;
+		float minFreqMag=0.35f;
 		freqMag=LGL_Clamp
 		(
 			0.0f,

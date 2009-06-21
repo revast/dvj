@@ -56,6 +56,7 @@ public:
 
 	float	BPM;
 	bool	IsDir;
+	bool	AlreadyPlayed;
 };
 
 class DatabaseObj
