@@ -6,7 +6,7 @@ all:
 .PHONY: run runall clean distclean
 
 clean:
-	rm dvj
+	rm -f dvj 
 	@$(MAKE) -C src clean
 
 spotless:
