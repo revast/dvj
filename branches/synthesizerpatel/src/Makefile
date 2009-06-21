@@ -1,4 +1,3 @@
-include			Makefile.options
 
 PLATFORM	= $(shell uname)
 
@@ -15,7 +14,7 @@ AR = ar rcs
 CC = g++
 
 CCFLAGS 	=  -c -Wall -fsingle-precision-constant
-DEFINES		=  -DLGL_LINUX
+DEFINES		=  -DLGL_UNIX -DLGL_LINUX
 INCLUDES	=  -I$(OBJDIR) -I$(ROOT_SRC_DIR)
 
 CFLAGS		=	$(MODEFLAGS) \
@@ -46,7 +45,7 @@ AR			=	ar rcs
 CC			=	g++ 
 MODEFLAGS	= 	-c
 
-DEFINES		=  -DLGL_LINUX -DLGL_UNIX -DLGL_OSX -Dfopen64=fopen
+DEFINES		=  -DLGL_UNIX -DLGL_OSX -Dfopen64=fopen
 
 CFLAGS		=	$(MODEFLAGS) \
 				$(DEFINES) \
