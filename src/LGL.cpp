@@ -35,25 +35,21 @@
 #include <SDL_net.h>
 #include <SDL_endian.h>
 
-#include <stdlib.h>		//malloc()
+
+#ifdef LGL_UNIX
 #include <unistd.h>		//read(), LGL_Memory*
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-#ifdef	LGL_LINUX
-
-#include <sys/ioctl.h>
-#include <sys/time.h>		//LGL_Memory*
-#include <sys/resource.h>	//LGL_Memory*
 #include <dirent.h>		//Directory Searching
+#include <sys/time.h>		//LGL_Memory*
+#include <sys/ioctl.h>
+#include <sys/resource.h>	//LGL_Memory*
 #include <errno.h>		//Error indentification
 #include <sys/mman.h>		//mmap()
 #include <sys/statvfs.h>	//Free disk space
-
 #include <sched.h>
-
-#endif	//LGL_LINUX
+#endif //LGL_UNIX
 
 #include <samplerate.h>
 
@@ -180,7 +176,7 @@ typedef struct
 typedef struct
 {
 	//Video
-	
+
 	int			VideoResolutionX;
 	int			VideoResolutionY;
 	bool			VideoFullscreen;
@@ -259,7 +255,7 @@ typedef struct
 	LGL_AudioGrain*		AudioInFallbackGrain;
 
 	//Keyboard
-	
+
 	bool			KeyDown[512];
 	bool			KeyStroke[512];
 	bool			KeyRelease[512];
@@ -267,7 +263,7 @@ typedef struct
 	LGL_InputBuffer*	InputBufferFocus;
 
 	//Mouse
-	
+
 	float			MouseX;
 	float			MouseY;
 	float			MouseDX;
@@ -277,7 +273,7 @@ typedef struct
 	bool			MouseRelease[3];
 
 	//Joystick
-	
+
 	int			JoyNumber;
 	SDL_Joystick*		Joystick[4];
 	char			JoystickName[4][128];
@@ -305,7 +301,7 @@ typedef struct
 	LGL_MidiDevice*		JP8k;
 
 	//VidCam
-	
+
 	bool			VidCamAvailable;
 	char			VidCamName[128];
 	int			VidCamWidthMin;
@@ -338,7 +334,7 @@ typedef struct
 	LGL_Timer		VidCamDPadStrokeDelayTimerUp;
 
 	//Time
-	
+
 	int			FPS;
 	int			FPSCounter;
 	LGL_Timer		FPSTimer;
@@ -356,7 +352,7 @@ typedef struct
 	//Misc
 
 	bool			Running;
-	
+
 	double			SecondsSinceLastFrame;
 	LGL_Timer		SecondsSinceLastFrameTimer;
 	double			SecondsSinceExecution;	//FIXME: Hello drift. This should be an LGL_Timer.
@@ -475,7 +471,7 @@ lgl_AudioOutCallbackJack
 		{
 			jack_input_buffer16[a*2+0] = (Sint16)(in_l[a]*((1<<16)-1));
 			jack_input_buffer16[a*2+1] = (Sint16)(in_r[a]*((1<<16)-1));
-/*			
+/*
 			out_fl[a]+=in_l[a];
 			out_fr[a]+=in_r[a];
 */
@@ -1014,7 +1010,7 @@ LGL_Init
 	//Initialize LGL_State
 
 	srand((unsigned)time(NULL));
-	
+
 	LGL_ViewPortScreen(0,1,0,1);
 	LGL_ViewPortWorld
 	(
@@ -1113,7 +1109,7 @@ LGL_Init
 		LGL.VideoResolutionY=inVideoResolutionY;
 	}
 #endif	//LGL_NO_GRAPHICS
-	
+
 	//Time
 
 	LGL.FPS=0;
@@ -1148,7 +1144,7 @@ LGL_Init
 	);
 
 	//Audio
-	
+
 	LGL.AudioSpec->freq=44100;
 	LGL.AudioSpec->format=AUDIO_S16;
 	LGL.AudioSpec->channels=inAudioChannels;
@@ -1160,7 +1156,7 @@ LGL_Init
 	LGL.RecordVolume=1.0f;
 	LGL.RecordSamplesWritten=0;
 	LGL.AudioMasterToHeadphones=false;
-	
+
 	char dspPath[1024];
 	dspPath[0]='\0';
 	char audioDriver[1024];
@@ -1380,10 +1376,10 @@ LGL_Init
 				SDL_GetError()
 			);
 		}
-			
+
 		return(false);
 	}
-	
+
 	//GL Settings
 
 	glDrawBuffer(GL_BACK);
@@ -1395,7 +1391,7 @@ LGL_Init
 
 	LGL.TexturePixels=0;
 	LGL.FrameBufferTextureGlitchFix=true;
-	
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glFrustum(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
@@ -1407,7 +1403,7 @@ LGL_Init
 	LGL.GPUTemp=0;
 
 	LGL.ShaderProgramCurrent=0;
-	
+
 	LGL.StatsLinesPerFrame=0;
 	LGL.StatsRectsPerFrame=0;
 	LGL.StatsImagesPerFrame=0;
@@ -1483,7 +1479,7 @@ LGL_Init
 
 	//Video Decoding via libavcodec
 	av_register_all();
-	avcodec_init(); 
+	avcodec_init();
 	avcodec_register_all();
 
 	//bool audioIn=inAudioChannels < 0;
@@ -1497,7 +1493,7 @@ LGL_Init
 	//delete AudioObtained;
 
 	//Joysticks
-	
+
 	//SDL_JoystickEventState(SDL_ENABLE);
 	for (int a=0;a<SDL_NumJoysticks();a++)
 	{
@@ -1540,10 +1536,10 @@ LGL_Init
 	for(;;)
 	{
 		SDL_JoystickUpdate();
-		
+
 	}
 	*/
-	
+
 	//MIDI
 
 	LGL.MidiFD = -1;
@@ -1608,7 +1604,7 @@ LGL_Init
 			LGL.JP8k->DeviceID = a;
 		}
 	}
-	
+
 	//VidCam
 
 	//First, set reasonable defaults for no camera
@@ -1644,11 +1640,11 @@ LGL_Init
 	LGL.VidCamAxisYNext=0;
 	LGL.VidCamDistanceThumb=-40;
 	LGL.VidCamDistancePointer=-50;
-	
+
 #ifdef LGL_LINUX_VIDCAM
 
 	LGL.VidCamFD=open("/dev/video0",O_RDWR);
-	
+
 	if(LGL.VidCamFD<0)
 	{
 		//
@@ -1665,10 +1661,10 @@ LGL_Init
 		ioctl(LGL.VidCamFD, VIDIOCGWIN, &VidCamWindow);
 		ioctl(LGL.VidCamFD, VIDIOCGPICT, &VidCamPicture);
 		ioctl(LGL.VidCamFD, VIDIOCGFBUF, &VidCamBufferStruct);
-		
+
 		VidCamWindow.width=VidCamCapabilities.minwidth;
 		VidCamWindow.height=VidCamCapabilities.minheight;
-		
+
 		ioctl(LGL.VidCamFD, VIDIOCSWIN, &VidCamWindow);
 		ioctl(LGL.VidCamFD, VIDIOCGWIN, &VidCamWindow);
 
@@ -1714,7 +1710,7 @@ LGL_Init
 
 		ioctl(LGL.VidCamFD, VIDIOCSYNC, &p);
 		ioctl(LGL.VidCamFD, VIDIOCMCAPTURE, &(LGL.VidCamMMap));
-		
+
 		LGL.VidCamImageRaw->LoadSurfaceToTexture();
 		LGL.VidCamImageProcessed->LoadSurfaceToTexture();
 
@@ -1722,13 +1718,13 @@ LGL_Init
 		if(tempfd!=NULL)
 		{
 			char readstuff[128];
-			
+
 			fgets(readstuff,128,tempfd);
 			LGL.VidCamDistanceThumb=atoi(readstuff);
-			
+
 			fgets(readstuff,128,tempfd);
 			LGL.VidCamDistancePointer=atoi(readstuff);
-			
+
 			fclose(tempfd);
 		}
 		else
@@ -1740,9 +1736,9 @@ LGL_Init
 	}
 
 #endif //LGL_LINUX_VIDCAM
-	
+
 	//Reset Joysticks
-		
+
 	for(int a=0;a<4;a++)
 	{
 		for(int b=0;b<32;b++)
@@ -1761,13 +1757,13 @@ LGL_Init
 	}
 
 	//Clear Bogus Events
-	
+
 	SDL_Event event;
 	while(SDL_PollEvent(&event))
 	{
 		//
 	}
-	
+
 	//Net
 
 	LGL.NetAvailable=(SDLNet_Init()==-1)?false:true;
@@ -1775,9 +1771,9 @@ LGL_Init
 	//Misc
 
 	LGL.Running=true;
-	
+
 	//All done! Print Results
-	
+
 	printf("\nLGL Initialization\n");
 	printf("---\n");
 
@@ -1883,7 +1879,7 @@ LGL_Init
 #endif	//LGL_LINUX_VIDCAM
 
 	//LGL_MouseWarp(1,0);
-	
+
 	if(LGL.JoyNumber!=0)
 	{
 		printf("%i joystick(s) found:\n",LGL.JoyNumber);
@@ -1967,7 +1963,7 @@ LGL_FramesSinceExecution()
 {
 	return(LGL.FramesSinceExecution);
 }
-	
+
 int
 LGL_FPS()
 {
@@ -2253,7 +2249,7 @@ LGL_DrawAudioInSpectrum
 		bottom,top
 	);
 }
-		
+
 //Frequency Analysis
 #define	LGL_FFTW
 #ifdef	LGL_FFTW
@@ -2465,7 +2461,7 @@ LGL_FFT
 			imaginary[a]=fft_array_backward[a][1]/fft_elementCount;
 		}
 	}
-	//fftwf_destroy_plan(plan);  
+	//fftwf_destroy_plan(plan);
 	//fftwf_free(fft_array);
 }
 
@@ -2485,7 +2481,7 @@ LGL_FFT
 	float* x=real;
 	float* y=imaginary;
 	int m=lgSize;
-	
+
 	long n,i,i1,j,k,i2,l,l1,l2;
 	double c1,c2,tx,ty,t1,t2,u1,u2,z;
 
@@ -2516,14 +2512,14 @@ LGL_FFT
 	}
 
 	/* Compute the FFT */
-	c1 = -1.0; 
+	c1 = -1.0;
 	c2 = 0.0;
 	l2 = 1;
 	for (l=0;l<m;l++)
 	{
 		l1 = l2;
 		l2 <<= 1;
-		u1 = 1.0; 
+		u1 = 1.0;
 		u2 = 0.0;
 		for (j=0;j<l1;j++)
 		{
@@ -2532,7 +2528,7 @@ LGL_FFT
 				i1 = i + l1;
 				t1 = u1 * x[i1] - u2 * y[i1];
 				t2 = u1 * y[i1] + u2 * x[i1];
-				x[i1] = x[i] - t1; 
+				x[i1] = x[i] - t1;
 				y[i1] = y[i] - t2;
 				x[i] += t1;
 				y[i] += t2;
@@ -2542,7 +2538,7 @@ LGL_FFT
 			u1 = z;
 		}
 		c2 = sqrt((1.0 - c1) / 2.0);
-		if (dir == 1) 
+		if (dir == 1)
 			c2 = -c2;
 		c1 = sqrt((1.0 + c1) / 2.0);
 	}
@@ -2650,7 +2646,7 @@ LGL_SwapBuffers()
 		}
 		*/
 	}
-	
+
 	if(LGL.AudioStreamListSemaphore!=NULL)
 	{
 		if(LGL.AudioStreamList.size()>0)
@@ -2802,7 +2798,7 @@ LGL_SwapBuffers()
 			char* neo=new char[1024];
 			sprintf(neo,"LGL_SwapBuffers|%f\n",LGL.RecordSamplesWritten/(double)LGL.AudioSpec->freq);
 			LGL.DrawLog.push_back(neo);
-			
+
 			neo=new char[1024];
 			sprintf(neo,"LGL_MouseCoords|%f|%f\n",LGL_MouseX(),LGL_MouseY());
 			LGL.DrawLog.push_back(neo);
@@ -2925,7 +2921,7 @@ for(int z=0;z<1024;z++)
 	{
 		biggestType=z;
 	}
-	
+
 	if(0 && strcasecmp("f",typeNames[z])==0)
 	{
 		biggestType=z;
@@ -3180,7 +3176,7 @@ lgl_glScreenify3D()
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glFrustum(-1.0, 1.0, -1.0, 1.0, 1.0, 20.0);
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
@@ -3305,7 +3301,7 @@ LGL_DrawLineToScreen
 	return;
 #endif	//LGL_NO_GRAPHICS
 	lgl_glScreenify2D();
-	
+
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
 	{
 		char* neo=new char[1024];
@@ -3388,7 +3384,7 @@ LGL_DrawLineStripToScreen
 			antialias?1:0
 		);
 		LGL.DrawLog.push_back(neo);
-		
+
 		neo=new char[64];
 		sprintf(neo,"D|%li\n",datalen);
 		LGL.DrawLog.push_back(neo);
@@ -3557,7 +3553,7 @@ LGL_DrawLineStripToScreen
 		0,
 		pointCount
 	);
-	
+
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
 
@@ -3692,12 +3688,12 @@ LGL_DrawRectToScreen
 
 	float width=right-left;
 	float height=top-bottom;
-	
+
 	glTranslatef(left+width*.5,bottom+height*.5,0);
 	glRotatef(360.0*(rotation/(LGL_PI*2)),0,0,1);
-	
+
 	//Draw
-	
+
 	glColor4f(r,g,b,a);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
@@ -3725,11 +3721,11 @@ LGL_ViewPortWorld
 	LGL.ViewPortEyeX=EyeX;
 	LGL.ViewPortEyeY=EyeY;
 	LGL.ViewPortEyeZ=EyeZ;
-	
+
 	LGL.ViewPortTargetX=TargetX;
 	LGL.ViewPortTargetY=TargetY;
 	LGL.ViewPortTargetZ=TargetZ;
-	
+
 	LGL.ViewPortUpX=UpX;
 	LGL.ViewPortUpY=UpY;
 	LGL.ViewPortUpZ=UpZ;
@@ -3764,7 +3760,7 @@ LGL_DrawLineToWorld
 	}
 
 	//Draw
-	
+
 	if(antialias)
 	{
 		glEnable(GL_LINE_SMOOTH);
@@ -3808,7 +3804,7 @@ LGL_DrawTriToWorld
 )
 {
 	lgl_glScreenify3D();
-	
+
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
 	{
 		char* neo=new char[1024];
@@ -4069,33 +4065,33 @@ VertCompile
 	int length2=0;
 	length2=length;
 	//Why??
-	
+
 	gl2CompileShader(VertObject);
 	GLint result=2;
-	
+
 	gl2GetObjectParameteriv(VertObject,GL_OBJECT_COMPILE_STATUS_ARB,&result);
 	if(InfoLogExists(VertObject))
 	{
 		//
 	}
-	
+
 	if(result==0)
 	{
-		
+
 		printf
 		(
 			"LGL_ShaderObj('%s')::VertCompile(): Error! '%s' failed to compile:\n\n",
 			Description,
 			inFileVert
 		);
-		
+
 		printf("---\n\n");
 		InfoLogPrint(VertObject);
 		printf("---\n");
 
 		exit(-1);
 	}
-	
+
 	fclose(file);
 	return(true);
 }
@@ -4149,27 +4145,27 @@ FragCompile
 	int length2=0;
 	length2=length;
 	//Why??
-	
+
 	gl2CompileShader(FragObject);
-	
+
 	GLint result=2;
-	
+
 	gl2GetObjectParameteriv(FragObject,GL_OBJECT_COMPILE_STATUS_ARB,&result);
 	if(InfoLogExists(FragObject))
 	{
 		//
 	}
-	
+
 	if(result==0)
 	{
-		
+
 		printf
 		(
 			"LGL_ShaderObj('%s')::FragCompile(): Error! '%s' failed to compile:\n\n",
 			Description,
 			inFileFrag
 		);
-		
+
 		printf("---\n\n");
 		InfoLogPrint(FragObject);
 		printf("---\n");
@@ -4294,7 +4290,7 @@ Disable()
 	{
 		return(false);
 	}
-		
+
 	gl2UseProgramObject(0);
 	LGL.ShaderProgramCurrent=0;
 	return(true);
@@ -4830,7 +4826,7 @@ SetUniformAttributeIntPrivate
 	{
 		return(false);
 	}
-	
+
 	int location=gl2GetUniformLocation(ProgramObject,name);
 
 	if(location==-1)
@@ -4889,7 +4885,7 @@ SetUniformAttributeFloatPrivate
 	{
 		return(false);
 	}
-	
+
 	int location=gl2GetUniformLocation(ProgramObject,name);
 
 	if(location==-1)
@@ -5086,7 +5082,7 @@ LGL_Image
 
 	LinearInterpolation=true;
 	//Baka bounds checking... Never trust users.
-	
+
 	if
 	(
 		left<0		|| left>=1 ||
@@ -5104,7 +5100,7 @@ LGL_Image
 		);
 		exit(-1);
 	}
-	
+
 	sprintf(Path,"FrameBuffer Image");
 	sprintf(PathShort,"FrameBuffer Image");
 
@@ -5247,7 +5243,7 @@ DrawToScreen
 	if(g<0) g=0;
 	if(b<0) b=0;
 	if(a<0) a=0;
-	
+
 	if(r>1) r=1;
 	if(g>1) g=1;
 	if(b>1) b=1;
@@ -5311,7 +5307,7 @@ DrawToScreen
 				cysubimage*(float)h/(float)TexH
 			);
 			glVertex2f(0,0);
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5319,7 +5315,7 @@ DrawToScreen
 				rightsubimage*(float)h/(float)TexH
 			);
 			glVertex2f(0,-height*.5);
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5327,7 +5323,7 @@ DrawToScreen
 				topsubimage*(float)h/(float)TexH
 			);
 			glVertex2f(-width*.5,-height*.5);
-			
+
 			//Lower Right
 
 			glColor4f(r,g,b,a);
@@ -5337,7 +5333,7 @@ DrawToScreen
 				cysubimage*(float)h/(float)TexH
 			);
 			glVertex2f(0,0);
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5345,7 +5341,7 @@ DrawToScreen
 				cysubimage*(float)h/(float)TexH
 			);
 			glVertex2f( width*.5,0);
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5353,7 +5349,7 @@ DrawToScreen
 				topsubimage*(float)h/(float)TexH
 			);
 			glVertex2f( width*.5,-height*.5);
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5361,9 +5357,9 @@ DrawToScreen
 				topsubimage*(float)h/(float)TexH
 			);
 			glVertex2f(0,-height*.5);
-			
+
 			//Upper Left
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5371,7 +5367,7 @@ DrawToScreen
 				bottomsubimage*(float)h/(float)TexH
 			);
 			glVertex2f(-width*.5, height*.5);
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5379,7 +5375,7 @@ DrawToScreen
 				bottomsubimage*(float)h/(float)TexH
 			);
 			glVertex2f(0, height*.5);
-			
+
 			glColor4f(r,g,b,a);
 			glTexCoord2f
 			(
@@ -5387,7 +5383,7 @@ DrawToScreen
 				cysubimage*(float)h/(float)TexH
 			);
 			glVertex2f(0,0);
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5395,9 +5391,9 @@ DrawToScreen
 				cysubimage*(float)h/(float)TexH
 			);
 			glVertex2f(-width*.5,0);
-			
+
 			//Upper Right
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5405,7 +5401,7 @@ DrawToScreen
 				bottomsubimage*(float)h/(float)TexH
 			);
 			glVertex2f(0, height*.5);
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5413,7 +5409,7 @@ DrawToScreen
 				bottomsubimage*(float)h/(float)TexH
 			);
 			glVertex2f( width*.5, height*.5);
-			
+
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
@@ -5421,7 +5417,7 @@ DrawToScreen
 				cysubimage*(float)h/(float)TexH
 			);
 			glVertex2f( width*.5,0);
-			
+
 			glColor4f(r,g,b,a);
 			glTexCoord2f
 			(
@@ -5565,7 +5561,7 @@ DrawToScreen
 				);
 				glVertex2f(-width*.5,height*.5);
 			}
-			
+
 			if(normhorizontal==false)
 			{
 				//Find x-intercepts of Norm0, Norm1 with top edge
@@ -5629,7 +5625,7 @@ DrawToScreen
 				);
 				glVertex2f(width*.5,height*.5);
 			}
-			
+
 			if(normvertical==false)
 			{
 				//Find y-intercepts of Norm0, Norm1 with right edge
@@ -5692,7 +5688,7 @@ DrawToScreen
 				);
 				glVertex2f(width*.5,-height*.5);
 			}
-			
+
 			if(normhorizontal==false)
 			{
 				//Find x-intercepts of Norm0, Norm1 with bottom edge
@@ -5761,21 +5757,21 @@ DrawToScreen
 					topsubimage*(float)h/(float)TexH
 				);
 				glVertex2d(-width*.5+d, height*.5);
-				
+
 				glTexCoord2d
 				(
 					rightsubimage*(float)w/(float)TexW,
 					topsubimage*(float)h/(float)TexH
 				);
 				glVertex2d(width*.5+d, height*.5);
-				
+
 				glTexCoord2d
 				(
 					rightsubimage*(float)w/(float)TexW,
 					bottomsubimage*(float)h/(float)TexH
 				);
 				glVertex2d(width*.5+d,-height*.5);
-				
+
 				glTexCoord2d
 				(
 					leftsubimage*(float)w/(float)TexW,
@@ -5791,7 +5787,7 @@ DrawToScreen
 
 			//Below fixes gibberish lines on right, bottom
 			int delta=LinearInterpolation?1:0;
-			
+
 			glBegin(GL_QUADS);
 			{
 				glNormal3f(0,0,-1);
@@ -5801,21 +5797,21 @@ DrawToScreen
 					bottomsubimage*(float)h/(float)TexH
 				);
 				glVertex2f(-width*.5, height*.5);
-				
+
 				glTexCoord2f
 				(
 					rightsubimage*(float)(w-delta)/(float)TexW,
 					bottomsubimage*(float)h/(float)TexH
 				);
 				glVertex2f( width*.5, height*.5);
-				
+
 				glTexCoord2f
 				(
 					rightsubimage*(float)(w-delta)/(float)TexW,
 					topsubimage*(float)(h-delta)/(float)TexH
 				);
 				glVertex2f( width*.5,-height*.5);
-				
+
 				glTexCoord2f
 				(
 					leftsubimage*(float)w/(float)TexW,
@@ -5880,7 +5876,7 @@ DrawToScreenAsLine
 	}
 
 	//Figure out normal vector, and scale it
-	
+
 	float NormX=-(y2-y1);
 	float NormY=x2-x1;
 	float NormMag=sqrtf(NormX*NormX+NormY*NormY);
@@ -5906,7 +5902,7 @@ DrawToScreenAsLine
 	{
 		glNormal3f(0,0,-1);
 		//SDL Images are upside-down. Compensate.
-	
+
 		if(continueLastLine)
 		{
 			//Begin Right
@@ -5916,7 +5912,7 @@ DrawToScreenAsLine
 				1*(float)h/(float)TexH
 			);
 			glVertex2f(LGL.LastImageDrawAsLineRightX,LGL.LastImageDrawAsLineRightY);
-			
+
 			//Begin Left
 			glTexCoord2f
 			(
@@ -5934,7 +5930,7 @@ DrawToScreenAsLine
 				1*(float)h/(float)TexH
 			);
 			glVertex2f(x1+NormX,y1+NormY);
-			
+
 			//Begin Left
 			glTexCoord2f
 			(
@@ -5943,7 +5939,7 @@ DrawToScreenAsLine
 			);
 			glVertex2f(x1-NormX,y1-NormY);
 		}
-		
+
 		//End Left
 		glTexCoord2f
 		(
@@ -5953,7 +5949,7 @@ DrawToScreenAsLine
 		glVertex2f(x2-NormX,y2-NormY);
 		LGL.LastImageDrawAsLineLeftX=x2-NormX;
 		LGL.LastImageDrawAsLineLeftY=y2-NormY;
-		
+
 		//End Right
 		glTexCoord2f
 		(
@@ -5990,7 +5986,7 @@ LoadSurfaceToTexture
 		exit(-1);
 	}
 	//Check to see if we already have a texture loaded...
-	
+
 	if(TextureGL!=0)
 	{
 		//We already have a texture loaded. Axe it.
@@ -5998,7 +5994,7 @@ LoadSurfaceToTexture
 	}
 
 	//Load from SurfaceSDL to TextureGL
-	
+
 	if(loadToExistantGLTexture<=0)
 	{
 		TextureGLMine=true;
@@ -6058,7 +6054,7 @@ LoadSurfaceToTexture
 				GL_NEAREST
 			);
 		}
-		
+
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
@@ -6706,7 +6702,7 @@ FileLoad
 
 	TextureGL=0;
 	FrameBufferImage=false;
-	
+
 	//Delete temporary SDL_Surface
 
 	SDL_FreeSurface(mySDL_Surface1);
@@ -6842,7 +6838,7 @@ LGL_Animation
 		ptr=&(strstr(ptr,"/")[1]);
 	}
 	strcpy(PathShort,ptr);
-	
+
 	if(loadInForkedThread)
 	{
 		LGL_ThreadCreate(ThreadAnimationLoader,this);
@@ -6931,13 +6927,13 @@ LGL_Animation::
 Size()
 {
 	int ret=0;
-	
+
 	AnimationSem.Lock("Main","Calling Animation.size()");
 	{
 		ret=Animation.size();
 	}
 	AnimationSem.Unlock();
-	
+
 	return(ret);
 }
 
@@ -7170,7 +7166,7 @@ SetNull()
 	else if(Type==LGL_SPRITE_IMAGE)
 	{
 		assert(Animation==NULL);
-		
+
 		/*
 		Image->DecrementReferenceCount();
 		if(Image->GetReferenceCount()==0)
@@ -7185,7 +7181,7 @@ SetNull()
 	else if(Type==LGL_SPRITE_ANIMATION)
 	{
 		assert(Image==NULL);
-		
+
 		/*
 		Animation->DecrementReferenceCount();
 		if(Animation->GetReferenceCount()==0)
@@ -7410,7 +7406,7 @@ LGL_Video::
 	{
 		PrimaryDecoder=NULL;
 	}
-	
+
 	CleanUp();
 
 	//FIXME: Delete semaphores and other dangling bits.
@@ -7470,7 +7466,7 @@ CleanUp()
 		}
 		LGL.AVCodecSemaphore->Unlock();
 	}
-	
+
 	FormatContext=NULL;
 	CodecContext=NULL;
 	Codec=NULL;
@@ -7736,7 +7732,7 @@ DecodeFrameToImageBuffer()
 					(
 						CodecContext,
 						Frame,
-						&frameFinished, 
+						&frameFinished,
 						Packet.data,
 						Packet.size
 					);
@@ -7768,7 +7764,7 @@ DecodeFrameToImageBuffer()
 								SwsConvertContext,
 								Frame->data,
 								Frame->linesize,
-								0, 
+								0,
 								BufferHeight,
 								FrameRGB->data,
 								FrameRGB->linesize
@@ -7893,7 +7889,7 @@ MaybeChangeVideo()
 		}
 	}
 	strcpy(PathShort,&(Path[shortPathFirstCharIndex]));
-	
+
 	LGL.AVCodecSemaphore->Lock("lgl_video_thread","MaybeChangeVideo() (meh)");
 	{
 		//Open file
@@ -8011,8 +8007,8 @@ MaybeChangeVideo()
 		(
 			//src
 			BufferWidth,
-			BufferHeight, 
-			CodecContext->pix_fmt, 
+			BufferHeight,
+			CodecContext->pix_fmt,
 			//dst
 			BufferWidth,
 			BufferHeight,
@@ -8219,7 +8215,7 @@ LGL_VideoEncoder
 			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
-		
+
 		// Open audio codec
 		if(avcodec_open(SrcAudioCodecContext, SrcAudioCodec)<0)
 		{
@@ -8267,8 +8263,8 @@ LGL_VideoEncoder
 		(
 			//src
 			SrcBufferWidth,
-			SrcBufferHeight, 
-			SrcCodecContext->pix_fmt, 
+			SrcBufferHeight,
+			SrcCodecContext->pix_fmt,
 			//dst
 			SrcBufferWidth,
 			SrcBufferHeight,
@@ -8376,7 +8372,7 @@ LGL_VideoEncoder
 			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
-		
+
 		// Set mp3 format
 		DstMp3OutputFormat = guess_format("ogg", NULL, NULL);
 		DstMp3OutputFormat->audio_codec = CODEC_ID_VORBIS;
@@ -8413,7 +8409,7 @@ LGL_VideoEncoder
 		}
 
 		dump_format(DstMp3FormatContext,0,DstMp3FormatContext->filename,1);
-		
+
 		result = url_fopen(&(DstMp3FormatContext->pb), DstMp3FormatContext->filename, URL_WRONLY);
 		if(result<0)
 		{
@@ -8535,7 +8531,7 @@ Encode
 				(
 					SrcCodecContext,
 					SrcFrame,
-					&frameFinished, 
+					&frameFinished,
 					SrcPacket.data,
 					SrcPacket.size
 				);
@@ -8554,7 +8550,7 @@ Encode
 						SwsConvertContext,
 						SrcFrame->data,
 						SrcFrame->linesize,
-						0, 
+						0,
 						SrcBufferHeight,
 						DstFrameYUV->data,
 						DstFrameYUV->linesize
@@ -8577,7 +8573,7 @@ Encode
 				SrcFrameNow++;
 			}
 		}
-		
+
 		// Is this a packet from the audio stream?
 #ifdef	NOT_YET
 		else if(SrcPacket.stream_index==SrcAudioStreamIndex)
@@ -8737,7 +8733,7 @@ LGL_Font
 		GL_TEXTURE_MAG_FILTER,
 		GL_NEAREST
 	);
-	
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
@@ -8751,7 +8747,7 @@ LGL_Font
 	for(int a=0;a<256;a++)
 	{
 		sprintf(path,"%s/%i.png",Path,a);
-		
+
 		if(LGL_FileExists(path))
 		{
 			Glyph[a]=new LGL_Image(path,false,true,TextureGL,x,y);/*{{{*//*}}}*/
@@ -8983,7 +8979,7 @@ const	char	*string,
 		*/
 
 		const float safety=0.01f;
-		
+
 		float texLeft = (GlyphTexLeft[ch]+safety)/(float)TextureSideLength;
 		float texRight = (GlyphTexRight[ch]-safety)/(float)TextureSideLength;
 		float texBottom = (GlyphTexBottom[ch]-safety)/(float)TextureSideLength;	//Mote: bottom is numerically greater than top, here.
@@ -9444,7 +9440,7 @@ GetSecondsTotal()
 	int hours=0;
 	int minutes=0;
 	float seconds=0;
-	
+
 	sprintf(temp,"%s",Buffer);
 	char* h=strstr(temp,"h");
 	char* next=temp;
@@ -9469,7 +9465,7 @@ GetSecondsTotal()
 		s[0]='\0';
 	}
 	seconds=atof(next);
-	
+
 	return(hours*60*60 + minutes*60 + seconds);
 }
 
@@ -10499,7 +10495,7 @@ MixIntoStream
 					else
 					{
 						LGL_Assert(LGL.AudioSpec->channels==4)
-						
+
 						if(a%4==0)
 						{
 							volumeNow=VolumeFrontLeft*(1.0f-2.0f*fabsf(PlaybackPercent-0.5f));
@@ -10568,7 +10564,7 @@ MixIntoStream
 				else
 				{
 					LGL_Assert(LGL.AudioSpec->channels==4)
-					
+
 					if(a%4==0)
 					{
 						volumeNow=VolumeFrontLeft*(1.0f-2.0f*fabsf(PlaybackPercent-0.5f));	//Triangle envelope
@@ -10762,7 +10758,7 @@ SetWaveformFromLGLSound
 		printf("LGL_AudioGrain::SetWaveformFromLGLSound(): Warning! NULL LGL_Sound or negative lengthSeconds!\n");
 		return;
 	}
-	
+
 	if(sound->GetChannelCount()!=2)
 	{
 		printf("LGL_AudioGrain::SetWaveformFromLGLSound(): FIXME: Only works with stereo sounds.\n");
@@ -11325,7 +11321,7 @@ CalculateSpectrum()
 			9,
 			1
 		);
-		
+
 		LGL_FFT
 		(
 			realRight,
@@ -11441,7 +11437,7 @@ NullifyAllButWaveform()
 		delete WaveformMonoFloat;
 		WaveformMonoFloat=NULL;
 	}
-	
+
 	if(SpectrumLeft!=NULL)
 	{
 		delete SpectrumLeft;
@@ -11504,7 +11500,7 @@ TEST_PitchShift
 
 		memcpy(realLeft,&(WaveformLeftFloat[c*1024]),copySize*sizeof(float));
 		memcpy(realRight,&(WaveformRightFloat[c*1024]),copySize*sizeof(float));
-		
+
 		//Zero out the rest of real, all of imaginary
 
 		for(int a=copySize;a<1024;a++)
@@ -11554,7 +11550,7 @@ TEST_PitchShift
 			imaginaryLeft[a]=
 				(1.0f-realPercent)*myRealLeft +
 				(0.0f+realPercent)*myImaginaryLeft;
-			
+
 			realRight[a]=
 				(0.0f+realPercent)*myRealRight +
 				(1.0f-realPercent)*myImaginaryRight;
@@ -11701,7 +11697,7 @@ if(cycles>1)
 
 		memcpy(realLeft,&(WaveformLeftFloat[c*1024]),copySize*sizeof(float));
 		memcpy(realRight,&(WaveformRightFloat[c*1024]),copySize*sizeof(float));
-		
+
 		//Zero out the rest of real, all of imaginary
 
 		for(int a=copySize;a<1024;a++)
@@ -11901,7 +11897,7 @@ MixIntoStream
 				AudioGrainsQueued[a]->GetStartDelaySamplesRemaining()-myLen
 			);
 		}
-	
+
 		for(unsigned int a=0;a<AudioGrainsActive.size();a++)
 		{
 			int mixed=AudioGrainsActive[a]->MixIntoStream
@@ -12093,7 +12089,7 @@ LGL_Sound
 	DeleteSemaphore("Sound Delete")
 {
 	PercentLoaded=0.0f;
-	
+
 	Buffer=new Uint8[len];
 	memcpy(Buffer,buffer,len);
 	BufferLength=len;
@@ -12401,7 +12397,7 @@ Play
 
 	return(Available);
 }
-	
+
 void
 LGL_Sound::
 SetVolume
@@ -12668,7 +12664,7 @@ SetGlitchAttributes
 		);
 		exit(-1);
 	}
-	
+
 	//SDL_LockAudio();
 	{
 		if(enable)
@@ -12804,7 +12800,7 @@ if(channel<0)
 		);
 		exit(-1);
 	}
-	
+
 	LGL.SoundChannel[channel].ToMono=DownMix;
 }
 
@@ -13070,7 +13066,7 @@ if(channel<0)
 }
 	LGL.SoundChannel[channel].WarpPointSecondsTrigger=triggerSeconds;
 	LGL.SoundChannel[channel].WarpPointSecondsDestination=dstSeconds;
-	
+
 	return(true);
 }
 
@@ -13334,7 +13330,7 @@ AnalyzeWaveSegment
 	}
 	UnlockBufferForReading(10);
 }
-	
+
 bool
 LGL_Sound::
 GetMetadata
@@ -13579,7 +13575,7 @@ LoadToMemory()
 	{
 		codecContext->flags|=CODEC_FLAG_TRUNCATED;
 	}
-    
+
 	unsigned char outbuf[AVCODEC_MAX_AUDIO_FRAME_SIZE];
 	int cyclesNow=0;
 	int cyclesMax=8;
@@ -13590,7 +13586,7 @@ LoadToMemory()
 		{
 			break;
 		}
-	
+
 		AVPacket packet;
 
 		int result=0;
@@ -13630,7 +13626,7 @@ LoadToMemory()
 					//Copy Extra Bits To Buffer
 					if(channels==1)
 					{
-						int16_t* outbuf16 = (int16_t*)outbuf; 
+						int16_t* outbuf16 = (int16_t*)outbuf;
 						int16_t* buf16 = (int16_t*)Buffer;
 						int samples=outbufsize/2;
 
@@ -13720,7 +13716,7 @@ LoadToMemory()
 	Loaded=true;
 	LoadedMin=1;
 	PercentLoaded=1.0f;
-	
+
 	LGL.AVCodecSemaphore->Lock("LGL_Sound::LoadToMemory()","Calling avcodec_close(codecContext), av_close_input_file(formatContext) (meh)");
 	{
 		avcodec_close(codecContext);
@@ -13961,7 +13957,7 @@ LGL_AudioSampleLeft
 
 	while(sample<0)
 	{
-		printf("LGL_AudioSampleLeft(): Warning, you asked for a sample < 0 (%i). Baka.\n",sample);	
+		printf("LGL_AudioSampleLeft(): Warning, you asked for a sample < 0 (%i). Baka.\n",sample);
 		sample+=1024;
 	}
 	if(sample>1024)
@@ -13991,7 +13987,7 @@ LGL_AudioSampleRight
 
 	while(sample<0)
 	{
-		printf("LGL_AudioSampleRight(): Warning, you asked for a sample < 0 (%i)\n",sample);	
+		printf("LGL_AudioSampleRight(): Warning, you asked for a sample < 0 (%i)\n",sample);
 		sample+=1024;
 	}
 	if(sample>1024)
@@ -14222,7 +14218,7 @@ LGL_ProcessInput()
 	//Record a few things for later VidCam processing
 
 	int a;
-	
+
 	bool OldThumbCross=false;
 	bool OldThumbCircle=false;
 	if(LGL_VidCamAvailable())
@@ -14245,7 +14241,7 @@ LGL_ProcessInput()
 	}
 
 	//Reset Keyboard State
-	
+
 	for(a=0;a<512;a++)
 	{
 		LGL.KeyStroke[a]=false;
@@ -14253,7 +14249,7 @@ LGL_ProcessInput()
 	}
 
 	//Reset mouse State
-	
+
 	LGL.MouseDX=0.0f;
 	LGL.MouseDY=0.0f;
 	for(a=0;a<3;a++)
@@ -14276,7 +14272,7 @@ LGL_ProcessInput()
 	}
 
 	//Reset Joystick State
-	
+
 	for(a=0;a<4;a++)
 	{
 		for(int b=0;b<16;b++)
@@ -14285,7 +14281,7 @@ LGL_ProcessInput()
 			LGL.JoyRelease[a][b]=false;
 		}
 	}
-	
+
 	SDL_Event event;
 
 	for(a=0;a<256;a++)
@@ -14300,9 +14296,9 @@ LGL_ProcessInput()
 		{
 			exit(0);
 		}
-		
+
 		//Keyboard
-		
+
 		if(event.type==SDL_KEYDOWN)
 		{
 			LGL.KeyDown[event.key.keysym.sym]=true;
@@ -14329,7 +14325,7 @@ LGL_ProcessInput()
 				{
 					LGL.KeyStream[StreamCounter]=(char)event.key.keysym.unicode;
 				}
-				
+
 				StreamCounter++;
 				LGL.KeyStream[StreamCounter]='\0';
 			}
@@ -14384,7 +14380,7 @@ LGL_ProcessInput()
 				LGL.MouseStroke[LGL_MOUSE_RIGHT]=true;
 			}
 		}
-		
+
 		if(event.type==SDL_MOUSEBUTTONUP)
 		{
 			if(event.button.button==SDL_BUTTON_LEFT)
@@ -14427,7 +14423,7 @@ LGL_ProcessInput()
 			{
 				w++;
 			}
-			
+
 			if(event.jaxis.axis%4<=1)
 			{
 				stick=LGL_JOY_ANALOGUE_L;
@@ -14529,7 +14525,7 @@ LGL_ProcessInput()
 			{
 				v*=-1;
 			}
-				
+
 			if(stick!=LGL_JOY_DPAD)
 			{
 				LGL.JoyAnalogue[w][stick][axis]=v;
@@ -14567,7 +14563,7 @@ LGL_ProcessInput()
 						LGL.JoyRelease[w][Neg]=true;
 					}
 					LGL.JoyDown[w][Neg]=false;
-					
+
 					if(LGL.JoyDown[w][Pos])
 					{
 						LGL.JoyRelease[w][Pos]=true;
@@ -14581,7 +14577,7 @@ LGL_ProcessInput()
 						LGL.JoyRelease[w][Neg]=true;
 					}
 					LGL.JoyDown[w][Neg]=false;
-					
+
 					LGL.JoyDown[w][Pos]=true;
 					LGL.JoyStroke[w][Pos]=true;
 				}
@@ -14630,7 +14626,7 @@ LGL_ProcessInput()
 				LGL.JoyRelease[w][LGL_JOY_LEFT]=true;
 				LGL.JoyDown[w][LGL_JOY_LEFT]=false;
 			}
-			
+
 			if(v & SDL_HAT_RIGHT)
 			{
 				LGL.JoyStroke[w][LGL_JOY_RIGHT]=true;
@@ -14641,7 +14637,7 @@ LGL_ProcessInput()
 				LGL.JoyRelease[w][LGL_JOY_RIGHT]=true;
 				LGL.JoyDown[w][LGL_JOY_RIGHT]=false;
 			}
-			
+
 			if(v & SDL_HAT_DOWN)
 			{
 				LGL.JoyStroke[w][LGL_JOY_DOWN]=true;
@@ -14652,7 +14648,7 @@ LGL_ProcessInput()
 				LGL.JoyRelease[w][LGL_JOY_DOWN]=true;
 				LGL.JoyDown[w][LGL_JOY_DOWN]=false;
 			}
-			
+
 			if(v & SDL_HAT_UP)
 			{
 				LGL.JoyStroke[w][LGL_JOY_UP]=true;
@@ -14689,7 +14685,7 @@ LGL_ProcessInput()
 
 			bool down=event.type==SDL_JOYBUTTONDOWN;
 			bool up=!down;
-			
+
 			if(event.jbutton.button%12==0)
 			{
 				//Triangle
@@ -14703,7 +14699,7 @@ LGL_ProcessInput()
 			if(event.jbutton.button%12==1)
 			{
 				//Circle
-				
+
 				LGL.JoyDown[w][LGL_JOY_CIRCLE]=down;
 				LGL.JoyStroke[w][LGL_JOY_CIRCLE]=down;
 				LGL.JoyRelease[w][LGL_JOY_CIRCLE]=up;
@@ -14713,7 +14709,7 @@ LGL_ProcessInput()
 			if(event.jbutton.button%12==2)
 			{
 				//Cross
-				
+
 				LGL.JoyDown[w][LGL_JOY_CROSS]=down;
 				LGL.JoyStroke[w][LGL_JOY_CROSS]=down;
 				LGL.JoyRelease[w][LGL_JOY_CROSS]=up;
@@ -14723,7 +14719,7 @@ LGL_ProcessInput()
 			if(event.jbutton.button%12==3)
 			{
 				//Square
-				
+
 				LGL.JoyDown[w][LGL_JOY_SQUARE]=down;
 				LGL.JoyStroke[w][LGL_JOY_SQUARE]=down;
 				LGL.JoyRelease[w][LGL_JOY_SQUARE]=up;
@@ -14733,17 +14729,17 @@ LGL_ProcessInput()
 			if(event.jbutton.button%12==4)
 			{
 				//L2
-				
+
 				LGL.JoyDown[w][LGL_JOY_L2]=down;
 				LGL.JoyStroke[w][LGL_JOY_L2]=down;
 				LGL.JoyRelease[w][LGL_JOY_L2]=up;
-				
+
 				sprintf(buttonstr,"L2");
 			}
 			if(event.jbutton.button%12==5)
 			{
 				//R2
-				
+
 				LGL.JoyDown[w][LGL_JOY_R2]=down;
 				LGL.JoyStroke[w][LGL_JOY_R2]=down;
 				LGL.JoyRelease[w][LGL_JOY_R2]=up;
@@ -14753,7 +14749,7 @@ LGL_ProcessInput()
 			if(event.jbutton.button%12==6)
 			{
 				//L1
-				
+
 				LGL.JoyDown[w][LGL_JOY_L1]=down;
 				LGL.JoyStroke[w][LGL_JOY_L1]=down;
 				LGL.JoyRelease[w][LGL_JOY_L1]=up;
@@ -14763,7 +14759,7 @@ LGL_ProcessInput()
 			if(event.jbutton.button%12==7)
 			{
 				//R1
-				
+
 				LGL.JoyDown[w][LGL_JOY_R1]=down;
 				LGL.JoyStroke[w][LGL_JOY_R1]=down;
 				LGL.JoyRelease[w][LGL_JOY_R1]=up;
@@ -14773,21 +14769,21 @@ LGL_ProcessInput()
 			if(event.jbutton.button%12==8)
 			{
 				//Start
-				
+
 				LGL.JoyDown[w][LGL_JOY_START]=down;
 				LGL.JoyStroke[w][LGL_JOY_START]=down;
 				LGL.JoyRelease[w][LGL_JOY_START]=up;
-				
+
 				sprintf(buttonstr,"Start");
 			}
 			if(event.jbutton.button%12==9)
 			{
 				//Select
-				
+
 				LGL.JoyDown[w][LGL_JOY_SELECT]=down;
 				LGL.JoyStroke[w][LGL_JOY_SELECT]=down;
 				LGL.JoyRelease[w][LGL_JOY_SELECT]=up;
-				
+
 				sprintf(buttonstr,"Select");
 			}
 			if(event.jbutton.button%12==10)
@@ -14797,7 +14793,7 @@ LGL_ProcessInput()
 				LGL.JoyDown[w][LGL_JOY_ANALOGUE_L]=down;
 				LGL.JoyStroke[w][LGL_JOY_ANALOGUE_L]=down;
 				LGL.JoyRelease[w][LGL_JOY_ANALOGUE_L]=up;
-				
+
 				sprintf(buttonstr,"AnalogueL");
 			}
 			if(event.jbutton.button%12==11)
@@ -14806,7 +14802,7 @@ LGL_ProcessInput()
 				LGL.JoyDown[w][LGL_JOY_ANALOGUE_R]=down;
 				LGL.JoyStroke[w][LGL_JOY_ANALOGUE_R]=down;
 				LGL.JoyRelease[w][LGL_JOY_ANALOGUE_R]=up;
-				
+
 				sprintf(buttonstr,"AnalogueR");
 			}
 /*
@@ -14854,9 +14850,9 @@ LGL_ProcessInput()
 	}
 
 #ifdef LGL_LINUX_VIDCAM
-	
+
 	//VidCam
-	
+
 	if
 	(
 		LGL_VidCamAvailable() &&
@@ -14865,7 +14861,7 @@ LGL_ProcessInput()
 	{
 		LGL_Timer VidCamTimerLocal;
 		VidCamTimerLocal.Reset();
-		
+
 		int zero=0;
 		ioctl(LGL.VidCamFD,VIDIOCSYNC,&zero);
 		if(LGL.VidCamImageRaw!=NULL) delete LGL.VidCamImageRaw;
@@ -14881,7 +14877,7 @@ LGL_ProcessInput()
 		int ymax=0;
 		int xmin=LGL.VidCamWidthNow;
 		int ymin=LGL.VidCamHeightNow;
-				
+
 		int w=LGL.VidCamWidthNow;
 		int h=LGL.VidCamHeightNow;
 
@@ -14992,7 +14988,7 @@ LGL_ProcessInput()
 								[j*w*3+a*3+1]=g;
 							LGL.VidCamBufferProcessed
 								[j*w*3+a*3+0]=b;
-	
+
 							pixelcount++;
 							x+=a;
 							y+=j;
@@ -15128,15 +15124,15 @@ LGL_ProcessInput()
 					LGL.VidCamBufferProcessed[(y+i)*w*3 + (x+j)*3 + 2]=0;
 					LGL.VidCamBufferProcessed[(y+i)*w*3 + (x+j)*3 + 1]=255;
 					LGL.VidCamBufferProcessed[(y+i)*w*3 + (x+j)*3 + 0]=0;
-				
+
 					LGL.VidCamBufferProcessed[(y-i)*w*3 + (x+j)*3 + 2]=0;
 					LGL.VidCamBufferProcessed[(y-i)*w*3 + (x+j)*3 + 1]=255;
 					LGL.VidCamBufferProcessed[(y-i)*w*3 + (x+j)*3 + 0]=0;
-				
+
 					LGL.VidCamBufferProcessed[(y+j)*w*3 + (x+i)*3 + 2]=0;
 					LGL.VidCamBufferProcessed[(y+j)*w*3 + (x+i)*3 + 1]=255;
 					LGL.VidCamBufferProcessed[(y+j)*w*3 + (x+i)*3 + 0]=0;
-				
+
 					LGL.VidCamBufferProcessed[(y+j)*w*3 + (x-i)*3 + 2]=0;
 					LGL.VidCamBufferProcessed[(y+j)*w*3 + (x-i)*3 + 1]=255;
 					LGL.VidCamBufferProcessed[(y+j)*w*3 + (x-i)*3 + 0]=0;
@@ -15211,7 +15207,7 @@ LGL_ProcessInput()
 			}
 		}
 		if(ThumbCrossCount>2*3) ThumbCross=true;
-		
+
 		//Thumb Detect (Circle)
 		dt=-LGL.VidCamDistanceThumb;
 		for(int t=0;t<3;t++)
@@ -15269,7 +15265,7 @@ LGL_ProcessInput()
 			}
 		}
 		if(ThumbCircleCount>2*3) ThumbCircle=true;
-		
+
 		//Pointer Detect (Square)
 		int dp=LGL.VidCamDistancePointer;
 		for(int t=0;t<3;t++)
@@ -15327,7 +15323,7 @@ LGL_ProcessInput()
 				}
 			}
 		}
-		
+
 		//Pointer Detect (Triangle)
 		dp=LGL.VidCamDistancePointer;
 		for(int t=0;t<3;t++)
@@ -15399,7 +15395,7 @@ LGL_ProcessInput()
 				ThumbCircle=true;
 			}
 		}
-		
+
 		//Thumb Color (Cross)
 		dt=LGL.VidCamDistanceThumb;
 		int color=2;
@@ -15447,7 +15443,7 @@ LGL_ProcessInput()
 				}
 			}
 		}
-		
+
 		//Pointer Color (Square)
 		color=2;
 		if(PointerSquare) color=1;
@@ -15470,7 +15466,7 @@ LGL_ProcessInput()
 				}
 			}
 		}
-		
+
 		//Pointer Color (Triangle)
 		color=2;
 		if(PointerTriangle) color=1;
@@ -15525,7 +15521,7 @@ LGL_ProcessInput()
 				}
 			}
 		}
-		
+
 		//Square (Pointer Left)
 		dp=LGL.VidCamDistancePointer-20;
 		for(int t=0;t<2;t++)
@@ -15548,27 +15544,27 @@ LGL_ProcessInput()
 					[(y+5+dp-t+5)*w*3 + (x-20+a)*3 + 2]=255;
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+t-5)*w*3 + (x-20+a)*3 + 2]=255;
-					
+
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+a)*w*3 + (x-20+t+5)*3 + 2]=255;
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+a)*w*3 + (x-20+t-5)*3 + 2]=255;
-					
+
 					LGL.VidCamBufferProcessed
 					[(y+5+dp-t+5)*w*3 + (x-20+a)*3 + 1]=55;
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+t-5)*w*3 + (x-20+a)*3 + 1]=55;
-					
+
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+a)*w*3 + (x-20+t+5)*3 + 1]=55;
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+a)*w*3 + (x-20+t-5)*3 + 1]=55;
-					
+
 					LGL.VidCamBufferProcessed
 					[(y+5+dp-t+5)*w*3 + (x-20+a)*3 + 0]=155;
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+t-5)*w*3 + (x-20+a)*3 + 0]=155;
-					
+
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+a)*w*3 + (x-20+t+5)*3 + 0]=155;
 					LGL.VidCamBufferProcessed
@@ -15576,7 +15572,7 @@ LGL_ProcessInput()
 				}
 			}
 		}
-		
+
 		//Triangle (Pointer Right)
 		dp=LGL.VidCamDistancePointer-20;
 		for(int t=0;t<2;t++)
@@ -15602,14 +15598,14 @@ LGL_ProcessInput()
 					[(y+5+dp+a)*w*3 + (x+25+t+2+c1)*3 + 2]=0;
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+a)*w*3 + (x+25+t-5-c1)*3 + 2]=0;
-					
+
 					LGL.VidCamBufferProcessed
 					[(y+5+dp-t+5)*w*3 + (x+25+a)*3 + 1]=255;
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+a)*w*3 + (x+25+t+2+c1)*3 + 1]=255;
 					LGL.VidCamBufferProcessed
 					[(y+5+dp+a)*w*3 + (x+25+t-5-c1)*3 + 1]=255;
-					
+
 					LGL.VidCamBufferProcessed
 					[(y+5+dp-t+5)*w*3 + (x+25+a)*3 + 0]=55;
 					LGL.VidCamBufferProcessed
@@ -15637,7 +15633,7 @@ LGL_ProcessInput()
 					y+cdy-t>0 &&
 					y+cdy+t<h &&
 					y-cdy-t>0 &&
-					y-cdy+t<h 
+					y-cdy+t<h
 				)
 				{
 					LGL.VidCamBufferProcessed
@@ -15648,7 +15644,7 @@ LGL_ProcessInput()
 						[(y+cdy+t)*w*3 + (x-dt-cdx-t)*3 + 2]=255;
 					LGL.VidCamBufferProcessed
 						[(y+cdy-t)*w*3 + (x-dt-cdx-t)*3 + 2]=255;
-					
+
 					LGL.VidCamBufferProcessed
 						[(y+cdy+t)*w*3 + (x-dt-cdx+t)*3 + 1]=128;
 					LGL.VidCamBufferProcessed
@@ -15657,7 +15653,7 @@ LGL_ProcessInput()
 						[(y+cdy+t)*w*3 + (x-dt-cdx-t)*3 + 1]=128;
 					LGL.VidCamBufferProcessed
 						[(y+cdy-t)*w*3 + (x-dt-cdx-t)*3 + 1]=128;
-					
+
 					LGL.VidCamBufferProcessed
 						[(y+cdy+t)*w*3 + (x-dt-cdx+t)*3 + 0]=128;
 					LGL.VidCamBufferProcessed
@@ -15674,7 +15670,7 @@ LGL_ProcessInput()
 
 		LGL.VidCamAxisXLast=LGL.VidCamAxisXNext;
 		LGL.VidCamAxisYLast=LGL.VidCamAxisYNext;
-		
+
 		LGL.VidCamAxisXNext=(x-(w/2.0))/(w*.25);
 		LGL.VidCamAxisYNext=-(y-(h/2.0))/(h*.25);
 
@@ -15711,7 +15707,7 @@ LGL_ProcessInput()
 			}
 			LGL.JoyDown[LGL_VidCamJoyNumber()][LGL_JOY_SQUARE]=false;
 		}
-		
+
 		if(PointerTriangle)
 		{
 			if(LGL.JoyDown[LGL_VidCamJoyNumber()][LGL_JOY_TRIANGLE]==false)
@@ -16124,7 +16120,7 @@ LGL_JoyName
 	{
 		exit(-1);
 	}
-	
+
 	int Major=0;
 	int Minor=0;
 	if(LGL.JoyDuality[0]==false && LGL.JoyDuality[1]==false)
@@ -16845,7 +16841,7 @@ INTERNAL_Connect()
 	if(Wiimote)
 	{
 		Reset();
-		
+
 		if(ID==0)
 		{
 			printf("Callback set\n");
@@ -17017,13 +17013,13 @@ INTERNAL_Callback
 				.5f+(-2*((y/validSources)-0.5f)),
 				validSources
 			);
-			
+
 			PointerMotionSemaphore.Lock("INTERNAL_Callback()","PointerMotionThisFrameBack.push_back()");
 			{
 				PointerMotionThisFrameBack.push_back(PointerBack);
 			}
 			PointerMotionSemaphore.Unlock();
-			
+
 			PointerGreatestIRSourceDistance=nextPointerGreatestIRSourceDistance;
 		}
 		else if(validSources==0)
@@ -17159,7 +17155,7 @@ INTERNAL_UpdateButton
 {
 	bool justStroked = ButtonDownArrayFront[which]==false && pressed==true;
 	ButtonStrokeArrayBack[which] = ButtonStrokeArrayBack[which] || justStroked;
-	
+
 	bool justReleased = ButtonDownArrayFront[which]==true && pressed==false;
 	ButtonReleaseArrayBack[which] = ButtonReleaseArrayBack[which] || justReleased;
 
@@ -18009,7 +18005,7 @@ LGL_VidCamJoyNumber()
 		printf("LGL_VidCamJoyNumber(): Warning! No VidCam attached!\n");
 		printf("LGL_VidCamJoyNumber(): Don't call this fn unless there is one!\n");
 		printf("LGL_VidCamJoyNumber(): (Use LGL_VidCamAvailable()...)!\n");
-	}	
+	}
 	return(LGL_JoyNumber()-1);
 }
 
@@ -18088,7 +18084,7 @@ LGL_VidCamCalibrate
 		printf("Calibration aborting...\n");
 		return;
 	}
-	
+
 	int Phase=1;
 
 	LGL.VidCamDistanceThumb=999;
@@ -18135,7 +18131,7 @@ LGL_VidCamCalibrate
 				DistPointer=-80;
 			}
 		}
-		
+
 		//Do stuff below here
 
 		if(Exiting==false)
@@ -18184,7 +18180,7 @@ LGL_VidCamCalibrate
 
 		if(LGL_VidCamAvailable())
 		{
-			
+
 			LGL_VidCamImageRaw()->DrawToScreen
 			(
 				.05,.45,
@@ -18219,9 +18215,9 @@ LGL_VidCamCalibrate
 		);
 
 		//Phase 1: Instruct User To Set Up VidCam
-	
+
 		if(Phase==1)
-		{	
+		{
 			Font.DrawString
 			(
 				.05,.825,.040,
@@ -18266,7 +18262,7 @@ LGL_VidCamCalibrate
 			);
 		}
 		if(Phase==2)
-		{	
+		{
 			Font.DrawString
 			(
 				.05,.825,.040,
@@ -18311,7 +18307,7 @@ LGL_VidCamCalibrate
 			);
 		}
 		if(Phase==3)
-		{	
+		{
 			Font.DrawString
 			(
 				.05,.825,.040,
@@ -18356,7 +18352,7 @@ LGL_VidCamCalibrate
 			);
 
 			if(DistTimer.SecondsSinceLastReset()>.1)
-			{				
+			{
 				bool ResetMe=false;
 
 				if
@@ -18390,7 +18386,7 @@ LGL_VidCamCalibrate
 					(
 						LGL_JoyDown(LGL_VidCamJoyNumber(),LGL_JOY_CIRCLE)
 						||
-						LGL_JoyDown(LGL_VidCamJoyNumber(),LGL_JOY_CROSS) 
+						LGL_JoyDown(LGL_VidCamJoyNumber(),LGL_JOY_CROSS)
 					) &&
 					DistTimer.SecondsSinceLastReset()>1
 				)
@@ -18421,7 +18417,7 @@ LGL_VidCamCalibrate
 			}
 		}
 		if(Phase>=4)
-		{	
+		{
 			Font.DrawString
 			(
 				.05,.825,.040,
@@ -18726,7 +18722,7 @@ lgl_NetConnectionResolverIP
 		nc->Host[0]='\0';
 		lgl_NetConnectionResolverHost(object);
 	}
-	
+
 	nc->ResolverThreadIP=NULL;
 	return(0);
 }
@@ -18738,7 +18734,7 @@ lgl_NetConnectionResolverHost
 )
 {
 	LGL_NetConnection* nc=(LGL_NetConnection*)object;
-	
+
 	LGL_NetIPToHost
 	(
 		nc->Host,
@@ -18837,7 +18833,7 @@ lgl_NetConnectionSocketSendThread
 			Uint8* data=new Uint8[1024];
 			Uint16 read=fread(data,1,1024,nc->FileSendNowFD);
 			bool eof=false;
-			
+
 			SDL_mutexP(nc->Mutex);
 			{
 				nc->FileSendQueuedBytes=(long)LGL_Max
@@ -18848,11 +18844,11 @@ lgl_NetConnectionSocketSendThread
 				nc->FileSendCompletedBytes+=read;
 			}
 			SDL_mutexV(nc->Mutex);
-			
+
 			if(read<1024 || feof(nc->FileSendNowFD))
 			{
 				eof=true;
-				
+
 				SDL_mutexP(nc->Mutex);
 				{
 					nc->FileSendQueuedFiles=(int)LGL_Max
@@ -18944,12 +18940,12 @@ lgl_NetConnectionSocketSendThread
 				nc->FileSendCompletedBytes+=read;
 			}
 			SDL_mutexV(nc->Mutex);
-			
+
 			bool eof=false;
 			if(read<1024 || feof(nc->FileSendNowFD))
 			{
 				eof=true;
-				
+
 				SDL_mutexP(nc->Mutex);
 				{
 					nc->FileSendQueuedFiles=(int)LGL_Max
@@ -18964,7 +18960,7 @@ lgl_NetConnectionSocketSendThread
 
 			char meta[1024];
 			meta[0]='\0';
-			
+
 			SDL_mutexP(nc->Mutex);
 			{
 				sprintf
@@ -18979,7 +18975,7 @@ lgl_NetConnectionSocketSendThread
 				);
 			}
 			SDL_mutexV(nc->Mutex);
-			
+
 			LGL_Datagram* dg=new LGL_Datagram;
 			dg->LoadData
 			(
@@ -19031,7 +19027,7 @@ lgl_NetConnectionSocketSendThread
 			delete file;
 			nc->FileSendBuffer[0].pop_front();
 			boring=false;
-				
+
 			sprintf(nc->FileSendNowStatus,"Comparing Length / MD5sum");
 		}
 		if(boring) LGL_DelayMS(10);
@@ -19051,7 +19047,7 @@ lgl_NetConnectionSocketRecvThread
 	while(nc->Connection_Status==2)
 	{
 		//Recv MetaLength
-		
+
 		Uint16 metalength;
 		Uint8* metalengthnow=(Uint8*)&metalength;
 		int bytesRead=0;
@@ -19074,7 +19070,7 @@ lgl_NetConnectionSocketRecvThread
 		}
 
 		//Recv Meta
-			
+
 		char* meta=NULL;
 		char* control=NULL;
 		if(metalength>0)
@@ -19092,7 +19088,7 @@ lgl_NetConnectionSocketRecvThread
 				);
 				metanow=&metanow[bytesRead];
 				metaleft-=bytesRead;
-				
+
 				if(bytesRead==0)
 				{
 					//We lost our connection
@@ -19113,12 +19109,12 @@ lgl_NetConnectionSocketRecvThread
 			{
 				//Special LGL_NetConnection Control Datagram
 
-				control=&(meta[1]);	
+				control=&(meta[1]);
 			}
 		}
 
 		//Recv DataLength
-	
+
 		Uint16 datalength;
 		Uint8* datalengthnow=(Uint8*)&datalength;
 		bytesRead=0;
@@ -19133,7 +19129,7 @@ lgl_NetConnectionSocketRecvThread
 			);
 			datalengthnow=&datalengthnow[bytesRead];
 			bytesLeft-=bytesRead;
-				
+
 			if(bytesRead==0)
 			{
 				//We lost our connection
@@ -19167,7 +19163,7 @@ lgl_NetConnectionSocketRecvThread
 				);
 				datanow=&datanow[bytesRead];
 				dataleft-=bytesRead;
-				
+
 				if(bytesRead==0)
 				{
 					//We lost our connection
@@ -19208,7 +19204,7 @@ lgl_NetConnectionSocketRecvThread
 					char* neo=new char[strlen(now)+1];
 					sprintf(neo,"%s",now);
 					argv.push_back(neo);
-					
+
 					if(next2!=NULL) next2[0]='|';
 				}
 				else
@@ -19514,7 +19510,7 @@ printf("Hey0! Couldn't fopen(%s)\n",argv[0]);
 				if(file!=NULL)
 				{
 					fwrite(data,1,datalength,file);
-					
+
 					SDL_mutexP(nc->Mutex);
 					{
 						nc->FileRecvQueuedBytes=atol(argv[2]);
@@ -19538,7 +19534,7 @@ printf("Hey0! Couldn't fopen(%s)\n",argv[0]);
 						);
 					}
 					SDL_mutexV(nc->Mutex);
-					
+
 					fclose(file);
 				}
 				else
@@ -19596,7 +19592,7 @@ printf("lgl_NetConnectionSocketRecvThread(): Unknown command: '%s'\n",cmd);
 			}
 			SDL_mutexV(nc->Mutex);
 		}
-		
+
 		SDL_mutexP(nc->Mutex);
 		{
 			if
@@ -19671,7 +19667,7 @@ LGL_NetConnection
 	}
 
 	ConstructorGeneric();
-	
+
 	IP[0]=ip0;
 	IP[1]=ip1;
 	IP[2]=ip2;
@@ -19688,16 +19684,16 @@ LGL_NetConnection
 )
 {
 	ConstructorGeneric();
-	
+
 	IPaddress* ip=SDLNet_TCP_GetPeerAddress(inSocket);
 	Uint8* ip4=(Uint8*)&ip->host;
 	for(int a=0;a<4;a++) IP[a]=ip4[a];
-	
+
 	sprintf(IPstr,"%i.%i.%i.%i",IP[0],IP[1],IP[2],IP[3]);
 	sprintf(Host,"%s",parent->Host);
 	Port=parent->Port;
 	Connection_Status=2;
-	
+
 	SocketTCP=inSocket;
 
 	sprintf(RecvFileRequiredPrefix,"%s",parent->RecvFileRequiredPrefix);
@@ -19750,7 +19746,7 @@ LGL_NetConnection::
 		delete RecvBuffer[0];
 		RecvBuffer.pop_front();
 	}
-	
+
 	for(int a=0;a<2;a++)
 	{
 		while(FileSendBuffer[a].empty()==false)
@@ -19778,13 +19774,13 @@ ConstructorGeneric()
 	Port=-1;
 	Connection_Status=0;
 	SocketTCP=NULL;
-	
+
 	ResolverThreadHost=NULL;
 	ResolverThreadIP=NULL;
 	ConnectTCPThread=NULL;
 	SocketSendThread=NULL;
 	SocketRecvThread=NULL;
-	
+
 	FileSendQueryOK=true;
 	FileSendNowFD=NULL;
 	FileSendNowName[0]='\0';
@@ -19793,7 +19789,7 @@ ConstructorGeneric()
 	sprintf(FileSendNowStatus,"No Activity");
 	FileRecvNowName[0]='\0';
 	sprintf(FileRecvNowStatus,"No Activity");
-	
+
 	FileSendQueuedFiles=0;
 	FileSendQueuedBytes=0;
 	FileSendCompletedFiles=0;
@@ -19802,7 +19798,7 @@ ConstructorGeneric()
 	FileRecvQueuedBytes=0;
 	FileRecvCompletedFiles=0;
 	FileRecvCompletedBytes=0;
-	
+
 	Mutex=SDL_CreateMutex();
 	sprintf(RecvFileRequiredPrefix,"/");
 }
@@ -19834,7 +19830,7 @@ ConnectTCP
 		printf("LGL_NetConnection::ConnectTCP(%i): Error! Servers can't establish connections!\n",port);
 		exit(0);
 	}
-	
+
 	Port=port;
 	Connection_Status=1;
 	ConnectTCPThread=LGL_ThreadCreate(lgl_NetConnectionConnectTCP,this);
@@ -19896,7 +19892,7 @@ AcceptTCP()
 	if(Connection_Status!=1) return(NULL);
 	TCPsocket NewSock=SDLNet_TCP_Accept(SocketTCP);
 	if(NewSock==NULL) return(NULL);
-	
+
 	return(new LGL_NetConnection(this,NewSock));
 }
 
@@ -19950,10 +19946,10 @@ CloseTCP()
 	{
 		printf("LGL_NetConnection::CloseTCP(): Warning! Closing a closed connection...\n");
 	}
-		
+
 	SendFileResetStatistics();
 	RecvFileResetStatistics();
-		
+
 	while(SendBuffer.empty()==false)
 	{
 		delete SendBuffer[0];
@@ -19964,7 +19960,7 @@ CloseTCP()
 		delete RecvBuffer[0];
 		RecvBuffer.pop_front();
 	}
-	
+
 	for(int a=0;a<2;a++)
 	{
 		while(FileSendBuffer[a].empty()==false)
@@ -20002,7 +19998,7 @@ SendTCP
 		SDL_mutexV(Mutex);
 		return(false);
 	}
-	
+
 	if(metaLength>0)
 	{
 		sent=SDLNet_TCP_Send(SocketTCP,(void*)dg->GetMeta(),metaLength);
@@ -20022,7 +20018,7 @@ SendTCP
 		SDL_mutexV(Mutex);
 		return(false);
 	}
-	
+
 	if(dg->GetDataLength()>0)
 	{
 		sent=SDLNet_TCP_Send(SocketTCP,(void*)dg->GetData(),dg->GetDataLength());
@@ -20058,13 +20054,13 @@ SendTCP
 		inDataLength,
 		inData
 	);
-	
+
 	SDL_mutexP(Mutex);
 	{
 		SendBuffer.push_back(dg);
 	}
 	SDL_mutexV(Mutex);
-	
+
 	return(true);
 }
 
@@ -20128,7 +20124,7 @@ SendFile
 		FileSendBuffer[0].push_back(neo);
 		FileSendQueuedFiles++;
 		FileSendQueuedBytes+=LGL_FileLengthBytes(file);
-	}	
+	}
 	SDL_mutexV(Mutex);
 
 	return(true);
@@ -20164,7 +20160,7 @@ SendDirectory
 		0,
 		NULL
 	);
-	
+
 	SDL_mutexP(Mutex);
 	{
 		SendBuffer.push_back(dg);
@@ -20183,7 +20179,7 @@ SendDirectory
 	}
 
 	//Send All Subdirs
-	
+
 	std::vector<char*> dirList=LGL_DirectoryListCreate(dir,false,true);
 	for(unsigned int a=0;a<dirList.size();a++)
 	{
@@ -20266,7 +20262,7 @@ SendFileCompletedPercent()
 		{
 			ret=FileSendCompletedBytes/bot;
 		}
-	
+
 		if(FileSendQueuedBytes==0 && FileSendCompletedBytes!=0)
 		{
 			ret=1;
@@ -20698,7 +20694,7 @@ SetPath
 	{
 		return(false);
 	}
-	
+
 	char neopath[1024];
 	strcpy(neopath,path);
 
@@ -20710,7 +20706,7 @@ SetPath
 
 	//Verify our new path, put in absPath
 	char absPath[1024];
-	
+
 	if
 	(
 		neopath[0]=='.' &&
@@ -20724,7 +20720,7 @@ SetPath
 		)
 		{
 			//cd ..
-			
+
 			char* lastSlash=strstr(Path,"/");
 			for(;;)
 			{
@@ -20870,7 +20866,7 @@ Refresh_INTERNAL()
 		char check[2048];
 
 		sprintf(check,"%s/%s",Path,everything[a]);
-		
+
 		if(LGL_DirectoryExists(check))
 		{
 			//It's a directory
@@ -20975,7 +20971,7 @@ GenerateFilterLists()
 		delete FilteredFileList[a];
 	}
 	FilteredFileList.clear();
-	
+
 	for(unsigned int a=0;a<FilteredDirList.size();a++)
 	{
 		delete FilteredDirList[a];
@@ -21001,14 +20997,14 @@ GenerateFilterLists()
 		{
 			char* nextSpace=strchr(ptr,' ');
 			bool lastWord=(nextSpace==NULL);
-			
+
 			if(lastWord==false ) nextSpace[0]='\0';
 			char* neo=new char[strlen(ptr)+1];
 			strcpy(neo,ptr);
 			filterWordList.push_back(neo);
 			if(lastWord==false) nextSpace[0]=' ';
 			ptr=&(nextSpace[1]);
-			
+
 			if(lastWord)
 			{
 				break;
@@ -21019,7 +21015,7 @@ GenerateFilterLists()
 	for(unsigned int a=0;a<FileList.size();a++)
 	{
 		bool addThisName=true;
-		
+
 		for(unsigned int b=0;b<filterWordList.size();b++)
 		{
 #ifdef	LGL_WIN32
@@ -21063,7 +21059,7 @@ GenerateFilterLists()
 			FilteredFileList.push_back(neo);
 		}
 	}
-	
+
 	for(unsigned int a=0;a<DirList.size();a++)
 	{
 		bool addThisName=true;
@@ -21110,7 +21106,7 @@ GenerateFilterLists()
 			FilteredDirList.push_back(neo);
 		}
 	}
-	
+
 	for(unsigned int a=0;a<filterWordList.size();a++)
 	{
 		delete filterWordList[a];
@@ -21182,19 +21178,19 @@ ClearLists()
 		delete FileList[a];
 	}
 	FileList.clear();
-	
+
 	for(unsigned int a=0;a<DirList.size();a++)
 	{
 		delete DirList[a];
 	}
 	DirList.clear();
-	
+
 	for(unsigned int a=0;a<FilteredFileList.size();a++)
 	{
 		delete FilteredFileList[a];
 	}
 	FilteredFileList.clear();
-	
+
 	for(unsigned int a=0;a<FilteredDirList.size();a++)
 	{
 		delete FilteredDirList[a];
@@ -21224,7 +21220,7 @@ lgl_MergeSortDirectoryList
 		int counter1=begin;
 		int counter2=middle+1;
 		int counter3=begin;
-		
+
 		while(counter1<=middle && counter2<=end)
 		{
 			if(strcasecmp(List[counter1],List[counter2])<=0)
@@ -21540,7 +21536,7 @@ LGL_FileDelete
 )
 {
 #ifdef	LGL_UNIX
-	
+
 	return(unlink(file)==0);
 
 #endif	//LGL_UNIX
@@ -21575,7 +21571,7 @@ LGL_DirectoryDelete
 		printf("LGL_DirectoryDelete('%s'): Warning! Deleting non-existant Directory...\n",dir);
 		return(true);
 	}
-	
+
 	//Delete all files in target directory
 	std::vector<char*> deadFiles=LGL_DirectoryListCreate(dir,true,true);
 	for(unsigned int a=0;a<deadFiles.size();a++)
@@ -21585,7 +21581,7 @@ LGL_DirectoryDelete
 		LGL_FileDelete(target);
 		delete deadFiles[a];
 	}
-	
+
 	//Delete all directories in target directory
 	std::vector<char*> deadDirs=LGL_DirectoryListCreate(dir,false,true);
 	for(unsigned int a=0;a<deadDirs.size();a++)
@@ -21597,9 +21593,7 @@ LGL_DirectoryDelete
 	}
 
 #ifdef	LGL_UNIX
-
 	return(rmdir(dir)==0);
-
 #endif	//LGL_UNIX
 
 #ifdef	LGL_WIN32
@@ -21609,7 +21603,6 @@ printf("LGL_DirectoryDelete('%s'\n",dir);
 	system(cmd);
 	printf("LGL_DirectoryDelete('%s'): Warning! LGL_WIN32 implementation always returns true...\n",dir);
 	return(true);
-
 #endif	//LGL_WIN32
 }
 
@@ -21624,15 +21617,17 @@ LGL_DirectoryListCreate
 {
 	std::vector<char*> ReturnMe;
 
-#ifdef LGL_LINUX
+#ifdef LGL_UNIX
+
 	assert(targetDir!=NULL);
-	DIR* myDir=opendir(targetDir);
+	DIR* myDir = opendir(targetDir);
+
 	if(myDir==NULL)
 	{
 		printf("LGL_DirectoryListCreate(): Error! opendir(%s) failed...\n",targetDir);
 		assert(false);
 	}
-	
+
 	int totallength=0;
 	for(;;)
 	{
@@ -21645,7 +21640,7 @@ LGL_DirectoryListCreate
 		{
 			char temp[1024];
 			struct stat buf;
-			
+
 			sprintf(temp,"%s/%s",targetDir,myEnt->d_name);
 			int ret=lstat(temp,&buf);
 
@@ -21700,7 +21695,7 @@ LGL_DirectoryListCreate
 	{
 		lgl_MergeSortDirectoryList(&ReturnMe,0,ReturnMe.size()-1);
 	}
-	
+
 #endif	//LGL_LINUX
 
 #ifdef	LGL_WIN32
@@ -21795,7 +21790,7 @@ LGL_FileDirMove
 	{
 		printf("LGL_FileDirMove(): Warning! Could not move '%s' => '%s'!\n",oldLocation,newLocation);
 	}
-	
+
 	return(result);
 }
 
@@ -21901,76 +21896,76 @@ sum(FILE *fd, char* output)
 	Table tab[] =
 	{
 		/* round 1 */
-		{ 0xd76aa478, 0, S11},	
-		{ 0xe8c7b756, 1, S12},	
-		{ 0x242070db, 2, S13},	
-		{ 0xc1bdceee, 3, S14},	
-		{ 0xf57c0faf, 4, S11},	
-		{ 0x4787c62a, 5, S12},	
-		{ 0xa8304613, 6, S13},	
-		{ 0xfd469501, 7, S14},	
-		{ 0x698098d8, 8, S11},	
-		{ 0x8b44f7af, 9, S12},	
-		{ 0xffff5bb1, 10, S13},	
-		{ 0x895cd7be, 11, S14},	
-		{ 0x6b901122, 12, S11},	
-		{ 0xfd987193, 13, S12},	
-		{ 0xa679438e, 14, S13},	
+		{ 0xd76aa478, 0, S11},
+		{ 0xe8c7b756, 1, S12},
+		{ 0x242070db, 2, S13},
+		{ 0xc1bdceee, 3, S14},
+		{ 0xf57c0faf, 4, S11},
+		{ 0x4787c62a, 5, S12},
+		{ 0xa8304613, 6, S13},
+		{ 0xfd469501, 7, S14},
+		{ 0x698098d8, 8, S11},
+		{ 0x8b44f7af, 9, S12},
+		{ 0xffff5bb1, 10, S13},
+		{ 0x895cd7be, 11, S14},
+		{ 0x6b901122, 12, S11},
+		{ 0xfd987193, 13, S12},
+		{ 0xa679438e, 14, S13},
 		{ 0x49b40821, 15, S14},
 
 		/* round 2 */
-		{ 0xf61e2562, 1, S21},	
-		{ 0xc040b340, 6, S22},	
-		{ 0x265e5a51, 11, S23},	
-		{ 0xe9b6c7aa, 0, S24},	
-		{ 0xd62f105d, 5, S21},	
-		{  0x2441453, 10, S22},	
-		{ 0xd8a1e681, 15, S23},	
-		{ 0xe7d3fbc8, 4, S24},	
-		{ 0x21e1cde6, 9, S21},	
-		{ 0xc33707d6, 14, S22},	
-		{ 0xf4d50d87, 3, S23},	
-		{ 0x455a14ed, 8, S24},	
-		{ 0xa9e3e905, 13, S21},	
-		{ 0xfcefa3f8, 2, S22},	
-		{ 0x676f02d9, 7, S23},	
+		{ 0xf61e2562, 1, S21},
+		{ 0xc040b340, 6, S22},
+		{ 0x265e5a51, 11, S23},
+		{ 0xe9b6c7aa, 0, S24},
+		{ 0xd62f105d, 5, S21},
+		{  0x2441453, 10, S22},
+		{ 0xd8a1e681, 15, S23},
+		{ 0xe7d3fbc8, 4, S24},
+		{ 0x21e1cde6, 9, S21},
+		{ 0xc33707d6, 14, S22},
+		{ 0xf4d50d87, 3, S23},
+		{ 0x455a14ed, 8, S24},
+		{ 0xa9e3e905, 13, S21},
+		{ 0xfcefa3f8, 2, S22},
+		{ 0x676f02d9, 7, S23},
 		{ 0x8d2a4c8a, 12, S24},
 
 		/* round 3 */
-		{ 0xfffa3942, 5, S31},	
-		{ 0x8771f681, 8, S32},	
-		{ 0x6d9d6122, 11, S33},	
-		{ 0xfde5380c, 14, S34},	
-		{ 0xa4beea44, 1, S31},	
-		{ 0x4bdecfa9, 4, S32},	
-		{ 0xf6bb4b60, 7, S33},	
-		{ 0xbebfbc70, 10, S34},	
-		{ 0x289b7ec6, 13, S31},	
-		{ 0xeaa127fa, 0, S32},	
-		{ 0xd4ef3085, 3, S33},	
-		{  0x4881d05, 6, S34},	
-		{ 0xd9d4d039, 9, S31},	
-		{ 0xe6db99e5, 12, S32},	
-		{ 0x1fa27cf8, 15, S33},	
-		{ 0xc4ac5665, 2, S34},	
+		{ 0xfffa3942, 5, S31},
+		{ 0x8771f681, 8, S32},
+		{ 0x6d9d6122, 11, S33},
+		{ 0xfde5380c, 14, S34},
+		{ 0xa4beea44, 1, S31},
+		{ 0x4bdecfa9, 4, S32},
+		{ 0xf6bb4b60, 7, S33},
+		{ 0xbebfbc70, 10, S34},
+		{ 0x289b7ec6, 13, S31},
+		{ 0xeaa127fa, 0, S32},
+		{ 0xd4ef3085, 3, S33},
+		{  0x4881d05, 6, S34},
+		{ 0xd9d4d039, 9, S31},
+		{ 0xe6db99e5, 12, S32},
+		{ 0x1fa27cf8, 15, S33},
+		{ 0xc4ac5665, 2, S34},
 
 		/* round 4 */
-		{ 0xf4292244, 0, S41},	
-		{ 0x432aff97, 7, S42},	
-		{ 0xab9423a7, 14, S43},	
-		{ 0xfc93a039, 5, S44},	
-		{ 0x655b59c3, 12, S41},	
-		{ 0x8f0ccc92, 3, S42},	
-		{ 0xffeff47d, 10, S43},	
-		{ 0x85845dd1, 1, S44},	
-		{ 0x6fa87e4f, 8, S41},	
-		{ 0xfe2ce6e0, 15, S42},	
-		{ 0xa3014314, 6, S43},	
-		{ 0x4e0811a1, 13, S44},	
-		{ 0xf7537e82, 4, S41},	
-		{ 0xbd3af235, 11, S42},	
-		{ 0x2ad7d2bb, 2, S43},	
-		{ 0xeb86d391, 9, S44},	
+		{ 0xf4292244, 0, S41},
+		{ 0x432aff97, 7, S42},
+		{ 0xab9423a7, 14, S43},
+		{ 0xfc93a039, 5, S44},
+		{ 0x655b59c3, 12, S41},
+		{ 0x8f0ccc92, 3, S42},
+		{ 0xffeff47d, 10, S43},
+		{ 0x85845dd1, 1, S44},
+		{ 0x6fa87e4f, 8, S41},
+		{ 0xfe2ce6e0, 15, S42},
+		{ 0xa3014314, 6, S43},
+		{ 0x4e0811a1, 13, S44},
+		{ 0xf7537e82, 4, S41},
+		{ 0xbd3af235, 11, S42},
+		{ 0x2ad7d2bb, 2, S43},
+		{ 0xeb86d391, 9, S44},
 	};
 
 	s = nil;
@@ -22001,7 +21996,7 @@ sum(FILE *fd, char* output)
 	{
 		output[a]=tolower(output[a]);
 	}
-	
+
 	free(buf);
 }
 
@@ -22060,7 +22055,7 @@ md5(byte *p, uint len, byte *digest, MD5state *s, MD5state *nil, Table* tab)
 		d = s->state[3];
 
 		decode(x, p, 64);
-	
+
 		for(i = 0; i < 64; i++){
 			t = tab + i;
 			switch(i>>4){
@@ -22080,7 +22075,7 @@ md5(byte *p, uint len, byte *digest, MD5state *s, MD5state *nil, Table* tab)
 			a += x[t->x] + t->sin;
 			a = (a << t->rot) | (a >> (32 - t->rot));
 			a += b;
-	
+
 			/* rotate variables */
 			tmp = d;
 			d = c;
@@ -22277,7 +22272,7 @@ LGL_MD5sum
 		printf("errno: %i\n",errno);
 		return(output);
 	}
-	
+
 	sum(fd,output);
 
 	fclose(fd);
@@ -22474,7 +22469,7 @@ LGL_BatteryChargeDraining()
 		}
 		fclose(fd);
 	}
-	
+
 	return(false);
 #else	//LGL_LINUX
 	return(false);
@@ -22618,7 +22613,7 @@ LGL_DrawFPSGraph
 		bottom+(top-bottom)*30.0/100.0,
 		brightness,brightness,0,.5*alpha
 	);
-	
+
 	char temp[1024];
 	sprintf(temp,"%i",LGL.FPS);
 
@@ -22631,7 +22626,7 @@ LGL_DrawFPSGraph
 		true,.5*alpha,
 		temp
 	);
-	
+
 	int lowest=999;
 	for(int a=0;a<60;a++)
 	{
@@ -22786,7 +22781,7 @@ lgl_DrawLogPlayback
 		printf("lgl_DrawLogPlayback(NULL): Error! Can't fopen NULL filename!\n");
 		exit(0);
 	}
-		
+
 	FILE* f=fopen(inFile,"r");
 	if(f==NULL)
 	{
@@ -22832,7 +22827,7 @@ LGL_DrawLogStart
 		char intro[1024];
 		sprintf(intro,"LGL_DrawLogStart|%f\n",(LGL.RecordActive==false)?0.0f:(LGL.RecordSamplesWritten/(double)LGL.AudioSpec->freq));
 		fwrite(intro,strlen(intro),1,LGL.DrawLogFD);
-		
+
 		sprintf(intro,"LGL_MouseCoords|%f|%f\n",LGL_MouseX(),LGL_MouseY());
 		fwrite(intro,strlen(intro),1,LGL.DrawLogFD);
 	}
@@ -23952,7 +23947,7 @@ LGL_ThreadSetPriority
 		setpriority(PRIO_PROCESS,0,-20);
 		//printf("LGL_ThreadSetPriority(%.2f, '%s'): setpriority(%i) (B)\n",priority,threadName?threadName:"NULL",-20);
 	}
-	
+
 	if(priority<=0.0f)
 	{
 		//Not realtime
@@ -24094,7 +24089,7 @@ Value()
 }
 
 //Internals
-	
+
 int
 LGL_NextPowerOfTwo
 (
@@ -24115,7 +24110,7 @@ LGL_NextPowerOfTwo
  *
  * Permission to use, copy, modify, distribute and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice and this license appear in all source copies. 
+ * the above copyright notice and this license appear in all source copies.
  * THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT EXPRESS OR IMPLIED WARRANTY OF
  * ANY KIND. See http://www.dspguru.com/wol.htm for more information.
  *
@@ -24215,7 +24210,7 @@ lgl_AudioOutCallback
 				//Front
 				audioOutBuffer16[6*a+0]=audioOutResult16[4*a+0];
 				audioOutBuffer16[6*a+1]=audioOutResult16[4*a+1];
-			
+
 				//Center/Sub
 				audioOutBuffer16[6*a+2]=LGL.AudioSpec->silence;
 				audioOutBuffer16[6*a+3]=LGL.AudioSpec->silence;
@@ -24403,7 +24398,7 @@ lgl_AudioOutCallbackGenerator
 
 		float vuNext=0.0f;
 		double timeAdvancementMultiplier = sc->Hz/LGL.AudioSpec->freq;
-		
+
 		if(sc->FuturePositionSamplesNow>=0)
 		{
 			sc->PositionSamplesNow=sc->FuturePositionSamplesNow;
@@ -24584,7 +24579,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 				{
 					sc->SpeedNow=sc->SpeedDesired;
 				}
-				
+
 				if(sc->Glitch)
 				{
 					double GlitchSamplesNowPrev=floor(sc->GlitchSamplesNow);
@@ -24630,7 +24625,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 
 						//Wrap Backwards
 						double cand2=(double)sc->GlitchLuminScratchPositionDesired-(double)(sc->BufferLength/BPS)-(double)(sc->GlitchSamplesNow);
-						
+
 						//Wrap Forwards
 						double cand3=(double)sc->GlitchLuminScratchPositionDesired+(double)(sc->BufferLength/BPS)-(double)(sc->GlitchSamplesNow);
 
@@ -24675,7 +24670,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 						(
 							sc->GlitchSamplesNow >=
 							sc->GlitchBegin+
-							sc->GlitchLength 
+							sc->GlitchLength
 						)
 						{
 							sc->GlitchSamplesNow=sc->GlitchBegin;
@@ -24690,7 +24685,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 								sc->GlitchBegin+sc->GlitchLength;
 						}
 					}
-				
+
 					if
 					(
 						sc->GlitchSamplesNow >=
@@ -25084,7 +25079,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 				stream16[l+1]=(Sint16)LGL_Clamp(-32767,stream16[l+1]+tempStreamFR[lHalf],32767);
 				stream16rec[l+0]=(Sint16)LGL_Clamp(-32767,stream16rec[l+0]+tempStreamRecL[lHalf]*LGL.RecordVolume,32767);
 				stream16rec[l+1]=(Sint16)LGL_Clamp(-32767,stream16rec[l+1]+tempStreamRecR[lHalf]*LGL.RecordVolume,32767);
-				
+
 				if(LGL.AudioBufferPos+lHalf<1024)
 				{
 					LGL.AudioBufferLBack[LGL.AudioBufferPos+lHalf]+=(tempStreamFL[lHalf]/32767.0f);
@@ -25128,7 +25123,7 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 		{
 			LGL_Assert(false);
 		}
-		
+
 		sc->VU=vuNext;
 
 		if(sc->LGLSound!=NULL)
