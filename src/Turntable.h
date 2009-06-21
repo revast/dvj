@@ -24,9 +24,8 @@
 #ifndef	_DVJ_TURNTABLE_H_
 #define	_DVJ_TURNTABLE_H_
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 #include "Visualizer.h"
-
 #include "Database.h"
 
 #define	NOISE_IMAGE_COUNT_256_64 64

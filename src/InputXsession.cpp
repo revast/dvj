@@ -21,6 +21,7 @@
  *
  */
 
+#include "LGL.h"
 #include "InputXsession.h"
 
 InputXsessionObj::
@@ -255,17 +256,6 @@ FileSelect
 	}
 
 	return(choose);
-}
-
-bool
-InputXsessionObj::
-FileMarkUnopened
-(
-	unsigned int	target
-)	const
-{
-	bool mark=false;
-	return(mark);
 }
 
 bool

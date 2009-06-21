@@ -26,7 +26,7 @@
 
 #include <vector>
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 
 class ParticleObj
 {

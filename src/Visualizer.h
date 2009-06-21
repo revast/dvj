@@ -24,12 +24,13 @@
 #ifndef	_DVJ_VISUALIZER_H_
 #define	_DVJ_VISUALIZER_H_
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 #include <vector>
 
 using namespace std;
 
 #define	NOISE_IMAGE_COUNT_128_128 64
+#define	NOISE_IMAGE_COUNT_128_64 64
 
 class VisualizerObj
 {

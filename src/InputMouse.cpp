@@ -21,6 +21,7 @@
  *
  */
 
+#include "LGL.h"
 #include "InputMouse.h"
 
 InputMouseObj::
@@ -148,17 +149,6 @@ FileSelect
 {
 	bool choose=false;
 	return(choose);
-}
-
-bool
-InputMouseObj::
-FileMarkUnopened
-(
-	unsigned int	target
-)	const
-{
-	bool mark=false;
-	return(mark);
 }
 
 bool

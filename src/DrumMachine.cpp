@@ -21,6 +21,7 @@
  *
  */
 
+#include "LGL.h"
 #include "DrumMachine.h"
 
 DrumMachineObj::

@@ -21,7 +21,7 @@
  * 
  */
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 #include "Common.h"
 #include "Visualizer.h"
 #include "Mixer.h"

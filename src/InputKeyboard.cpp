@@ -21,9 +21,9 @@
  *
  */
 
+#include "LGL.h"
 #include "InputKeyboard.h"
 
-#include "LGL.module/LGL.h"
 
 //Core
 
@@ -164,23 +164,6 @@ FileSelect
 	if(target & TARGET_FOCUS)
 	{
 		return(LGL_KeyStroke(SDLK_RETURN));
-	}
-	else
-	{
-		return(false);
-	}
-}
-
-bool
-InputKeyboardObj::
-FileMarkUnopened
-(
-	unsigned int	target
-)	const
-{
-	if(target & TARGET_FOCUS)
-	{
-		return(LGL_KeyStroke(SDLK_BACKQUOTE));
 	}
 	else
 	{

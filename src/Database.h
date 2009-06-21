@@ -56,7 +56,6 @@ public:
 
 	float	BPM;
 	bool	IsDir;
-	bool	AlreadyPlayed;
 };
 
 class DatabaseObj
@@ -64,14 +63,10 @@ class DatabaseObj
 
 public:
 
-		DatabaseObj
-		(
-			const char*	musicRoot
-		);
-		~DatabaseObj();
+	DatabaseObj (const char* musicRoot);
+	~DatabaseObj();
 	
-	std::vector<DatabaseEntryObj*>
-		GetEntryListFromFilter(DatabaseFilterObj* filter);
+	std::vector<DatabaseEntryObj*> GetEntryListFromFilter(DatabaseFilterObj* filter);
 	
 	void	Refresh(const char* subdirPath="data/music");
 

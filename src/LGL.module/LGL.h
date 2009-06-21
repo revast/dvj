@@ -47,8 +47,8 @@
 #ifndef	LGL_OSX
 #include <GL/gl.h>
 #include <GL/glext.h>
-#define	GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
 #endif
+//#define	GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
 
 #include <SDL.h>
 #include <SDL_main.h>

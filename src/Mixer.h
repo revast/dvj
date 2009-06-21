@@ -24,11 +24,11 @@
 #ifndef	_DVJ_MIXER_H_
 #define	_DVJ_MIXER_H_
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
+#include "Common.h"
+#include "Input.h"
 #include "Turntable.h"
-
 #include "Database.h"
-
 #include "Visualizer.h"
 
 class MixerObj

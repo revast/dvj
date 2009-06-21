@@ -22,7 +22,10 @@
  */
 
 #include "Visualizer.h"
+#include "Common.h"
 #include <string.h>
+
+#define	NOISE_IMAGE_COUNT_256_64 64
 
 LGL_Image* VisualizerObj::NoiseImage[NOISE_IMAGE_COUNT_128_128];
 
@@ -1476,11 +1479,7 @@ SetFrequencySensitiveVideos
 				GetFreqBrightness(getHi,neoFreqFactor,neoVol)==0.0f
 			)
 			{
-				float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
-				if(min<0.0f) min=0.0f;
-				float max=vid->GetLengthSeconds()-10.0f;
-				if(max<0.0f) max=vid->GetLengthSeconds();
-				vid->SetTime(LGL_RandFloat(min,max));
+				vid->SetTime(LGL_RandFloat(0.0f,vid->GetLengthSeconds()));
 			}
 		}
 	}

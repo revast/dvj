@@ -251,23 +251,6 @@ FileSelect
 
 bool
 InputObj::
-FileMarkUnopened
-(
-	unsigned int	target
-)	const
-{
-	bool mark=false;
-
-	for(unsigned int a=0;a<Children.size();a++)
-	{
-		mark|=Children[a]->FileMarkUnopened(target);
-	}
-
-	return(mark);
-}
-
-bool
-InputObj::
 FileRefresh
 (
 	unsigned int	target

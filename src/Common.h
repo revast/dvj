@@ -25,7 +25,7 @@
 #define	POINTER_PARTICLES_PER_SECOND (250)
 #define	WAVE_WIDTH_PERCENT (0.60f)
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 
 float
 GetGlowFromTime
@@ -83,7 +83,6 @@ Turntable_DrawDirTree
 	const char*	path,
 	const char**	nameArray,
 	bool*		isDirBits,
-	bool*		alreadyPlayedBits,
 	int		fileNum,
 	int		fileSelectInt,
 	float		viewPortBottom,

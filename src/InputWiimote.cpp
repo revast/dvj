@@ -21,10 +21,11 @@
  *
  */
 
+#include "LGL.h"
 #include "InputNull.h"
+#include "InputWiiMote.h"
 
-InputWiimoteObj::
-InputWiimoteObj()
+InputWiimoteObj::InputWiimoteObj()
 {
 	//
 }
@@ -244,17 +245,6 @@ FileSelect
 	}
 
 	return(choose);
-}
-
-bool
-InputWiimoteObj::
-FileMarkUnopened
-(
-	unsigned int	target
-)	const
-{
-	bool mark=false;
-	return(mark);
 }
 
 bool

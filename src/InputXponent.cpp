@@ -21,9 +21,9 @@
  *
  */
 
+#include "LGL.h"
 #include "InputXponent.h"
 
-#include "LGL.module/LGL.h"
 
 //Core
 
@@ -463,28 +463,6 @@ FileSelect
 			return(false);
 		}
 	}
-}
-
-bool
-InputXponentObj::
-FileMarkUnopened
-(
-	unsigned int	target
-)	const
-{
-	if(LGL_GetXponent())
-	{
-		if(target & TARGET_BOTTOM)
-		{
-			return(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_EJECT));
-		}
-		else if(target & TARGET_TOP)
-		{
-			return(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_EJECT));
-		}
-	}
-
-	return(false);
 }
 
 bool

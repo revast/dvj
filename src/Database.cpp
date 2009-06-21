@@ -4,9 +4,9 @@
  *
  */
 
-#include "Database.h"
+#include "LGL.h"
 #include "FileInterface.h"
-#include "LGL.module/LGL.h"
+#include "Database.h"
 
 //DatabaseFilterObj
 
@@ -133,7 +133,6 @@ DatabaseEntryObj
 
 	BPM=bpm;
 	IsDir=LGL_DirectoryExists(pathFromMusicRoot);
-	AlreadyPlayed=false;
 }
 
 DatabaseEntryObj::
