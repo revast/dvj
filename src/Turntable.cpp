@@ -597,6 +597,15 @@ NextFrame
 
 		if
 		(
+			Input.FileMarkUnopened(target) &&
+			DatabaseFilteredEntries.empty()==false
+		)
+		{
+			DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed=false;
+		}
+
+		if
+		(
 			Input.FileSelect(target) &&
 			DatabaseFilteredEntries.empty()==false
 		)

@@ -53,6 +53,7 @@ virtual int	MasterToHeadphones()					const;	//Headphones hears what's being outp
 
 virtual	float	FileScroll			(unsigned int target)	const;	//How many file to scroll this frame
 virtual	bool	FileSelect			(unsigned int target)	const;	//Enter the directory or open the file
+virtual bool	FileMarkUnopened		(unsigned int target)	const;	//Don't display that the current file has been opened
 virtual	bool	FileRefresh			(unsigned int target)	const;	//Rescan current folder
 
 	//Mode 1: Decoding...
