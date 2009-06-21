@@ -51,7 +51,6 @@ DEFINES		=  -DLGL_LINUX -DLGL_UNIX -DLGL_OSX -Dfopen64=fopen
 CFLAGS		=	$(MODEFLAGS) \
 				$(DEFINES) \
 				`sdl-config --cflags` \
-				-I$(ROOT_SRC_DIR) \
 				-I/usr/local/include/
 				
 CPPFLAGS	= 	$(CFLAGS)
