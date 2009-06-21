@@ -35,36 +35,7 @@
 #include <SDL_net.h>
 #include <SDL_endian.h>
 
-
-#ifdef LGL_UNIX
-#include <unistd.h>		//read(), LGL_Memory*
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <dirent.h>		//Directory Searching
-#include <sys/time.h>		//LGL_Memory*
-#include <sys/ioctl.h>
-#include <sys/resource.h>	//LGL_Memory*
-#include <errno.h>		//Error indentification
-#include <sys/mman.h>		//mmap()
-#include <sys/statvfs.h>	//Free disk space
-#include <sched.h>
-#endif //LGL_UNIX
-
 #include <samplerate.h>
-
-#ifdef LGL_LINUX_VIDCAM
-//<V4L>
-#include <stdlib.h>		//malloc()
-#include <sys/ioctl.h>
-#include <sys/time.h>		//LGL_Memory*
-#include <sys/resource.h>	//LGL_Memory*
-#include <dirent.h>		//Directory Searching
-#include <linux/videodev.h>	//v4l
-
-#define	LGL_VIDCAM_FPS_MIN	10.0
-//<V4L>
-#endif //LGL_LINUX_VIDCAM
 
 #define	LGL_PRIORITY_MAIN		(-0.1f)
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
