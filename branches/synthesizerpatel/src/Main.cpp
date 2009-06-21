@@ -69,7 +69,7 @@ LGL_DirTree dirTreeMusic("data");
 
 void InitializeGlobalsPreLGL()
 {
-#ifdef	LGL_LINUX
+#ifdef	LGL_UNIX
 	//Move all old generic data/record files to data/record/old
 	if(LGL_DirectoryExists("data/record"))
 	{
@@ -100,7 +100,7 @@ void InitializeGlobalsPreLGL()
 			}
 		}
 	}
-#endif	//LGL_LINUX
+#endif	//LGL_UNIX
 }
 
 void InitializeGlobals()
