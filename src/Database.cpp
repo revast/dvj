@@ -133,6 +133,7 @@ DatabaseEntryObj
 
 	BPM=bpm;
 	IsDir=LGL_DirectoryExists(pathFromMusicRoot);
+	AlreadyPlayed=false;
 }
 
 DatabaseEntryObj::
