@@ -1,25 +1,14 @@
-default:
-	@$(MAKE) -C src all
-	@$(MAKE) -C tools all
+default: all
 
 all:
 	@$(MAKE) -C src all
-	@$(MAKE) -C tools all
 
-.PHONY: run runall clean spotless
-
-run:	default
-	@$(MAKE) -C src run
-
-runall:	all
-	@$(MAKE) -C src runall
-	@$(MAKE) -C tools runall
+.PHONY: run runall clean distclean
 
 clean:
+	rm dvj
 	@$(MAKE) -C src clean
-	@$(MAKE) -C tools clean
 
 spotless:
-	@$(MAKE) -C src spotless
-	@$(MAKE) -C tools spotless
+	@$(MAKE) -C src distclean
 
