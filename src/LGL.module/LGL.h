@@ -797,7 +797,7 @@ public:
 	void			CleanUp();
 
 	bool			ImageUpToDate() const;
-	LGL_Image*		LockImage();
+	LGL_Image*		LockImage(bool blockUpdate=false);
 	void			UnlockImage(LGL_Image* image);
 	float			GetLengthSeconds();
 	float			GetTime();

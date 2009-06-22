@@ -476,17 +476,6 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		LGL_DrawLogWrite("vqcre|T\n");
 	}
 
-	if(ExitPrompt==false)
-	{
-		//Draw Mixer
-		if(VisualizerFullScreen==false)
-		{
-			if(LogEverything==false) LGL_DrawLogPause();
-			Mixer->DrawFrame(visualsQuadrent, visualizerZoomOutPercent);
-			if(LogEverything==false) LGL_DrawLogPause(false);
-		}
-	}
-
 	//Draw Quadrent Lines
 	if(VisualizerFullScreen==false)
 	{
@@ -529,6 +518,7 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		float top=1.0f;
 		LGL_ClipRectEnable(left,right,bottom,top);
 	}
+
 	//Draw Wiimote for visuals
 	LGL_DrawLogPause();
 	for(int a=0;a<8;a++)
@@ -632,6 +622,16 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 			0.75f,
 			"[Y] / [N]"
 		);
+	}
+	else
+	{
+		//Draw Mixer
+		if(VisualizerFullScreen==false)
+		{
+			if(LogEverything==false) LGL_DrawLogPause();
+			Mixer->DrawFrame(visualsQuadrent, visualizerZoomOutPercent);
+			if(LogEverything==false) LGL_DrawLogPause(false);
+		}
 	}
 	if(LogEverything==false) LGL_DrawLogPause(false);
 }

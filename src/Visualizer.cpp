@@ -977,7 +977,7 @@ DrawVisuals
 	//The ACTUAL videos we're drawing.
 	for(int videoNow=0;videoNow<2;videoNow++)
 	{
-		DrawVideos(videoNow,l,r,b,t);
+		DrawVideos(false, videoNow,l,r,b,t);
 	}
 
 	//AccumulationNow->FrameBufferUpdate();
@@ -1909,6 +1909,7 @@ void
 VisualizerObj::
 DrawVideos
 (
+	bool	preview,
 	int	which,
 	float	l,
 	float	r,
@@ -1937,7 +1938,7 @@ DrawVideos
 				float bright = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
 				if(fullBrightness==false) bright*=VideoBrightness[videoNow];
 
-				LGL_Image* image = vid->LockImage();
+				LGL_Image* image = vid->LockImage(preview);
 				{
 					if(image)
 					{
@@ -1963,7 +1964,7 @@ DrawVideos
 	else if(Videos[videoNow])
 	{
 		float bright = fullBrightness ? 1.0f : VideoBrightness[videoNow];
-		LGL_Image* image=Videos[videoNow]->LockImage();
+		LGL_Image* image=Videos[videoNow]->LockImage(preview);
 		if(image!=NULL)
 		{
 			image->DrawToScreen
