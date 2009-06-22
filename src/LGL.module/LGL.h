@@ -695,6 +695,7 @@ const	char*		GetPathShort() const;
 	char		PathShort[1024];
 
 	bool		AlphaChannel;
+	bool		PixelBufferEnable;
 
 	//glFrameBuffer stuff
 

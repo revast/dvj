@@ -4952,6 +4952,7 @@ LGL_Image
 	FileLoad(filename);
 
 	LinearInterpolation=inLinearInterpolation;
+	PixelBufferEnable=true;
 
 	if(loadToGLTexture)
 	{
@@ -5011,6 +5012,7 @@ LGL_Image
 	}
 
 	AlphaChannel=mySDL_Surface1->flags & SDL_SRCALPHA;
+	PixelBufferEnable=true;
 
 	//Convert mySDL_Surface1 to the desired format for SDL_Surface2
 
@@ -5108,6 +5110,7 @@ LGL_Image
 	sprintf(PathShort,"FrameBuffer Image");
 
 	AlphaChannel=false;
+	PixelBufferEnable=true;
 
 	SurfaceSDL=NULL;
 
@@ -6103,29 +6106,37 @@ LoadSurfaceToTexture
 
 	GLsizei size = w*h*(AlphaChannel?4:3);
 
-	//Make a Pixel Buffer Object
-	gl2GenBuffers(1,&PixelBufferObjectFrontGL);
-	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
-	gl2BufferData
-	(
-		GL_PIXEL_UNPACK_BUFFER,
-		(GLsizeiptr)(&size),
-		NULL,
-		GL_STREAM_DRAW
-	);
-	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+	if(PixelBufferEnable)
+	{
+		//Make a Pixel Buffer Object
+		gl2GenBuffers(1,&PixelBufferObjectFrontGL);
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
+		gl2BufferData
+		(
+			GL_PIXEL_UNPACK_BUFFER,
+			(GLsizeiptr)(&size),
+			NULL,
+			GL_STREAM_DRAW
+		);
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
 
-	//Make a Pixel Buffer Object
-	gl2GenBuffers(1,&PixelBufferObjectBackGL);
-	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
-	gl2BufferData
-	(
-		GL_PIXEL_UNPACK_BUFFER,
-		(GLsizeiptr)(&size),
-		NULL,
-		GL_STREAM_DRAW
-	);
-	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+		//Make a Pixel Buffer Object
+		gl2GenBuffers(1,&PixelBufferObjectBackGL);
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
+		gl2BufferData
+		(
+			GL_PIXEL_UNPACK_BUFFER,
+			(GLsizeiptr)(&size),
+			NULL,
+			GL_STREAM_DRAW
+		);
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+	}
+	else
+	{
+		PixelBufferObjectFrontGL=-1;
+		PixelBufferObjectBackGL=-1;
+	}
 }
 
 void
@@ -6207,12 +6218,12 @@ UpdateTexture
 	if(pboReady)
 	{
 		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
-		gl2BufferData(GL_PIXEL_UNPACK_BUFFER_ARB, w*h*bytesperpixel, 0, GL_STREAM_DRAW);
+		gl2BufferData(GL_PIXEL_UNPACK_BUFFER, w*h*bytesperpixel, 0, GL_STREAM_DRAW);
 		GLubyte* pbo = (GLubyte*)gl2MapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
 		if(pbo)
 		{
 			memcpy(pbo,data,w*h*bytesperpixel);
-			gl2UnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+			gl2UnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		}
 	}
 
