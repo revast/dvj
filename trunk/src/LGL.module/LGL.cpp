@@ -70,7 +70,11 @@
 //<V4L>
 #endif //LGL_LINUX_VIDCAM
 
+#ifdef	LGL_OSX
+#define	LGL_PRIORITY_MAIN		(0.1f)
+#else
 #define	LGL_PRIORITY_MAIN		(-0.1f)
+#endif	//LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(-0.2f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(-0.2f)
@@ -8303,7 +8307,7 @@ LGL_VideoEncoder
 		// Set AVI format
 		DstOutputFormat = guess_format("avi", NULL, NULL);
 		DstOutputFormat->audio_codec = CODEC_ID_NONE;
-		DstOutputFormat->video_codec = CODEC_ID_MJPEG;
+		DstOutputFormat->video_codec = CODEC_ID_LJPEG;
 
 		// FormatContext
 		DstFormatContext = (AVFormatContext*)av_mallocz(sizeof(AVFormatContext));
@@ -8314,6 +8318,8 @@ LGL_VideoEncoder
 		DstStream = av_new_stream(DstFormatContext,0);
 		DstStream->r_frame_rate=SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate;
 		DstStream->sample_aspect_ratio=SrcFormatContext->streams[SrcVideoStreamIndex]->sample_aspect_ratio;
+		DstStream->time_base=SrcFormatContext->streams[SrcVideoStreamIndex]->time_base;
+		DstStream->quality=1.0f;	//It's unclear whether that actually affects mjpeg encoding...
 		DstFormatContext->streams[0] = DstStream;
 		DstFormatContext->nb_streams = 1;
 
@@ -8323,10 +8329,15 @@ LGL_VideoEncoder
 		avcodec_get_context_defaults(DstCodecContext);
 		DstCodecContext->codec_id=CODEC_ID_MJPEG;
 		DstCodecContext->codec_type=CODEC_TYPE_VIDEO;
-		DstCodecContext->bit_rate=8*1024*1024;
+		//const int bitrate = 8*1024*1024*8;	//Provides "quite good" quality for 1280x720. Completely unscientific.
+		const int bitrate = 1024*1024*128;	//This value is beyond the highest quality.
+		DstCodecContext->bit_rate=bitrate;	//This line dictates the output's quality.
+		DstCodecContext->bit_rate_tolerance=bitrate/8;	//Allow for some variance
 		DstCodecContext->width = SrcBufferWidth;
 		DstCodecContext->height = SrcBufferHeight;
-		DstCodecContext->time_base = SrcCodecContext->time_base;
+		//The next line appears goofy and incorrect, but is necessary to ensure a proper framerate.
+		//The SrcCodecContext's time_base can be incorrect, for reasons not entirely clear. ffmpeg can be like that.
+		DstCodecContext->time_base = DstStream->time_base;//SrcCodecContext->time_base;
 		DstCodecContext->pix_fmt = PIX_FMT_YUVJ422P;
 
 		if(avcodec_open(DstCodecContext, DstCodec) < 0)
@@ -8374,7 +8385,7 @@ LGL_VideoEncoder
 		
 		// Set mp3 format
 		DstMp3OutputFormat = guess_format("ogg", NULL, NULL);
-		DstMp3OutputFormat->audio_codec = CODEC_ID_VORBIS;
+		DstMp3OutputFormat->audio_codec = CODEC_ID_VORBIS;	//FIXME: mp3?? vorbis?? Pick one and name appropriately!
 		DstMp3OutputFormat->video_codec = CODEC_ID_NONE;
 
 		// FormatContext
@@ -8470,6 +8481,14 @@ LGL_VideoEncoder::
 	if(DstBuffer)
 	{
 		free(DstBuffer);
+	}
+	if(DstMp3Buffer)
+	{
+		free(DstMp3Buffer);
+	}
+	if(DstMp3Buffer2)
+	{
+		free(DstMp3Buffer2);
 	}
 }
 
@@ -17194,9 +17213,11 @@ int lgl_MidiUpdate
 	void* delay
 )
 {
+#ifndef	LGL_OSX
 	unsigned char readPacket[4];
 	int knobNow=-1;
 	int knobValue=-1;
+#endif	//LGL_OSX
 
 	if(LGL.MidiFD<=0)
 	{
