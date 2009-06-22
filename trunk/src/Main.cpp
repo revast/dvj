@@ -476,30 +476,6 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		LGL_DrawLogWrite("vqcre|T\n");
 	}
 
-	//Draw Quadrent Lines
-	if(VisualizerFullScreen==false)
-	{
-		LGL_DrawLogWrite("dvj::MainDrawGlowLines|%c|%.3f\n",visualsQuadrent?'T':'F',visualizerZoomOutPercent);
-		LGL_DrawLogPause();
-		Main_DrawGlowLines(LGL_SecondsSinceExecution(),1.0f,visualsQuadrent,visualizerZoomOutPercent);
-		LGL_DrawLogPause(false);
-	}
-
-	if(visualsQuadrent)
-	{
-		LGL_ClipRectEnable
-		(
-			0.0f,
-			0.5f,
-			0.5f,
-			1.0f
-		);
-	}
-	if(visualsQuadrent)
-	{
-		LGL_ClipRectDisable();
-	}
-
 	if(visualsQuadrent)
 	{
 		LGL_ClipRectEnable
@@ -518,18 +494,6 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		float top=1.0f;
 		LGL_ClipRectEnable(left,right,bottom,top);
 	}
-
-	//Draw Wiimote for visuals
-	LGL_DrawLogPause();
-	for(int a=0;a<8;a++)
-	{
-		if(ParticlePointersActive[a])
-		{
-			ParticlePointers[a]->Draw();
-		}
-	}
-	LGL_DrawLogPause(false);
-	LGL_ClipRectDisable();
 	
 	//Draw Visuals
 	if(VisualizerFullScreen)
@@ -562,30 +526,6 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
 		Visualizer->SetViewPortVisuals(0.75f,1.0f,0.50f,0.75f);
 		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
-	}
-
-	if(visualsQuadrent)
-	{
-		LGL_ClipRectEnable
-		(
-			0.0f,
-			0.5f,
-			0.5f,
-			1.0f
-		);
-	}
-	LGL_DrawLogPause();
-	for(int a=0;a<8;a++)
-	{
-		if(ParticlePointersActive[a])
-		{
-			ParticlePointers[a]->Draw();
-		}
-	}
-	LGL_DrawLogPause(false);
-	if(visualsQuadrent)
-	{
-		LGL_ClipRectDisable();
 	}
 
 	if(OmniFader<1.0f)
@@ -623,7 +563,9 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 			"[Y] / [N]"
 		);
 	}
-	else
+	if(LogEverything==false) LGL_DrawLogPause(false);
+	
+	if(ExitPrompt==false)
 	{
 		//Draw Mixer
 		if(VisualizerFullScreen==false)
@@ -633,7 +575,27 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 			if(LogEverything==false) LGL_DrawLogPause(false);
 		}
 	}
-	if(LogEverything==false) LGL_DrawLogPause(false);
+	
+	//Draw Quadrent Lines
+	if(VisualizerFullScreen==false)
+	{
+		LGL_DrawLogWrite("dvj::MainDrawGlowLines|%c|%.3f\n",visualsQuadrent?'T':'F',visualizerZoomOutPercent);
+		LGL_DrawLogPause();
+		Main_DrawGlowLines(LGL_SecondsSinceExecution(),1.0f,visualsQuadrent,visualizerZoomOutPercent);
+		LGL_DrawLogPause(false);
+	}
+
+	//Draw Wiimote
+	LGL_DrawLogPause();
+	for(int a=0;a<8;a++)
+	{
+		if(ParticlePointersActive[a])
+		{
+			ParticlePointers[a]->Draw();
+		}
+	}
+	LGL_DrawLogPause(false);
+	LGL_ClipRectDisable();
 }
 
 LGL_Image* logo=NULL;
