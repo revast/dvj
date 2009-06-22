@@ -7517,9 +7517,16 @@ ImageUpToDate()	const
 
 LGL_Image*
 LGL_Video::
-LockImage()
+LockImage
+(
+	bool	blockUpdate
+)
 {
-	if(BufferRequiresLoading)
+	if
+	(
+		blockUpdate==false &&
+		BufferRequiresLoading
+	)
 	{
 		if(BufferRGBFrontSemaphore->Lock("Main","Inside LGL_Video::LockImage() (1)",false)==false)
 		{

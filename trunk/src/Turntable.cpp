@@ -2197,7 +2197,7 @@ DrawFrame
 		}
 		else
 		{
-			Visualizer->DrawVideos(Which,left,right,bottom,top,true);
+			Visualizer->DrawVideos(true, Which,left,right,bottom,top,true);
 			if(VideoFrequencySensitiveMode>0)
 			{
 				float volAve;
