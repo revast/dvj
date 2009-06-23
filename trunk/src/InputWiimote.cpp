@@ -47,7 +47,11 @@ NextFrame()
 		ScrollInitialAccel=acc.GetY();
 	}
 
-	if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B))
+	if
+	(
+		LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_A) ||
+		LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B)
+	)
 	{
 		if(LGL_GetWiimote(0).GetPointerAvailable())
 		{
@@ -527,6 +531,7 @@ WaveformVolumeInvert
 )	const
 {
 	bool invert=false;
+	/*
 	if(target & TARGET_FOCUS)
 	{
 		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B))
@@ -534,6 +539,7 @@ WaveformVolumeInvert
 			invert=true;
 		}
 	}
+	*/
 	return(invert);
 }
 
@@ -556,6 +562,14 @@ WaveformRewindFF
 )	const
 {
 	float rewindff=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B))
+		{
+			float val=16.0f*(LastKnownPointerScratchX-0.5f);
+			rewindff=(powf(2.0f,fabsf(val))-1.0f)*LGL_Sign(val);
+		}
+	}
 	return(rewindff);
 }
 
