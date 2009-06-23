@@ -1938,7 +1938,7 @@ DrawVideos
 				float bright = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
 				if(fullBrightness==false) bright*=VideoBrightness[videoNow];
 
-				LGL_Image* image = vid->LockImage(preview);
+				LGL_Image* image = vid->LockImage(EIGHT_WAY ? !preview : preview);
 				{
 					if(image)
 					{
@@ -1964,7 +1964,7 @@ DrawVideos
 	else if(Videos[videoNow])
 	{
 		float bright = fullBrightness ? 1.0f : VideoBrightness[videoNow];
-		LGL_Image* image=Videos[videoNow]->LockImage(preview);
+		LGL_Image* image=Videos[videoNow]->LockImage(EIGHT_WAY ? !preview : preview);
 		if(image!=NULL)
 		{
 			image->DrawToScreen
