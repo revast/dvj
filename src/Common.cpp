@@ -59,15 +59,18 @@ Main_DrawGlowLines
 			1.0f
 		);
 	}
-
-	LGL_DrawLineToScreen
-	(
-		quadrentSplitX,quadrentSplitY,
-		quadrentSplitX,1,
-		0,0,glow,glow,
-		1,
-		false
-	);
+	if(EIGHT_WAY==false)
+	{
+		float myX = quadrentSplitX + 1.0f/LGL_VideoResolutionX();
+		LGL_DrawLineToScreen
+		(
+			myX,quadrentSplitY,
+			myX,1,
+			0,0,glow,glow,
+			1,
+			false
+		);
+	}
 
 	for(float a=1;a<7;a++)
 	{
@@ -87,7 +90,7 @@ Main_DrawGlowLines
 			false
 		);
 		LGL_ClipRectDisable();
-		if(EIGHT_WAY)
+		if(0 && EIGHT_WAY)
 		{
 			LGL_DrawLineToScreen
 			(
