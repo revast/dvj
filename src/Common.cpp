@@ -425,9 +425,9 @@ Turntable_DrawDirTree
 		}
 		else if(alreadyPlayedBits[b])
 		{
-			R=0.5f;
-			G=0.5f;
-			B=0.5f;
+			R=0.25f;
+			G=0.25f;
+			B=0.25f;
 		}
 
 		if(strlen(fileNow)>0)
