@@ -9,7 +9,7 @@
 
 #include "Test.h"
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 
 class TestVideoLoad : public Test
 {
