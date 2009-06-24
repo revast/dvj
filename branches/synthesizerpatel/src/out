@@ -1,0 +1,91 @@
+Undefined symbols:
+  "LGL_DrawFPSGraph(float, float, float, float, float, float)", referenced from:
+      _SDL_main in frameRateTest.o
+  "LGL_ProcessInput()", referenced from:
+      _SDL_main in frameRateTest.o
+  "LGL_Sound::PrepareForDelete()", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+      TestSoundLoad::Update()      in TestSoundLoad.o
+  "LGL_Font::DrawString(float, float, float, float, float, float, float, bool, float, char const*, ...)", referenced from:
+      _SDL_main in frameRateTest.o
+      _SDL_main in frameRateTest.o
+      _SDL_main in frameRateTest.o
+  "LGL_SwapBuffers()", referenced from:
+      _SDL_main in frameRateTest.o
+  "LGL_GetFont()", referenced from:
+      _SDL_main in frameRateTest.o
+      _SDL_main in frameRateTest.o
+      _SDL_main in frameRateTest.o
+  "LGL_Sound::PreparingForDelete()", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+      TestSoundLoad::Update()      in TestSoundLoad.o
+  "LGL_Sound::LGL_Sound(char const*, bool, int, unsigned char*, unsigned long)", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+  "LGL_Sound::~LGL_Sound()", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+  "LGL_Sound::GetPath() const", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+  "LGL_Sound::ReadyForDelete()", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+      TestSoundLoad::Update()      in TestSoundLoad.o
+      TestSoundLoad::Update()      in TestSoundLoad.o
+  "LGL_SecondsSinceThisFrame()", referenced from:
+      _SDL_main in frameRateTest.o
+      _SDL_main in frameRateTest.o
+  "LGL_Video::SetTime(float)", referenced from:
+      TestVideoLoad::Update()      in TestVideoLoad.o
+  "LGL_Video::~LGL_Video()", referenced from:
+      TestVideoLoad::~TestVideoLoad()in TestVideoLoad.o
+      TestVideoLoad::~TestVideoLoad()in TestVideoLoad.o
+      TestVideoLoad::~TestVideoLoad()in TestVideoLoad.o
+  "LGL_KeyStroke(int)", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+      _SDL_main in frameRateTest.o
+      _SDL_main in frameRateTest.o
+  "LGL_RandInt(int, int)", referenced from:
+      TestVideoLoad::Update()      in TestVideoLoad.o
+  "LGL_SecondsSinceExecution()", referenced from:
+      TestVideoLoad::Update()      in TestVideoLoad.o
+      _SDL_main in frameRateTest.o
+  "LGL_DirTree::GetFileName(unsigned int)", referenced from:
+      TestSoundLoadAllFiles::Update()      in TestSoundLoadAllFiles.o
+      TestSoundLoadAllFiles::Update()      in TestSoundLoadAllFiles.o
+  "LGL_Video::SetVideo(char const*)", referenced from:
+      TestVideoLoad::Update()      in TestVideoLoad.o
+      TestVideoLoad::Update()      in TestVideoLoad.o
+  "LGL_Sound::Play(float, bool, float, float, float)", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+  "LGL_DelaySeconds(float)", referenced from:
+      _SDL_main in frameRateTest.o
+  "LGL_Sound::IsUnloadable()", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+  "LGL_Image::DrawToScreen(float, float, float, float, float, float, float, float, float, bool, bool, float, float, float, float, float, float, float)", referenced from:
+      TestVideoLoad::Update()      in TestVideoLoad.o
+  "LGL_DirTree::GetPath() const", referenced from:
+      TestSoundLoadAllFiles::Update()      in TestSoundLoadAllFiles.o
+  "LGL_Video::GetPath()", referenced from:
+      TestVideoLoad::Update()      in TestVideoLoad.o
+  "LGL_Video::LGL_Video(char const*)", referenced from:
+      TestVideoLoad::TestVideoLoad()in TestVideoLoad.o
+      TestVideoLoad::TestVideoLoad()in TestVideoLoad.o
+  "LGL_Video::UnlockImage(LGL_Image*)", referenced from:
+      TestVideoLoad::Update()      in TestVideoLoad.o
+  "LGL_Sound::GetPercentLoadedSmooth()", referenced from:
+      TestSoundLoad::Update()      in TestSoundLoad.o
+      TestSoundLoad::Update()      in TestSoundLoad.o
+  "LGL_DirTree::~LGL_DirTree()", referenced from:
+      TestSoundLoadAllFiles::~TestSoundLoadAllFiles()in TestSoundLoadAllFiles.o
+      TestSoundLoadAllFiles::~TestSoundLoadAllFiles()in TestSoundLoadAllFiles.o
+      TestSoundLoadAllFiles::~TestSoundLoadAllFiles()in TestSoundLoadAllFiles.o
+  "LGL_DirTree::LGL_DirTree(char const*)", referenced from:
+      TestSoundLoadAllFiles::TestSoundLoadAllFiles()in TestSoundLoadAllFiles.o
+      TestSoundLoadAllFiles::TestSoundLoadAllFiles()in TestSoundLoadAllFiles.o
+  "LGL_DirTree::GetFileCount()", referenced from:
+      TestSoundLoadAllFiles::Update()      in TestSoundLoadAllFiles.o
+  "LGL_Video::LockImage()", referenced from:
+      TestVideoLoad::Update()      in TestVideoLoad.o
+  "LGL_Init(int, int, int, char const*)", referenced from:
+      _SDL_main in frameRateTest.o
+ld: symbol(s) not found
+collect2: ld returned 1 exit status
+make: *** [frameRateTest] Error 1
