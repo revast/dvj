@@ -23,7 +23,7 @@
 
 #include "LGL.h"
 #include "InputNull.h"
-#include "InputWiiMote.h"
+#include "InputWiimote.h"
 
 InputWiimoteObj::InputWiimoteObj()
 {
