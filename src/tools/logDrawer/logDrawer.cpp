@@ -23,7 +23,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 #include "FileInterface.h"
 #include "Particle.h"
 
@@ -221,7 +221,7 @@ int main(int argc, char** argv)
 	int frameCounter=0;
 */
 	FileInterfaceObj fi;
-	
+
 	char audioFile[2048];
 
 	LGL_Image* NoiseImage[NOISE_IMAGE_COUNT_256_64];
@@ -275,7 +275,7 @@ int main(int argc, char** argv)
 			if(frameCounter>1000)
 			{
 				frameCounter=0;
-				
+
 				LGL_ProcessInput();
 				if(LGL_KeyStroke(SDLK_ESCAPE))
 				{
@@ -356,7 +356,7 @@ exit(0);
 	double homePointSeconds[18];
 	float homePointFlash[18];
 	float homePointNoise[18];
-	
+
 	LGL_Image* fbImage=NULL;
 
 	std::vector<LGL_Image*> imageList;
@@ -516,7 +516,7 @@ exit(0);
 							break;
 						}
 					}
-					
+
 					if(vid==NULL)
 					{
 						printf("New Video: %s\n",imageName);
@@ -717,7 +717,7 @@ exit(0);
 				thickness,
 				antialias
 			);
-			
+
 			//Clean Up
 
 			delete dataPoints;
@@ -752,9 +752,9 @@ exit(0);
 			}
 			assert(!feof(fd));
 			assert(strlen(fi.GetLine())==0);
-			
+
 			//Obtain Color Data
-			
+
 			fi.ReadLine(fd);
 			assert(!feof(fd));
 			assert(fi.Size()==2);
@@ -995,7 +995,7 @@ exit(0);
 		else if(strcasecmp(fi[0],"dtt")==0)
 		{
 			assert(fi.Size()==36);
-			
+
 			int which = atoi(fi[1]);
 			assert(which >=0 && which < 10);
 			assert(soundList[which]);
@@ -1012,7 +1012,7 @@ exit(0);
 				entireWaveArrayMagnitudeMax,
 				entireWaveArrayFreqFactor
 			);
-			
+
 			Turntable_DrawWaveform
 			(
 				soundList[which],		//01: sound
@@ -1329,7 +1329,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 			if(nullCodec==false)
 			{
 				//Fire up mencoder
-				
+
 				char cmd[1024];
 				sprintf
 				(
@@ -1535,7 +1535,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 
 		sprintf(target,"%s.mpeg4.avi",noExtensionFile);
 		LGL_FileDelete(target);
-*/		
+*/
 
 #if 0
 		printf("Running ffmpeg for .mp4 conversion...\n");	//FIXME: We shouldn't be re-encoding video here...
@@ -1555,7 +1555,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 		printf("ffmpeg: Success! Created output file: '%s.mp4'\n",noExtensionFile);
 #endif
 
-#if 0	
+#if 0
 		printf("Running ffmpeg to create .wmv file...\n");
 		sprintf
 		(
@@ -1586,7 +1586,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 		sprintf(outputFile,"%s.mpeg2",noExtensionFile);
 		assert(LGL_FileExists(outputFile) && LGL_FileLengthBytes(outputFile) > minOutputFileSize);
 		printf("ffmpeg: Success! Created output file: '%s.mpeg2'\n",noExtensionFile);
-		
+
 		printf("Running dvdauthor...\n");
 		sprintf
 		(
