@@ -10,7 +10,7 @@
 #include "Test.h"
 #include "TestSoundLoad.h"
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 
 class TestSoundLoadAllFiles : public Test
 {

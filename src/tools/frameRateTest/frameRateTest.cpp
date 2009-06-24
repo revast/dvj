@@ -4,7 +4,7 @@
  *
  */
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 
 #include "Test.h"
 
@@ -36,7 +36,7 @@ main
 	);
 
 	std::vector<Test*> tests;
-	
+
 	//Sound Load Full
 	TestSoundLoad* tsl = new TestSoundLoad;
 	tests.push_back(tsl);
@@ -48,7 +48,7 @@ main
 
 	//Sound Load All Files
 	tests.push_back(new TestSoundLoadAllFiles);
-	
+
 	//Video Load
 	tests.push_back(new TestVideoLoad);
 
@@ -75,7 +75,7 @@ main
 			exit(0);
 		}
 
-		
+
 
 		//Update Tests
 
