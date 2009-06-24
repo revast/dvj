@@ -1,8 +1,0 @@
-DIRECTORY_NAME = src
-
-ROOT_SRC_DIR = ./
-
-CREATE_BINARY = 1
-
-PREFIX_BIN = ../../logDrawer
-
