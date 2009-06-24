@@ -125,34 +125,22 @@ common: $(COMMON_OBJ)
 tools: diskWriter frameRateTest importMusicVideo logDrawer videoFreqMixer
 
 diskWriter: $(DISKWRITER_OBJ)
-	@echo -n Building $@ ...
-	@$(CC) -o ../$@$(SUFFIX_BIN) $? $(LGL_OBJ) $(LIBS)
-	@echo " done"
+	$(CC) -o ../$@$(SUFFIX_BIN) $? $(LGL_OBJ) $(LIBS)
 	
 frameRateTest: $(FRAMERATETEST_OBJ)
-	@echo -n Building $@ ...
-	@$(CC) -o ../$@$(SUFFIX_BIN) $? $(LGL_OBJ) $(LIBS)
-	@echo " done"
+	$(CC) -o ../$@$(SUFFIX_BIN) $? $(LGL_OBJ) $(LIBS)
 	
 importMusicVideo: $(IMPORTMUSICVIDEO_OBJ)
-	@echo -n Building $@ ...
-	@$(CC) -o ../$@$(SUFFIX_BIN) $? FileInterface.o Particle.o $(LGL_OBJ) $(LIBS)
-	@echo " done"
+	$(CC) -o ../$@$(SUFFIX_BIN) $? FileInterface.o Particle.o $(LGL_OBJ) $(LIBS)
 	
 logDrawer: $(LOGDRAWER_OBJ)
-	@echo -n Building $@ ...
-	@$(CC) -o ../$@$(SUFFIX_BIN) $? FileInterface.o Particle.o $(LGL_OBJ) $(LIBS)
-	@echo " done"
+	$(CC) -o ../$@$(SUFFIX_BIN) $? FileInterface.o Particle.o $(LGL_OBJ) $(LIBS)
 	
 videoFreqMixer: $(VIDEOFREQMIXER_OBJ)
-	@echo -n Building $@ ...
-	@$(CC) -o ../$@$(SUFFIX_BIN) $? $(LGL_OBJ) $(LIBS)
-	@echo " done"
+	$(CC) -o ../$@$(SUFFIX_BIN) $? $(LGL_OBJ) $(LIBS)
 	
 .c.o:
-	@echo -n Booding $@
 	$(CC) $(CXXFLAGS) -c -o $@ $<
-	@echo done
 
 clean:
 	rm -f $(COMMON_OBJ) $(TOOLS_OBJ) $(LGL_OBJ) 
