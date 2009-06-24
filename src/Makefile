@@ -1,71 +1,59 @@
 
 PLATFORM	= $(shell uname)
 
-# AVCODEC_LIBS provided by ffmpeg
-AVCODEC_LIBS=-lavformat -lavcodec -lswscale -lavutil
-
 ################################################################################
-# LINUX 
+# GENERAL
 ################################################################################
-
-ifeq ($(PLATFORM), Linux)
 
 AR = ar rcs
+
 CC = g++
 
-CCFLAGS 	=  -c -Wall -fsingle-precision-constant
-DEFINES		=  -DLGL_UNIX -DLGL_LINUX
-INCLUDES	=  -I$(OBJDIR) -I$(ROOT_SRC_DIR)
+MODEFLAGS 	= -c 
 
-CFLAGS		=	$(MODEFLAGS) \
-				$(DEFINES) \
-				`sdl-config --cflags`
-					
-CXXFLAGS	=	-include PrecompiledHeaders.h $(CFLAGS_LIN)
+AVCODEC_LIBS=	-lavformat -lavcodec -lswscale -lavutil # provided by ffmpeg
 
-LGL_LIBS	= 	$(AVCODEC_LIBS) \
+INCLUDES	=  -I/usr/local/include/ -ILGL -I.
+
+LIBS		=	$(AVCODEC_LIBS) \
 				`sdl-config --libs` \
 				`pkg-config --cflags --libs jack` \
 				-lSDL_image \
 				-lSDL_net \
-				-lGL \
 				-lfftw3f \
-				-lm \
 				-lsamplerate \
+				
+CFLAGS		=	$(MODEFLAGS) \
+				$(INCLUDES) \
+				$(DEFINES) \
+				`sdl-config --cflags`
+				
+CXXFLAGS	=	$(CFLAGS)
+
+################################################################################
+# LINUX 
+
+ifeq ($(PLATFORM), Linux)
+
+CCFLAGS 	+=  -fsingle-precision-constant
+
+DEFINES		+=  -DLGL_UNIX -DLGL_LINUX
+
+LGL_LIBS	+= 	-lGL \
+				-lm \
 				-lcwiid
+				
 endif # $(PLATFORM),Linux)
 
 ################################################################################
 # OSX
-################################################################################
 
 ifeq ($(PLATFORM), Darwin) # AKA OSX
 
-AR			=	ar rcs
-CC			=	g++ 
-MODEFLAGS	= 	-c
+DEFINES		+=  -DLGL_UNIX -DLGL_OSX -Dfopen64=fopen
 
-DEFINES		=  -DLGL_UNIX -DLGL_OSX -Dfopen64=fopen
-
-CFLAGS		=	$(MODEFLAGS) \
-				$(DEFINES) \
-				`sdl-config --cflags` \
-				-I/usr/local/include/
-				
-CPPFLAGS	= 	$(CFLAGS)
-
-LIBS		=	$(AVCODEC_LIBS) \
-				-L/usr/local/lib/SDL/ \
-				-L/usr/local/lib/ \
-				-lSDL_image \
-				-lSDL_net \
-				-lSDL \
-				-lSDLmain \
-				-lsamplerate \
-				-ljack \
-				-lz \
+LIBS		+=  -lz \
 				-lbz2 \
-				-lfftw3f \
 				-framework AppKit \
 				-framework Foundation \
 				-framework OpenGL 
@@ -76,30 +64,27 @@ endif # $(PLATFORM),Darwin)
 ################################################################################
 # WIN32
 ################################################################################
-ifeq ($(PLATFORM), MINGW32_NT-5.1) # AKA W32
+ifeq ($(PLATFORM), MINGW32_NT-5.1) 
+
+SUFFIX_BIN	= 	.exe
 
 DEFINES		= 	-DLGL_WIN32
-SUFFIX_BIN	= 	exe
-AR			= 	ar rcs
-CC			= 	g++
-MODEFLAG	= 	-g -Wall
-DEFINES		= 	-DLGL_WIN32
+
+INCLUDES	+=	-I$/lib/w32/include \
+				-I$/lib/w32/include/SDL 
+				
 CFLAGS		= 	 $(MODEFLAGS) \
 				 $(DEFINES) \
-				-I$(ROOT_SRC_DIR)/lib/w32/include \
-				-I$(ROOT_SRC_DIR)/lib/w32/include/SDL \
-				-I$(ROOT_SRC_DIR) \
 				-fsingle-precision-constant 
-CPPFLAGS	= 	$(CFLAGS)
+				
+CXXFLAGS	= 	$(CFLAGS)
+
 LIBS		= 	-Llib/w32 \
 				-lmingw32 \
-				-lSDLmain \
-				-lSDL \
-				-lSDL_image \
-				-lSDL_net \
 				-lglu32 \
 				-lopengl32 \
 				-mwindows
+				
 endif # ($(PLATFORM), MINGW32_NT-5.1) 
 
 
@@ -107,18 +92,67 @@ endif # ($(PLATFORM), MINGW32_NT-5.1)
 # General
 ################################################################################
 
-SOURCES		:= $(wildcard *.cpp)
-OBJECTS		:= $(subst .cpp,.o,$(SOURCES))
 
-.PHONY: default all clean
+COMMON_SRC			:=	$(wildcard *.cpp)
+LGL_SRC				:=	$(wildcard LGL/*.cpp)
+DISKWRITER_SRC		:=	$(wildcard tools/diskWriter/*.cpp)
+FRAMERATETEST_SRC	:=	$(wildcard tools/frameRateTest/*.cpp)
+IMPORTMUSICVIDEO_SRC:=	$(wildcard tools/importMusicVideo/*.cpp) 
+LOGDRAWER_SRC		:=  $(wildcard tools/logDrawer/*.cpp)
+VIDEOFREQMIXER_SRC	:=  $(wildcard tools/videoFreqMixer/*.cpp) 
 
-all: dvj
+COMMON_OBJ			:=	$(subst .cpp,.o, $(COMMON_SRC))
+LGL_OBJ				:=	$(subst .cpp,.o, $(LGL_SRC))
+DISKWRITER_OBJ		:=	$(subst .cpp,.o, $(DISKWRITER_SRC))
+FRAMERATETEST_OBJ	:=	$(subst .cpp,.o, $(FRAMERATETEST_SRC))
+IMPORTMUSICVIDEO_OBJ:=	$(subst .cpp,.o, $(IMPORTMUSICVIDEO_SRC))
+LOGDRAWER_OBJ		:=  $(subst .cpp,.o, $(LOGDRAWER_SRC))
+VIDEOFREQMIXER_OBJ	:=  $(subst .cpp,.o, $(VIDEOFREQMIXER_SRC))
 
-dvj: $(OBJECTS)
-	$(CC) -o ../dvj $(OBJECTS) $(LIBS)
+.PHONY: all clean
+
+default: all
+
+all: dvj tools 
+
+dvj: lgl common 
+	$(CC) -o ../dvj$(SUFFIX_BIN) $(COMMON_OBJ) $(LGL_OBJ) $(LIBS)
+	
+lgl: $(LGL_OBJ)
+
+common: $(COMMON_OBJ)
+
+tools: diskWriter frameRateTest importMusicVideo logDrawer videoFreqMixer
+
+diskWriter: $(DISKWRITER_OBJ)
+	@echo -n Building $@ ...
+	@$(CC) -o ../$@$(SUFFIX_BIN) $? $(LGL_OBJ) $(LIBS)
+	@echo " done"
+	
+frameRateTest: $(FRAMERATETEST_OBJ)
+	@echo -n Building $@ ...
+	@$(CC) -o ../$@$(SUFFIX_BIN) $? $(LGL_OBJ) $(LIBS)
+	@echo " done"
+	
+importMusicVideo: $(IMPORTMUSICVIDEO_OBJ)
+	@echo -n Building $@ ...
+	@$(CC) -o ../$@$(SUFFIX_BIN) $? FileInterface.o Particle.o $(LGL_OBJ) $(LIBS)
+	@echo " done"
+	
+logDrawer: $(LOGDRAWER_OBJ)
+	@echo -n Building $@ ...
+	@$(CC) -o ../$@$(SUFFIX_BIN) $? FileInterface.o Particle.o $(LGL_OBJ) $(LIBS)
+	@echo " done"
+	
+videoFreqMixer: $(VIDEOFREQMIXER_OBJ)
+	@echo -n Building $@ ...
+	@$(CC) -o ../$@$(SUFFIX_BIN) $? $(LGL_OBJ) $(LIBS)
+	@echo " done"
 	
 .c.o:
-	$(CC) $(CPPFLAGS) -c -o $@ $<
+	@echo -n Booding $@
+	$(CC) $(CXXFLAGS) -c -o $@ $<
+	@echo done
 
 clean:
-	rm -f *.o
+	rm -f $(COMMON_OBJ) $(TOOLS_OBJ) $(LGL_OBJ) 
