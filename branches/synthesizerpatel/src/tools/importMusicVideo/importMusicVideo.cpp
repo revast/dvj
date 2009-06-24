@@ -4,7 +4,7 @@
  *
  */
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 
 std::vector<char*> srcNames;
 std::vector<char*> outNames;
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 		printf("Error! Directory '%s' must exist!\n",videoDir);
 		exit(0);
 	}
-	
+
 	bool help=false;
 	for(int a=1;a<argc;a++)
 	{
@@ -69,7 +69,7 @@ int main(int argc, char** argv)
 		printf("\timportMusicVideo input1.mov --dvd-device ~/dvdrip/folder-with-vobs input2.mpg --dvd input3.ogm input4.mkv --ambient --mellow\n\n");
 		exit(0);
 	}
-	
+
 	dvdDevice[0]='\0';
 	bool badArgs=false;
 	for(int a=1;a<argc;a++)
@@ -702,7 +702,7 @@ bool convertMusicVideo
 		musicDir,
 		dst
 	);
-	
+
 	char srcStr[1024];
 	sprintf(srcStr,"%s",src);
 

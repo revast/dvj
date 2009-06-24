@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "LGL.module/LGL.h"
+#include "LGL.h"
 
 int main(int argc, char** argv)
 {

@@ -13,9 +13,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "LGL.module/LGL.h"
-
-#include "../../../src/Common.cpp"	//This is so screwy, but it works.
+#include "LGL.h"
 
 //const char* targetMusicPath="/home/emf/music/hypermind.mp3";
 /*
