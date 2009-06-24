@@ -104,9 +104,10 @@
 #/////////////////////////////////////////////////////////#
 #include <GL/gl.h>
 #include <GL/glext.h>
+#ifndef	GL_PIXEL_UNPACK_BUFFER
+#define	GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
+#endif	//GL_PIXEL_UNPACK_BUFFER
 #endif
-
-//#define	GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
 
 #include <fftw3.h>
 
