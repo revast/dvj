@@ -39,7 +39,7 @@ CCFLAGS 	+=  -fsingle-precision-constant
 
 DEFINES		+=  -DLGL_UNIX -DLGL_LINUX
 
-LGL_LIBS	+= 	-lGL \
+LIBS		+= 	-lGL \
 				-lm \
 				-lcwiid
 				

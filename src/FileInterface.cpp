@@ -23,6 +23,9 @@
 
 #include "FileInterface.h"
 
+#include <string.h>
+#include <assert.h>
+
 FileInterfaceObj::
 FileInterfaceObj()
 {
