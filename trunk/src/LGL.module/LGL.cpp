@@ -393,7 +393,6 @@ LGL_State LGL;
 #include <jack/statistics.h>
 #include <jack/thread.h>
 
-jack_port_t *jack_input_port=NULL;
 jack_port_t *jack_output_port_fl=NULL;
 jack_port_t *jack_output_port_fr=NULL;
 jack_port_t *jack_output_port_bl=NULL;
@@ -870,13 +869,10 @@ LGL_JackInit()
 	jack_input_port_l = jack_port_register(jack_client,"input_l",JACK_DEFAULT_AUDIO_TYPE,JackPortIsInput,0);
 	jack_input_port_r = jack_port_register(jack_client,"input_r",JACK_DEFAULT_AUDIO_TYPE,JackPortIsInput,0);
 
-	//jack_input_port = jack_port_register(jack_client,"input",JACK_DEFAULT_AUDIO_TYPE,JackPortIsInput,0);
-
 	if
 	(
 		jack_output_port_fl==NULL ||
 		jack_output_port_fr==NULL
-		//|| jack_input_port==NULL
 	)
 	{
 		printf("LGL_JackInit(): Error! Couldn't acquire JACK port(s)!\n");
