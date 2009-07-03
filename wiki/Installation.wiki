@@ -47,14 +47,14 @@ make
 
 =Configuration=
 
-You'll need proper ~/.jackrc and ~/.asoundrc files.
+You'll need proper ~/.jackdrc and ~/.asoundrc files.
 
 ===~/.jackrc===
-The following should be pasted into an empty ~/.jackrc, if you're using an Xponent:
+The following should be pasted into an empty ~/.jackdrc, if you're using an Xponent:
 {{{
 /usr/local/bin/jackd -Z -dalsa -d xponent -o4 -r44100 -p768 -n2 -s -M
 }}}
-The following should be pasted into an empty ~/.jackrc if you're using a 2-channel soundcard:
+The following should be pasted into an empty ~/.jackdrc if you're using a 2-channel soundcard:
 {{{
 /usr/local/bin/jackd -Z -dalsa -r44100 -p512 -n4 -s -M
 }}}
