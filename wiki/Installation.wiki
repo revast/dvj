@@ -9,17 +9,6 @@ Ensure you have the following packages:
 apt-get install subversion ctags libsdl1.2-dev g++ libfftw3-dev libavcodec-dev libavformat-dev libswscale-dev mencoder mplayer libsdl-image1.2-dev libsdl-net1.2-dev lame jackd libjack-dev libsamplerate0-dev libcwiid1-dev
 }}}
 
-You should install ffmpeg from source:
-{{{
-wget http://ffmpeg.org/releases/ffmpeg-0.5.tar.bz2
-tar -jxf ffmpeg-0.5.tar.bz2
-cd ffmpeg-0.5
-./configure --enable-swscale --enable-gpl --disable-sse
-make
-sudo make install
-cd ..
-}}}
-
 You'll need JACK. I'm using version 0.116.1 which is what's in Ubuntu's repositories. If you happen to need to compile your own JACK, use these commands:
 {{{
 wget http://jackaudio.org/downloads/jack-audio-connection-kit-0.116.1.tar.gz
