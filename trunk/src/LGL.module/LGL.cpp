@@ -20663,12 +20663,12 @@ LGL_DirTree
 	WorkerThreadDone=true;
 
 	Path[0]='\0';
+	FilterText[0]='\0';
 	if(SetPath(path)==false)
 	{
 		bool ret=SetPath(".");
 		assert(ret);
 	}
-	FilterText[0]='\0';
 }
 
 LGL_DirTree::
