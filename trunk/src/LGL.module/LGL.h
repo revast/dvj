@@ -863,6 +863,8 @@ private:
 	long			TimestampNext;
 	double			SecondsNow;
 	double			SecondsNext;
+	float			FPS;
+	float			LengthSeconds;
 
 	bool			ThreadEndSignal;
 	SDL_Thread*		DecoderThread;

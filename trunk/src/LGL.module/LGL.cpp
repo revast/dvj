@@ -7396,6 +7396,8 @@ LGL_Video
 
 	SecondsNow=0.0f;
 	SecondsNext=0.0f;
+	FPS=30.0f;
+	LengthSeconds=0.0f;
 
 	SetVideo(path);
 
@@ -7476,7 +7478,10 @@ CleanUp()
 		}
 		LGL.AVCodecSemaphore->Unlock();
 	}
-	
+
+	FPS=30.0f;
+	LengthSeconds=0.0f;
+
 	FormatContext=NULL;
 	CodecContext=NULL;
 	Codec=NULL;
@@ -7616,14 +7621,7 @@ float
 LGL_Video::
 GetLengthSeconds()
 {
-	if(FormatContext)
-	{
-		return(FormatContext->duration/(float)(AV_TIME_BASE));
-	}
-	else
-	{
-		return(0.0f);
-	}
+	return(LengthSeconds);
 }
 
 float
@@ -7665,7 +7663,7 @@ float
 LGL_Video::
 GetFPS()
 {
-	return(CodecContext->time_base.den/(float)CodecContext->time_base.num);
+	return(FPS);
 }
 
 const char*
@@ -7946,6 +7944,9 @@ MaybeChangeVideo()
 		// Get a pointer to the codec context for the video stream
 		CodecContext=fc->streams[VideoStreamIndex]->codec;
 		FormatContext=fc;	//Only set this once fc is fully initialized
+
+		FPS=CodecContext->time_base.den/(float)CodecContext->time_base.num;
+		LengthSeconds=FormatContext->duration/(float)(AV_TIME_BASE);
 
 		// Find the decoder for the video stream
 		Codec=avcodec_find_decoder(CodecContext->codec_id);
