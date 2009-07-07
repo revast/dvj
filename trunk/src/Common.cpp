@@ -1624,11 +1624,11 @@ Turntable_DrawWaveform
 		char tempNudge[1024];
 		if(nudge>0)
 		{
-			sprintf(tempNudge,"+%.2f",fabs((nudge)*100));
+			sprintf(tempNudge,"+%.1f",fabs((nudge)*100));
 		}
 		else if(nudge<0)
 		{
-			sprintf(tempNudge,"-%.2f",fabs((nudge)*100));
+			sprintf(tempNudge,"-%.1f",fabs((nudge)*100));
 		}
 		else
 		{
