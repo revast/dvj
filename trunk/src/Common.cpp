@@ -27,6 +27,32 @@
 
 #define SAMPLE_RADIUS_MULTIPLIER (2.0f)
 
+void
+GetColorCool
+(
+	float&	r,
+	float&	g,
+	float&	b
+)
+{
+	r=0.0f;
+	g=0.0f;
+	b=0.5f;
+}
+
+void
+GetColorWarm
+(
+	float&	r,
+	float&	g,
+	float&	b
+)
+{
+	r=0.4f;
+	g=0.2f;
+	b=1.0f;
+}
+
 float
 GetGlowFromTime
 (
@@ -45,6 +71,11 @@ Main_DrawGlowLines
 	float	visualizerZoomOutPercent
 )
 {
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+
 	float glow = GetGlowFromTime(time) * brightness;
 	float quadrentSplitX = 0.5f;
 	float quadrentSplitY = 0.5f;
@@ -66,7 +97,7 @@ Main_DrawGlowLines
 		(
 			myX,quadrentSplitY,
 			myX,1,
-			0,0,glow,glow,
+			2*coolR*glow,2*coolG*glow,2*coolB*glow,glow,
 			1,
 			false
 		);
@@ -74,6 +105,7 @@ Main_DrawGlowLines
 
 	for(float a=1;a<7;a++)
 	{
+		float br=glow*a/7.0f;
 		LGL_ClipRectEnable
 		(
 			0.0f,
@@ -85,7 +117,7 @@ Main_DrawGlowLines
 		(
 			0,quadrentSplitY,
 			1,quadrentSplitY,
-			0,0,glow*a/7.0,glow*a/7.0,
+			2*coolR*br,2*coolG*br,2*coolB*br,0.5f*br,
 			7-a,
 			false
 		);
@@ -96,7 +128,7 @@ Main_DrawGlowLines
 			(
 				0.25f,quadrentSplitY,
 				0.25f,1,
-				0,0,glow*a/7.0,glow*a/7.0,
+				2*coolR*br,2*coolG*br,2*coolB*br,0.5f*br,
 				7-a,
 				false
 			);
@@ -104,7 +136,7 @@ Main_DrawGlowLines
 			(
 				0.75f,quadrentSplitY,
 				0.75f,1,
-				0,0,glow*a/7.0,glow*a/7.0,
+				2*coolR*br,2*coolG*br,2*coolB*br,0.5f*br,
 				7-a,
 				false
 			);
@@ -112,7 +144,7 @@ Main_DrawGlowLines
 			(
 				0,0.75f,
 				1,0.75f,
-				0,0,glow*a/7.0,glow*a/7.0,
+				2*coolR*br,2*coolG*br,2*coolB*br,0.5f*br,
 				7-a,
 				false
 			);
@@ -135,6 +167,16 @@ Mixer_DrawGlowLinesTurntables
 	float	visualizerZoomOutPercent
 )
 {
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
 	float glow = GetGlowFromTime(time) * brightness;
 	float viewPortLeft = 0.0f;
 	float viewPortRight = 1.0f;
@@ -145,6 +187,7 @@ Mixer_DrawGlowLinesTurntables
 
 	for(float a=1;a<7;a++)
 	{
+		float br=glow*a/7.0f;
 		LGL_ClipRectEnable
 		(
 			visualizerQuadrent?0.0f:viewPortLeft,
@@ -156,7 +199,7 @@ Mixer_DrawGlowLinesTurntables
 		(
 			0.025,viewPortBottom+.5*viewPortHeight,
 			0.975,viewPortBottom+.5*viewPortHeight,
-			0,0,glow*a/7.0,glow*a/7.0,
+			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
 			false
 		);
@@ -166,7 +209,7 @@ Mixer_DrawGlowLinesTurntables
 			(
 				0,crossFadeSliderLeft*viewPortTop,
 				.025,crossFadeSliderLeft*viewPortTop,
-				.4*glow*a/7.0,.2*glow*a/7.0,glow*a/7.0,glow*a/7.0,
+				warmR*br,warmG*br,warmB*br,br,
 				zz*(7-a),
 				false
 			);
@@ -174,7 +217,7 @@ Mixer_DrawGlowLinesTurntables
 			(
 				0.975,crossFadeSliderRight*viewPortTop,
 				1,crossFadeSliderRight*viewPortTop,
-				.4*glow*a/7.0,.2*glow*a/7.0,glow*a/7.0,glow*a/7.0,
+				warmR*br,warmG*br,warmB*br,br,
 				zz*(7-a),
 				false
 			);
@@ -184,7 +227,7 @@ Mixer_DrawGlowLinesTurntables
 		(
 			0.975,viewPortTop,
 			0.975,0,
-			0,0,glow*a/7.0,glow*a/7.0,
+			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
 			false
 		);
@@ -192,7 +235,7 @@ Mixer_DrawGlowLinesTurntables
 		(
 			0.025,viewPortTop,
 			0.025,0,
-			0,0,glow*a/7.0,glow*a/7.0,
+			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
 			false
 		);
@@ -209,6 +252,11 @@ Mixer_DrawGlowLinesStatus
 	float	visualizerZoomOutPercent
 )
 {
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+
 	float glow = GetGlowFromTime(time) * brightness;
 	float l=0.5f;
 	float r=1.0f;
@@ -230,6 +278,8 @@ Mixer_DrawGlowLinesStatus
 
 	for(float a=1;a<7;a++)
 	{
+		float br=glow*a/7.0f;
+
 		//Two long horizontal lines
 		for(int c=1;c<3;c++)
 		{
@@ -237,7 +287,7 @@ Mixer_DrawGlowLinesStatus
 			(
 				l,b+0.075f*c,
 				r,b+0.075f*c,
-				0,0,glow*a/7.0,glow*a/7.0,
+				2*coolR*br,2*coolG*br,2*coolB*br,br,
 				7-a,
 				false
 			);
@@ -248,7 +298,7 @@ Mixer_DrawGlowLinesStatus
 		(
 			r-0.025f,b,
 			r-0.025f,b+0.075f*2,
-			0,0,glow*a/7.0,glow*a/7.0,
+			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
 			false
 		);
@@ -258,7 +308,7 @@ Mixer_DrawGlowLinesStatus
 		(
 			r-0.075f,b,
 			r-0.075f,b+0.075f*2,
-			0,0,glow*a/7.0,glow*a/7.0,
+			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
 			false
 		);
@@ -268,7 +318,7 @@ Mixer_DrawGlowLinesStatus
 		(
 			l+0.05f,b,
 			l+0.05f,b+0.075f*2,
-			0,0,glow*a/7.0,glow*a/7.0,
+			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
 			false
 		);
@@ -278,7 +328,7 @@ Mixer_DrawGlowLinesStatus
 		(
 			l+0.5f*w,b+0.15f,
 			l+0.5f*w,1.0f,
-			0,0,glow*a/7.0,glow*a/7.0,
+			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
 			false
 		);
@@ -392,6 +442,11 @@ Turntable_DrawDirTree
 	float*		inBPMList
 )
 {
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+
 	float glow = GetGlowFromTime(time);
 	float centerX = 0.5f;
 	float viewPortLeft = 0.025f;
@@ -437,9 +492,11 @@ Turntable_DrawDirTree
 		{
 			if(b==fileSelectInt)
 			{
-				float R=badFileFlash;
-				float G=0.0f;
-				float B=(1.0f-badFileFlash)*.3f*glow;
+				float R=
+					(0.0f+badFileFlash) +
+					(1.0f-badFileFlash) * coolR * 0.6f * glow;
+				float G=(1.0f-badFileFlash) * coolG * 0.6f * glow;
+				float B=(1.0f-badFileFlash) * coolB * 0.6f * glow;
 				float A=.5f;
 				LGL_DrawRectToScreen
 				(
@@ -659,6 +716,16 @@ Turntable_DrawWaveform
 	int		freqSensitiveMode
 )
 {
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
 	float glow = GetGlowFromTime(time);
 
 	//Ensure our sound is sufficiently loaded
@@ -751,9 +818,16 @@ Turntable_DrawWaveform
 		float freqFactor;
 		LGL_AudioInMetadata(volAve,volMax,freqFactor);
 
-		float red=0.4f*freqFactor;
-		float green=0.2f*freqFactor;
-		float blue=0.5f+0.5f*freqFactor;
+		float red=
+			(1.0f-freqFactor)*coolR+
+			(0.0f+freqFactor)*warmR;
+		float green=
+			(1.0f-freqFactor)*coolG+
+			(0.0f+freqFactor)*warmG;
+		float blue=
+			(1.0f-freqFactor)*coolB+
+			(0.0f+freqFactor)*warmB;
+
 		if(volMax>=0.99f)
 		{
 			red=1.0f;
@@ -917,13 +991,31 @@ Turntable_DrawWaveform
 					)
 				);
 
-				arrayC[(a*4)+0]=active?1.0f:(zeroCrossingFactor*0.5f);
-				arrayC[(a*4)+1]=active?1.0f:(zeroCrossingFactor*0.25f);
-				arrayC[(a*4)+2]=0.5f+zeroCrossingFactor*0.5f;
+				arrayC[(a*4)+0]=
+					active ?
+					1.0f :
+					(
+						(1.0f-zeroCrossingFactor)*coolR +
+						(0.0f+zeroCrossingFactor)*warmR
+					);
+				arrayC[(a*4)+1]=
+					active ?
+					1.0f :
+					(
+						(1.0f-zeroCrossingFactor)*coolG +
+						(0.0f+zeroCrossingFactor)*warmG
+					);
+				arrayC[(a*4)+2]=
+					active ?
+					1.0f :
+					(
+						(1.0f-zeroCrossingFactor)*coolB +
+						(0.0f+zeroCrossingFactor)*warmB
+					);
 				arrayC[(a*4)+3]=1.0f;
 
 				//Tristrip!
-			
+
 				//Top
 				arrayVtri[(a*4)+0]=arrayV[(a*2)+0];
 				arrayVtri[(a*4)+1]=arrayV[(a*2)+1];
@@ -1025,7 +1117,7 @@ Turntable_DrawWaveform
 			centerX+needleDeltaR*viewPortWidth,
 			pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-			0.1f,0.05f,0.25f,0.0f
+			0.25f*warmR,0.25f*warmG,0.25f*warmB,0.0f
 		);
 
 		//Draw Glitch Rectangle
@@ -1085,7 +1177,7 @@ Turntable_DrawWaveform
 					pointLeft+gRightPercent*pointWidth,
 					pointBottom,
 					pointTop,
-					.1f,.05f,.25f,.0f
+					0.25f*warmR,0.25f*warmG,0.25f*warmB,0.0f
 				);
 			}
 		}
@@ -1095,14 +1187,14 @@ Turntable_DrawWaveform
 		(
 			centerX+needleDeltaL*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			centerX+needleDeltaL*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-			.4f,.2f,1,1,
+			warmR,warmG,warmB,1.0f,
 			1
 		);
 		LGL_DrawLineToScreen
 		(
 			centerX+needleDeltaR*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			centerX+needleDeltaR*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-			.4f,.2f,1,1,
+			warmR,warmG,warmB,1.0f,
 			1
 		);
 
@@ -1112,14 +1204,14 @@ Turntable_DrawWaveform
 			(
 				glitchLinesLeft,pointBottom,
 				glitchLinesLeft,pointTop,
-				.4f,.2f,1,1,
+				warmR,warmG,warmB,1.0f,
 				1
 			);
 			LGL_DrawLineToScreen
 			(
 				glitchLinesRight,pointBottom,
 				glitchLinesRight,pointTop,
-				.4f,.2f,1,1,
+				warmR,warmG,warmB,1.0f,
 				1
 			);
 		}
@@ -1361,9 +1453,15 @@ Turntable_DrawWaveform
 					waveTop
 				);
 
-				entireWaveArrayLine1Colors[a*4+0]=zeroCrossingFactor*0.4f;
-				entireWaveArrayLine1Colors[a*4+1]=zeroCrossingFactor*0.2f;
-				entireWaveArrayLine1Colors[a*4+2]=0.5f+zeroCrossingFactor*0.5f;
+				entireWaveArrayLine1Colors[a*4+0]=
+					(1.0f-zeroCrossingFactor) * coolR +
+					(0.0f+zeroCrossingFactor) * warmR;
+				entireWaveArrayLine1Colors[a*4+1]=
+					(1.0f-zeroCrossingFactor) * coolG +
+					(0.0f+zeroCrossingFactor) * warmG;
+				entireWaveArrayLine1Colors[a*4+2]=
+					(1.0f-zeroCrossingFactor) * coolB +
+					(0.0f+zeroCrossingFactor) * warmB;
 				entireWaveArrayLine1Colors[a*4+3]=1.0f;
 
 				entireWaveArrayLine2Points[a*2+0]=viewPortLeft+(a/(float)entireWaveArrayCount)*viewPortWidth;
@@ -1374,9 +1472,9 @@ Turntable_DrawWaveform
 					waveTop
 				);
 
-				entireWaveArrayLine2Colors[a*4+0]=zeroCrossingFactor*0.4f;
-				entireWaveArrayLine2Colors[a*4+1]=zeroCrossingFactor*0.2f;
-				entireWaveArrayLine2Colors[a*4+2]=0.5f+zeroCrossingFactor*0.5f;
+				entireWaveArrayLine2Colors[a*4+0]=entireWaveArrayLine1Colors[a*4+0];
+				entireWaveArrayLine2Colors[a*4+1]=entireWaveArrayLine1Colors[a*4+1];
+				entireWaveArrayLine2Colors[a*4+2]=entireWaveArrayLine1Colors[a*4+2];
 				entireWaveArrayLine2Colors[a*4+3]=1.0f;
 
 				entireWaveArrayTriPoints[a*4+0]=entireWaveArrayLine1Points[a*2+0];
@@ -1475,7 +1573,7 @@ Turntable_DrawWaveform
 					waveBottom,
 					viewPortLeft+pos*viewPortWidth,
 					waveTop,
-					0.4f,0.2f,1,1,
+					warmR,warmG,warmB,1,
 					2.0f,
 					false
 				);
@@ -1963,17 +2061,17 @@ Turntable_DrawWaveform
 			float b;
 			if(i==savePointIndex)// || i==savePointIndexActual+1)
 			{
-				thickness=((i==savePointIndex)?6:4);
-				r=0.4f+0.1f*glow;
-				g=0.2f+0.1f*glow;
-				b=1.0f;
+				thickness=6;
+				r=LGL_Min(1.0f,warmR+0.1f*glow);
+				g=LGL_Min(1.0f,warmG+0.1f*glow);
+				b=LGL_Min(1.0f,warmB+0.1f*glow);
 			}
 			else
 			{
 				thickness=2;
-				r=0.0f;
-				g=0.0f;
-				b=2*glow;
+				r=coolR;
+				g=coolG;
+				b=coolB;
 			}
 
 			//Left
@@ -2016,7 +2114,10 @@ Turntable_DrawWaveform
 			(
 				lft+i*wth,lft+i*wth+spc,
 				bot,top,
-				0,0,mySavePointSet[i]?glow:0,1
+				mySavePointSet[i]?glow*coolR:0.0f,
+				mySavePointSet[i]?glow*coolG:0.0f,
+				mySavePointSet[i]?glow*coolB:0.0f,
+				1
 			);
 			noiseImage256x64->DrawToScreen
 			(
@@ -2112,7 +2213,7 @@ Turntable_DrawWaveform
 		b=1.0f;
 
 		LGL_DrawRectToScreen
-		(
+		(	
 			lft,
 			lft+wth,
 			bot,top,
@@ -2120,9 +2221,15 @@ Turntable_DrawWaveform
 		);
 
 		float warmScale=eq[f];
-		float barR=0.4f*warmScale;
-		float barG=0.2f*warmScale;
-		float barB=0.5f+0.5f*warmScale;
+		float barR=
+			(1.0f-warmScale)*coolR+
+			(0.0f+warmScale)*warmR;
+		float barG=
+			(1.0f-warmScale)*coolG+
+			(0.0f+warmScale)*warmG;
+		float barB=
+			(1.0f-warmScale)*coolB+
+			(0.0f+warmScale)*warmB;
 
 		LGL_DrawRectToScreen
 		(
@@ -2225,9 +2332,14 @@ Visualizer_DrawWaveform
 		h=1;
 	}
 
-	float R=.5;
-	float G=.25;
-	float B=1;
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
+	float R=warmR;
+	float G=warmG;
+	float B=warmB;
 	float A=0.5f;
 
 	/*

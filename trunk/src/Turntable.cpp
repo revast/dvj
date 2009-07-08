@@ -2143,6 +2143,16 @@ DrawFrame
 	float	visualizerZoomOutPercent
 )
 {
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
 	if(visualsQuadrent==false)
 	{
 		LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
@@ -2179,13 +2189,19 @@ DrawFrame
 			(
 				left,left+pct*width*0.5f,
 				bottom,bottom+0.1f*height,
-				.4f*pct,.2f*pct,0.5f+0.5f*pct,1.0f
+				(1.0f-pct)*coolR+(0.0f+pct)*warmR,
+				(1.0f-pct)*coolG+(0.0f+pct)*warmG,
+				(1.0f-pct)*coolB+(0.0f+pct)*warmB,
+				1.0f
 			);
 			LGL_DrawRectToScreen
 			(
 				right,right-pct*width*0.5f,
 				bottom,bottom+0.1f*height,
-				.4f*pct,.2f*pct,0.5f+0.5f*pct,1.0f
+				(1.0f-pct)*coolR+(0.0f+pct)*warmR,
+				(1.0f-pct)*coolG+(0.0f+pct)*warmG,
+				(1.0f-pct)*coolB+(0.0f+pct)*warmB,
+				1.0f
 			);
 			LGL_GetFont().DrawString
 			(
@@ -2222,14 +2238,14 @@ DrawFrame
 				}
 
 				float r=
-					(1.0f-freqFactor)*0.0f+
-					(0.0f+freqFactor)*0.4f;
+					(1.0f-freqFactor)*coolR+
+					(0.0f+freqFactor)*warmR;
 				float g=
-					(1.0f-freqFactor)*0.0f+
-					(0.0f+freqFactor)*0.2f;
+					(1.0f-freqFactor)*coolG+
+					(0.0f+freqFactor)*coolG;
 				float b=
-					(1.0f-freqFactor)*0.5f+
-					(0.0f+freqFactor)*1.0f;
+					(1.0f-freqFactor)*coolB+
+					(0.0f+freqFactor)*coolB;
 
 				LGL_DrawLineToScreen
 				(
@@ -2274,7 +2290,7 @@ DrawFrame
 		(
 			ViewPortLeft,ViewPortRight,
 			ViewPortBottom,ViewPortTop,
-			0,0,.15*glow,rectAlpha
+			0.3f*coolR*glow,0.3f*coolG*glow,0.3f*coolB*glow,rectAlpha
 		);
 	}
 	
