@@ -8348,6 +8348,7 @@ LGL_VideoEncoder
 		const int bitrate = 1024*1024*128;	//This value is beyond the highest quality.
 		DstCodecContext->bit_rate=bitrate;	//This line dictates the output's quality.
 		DstCodecContext->bit_rate_tolerance=bitrate/8;	//Allow for some variance
+		DstCodecContext->sample_aspect_ratio=DstStream->sample_aspect_ratio;
 		DstCodecContext->width = SrcBufferWidth;
 		DstCodecContext->height = SrcBufferHeight;
 		//The next line appears goofy and incorrect, but is necessary to ensure a proper framerate.
