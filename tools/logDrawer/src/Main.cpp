@@ -1223,10 +1223,15 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 			{
 				isDirBits[a]=atoi(fi[9]) & (1<<a);
 			}
+			bool alreadyPlayedBits[5];
+			for(int a=0;a<5;a++)
+			{
+				alreadyPlayedBits[a]=atoi(fi[10]) & (1<<a);
+			}
 			float bpm[5];
 			for(int a=0;a<5;a++)
 			{
-				bpm[a]=atof(fi[15+a]);
+				bpm[a]=atof(fi[16+a]);
 			}
 
 			Turntable_DrawDirTree
@@ -1236,12 +1241,13 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 				filterDir,		//03
 				nameArray,		//04-08
 				isDirBits,		//09
-				atoi(fi[10]),		//10
+				alreadyPlayedBits,	//10
 				atoi(fi[11]),		//11
-				atof(fi[12]),		//12
+				atoi(fi[12]),		//12
 				atof(fi[13]),		//13
 				atof(fi[14]),		//14
-				bpm			//15-19
+				atof(fi[15]),		//15
+				bpm			//16-19
 			);
 		}
 		else if(strcasecmp(fi[0],"!DirTreePath")==0)
