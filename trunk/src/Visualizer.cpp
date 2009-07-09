@@ -29,8 +29,8 @@ LGL_Image* VisualizerObj::NoiseImage[NOISE_IMAGE_COUNT_128_128];
 VisualizerObj::
 VisualizerObj()
 {
-	NoSound=new LGL_Image("data/nosound.png");
-	BlueScreenOfDeath=new LGL_Image("data/bsod.png");
+	NoSound=new LGL_Image("data/image/nosound.png");
+	BlueScreenOfDeath=new LGL_Image("data/image/bsod.png");
 
 	AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
 
