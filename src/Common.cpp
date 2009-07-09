@@ -59,6 +59,34 @@ LoadDVJRC()
 	{
 		CreateDefaultDVJRC(dvjrc);
 	}
+
+	char dvjCache[2048];
+	sprintf(dvjCache,"%s/cache",dotDvj);
+	if(LGL_DirectoryExists(dvjCache)==false)
+	{
+		LGL_DirectoryCreate(dvjCache);
+	}
+
+	char dvjCacheFileLength[2048];
+	sprintf(dvjCacheFileLength,"%s/fileLength",dvjCache);
+	if(LGL_DirectoryExists(dvjCacheFileLength)==false)
+	{
+		LGL_DirectoryCreate(dvjCacheFileLength);
+	}
+
+	char dvjCacheMetadata[2048];
+	sprintf(dvjCacheMetadata,"%s/metadata",dvjCache);
+	if(LGL_DirectoryExists(dvjCacheMetadata)==false)
+	{
+		LGL_DirectoryCreate(dvjCacheMetadata);
+	}
+
+	char dvjCacheWaveArrayData[2048];
+	sprintf(dvjCacheWaveArrayData,"%s/waveArrayData",dvjCache);
+	if(LGL_DirectoryExists(dvjCacheWaveArrayData)==false)
+	{
+		LGL_DirectoryCreate(dvjCacheWaveArrayData);
+	}
 }
 
 void

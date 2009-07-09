@@ -3198,9 +3198,9 @@ LoadAllCachedData()
 			char cachedLengthPath[1024];
 			char cachedFileLengthPath[1024];
 
-			sprintf(waveArrayDataPath,"data/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
-			sprintf(cachedLengthPath,"data/cache/metadata/%s.dvj-metadata.txt",Sound->GetPathShort());
-			sprintf(cachedFileLengthPath,"data/cache/filelength/%s.dvj-filelength.txt",Sound->GetPathShort());
+			sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
+			sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
+			sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),Sound->GetPathShort());
 
 			if(LGL_FileExists(waveArrayDataPath))
 			{
@@ -3237,7 +3237,7 @@ LoadWaveArrayData()
 	}
 
 	char waveArrayDataPath[1024];
-	sprintf(waveArrayDataPath,"data/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
+	sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
 
 	int expectedSize=sizeof(float)*ENTIRE_WAVE_ARRAY_COUNT*3;
 	if
@@ -3282,7 +3282,7 @@ SaveWaveArrayData()
 	}
 
 	char waveArrayDataPath[1024];
-	sprintf(waveArrayDataPath,"data/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
+	sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
 	FILE* fd=fopen(waveArrayDataPath,"wb");
 	if(fd)
 	{
@@ -3304,7 +3304,7 @@ LoadCachedMetadata()
 	}
 
 	char cachedLengthPath[1024];
-	sprintf(cachedLengthPath,"data/cache/metadata/%s.dvj-metadata.txt",Sound->GetPathShort());
+	sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
 
 	FILE* fd=fopen(cachedLengthPath,"r");
 	if(fd)
@@ -3344,7 +3344,7 @@ SaveCachedMetadata()
 	}
 
 	char cachedLengthPath[1024];
-	sprintf(cachedLengthPath,"data/cache/metadata/%s.dvj-metadata.txt",Sound->GetPathShort());
+	sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
 	FILE* fd=fopen(cachedLengthPath,"w");
 	if(fd)
 	{
@@ -3364,7 +3364,7 @@ LoadCachedFileLength()
 	}
 
 	char cachedFileLengthPath[1024];
-	sprintf(cachedFileLengthPath,"data/cache/filelength/%s.dvj-filelength.txt",Sound->GetPathShort());
+	sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),Sound->GetPathShort());
 
 	FILE* fd=fopen(cachedFileLengthPath,"r");
 	if(fd)
@@ -3405,7 +3405,7 @@ SaveCachedFileLength()
 	}
 
 	char cachedFileLengthPath[1024];
-	sprintf(cachedFileLengthPath,"data/cache/filelength/%s.dvj-filelength.txt",Sound->GetPathShort());
+	sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),Sound->GetPathShort());
 	FILE* fd=fopen(cachedFileLengthPath,"w");
 	if(fd)
 	{
