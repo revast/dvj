@@ -276,11 +276,12 @@ TurntableObj
 	Database=database;
 	DatabaseFilter.SetDir("data/music");
 	DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+	FileTop=0;
 	for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
 	{
-		FileTop=a;
 		if(DatabaseFilteredEntries[a]->IsDir==false)
 		{
+			FileTop=a;
 			break;
 		}
 	}
