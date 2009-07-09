@@ -1866,7 +1866,6 @@ LGL_Init
 		printf("\t\t\t%s (Driver: %s)\n",SDL_GetError(),SDL_AudioDriverName(audioDriver,1024));
 	}
 
-	printf("SDL_AudioIn\t\t%s\n",LGL.AudioInAvailable?"Present":"Absent");
 	printf("MIDI Devices\t\t");
 	if(LGL_MidiDeviceCount())
 	{
