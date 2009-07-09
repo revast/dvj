@@ -117,7 +117,7 @@ void InitializeGlobals()
 	ExitPrompt=false;
 	VisualizerFullScreen=false;
 
-	ParticleSystemImage=new LGL_Image("data/particle.png");
+	ParticleSystemImage=new LGL_Image("data/image/particle.png");
 	for(int a=0;a<8;a++)
 	{
 		float r=(a==0) ? 0.50f : 0.0f;
@@ -608,7 +608,7 @@ DrawLoadScreen()
 {
 	if(logo==NULL)
 	{
-		logo = new LGL_Image("data/logo.png");
+		logo = new LGL_Image("data/image/logo.png");
 	}
 	float height=0.03f;
 	float aspect = LGL_VideoAspectRatio();
