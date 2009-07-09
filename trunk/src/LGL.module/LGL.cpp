@@ -2347,9 +2347,19 @@ void
 lgl_fftw_init()
 {
 	bool wisdomLoaded=false;
-	FILE* fd=fopen(".fftw_wisdom","r");
 	int creationFlag = FFTW_EXHAUSTIVE;
-	if(fd)
+
+	char fftwWisdomDir[2048];
+	sprintf(fftwWisdomDir,"%s/.dvj",LGL_GetHomeDir());
+	if(LGL_DirectoryExists(fftwWisdomDir)==false)
+	{
+		LGL_DirectoryCreate(fftwWisdomDir);
+	}
+
+	char fftwWisdomPath[2048];
+	sprintf(fftwWisdomPath,"%s/.fftw_wisdom",fftwWisdomDir);
+
+	if(FILE* fd=fopen(fftwWisdomPath,"r"))
 	{
 		wisdomLoaded=fftwf_import_wisdom_from_file(fd);
 		if(wisdomLoaded)
@@ -2367,12 +2377,12 @@ lgl_fftw_init()
 	if(wisdomLoaded==false)
 	{
 		LGL_Image* fft_img=NULL;
-		const char* fftWisdomPath="data/fft_wisdom.jpg";
-		if(LGL_FileExists(fftWisdomPath))
+		const char* fftwWisdomImagePath="data/fft_wisdom.jpg";
+		if(LGL_FileExists(fftwWisdomImagePath))
 		{
-			fft_img = new LGL_Image(fftWisdomPath);
+			fft_img = new LGL_Image(fftwWisdomImagePath);
 		}
-		LGL_Image fftImage(fftWisdomPath);	//FIXME: This loads the image anew each frame... ouch!
+		LGL_Image fftImage(fftwWisdomImagePath);	//FIXME: This loads the image anew each frame... ouch!
 		LGL_SwapBuffers();
 		lgl_fftw_init_draw(fft_img);
 		LGL_ThreadCreate(lgl_fftw_wisdom_creation_thread);
@@ -2394,8 +2404,7 @@ lgl_fftw_init()
 		}
 		lgl_fftw_wisdom_creation_thread_status=0;
 
-		FILE* fd=fopen(".fftw_wisdom","w");
-		if(fd)
+		if(FILE* fd=fopen(fftwWisdomPath,"w"))
 		{
 			fftwf_export_wisdom_to_file(fd);
 			fclose(fd);
