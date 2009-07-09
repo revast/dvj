@@ -2489,6 +2489,7 @@ private:
 bool		LGL_FileExists(const char* file);
 bool		LGL_DirectoryExists(const char* dir);
 bool		LGL_DirectoryCreate(const char* dir);
+bool		LGL_DirectoryCreateChain(const char* dir);
 bool		LGL_FileDelete(const char* file);
 bool		LGL_DirectoryDelete(const char* dir);
 bool		LGL_FileDirMove(const char* oldLocation, const char* newLocation);
@@ -2496,6 +2497,8 @@ long		LGL_FileLengthBytes(const char* file);
 char*		LGL_MD5sum(const char* file, char* output);	//output must be at least char[32]
 bool		LGL_FileExtension(const char* filename, const char* extension);
 void		LGL_SimplifyPath(char* simplePath, const char* complexPath);
+const char*	LGL_GetUsername();
+const char*	LGL_GetHomeDir();
 
 //DEPRECATED! Use LGL_DirTree.
 std::vector<char*>
