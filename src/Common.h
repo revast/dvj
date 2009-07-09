@@ -28,6 +28,15 @@
 #include "LGL.module/LGL.h"
 
 void
+CreateDefaultDVJRC
+(
+	const char*	path
+);
+
+void
+LoadDVJRC();
+
+void
 GetColorCool
 (
 	float&	r,

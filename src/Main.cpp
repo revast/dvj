@@ -151,11 +151,14 @@ VerifyMusicDir()
 	while(LGL_DirectoryExists("data/music")==false)
 	{
 		LGL_InputBuffer outputBuffer;
+		char dir[2048];
+		strcpy(dir,LGL_GetHomeDir());
 #ifdef	LGL_OSX
-		outputBuffer.SetString("/Users/");
+		strcat(dir,"/Music/iTunes/iTunes Music/");
 #else
-		outputBuffer.SetString("/home/");
+		strcat(dir,"/Music/");
 #endif	//LGL_OSX
+		outputBuffer.SetString(dir);
 		outputBuffer.GrabFocus();
 		for(;;)
 		{
@@ -673,6 +676,8 @@ int main(int argc, char** argv)
 		channels,
 		"dvj"
 	);
+
+	LoadDVJRC();
 
 	LGL_MouseVisible(false);
 

@@ -28,6 +28,40 @@
 #define SAMPLE_RADIUS_MULTIPLIER (2.0f)
 
 void
+CreateDefaultDVJRC
+(
+	const char*	path
+)
+{
+	if(FILE* fd=fopen(path,"w"))
+	{
+		//TODO
+		fprintf(fd,"#dvjrc\n");
+		fclose(fd);
+	}
+}
+
+void
+LoadDVJRC()
+{
+	//Initialize .dvj subtree if necessary
+	char dotDvj[2048];
+	sprintf(dotDvj,"%s/.dvj/",LGL_GetHomeDir());
+	if(LGL_DirectoryExists(dotDvj)==false)
+	{
+		LGL_DirectoryCreate(dotDvj);
+	}
+	LGL_DirectoryCreate(dotDvj);
+
+	char dvjrc[2048];
+	sprintf(dvjrc,"%s/dvjrc",dotDvj);
+	if(LGL_FileExists(dvjrc)==false)
+	{
+		CreateDefaultDVJRC(dvjrc);
+	}
+}
+
+void
 GetColorCool
 (
 	float&	r,
