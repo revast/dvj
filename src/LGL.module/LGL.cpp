@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <pwd.h>
 
 #ifdef	LGL_LINUX
 
@@ -385,6 +386,9 @@ typedef struct
 
 	int			TexturePixels;
 	bool			FrameBufferTextureGlitchFix;
+
+	char			HomeDir[2048];
+	char			Username[2048];
 } LGL_State;
 
 LGL_State LGL;
@@ -1014,6 +1018,9 @@ LGL_Init
 	//Initialize LGL_State
 
 	srand((unsigned)time(NULL));
+	
+	LGL.HomeDir[0]='\0';
+	LGL.Username[0]='\0';
 	
 	LGL_ViewPortScreen(0,1,0,1);
 	LGL_ViewPortWorld
@@ -21561,6 +21568,42 @@ printf("LGL_DirectoryCreate('%s')\n",dir);
 }
 
 bool
+LGL_DirectoryCreateChain
+(
+	const
+	char*	dir
+)
+{
+	char path[2048];
+	LGL_SimplifyPath(path,dir);
+
+	char* next=path;
+	for(;;)
+	{
+		if(char* slash = strchr(next,'/'))
+		{
+			slash[0]='\0';
+			if(LGL_DirectoryExists(path)==false)
+			{
+				LGL_DirectoryCreate(path);
+			}
+			slash[0]='/';
+			next=&(slash[1]);
+		}
+		else
+		{
+			break;
+		}
+	}
+	if(LGL_DirectoryExists(path)==false)
+	{
+		LGL_DirectoryCreate(path);
+	}
+
+	return(LGL_DirectoryExists(path));
+}
+
+bool
 LGL_FileDelete
 (
 	const
@@ -22432,6 +22475,30 @@ LGL_SimplifyPath
 	{
 		delete elements[a];
 	}
+}
+
+const char*
+LGL_GetUsername()
+{
+	if(LGL.Username[0]=='\0')
+	{
+		struct passwd *userinfo = getpwuid(getuid() );
+		char *username = userinfo -> pw_name;
+		strcpy(LGL.Username,username);
+	}
+	return(LGL.Username);
+}
+
+const char*
+LGL_GetHomeDir()
+{
+	if(LGL.HomeDir[0]=='\0')
+	{
+		struct passwd *userinfo = getpwuid(getuid());
+		char *homeDir = userinfo -> pw_dir;
+		strcpy(LGL.HomeDir,homeDir);
+	}
+	return(LGL.HomeDir);
 }
 
 //Memory
