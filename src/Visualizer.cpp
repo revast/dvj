@@ -32,7 +32,7 @@ VisualizerObj()
 	NoSound=new LGL_Image("data/image/nosound.png");
 	BlueScreenOfDeath=new LGL_Image("data/image/bsod.png");
 
-	AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
+	//AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
 
 	SetViewPortVisuals(0.0f,0.5f,0.5f,1.0f);
 
@@ -66,39 +66,6 @@ VisualizerObj()
 		random.clear();
 	}
 
-	ImageSetNextStatus=0;
-	ImageSetLastPeak=0;
-	ImageSetThreashold=.20;
-	ImageSetPrefix[0]='\0';
-	MovieClipPrefix[0]='\0';
-	MovieClipScratchL=.5;
-	MovieClipScratchR=.5;
-	MovieClipLoadingStatus=0;
-	for(int a=0;a<8;a++)
-	{
-		MovieClipSlideDown[a]=false;
-		MovieClipQuad[a]=true;
-	}
-	MovieClipNum=4;
-	for(int a=0;a<4;a++)
-	{
-		MovieClipNow[a]=0;
-	}
-	MovieClipSimultaneous=1;
-
-	JoyAuxTimeLast=999;
-	JoyAuxScratch=.5;
-	JoyAuxScratchTimer=0;
-	JoyAuxSlideXNum=1;
-	JoyAuxSlideXMomentum=1;
-	JoyAuxStrobeDelay=0;
-	JoyAuxStrobeNow=false;
-
-	DoNotLoadImages=true;
-	MovieMode=false;
-
-	VideoAvailable=false;
-
 	for(int a=0;a<2;a++)
 	{
 		Videos[a]=NULL;
@@ -111,37 +78,36 @@ VisualizerObj()
 
 	char tmp[2048];
 
-	//Prepare Ambient Video Queue
+	//Prepare Random Video Queue
 
-	LGL_DirTree videoAmbientDirTree;
-	if(LGL_DirectoryExists("data/video/ambient"))
-	{
-		videoAmbientDirTree.SetPath("data/video/ambient");
-		VideoAvailable=true;
-	}
-	else if(LGL_DirectoryExists("data/video"))
-	{
-		videoAmbientDirTree.SetPath("data/video");
-		VideoAvailable=true;
-	}
-	else
-	{
-		VideoAvailable=false;
-	}
-	videoAmbientDirTree.WaitOnWorkerThread();
-	videoAmbientDirTree.SetFilterText("avi");
-	strcpy(VideoAmbientPath,videoAmbientDirTree.GetPath());
+	char videoPath[2048];
+	sprintf(videoPath,"%s/.dvj/video",LGL_GetHomeDir());
+	char videoRandomPath[2048];
+	sprintf(videoRandomPath,"%s/random",videoPath);
 
-	for(unsigned int a=0;a<videoAmbientDirTree.GetFilteredFileCount();a++)
+	LGL_DirTree videoRandomDirTree;
+	if(LGL_DirectoryExists(videoRandomPath))
 	{
-		sprintf(tmp,"%s",videoAmbientDirTree.GetFilteredFileName(a));
+		videoRandomDirTree.SetPath(videoRandomPath);
+	}
+	else if(LGL_DirectoryExists(videoPath))
+	{
+		videoRandomDirTree.SetPath(videoPath);
+	}
+	videoRandomDirTree.WaitOnWorkerThread();
+	videoRandomDirTree.SetFilterText("avi");
+	strcpy(VideoRandomPath,videoRandomDirTree.GetPath());
+
+	for(unsigned int a=0;a<videoRandomDirTree.GetFilteredFileCount();a++)
+	{
+		sprintf(tmp,"%s",videoRandomDirTree.GetFilteredFileName(a));
 		char* str=new char[strlen(tmp)+1];
 		strcpy(str,tmp);
-		VideoAmbientQueue.push_back(str);
+		VideoRandomQueue.push_back(str);
 	}
 
-	random_shuffle(VideoAmbientQueue.rbegin(),VideoAmbientQueue.rend());
-	VideoAmbientGetCount=0;
+	random_shuffle(VideoRandomQueue.rbegin(),VideoRandomQueue.rend());
+	VideoRandomGetCount=0;
 
 	if(NoiseImage[0]==NULL)
 	{
@@ -165,7 +131,7 @@ VisualizerObj::
 {
 	delete	NoSound;
 	delete	BlueScreenOfDeath;
-	delete	AccumulationNow;
+	//delete	AccumulationNow;
 	//TODO: Take care of scroll text buffers
 }
 
@@ -251,370 +217,6 @@ NextFrame
 	}
 
 	return;
-#if 0
-	if(!DoNotLoadImages)
-	{
-		if
-		(
-			(
-				LGL_JoyDown(0,LGL_JOY_START) &&
-				LGL_JoyStroke(0,LGL_JOY_SELECT)
-			) ||
-			ImageSetTimer.SecondsSinceLastReset()>ImageSet.size() ||
-		 	LGL_KeyStroke(SDLK_i)
-			/*
-		 	LGL_KeyStroke(SDLK_i) ||
-			ImageSet.size()==0
-			*/
-		)
-		{
-			LoadNewImageSet();
-		}
-
-		int empty=-1;
-		for(int a=0;a<MovieClipNum;a++)
-		{
-			if(MovieClipList[a].empty())
-			{
-				empty=a;
-				break;
-			}
-		}
-		int oldestIndex=-1;
-		float oldestTime=-1;
-		for(int a=0;a<MovieClipNum;a++)
-		{
-			if(MovieClipTimer[a].SecondsSinceLastReset()>oldestTime)
-			{
-				oldestIndex=a;
-				oldestTime=MovieClipTimer[a].SecondsSinceLastReset();
-			}
-		}
-
-		if
-		(
-			(
-				LGL_JoyDown(0,LGL_JOY_START) &&
-				LGL_JoyStroke(0,LGL_JOY_SELECT)
-			) ||
-			MovieClipTimerGlobal.SecondsSinceLastReset()>10 ||
-			empty!=-1 ||
-		 	LGL_KeyStroke(SDLK_m)
-			/*
-		 	LGL_KeyStroke(SDLK_m) ||
-			MovieClip.size()==0
-			*/
-		)
-		{
-			LoadNewMovieClip();
-		}
-	}
-
-	if(LGL_JoyStroke(0,LGL_JOY_TRIANGLE))
-	{
-		MovieClipGlitch=.5+.35*(LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS));
-		if(MovieClipGlitch>.9)
-		{
-			MovieClipGlitch=.9;
-		}
-	}
-	if
-	(
-		(
-			LGL_AudioPeakLeft()>=ImageSetThreashold &&
-			LGL_RandFloat()<.1 &&
-			JoyAuxTimeLast>2
-		) ||
-		LGL_JoyAnalogueStatus(1,LGL_JOY_ANALOGUE_L,LGL_JOY_YAXIS)==-1
-	)
-	{
-		if(LGL_RandInt(0,3)==0)
-		{
-			for(int a=0;a<4;a++)
-			{
-				MovieClipNow[a]=PickRandomValidMovieClip();
-			}
-			MovieClipSimultaneous=LGL_RandInt(1,4);
-			if(MovieClipSimultaneous==3) MovieClipSimultaneous=1;
-		}
-		if(MovieClipSlideDown[MovieClipNow[0]]==false)
-		{
-			MovieClipSlideDown[MovieClipNow[0]]=true;
-			MovieClipSlideDownNum[MovieClipNow[0]]=(int)floor(pow(2,LGL_RandFloat(3,6)));
-			MovieClipSlideDownTimeNow[MovieClipNow[0]]=0;
-			MovieClipSlideDownTimeMax[MovieClipNow[0]]=LGL_RandFloat(.25,2);
-			for(int a=0;a<MovieClipSlideDownNum[MovieClipNow[0]];a++)
-			{
-				MovieClipSlideDownNow[MovieClipNow[0]][a]=0;
-				MovieClipSlideDownDelta[MovieClipNow[0]][a]=-LGL_RandFloat(0,.15);
-			}
-		}
-	}
-	if(MovieClipSlideDown[MovieClipNow[0]])
-	{
-		for(int a=0;a<MovieClipSlideDownNum[MovieClipNow[0]];a++)
-		{
-			MovieClipSlideDownNow[MovieClipNow[0]][a]+=
-				MovieClipSlideDownDelta[MovieClipNow[0]][a]*
-				LGL_SecondsSinceLastFrame();
-		}
-		MovieClipSlideDownTimeNow[MovieClipNow[0]]+=LGL_SecondsSinceLastFrame();
-		if
-		(
-			(
-				MovieClipSlideDownTimeNow[MovieClipNow[0]] >=
-				MovieClipSlideDownTimeMax[MovieClipNow[0]]
-			) &&
-			LGL_AudioPeakLeft()>=ImageSetThreashold
-		)
-		{
-			if(fabs(MovieClipSlideDownDelta[MovieClipNow[0]][0]<.05))
-			{
-				MovieClipSlideDown[MovieClipNow[0]]=false;
-			}
-			else
-			{
-				for(int a=0;a<MovieClipSlideDownNum[MovieClipNow[0]];a++)
-				{
-					MovieClipSlideDownDelta[MovieClipNow[0]][a]*=-1;
-				}
-				MovieClipSlideDownTimeNow[MovieClipNow[0]]=0;
-			}
-		}
-	}
-
-	float alpha1=1.0-7.5*LGL_SecondsSinceLastFrame();
-	if(alpha1<0) alpha1=0;
-	float alpha2=1.0-alpha1;
-
-	//120b/m=2b/s=.5 s/b
-	//180b/m=3b/s=.333 s/b
-	//This is set for DnB tempo. I know a way to make it variable / autodetect.
-	//I must code this later.
-
-	ImageSetLastPeak=LGL_Clamp(0,ImageSetLastPeak-1.5*LGL_SecondsSinceLastFrame()*.333,1);
-	ImageSetThreashold=LGL_Interpolate
-	(
-		.01,
-		ImageSetThreashold,
-		1.0-LGL_Clamp(0,.5*LGL_SecondsSinceLastFrame(),1)
-	);
-
-	if(ImageSetNextStatus==2)
-	{
-		for(unsigned int a=0;a<ImageSet.size();a++)
-		{
-			LGL_Image* baka=ImageSet[a];
-			delete(baka);
-		}
-		ImageSet.clear();
-		ImageSet=ImageSetNext;
-		ImageSetNext.clear();
-		ImageSetNextStatus=0;
-	}
-
-	MovieClipScratchL=
-		alpha1*MovieClipScratchL+
-		alpha2*.5*(LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS)+1);
-	MovieClipScratchR=
-		alpha1*MovieClipScratchR+
-		alpha2*.5*(LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_R,LGL_JOY_XAXIS)+1);
-
-	if(MovieClipLoadingStatus==2)
-	{
-		//Our next loading movie has finished! Put it into the best spot.
-		int victim=0;
-		float victimAge=0;
-		for(int a=0;a<MovieClipNum;a++)
-		{
-			if(MovieClipTimer[a].SecondsSinceLastReset()>victimAge)
-			{
-				victim=a;
-				victimAge=MovieClipTimer[a].SecondsSinceLastReset();
-			}
-			if(MovieClipList[a].empty())
-			{
-				victim=a;
-				victimAge=999999;
-				break;
-			}
-		}
-		for(unsigned int a=0;a<MovieClipList[victim].size();a++)
-		{
-			LGL_Image* baka=MovieClipList[victim][a];
-			delete(baka);
-		}
-		MovieClipList[victim].clear();
-		MovieClipList[victim]=MovieClipLoading;
-		MovieClipLoading.clear();
-	
-		MovieClipTimer[victim].Reset();
-		MovieClipTimerGlobal.Reset();
-		float AlphaMin=.1;
-		float AlphaMax=1;
-		MovieClipQuad[victim]=LGL_RandInt(0,1);
-
-		//Apply hints
-
-		char HintPath[512];
-		sprintf(HintPath,"%s/.hints",MovieClipLoadingDir);
-		FILE* HintFile=fopen(HintPath,"r");
-		if(HintFile)
-		{
-			char tempstring[256];
-			while(!feof(HintFile))
-			{
-				fgets(tempstring,255,HintFile);
-				if(tempstring[0]=='$')
-				{
-					if(strchr(tempstring,'='))
-					{
-						char *tempstring2=strchr(tempstring,'=');
-						char value[256];
-						strcpy(value,&(tempstring2[1]));
-						char argument[256];
-						tempstring2[0]='\0';
-						strcpy(argument,tempstring);
-						if(value[strlen(value)-1]=='\n')
-						{
-							value[strlen(value)-1]='\0';
-						}
-						//int valueint=atoi(value);
-						float valuefloat=atof(value);
-
-						if(strcmp(argument,"$AlphaMin")==0)
-						{
-							AlphaMin=valuefloat;
-						}
-						if(strcmp(argument,"$AlphaMax")==0)
-						{
-							AlphaMax=valuefloat;
-						}
-						if(0 && strcmp(argument,"$QuadProbability")==0)
-						{
-							MovieClipQuad[victim]=
-								(LGL_RandFloat(0,1)<valuefloat);
-						}
-					}
-				}
-			}
-			fclose(HintFile);
-		}
-
-		MovieClipAlpha[victim]=LGL_RandFloat(AlphaMin,AlphaMax);
-
-		MovieClipLoadingStatus=0;
-	}
-
-	//JoyAux Stuff
-
-	JoyAuxTimeLast+=LGL_SecondsSinceLastFrame();
-
-	if
-	(
-		LGL_JoyAnalogueStatus(1,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS)==-1
-	)
-	{
-		//DDR Pad MovieClip Scratching: Left
-
-		JoyAuxScratch=JoyAuxScratch-LGL_SecondsSinceLastFrame();
-		while(JoyAuxScratch<0)
-		{
-			JoyAuxScratch=0;
-		}
-
-		JoyAuxScratchTimer=1;
-		JoyAuxTimeLast=0;
-		MovieClipSimultaneous=1;
-		MovieClipQuad[MovieClipNow[0]]=0;
-	}
-	else if
-	(
-		LGL_JoyAnalogueStatus(1,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS)==1
-	)
-	{
-		//DDR Pad MovieClip Scratching: Right
-
-		JoyAuxScratch=JoyAuxScratch+LGL_SecondsSinceLastFrame();
-		while(JoyAuxScratch>1)
-		{
-			JoyAuxScratch=1;
-		}
-
-		JoyAuxScratchTimer=1;
-		JoyAuxTimeLast=0;
-	}
-	else
-	{
-		if(!(LGL_JoyAnalogueStatus(1,LGL_JOY_ANALOGUE_L,LGL_JOY_YAXIS)==1))
-		{
-			JoyAuxScratch=
-				alpha1*JoyAuxScratch+
-				alpha2*.5;
-		}
-		JoyAuxScratchTimer-=LGL_SecondsSinceLastFrame();
-		if(JoyAuxScratchTimer<0) JoyAuxScratchTimer=0;
-	}
-	
-	if
-	(
-		LGL_JoyAnalogueStatus(1,LGL_JOY_ANALOGUE_L,LGL_JOY_YAXIS)==1
-	)
-	{
-		//DDR Pad MovieClip SlideX
-		if(JoyAuxSlideXNow==0)
-		{
-			JoyAuxSlideXNum=(int)floor(pow(2,LGL_RandFloat(3,6)));
-			for(int a=0;a<JoyAuxSlideXNum;a++)
-			{
-				JoyAuxSlideXDelta[a]=.1+LGL_RandFloat(0,.65);
-				if(a>0 && LGL_RandInt(0,3)==3)
-				{
-					JoyAuxSlideXDelta[a]=JoyAuxSlideXDelta[a-1];
-				}
-			}
-			JoyAuxSlideXMomentum=1;
-		}
-		JoyAuxScratchTimer=1;
-		JoyAuxSlideXNow=LGL_Clamp
-		(
-			0,
-			JoyAuxSlideXNow+LGL_SecondsSinceLastFrame()*JoyAuxSlideXMomentum,
-			1
-		);
-		if(JoyAuxSlideXNow==0 || JoyAuxSlideXNow==1)
-		{
-			JoyAuxSlideXMomentum*=-1;
-		}
-		JoyAuxTimeLast=0;
-
-		if(!(LGL_JoyAnalogueStatus(1,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS)==-1))
-		{
-			JoyAuxScratch=JoyAuxScratch+.25*LGL_SecondsSinceLastFrame();
-			while(JoyAuxScratch>1)
-			{
-				JoyAuxScratch--;
-			}
-		}
-	}
-	else
-	{
-		JoyAuxSlideXNow=LGL_Max(0,JoyAuxSlideXNow-LGL_SecondsSinceLastFrame());
-	}
-
-	JoyAuxStrobeNow=false;
-	JoyAuxStrobeDelay=(int)LGL_Max(0,JoyAuxStrobeDelay-1);
-	if(LGL_JoyDown(1,LGL_JOY_CIRCLE) && JoyAuxStrobeDelay==0)
-	{
-		JoyAuxStrobeNow=true;
-		JoyAuxStrobeDelay=2;
-	}
-	if(LGL_JoyDown(1,LGL_JOY_TRIANGLE) && JoyAuxStrobeDelay==0)
-	{
-		JoyAuxStrobeNow=true;
-		JoyAuxStrobeDelay=4;
-	}
-#endif	//0
 }
 
 void
@@ -683,35 +285,15 @@ DrawVisuals
 				1,1,1,1
 			);
 		}
-		//float s=2.0f*LGL_SecondsSinceLastFrame();
-		//float y=2.0-(1+0);//LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_YAXIS));
-		
 		/*
+		float s=2.0f*LGL_SecondsSinceLastFrame();
+		float y=2.0-(1+0);//LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_YAXIS));
 		AccumulationNow->DrawToScreen
 		(
 			l-y*s*w,	r+y*s*w,
 			b-y*s*h,	t+y*s*h,
 			2*s*0.0f,//LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS),
 			1.0-s,1.0-s,1.0-s,0.0f
-		);
-		*/
-
-		/*
-		LGL_DrawLineToScreen
-		(
-			l,b+.5*w+.5*w*LGL_AudioPeakLeft(),
-			r,b+.5*w+.5*w*LGL_AudioPeakLeft(),
-			.4,.2,1,1,
-			1,
-			false
-		);
-		LGL_DrawLineToScreen
-		(
-			l,b+.5*w-.5*w*LGL_AudioPeakLeft(),
-			r,b+.5*w-.5*w*LGL_AudioPeakLeft(),
-			.4,.2,1,1,
-			1,
-			false
 		);
 		*/
 	}
@@ -736,241 +318,6 @@ DrawVisuals
 				0,
 				1,1,1,1
 			);
-		}
-	}
-	//return;
-
-	//Draw Image Stuff
-	
-	if
-	(
-		ImageSet.empty()==false &&
-		ImageSetLastPeak<LGL_AudioPeakLeft() &&
-		LGL_AudioPeakLeft()>=ImageSetThreashold
-	)
-	{
-		ImageSetLastPeak=LGL_AudioPeakLeft()+1.0/9.0;
-		ImageSetThreashold=LGL_Interpolate(ImageSetThreashold,LGL_AudioPeakLeft()*.8,.1);
-
-		/*
-		ImageSetLastWhich=LGL_RandInt(0,ImageSet.size()-1);
-		ImageSet[ImageSetLastWhich]->DrawToScreen
-		(
-			l,r,
-			b,t,
-			0,
-			1,1,1,1
-		);
-		*/
-
-		MovieMode=(LGL_RandInt(0,1)==0);
-		if(LGL_RandFloat()<.3)
-		{
-			MovieClipSlideDown[MovieClipNow[0]]=false;
-		}
-	}
-
-	//Draw Movie Stuff
-
-	if
-	(
-		(
-			MovieMode &&
-			MovieClipList[MovieClipNow[0]].empty()==false
-		) ||
-		(
-			MovieClipList[MovieClipNow[0]].empty()==false && false
-		)
-	)
-	{
-		int which=GetClipImageIndexNow(MovieClipNow[0]);
-
-		if(MovieClipQuad[MovieClipNow[0]])
-		{
-			if(MovieClipSlideDown[MovieClipNow[0]])
-			{
-				for(int z=0;z<4;z++)
-				{
-					float L=l;
-					float R=r;
-					float B=b;
-					float T=t;
-					if(z==0)
-					{
-						L=l;
-						R=l+.5*w;
-						B=b+.5*h;
-						T=t;
-					}
-					else if(z==1)
-					{
-						L=r;
-						R=l+.5*w;
-						B=b+.5*h;
-						T=t;
-					}
-					else if(z==2)
-					{
-						L=l;
-						R=l+.5*w;
-						B=b+.5*h;
-						T=b;
-					}
-					else if(z==3)
-					{
-						L=r;
-						R=l+.5*w;
-						B=b+.5*h;
-						T=b;
-					}
-					float dx=R-L;
-					//float dy=T-B;
-
-					for(int a=0;a<MovieClipSlideDownNum[MovieClipNow[0]];a++)
-					{
-						float left=L+(a/(float)MovieClipSlideDownNum[MovieClipNow[0]])*dx;
-						float right=L+((a+1)/(float)MovieClipSlideDownNum[MovieClipNow[0]])*dx;
-						float bottom=B-MovieClipSlideDownNow[MovieClipNow[0]][a];
-						float top=T-MovieClipSlideDownNow[MovieClipNow[0]][a];
-						if(z>=2)
-						{
-							bottom=B+MovieClipSlideDownNow[MovieClipNow[0]][a];
-							top=T+MovieClipSlideDownNow[MovieClipNow[0]][a];
-						}
-						
-						int current=0;
-						if(MovieClipSimultaneous==2)
-						{
-							if(z>=2)
-							{
-								if(MovieClipList[MovieClipNow[1]].empty()==false)
-								{
-									current=1;
-								}
-							}
-						}
-						if(MovieClipSimultaneous==4)
-						{
-							if(MovieClipList[MovieClipNow[z]].empty()==false)
-							{
-								current=z;
-							}
-						}
-						which=GetClipImageIndexNow(MovieClipNow[current]);
-
-						MovieClipList[MovieClipNow[current]][which]->DrawToScreen
-						(
-							left,right,
-							bottom,top,
-							0,
-							1,1,1,MovieClipAlpha[MovieClipNow[0]],
-							false,false,0,0,0,
-							(a+0)/(float)MovieClipSlideDownNum[MovieClipNow[0]],
-							(a+1)/(float)MovieClipSlideDownNum[MovieClipNow[0]],
-							0,1
-						);	
-					}
-				}
-			}
-			else
-			{
-				//Upper Left
-				MovieClipList[MovieClipNow[0]][which]->DrawToScreen
-				(
-					l,l+.5*w,
-					b+.5*h,t,
-					0,
-					1,1,1,MovieClipAlpha[MovieClipNow[0]]
-				);
-				//Upper Right
-				MovieClipList[MovieClipNow[0]][which]->DrawToScreen
-				(
-					r,l+.5*w,
-					b+.5*h,t,
-					0,
-					1,1,1,MovieClipAlpha[MovieClipNow[0]]
-				);
-				//Lower Left
-				MovieClipList[MovieClipNow[0]][which]->DrawToScreen
-				(
-					l,l+.5*w,
-					b+.5*h,b,
-					0,
-					1,1,1,MovieClipAlpha[MovieClipNow[0]]
-				);
-				//Lower Right
-				MovieClipList[MovieClipNow[0]][which]->DrawToScreen
-				(
-					r,l+.5*w,
-					b+.5*h,b,
-					0,
-					1,1,1,MovieClipAlpha[MovieClipNow[0]]
-				);
-			}
-		}
-		else
-		{
-			if(MovieClipSlideDown[MovieClipNow[0]])
-			{
-				for(int a=0;a<MovieClipSlideDownNum[MovieClipNow[0]];a++)
-				{
-					float dx=r-l;
-					//float dy=t-b;
-					float left=l+(a/(float)MovieClipSlideDownNum[MovieClipNow[0]])*dx;
-					float right=l+((a+1)/(float)MovieClipSlideDownNum[MovieClipNow[0]])*dx;
-					float bottom=b-MovieClipSlideDownNow[MovieClipNow[0]][a];
-					float top=t-MovieClipSlideDownNow[MovieClipNow[0]][a];
-					MovieClipList[MovieClipNow[0]][which]->DrawToScreen
-					(
-						left,right,
-						bottom,top,
-						0,
-						1,1,1,MovieClipAlpha[MovieClipNow[0]],
-						false,false,0,0,0,
-						(a+0)/(float)MovieClipSlideDownNum[MovieClipNow[0]],
-						(a+1)/(float)MovieClipSlideDownNum[MovieClipNow[0]],
-						0,1
-					);	
-				}
-			}
-			else
-			{
-				MovieClipList[MovieClipNow[0]][which]->DrawToScreen
-				(
-					l,r,
-					b,t,
-					0,
-					1,1,1,MovieClipAlpha[MovieClipNow[0]]
-				);
-			}
-		}
-	}
-
-	//JoyAux Stuff
-	
-	if(JoyAuxScratchTimer>0 && MovieClipList[MovieClipNow[0]].empty()==false)
-	{
-		for(int a=0;a<JoyAuxSlideXNum;a++)
-		{
-			float dx=r-l;
-			//float dy=t-b;
-			float left=l+(a/(float)JoyAuxSlideXNum)*dx;
-			float right=l+((a+1)/(float)JoyAuxSlideXNum)*dx;
-			float bottom=b-JoyAuxSlideXDelta[a]*JoyAuxSlideXNow;
-			float top=t-JoyAuxSlideXDelta[a]*JoyAuxSlideXNow;
-
-			int which=(int)floor(JoyAuxScratch*(MovieClipList[MovieClipNow[0]].size()-1));
-			MovieClipList[MovieClipNow[0]][which]->DrawToScreen
-			(
-				left,right,
-				bottom,top,
-				0,
-				JoyAuxScratchTimer,JoyAuxScratchTimer,JoyAuxScratchTimer,sqrt(JoyAuxScratchTimer),
-				false,false,0,0,0,
-				(a+0)/(float)JoyAuxSlideXNum,
-				(a+1)/(float)JoyAuxSlideXNum,
-				0,1
-			);	
 		}
 	}
 
@@ -1287,7 +634,7 @@ SetViewPortVisuals
 	ViewPortVisualsWidth=right-left;
 	ViewPortVisualsHeight=top-bottom;
 
-	AccumulationNow->FrameBufferViewPort(left,right,bottom,top);
+	//AccumulationNow->FrameBufferViewPort(left,right,bottom,top);
 }
 
 void
@@ -1295,6 +642,7 @@ VisualizerObj::
 ToggleFullScreen()
 {
 	FullScreen=!FullScreen;
+	/*
 	if(FullScreen)
 	{
 		AccumulationNow->FrameBufferViewPort
@@ -1311,26 +659,7 @@ ToggleFullScreen()
 			ViewPortVisualsBottom,	ViewPortVisualsTop
 		);
 	}
-}
-
-void
-VisualizerObj::
-SetImageSetPrefix
-(
-	char*	prefix
-)
-{
-	sprintf(ImageSetPrefix,"%s",prefix);
-}
-
-void
-VisualizerObj::
-SetMovieClipPrefix
-(
-	char*	prefix
-)
-{
-	sprintf(MovieClipPrefix,"%s",prefix);
+	*/
 }
 
 void
@@ -1515,301 +844,32 @@ SetFrequencySensitiveGainEQ
 
 void
 VisualizerObj::
-GetNextVideoPathAmbient(char* path)
+GetNextVideoPathRandom(char* path)
 {
-	if(VideoAmbientQueue.empty())
+	if(VideoRandomQueue.empty())
 	{
 		path[0]='\0';
 		return;
 	}
 
-	sprintf(path,"%s/%s",VideoAmbientPath,VideoAmbientQueue[0]);
-	char* str=VideoAmbientQueue[0];
-	VideoAmbientQueue.erase((std::vector<char*>::iterator)(&(VideoAmbientQueue[0])));
-	VideoAmbientQueue.push_back(str);
+	sprintf(path,"%s/%s",VideoRandomPath,VideoRandomQueue[0]);
+	char* str=VideoRandomQueue[0];
+	VideoRandomQueue.erase((std::vector<char*>::iterator)(&(VideoRandomQueue[0])));
+	VideoRandomQueue.push_back(str);
 
-	VideoAmbientGetCount++;
-	if(VideoAmbientGetCount==VideoAmbientQueue.size())
+	VideoRandomGetCount++;
+	if(VideoRandomGetCount==VideoRandomQueue.size())
 	{
-		random_shuffle(VideoAmbientQueue.rbegin(),VideoAmbientQueue.rend());
-		VideoAmbientGetCount=0;
+		random_shuffle(VideoRandomQueue.rbegin(),VideoRandomQueue.rend());
+		VideoRandomGetCount=0;
 	}
 }
 
 //Privates
 
-int
-ImageSetLoader
-(
-	void*	object
-)
-{
-	VisualizerObj* Viz=(VisualizerObj*)object;
-	Viz->LoadNewImageSetThread();
-	return(0);
-}
-
-int
-MovieClipLoader
-(
-	void*	object
-)
-{
-	VisualizerObj* Viz=(VisualizerObj*)object;
-	Viz->LoadNewMovieClipThread();
-	return(0);
-}
-
 void
 VisualizerObj::
-LoadNewImageSet()
-{
-	if(ImageSetNextStatus!=0 || MovieClipLoadingStatus!=0)
-	{
-		return;
-	}
-	ImageSetNextStatus=1;
-	LGL_ThreadCreate(ImageSetLoader,this);
-}
-
-void
-VisualizerObj::
-LoadNewMovieClip()
-{
-	if(ImageSetNextStatus!=0 || MovieClipLoadingStatus!=0)
-	{
-		return;
-	}
-	MovieClipLoadingStatus=1;
-	LGL_ThreadCreate(MovieClipLoader,this);
-}
-
-void
-VisualizerObj::
-LoadNewImageSetThread()
-{
-	ImageSetNext.clear();
-	std::vector<char*> dir=LGL_DirectoryListCreate("data/ImageSets",false,true);
-
-	std::vector<int> acceptableList;
-	if(strlen(ImageSetPrefix)>0)
-	{
-		for(unsigned int x=0;x<dir.size();x++)
-		{
-			char baka[1024];
-			sprintf(baka,"%s",dir[x]);
-			baka[strlen(ImageSetPrefix)]='\0';
-			if(strcasecmp(baka,ImageSetPrefix)==0)
-			{
-				acceptableList.push_back(x);
-			}
-		}
-	}
-
-	char myDir[1024];
-	if(acceptableList.size()>0)
-	{
-		int which=LGL_RandInt(0,acceptableList.size()-1);
-		sprintf(myDir,"data/ImageSets/%s",dir[acceptableList[which]]);
-		strcpy(ImageSetName,dir[acceptableList[which]]);
-		LGL_DirectoryListDelete(dir);
-	}
-	else
-	{
-		LGL_DirectoryListDelete(dir);
-		dir=LGL_DirectoryListCreate("data/ImageSets",false,false);
-		int which=LGL_RandInt(0,dir.size()-1);
-		sprintf(myDir,"data/ImageSets/%s",dir[which]);
-		strcpy(ImageSetName,dir[which]);
-		LGL_DirectoryListDelete(dir);
-	}
-
-	dir=LGL_DirectoryListCreate(myDir);
-	for(unsigned int a=0;a<dir.size();a++)
-	{
-		LGL_Image* NewImage;
-		char path[1024];
-		sprintf(path,"%s/%s",myDir,dir[a]);
-		NewImage=new LGL_Image(path,true,false);
-		ImageSetNext.push_back(NewImage);
-	}
-	LGL_DirectoryListDelete(dir);
-
-	ImageSetTimer.Reset();
-	ImageSetLastWhich=0;
-	ImageSetNextStatus=2;
-}
-
-void
-VisualizerObj::
-LoadNewMovieClipThread()
-{
-	if(MovieClipLoading.size()!=0)
-	{
-		printf("Visualizer.cpp::LoadMovieClipThread(): Warning! Memory leak!\n");
-	}
-
-	MovieClipLoading.clear();
-	std::vector<char*> dir=LGL_DirectoryListCreate("data/MovieClips",false,true);
-	
-	std::vector<int> acceptableList;
-	if(strlen(MovieClipPrefix)>0)
-	{
-		for(unsigned int x=0;x<dir.size();x++)
-		{
-			char baka[1024];
-			sprintf(baka,"%s",dir[x]);
-			baka[strlen(MovieClipPrefix)]='\0';
-			if(strcasecmp(baka,MovieClipPrefix)==0)
-			{
-				acceptableList.push_back(x);
-			}
-		}
-	}
-
-	char myDir[1024];
-	if(acceptableList.size()>0)
-	{
-		int which=LGL_RandInt(0,acceptableList.size()-1);
-		sprintf(myDir,"data/MovieClips/%s",dir[acceptableList[which]]);
-		LGL_DirectoryListDelete(dir);
-	}
-	else
-	{
-		LGL_DirectoryListDelete(dir);
-		dir=LGL_DirectoryListCreate("data/MovieClips",false,false);
-		if(dir.size()<=0)
-		{
-			printf("Visualizer.cpp:LoadNewMovieClipThread(): Error! No Movie Clips!\n");
-			exit(0);
-		}
-		int which=LGL_RandInt(0,dir.size()-1);
-		sprintf(myDir,"data/MovieClips/%s",dir[which]);
-		LGL_DirectoryListDelete(dir);
-	}
-	
-	dir=LGL_DirectoryListCreate(myDir);
-	
-	for(unsigned int a=0;a<dir.size();a++)
-	{
-		LGL_Image* NewImage;
-		char path[1024];
-		sprintf(path,"%s/%s",myDir,dir[a]);
-		NewImage=new LGL_Image(path,true,false);
-		MovieClipLoading.push_back(NewImage);
-	}
-	LGL_DirectoryListDelete(dir);
-
-	MovieClipLoadingStatus=2;
-
-	sprintf(MovieClipLoadingDir,"%s",myDir);
-}
-
-int
-VisualizerObj::
-PickRandomValidMovieClip()
-{
-	bool none=true;
-	for(int a=0;a<MovieClipNum;a++)
-	{
-		if(MovieClipList[a].empty()==false)
-		{
-			none=false;
-		}
-	}
-	if(none)
-	{
-		return(0);
-	}
-	else
-	{
-		for(int a=0;a<100;a++)
-		{
-			int guess=LGL_RandInt(0,MovieClipNum-1);
-			if(MovieClipList[guess].empty()==false)
-			{
-				return(guess);
-			}
-		}
-		return(0);
-	}
-}
-
-int VisualizerObj::
-GetClipImageIndexNow
-(
-	int	whichClipInList
-)
-{
-	int w=whichClipInList;
-	if(MovieClipList[w].empty())
-	{
-		printf("Visualizer.cpp::GetClipImageIndexNow(%i): Error! Clip is Empty!\n",w);
-		exit(0);
-	}
-
-	int which=
-		((int)(LGL_SecondsSinceExecution()*30))%
-		MovieClipList[w].size();
-	/*
-	if
-	(
-		LGL_JoyDown(0,LGL_JOY_TRIANGLE) ||
-		LGL_JoyDown(0,LGL_JOY_CROSS) ||
-		LGL_JoyDown(0,LGL_JOY_CIRCLE)
-	)
-	{
-		which=(int)floor
-		(
-			MovieClipScratchL*(MovieClipList[w].size()-1)
-		);
-		if(LGL_JoyDown(0,LGL_JOY_TRIANGLE))
-		{
-			float x=LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS);
-			float y=LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_YAXIS);
-			x=.5+.5*x;
-			y=.5+.35*y;
-			float pos=
-				.25*(
-					(15*LGL_SecondsSinceExecution()*x)-
-					floor(15*LGL_SecondsSinceExecution()*x)
-				);
-			if(pos>y)
-			{
-				pos=y-pos;
-			}
-			if(pos<0)
-			{
-				pos=0;
-			}
-			float scratch=1+2*(MovieClipGlitch-1);
-			scratch=.5+.4*scratch;
-
-			which=
-				(int)floor((MovieClipList[w].size()-1)*
-				(scratch+pos));
-			
-			if
-			(
-				which>0 &&
-				(unsigned int)which>MovieClipList[w].size()-1
-			)
-			{
-				which-=MovieClipList[w].size()-1;
-			}
-			while(which<0)
-			{
-				which+=MovieClipList[w].size()-1;
-			}
-		}
-	}
-	*/
-	return(which);
-}
-
-void
-VisualizerObj::
-ForceVideoToBackOfAmbientQueue
+ForceVideoToBackOfRandomQueue
 (
 	const
 	char*	pathShort
@@ -1820,20 +880,20 @@ ForceVideoToBackOfAmbientQueue
 		return;
 	}
 
-	//If we're drawing a video to the screen, then we want to put it at the end of the ambient list.
+	//If we're drawing a video to the screen, then we want to put it at the end of the random list.
 	if
 	(
-		VideoAmbientQueue.size()>1 &&
-		strcmp(pathShort,VideoAmbientQueue[VideoAmbientQueue.size()-1])!=0
+		VideoRandomQueue.size()>1 &&
+		strcmp(pathShort,VideoRandomQueue[VideoRandomQueue.size()-1])!=0
 	)
 	{
-		for(int a=VideoAmbientQueue.size()-1;a>=0;a--)
+		for(int a=VideoRandomQueue.size()-1;a>=0;a--)
 		{
-			if(strcmp(pathShort,VideoAmbientQueue[a])==0)
+			if(strcmp(pathShort,VideoRandomQueue[a])==0)
 			{
-				char* tmp=VideoAmbientQueue[a];
-				VideoAmbientQueue.erase((std::vector<char*>::iterator)(&(VideoAmbientQueue[a])));
-				VideoAmbientQueue.push_back(tmp);
+				char* tmp=VideoRandomQueue[a];
+				VideoRandomQueue.erase((std::vector<char*>::iterator)(&(VideoRandomQueue[a])));
+				VideoRandomQueue.push_back(tmp);
 				break;
 			}
 		}
@@ -2017,7 +1077,7 @@ DrawVideos
 			);
 		}
 
-		ForceVideoToBackOfAmbientQueue(Videos[videoNow]->GetPathShort());
+		ForceVideoToBackOfRandomQueue(Videos[videoNow]->GetPathShort());
 	}
 }
 

@@ -638,6 +638,9 @@ DrawLoadScreen()
 
 int main(int argc, char** argv)
 {
+	//Load config
+	LoadDVJRC();
+
 	//Initialize LGL
 	int channels=4;
 	bool fullscreen=true;
@@ -684,8 +687,6 @@ int main(int argc, char** argv)
 		channels,
 		"dvj"
 	);
-
-	LoadDVJRC();
 
 	LGL_MouseVisible(false);
 
