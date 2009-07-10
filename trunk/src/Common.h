@@ -27,31 +27,6 @@
 
 #include "LGL.module/LGL.h"
 
-void
-CreateDefaultDVJRC
-(
-	const char*	path
-);
-
-void
-LoadDVJRC();
-
-void
-GetColorCool
-(
-	float&	r,
-	float&	g,
-	float&	b
-);
-
-void
-GetColorWarm
-(
-	float&	r,
-	float&	g,
-	float&	b
-);
-
 float
 GetGlowFromTime
 (

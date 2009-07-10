@@ -22,98 +22,11 @@
  */
 
 #include "Common.h"
+#include "Config.h"
 
 #define	NEEDLE_DISTANCE_FROM_EDGES (0.0f)
 
 #define SAMPLE_RADIUS_MULTIPLIER (2.0f)
-
-void
-CreateDefaultDVJRC
-(
-	const char*	path
-)
-{
-	if(FILE* fd=fopen(path,"w"))
-	{
-		//TODO
-		fprintf(fd,"#dvjrc\n");
-		fclose(fd);
-	}
-}
-
-void
-LoadDVJRC()
-{
-	//Initialize .dvj subtree if necessary
-	char dotDvj[2048];
-	sprintf(dotDvj,"%s/.dvj/",LGL_GetHomeDir());
-	if(LGL_DirectoryExists(dotDvj)==false)
-	{
-		LGL_DirectoryCreate(dotDvj);
-	}
-	LGL_DirectoryCreate(dotDvj);
-
-	char dvjrc[2048];
-	sprintf(dvjrc,"%s/dvjrc",dotDvj);
-	if(LGL_FileExists(dvjrc)==false)
-	{
-		CreateDefaultDVJRC(dvjrc);
-	}
-
-	char dvjCache[2048];
-	sprintf(dvjCache,"%s/cache",dotDvj);
-	if(LGL_DirectoryExists(dvjCache)==false)
-	{
-		LGL_DirectoryCreate(dvjCache);
-	}
-
-	char dvjCacheFileLength[2048];
-	sprintf(dvjCacheFileLength,"%s/fileLength",dvjCache);
-	if(LGL_DirectoryExists(dvjCacheFileLength)==false)
-	{
-		LGL_DirectoryCreate(dvjCacheFileLength);
-	}
-
-	char dvjCacheMetadata[2048];
-	sprintf(dvjCacheMetadata,"%s/metadata",dvjCache);
-	if(LGL_DirectoryExists(dvjCacheMetadata)==false)
-	{
-		LGL_DirectoryCreate(dvjCacheMetadata);
-	}
-
-	char dvjCacheWaveArrayData[2048];
-	sprintf(dvjCacheWaveArrayData,"%s/waveArrayData",dvjCache);
-	if(LGL_DirectoryExists(dvjCacheWaveArrayData)==false)
-	{
-		LGL_DirectoryCreate(dvjCacheWaveArrayData);
-	}
-}
-
-void
-GetColorCool
-(
-	float&	r,
-	float&	g,
-	float&	b
-)
-{
-	r=0.0f;
-	g=0.0f;
-	b=0.5f;
-}
-
-void
-GetColorWarm
-(
-	float&	r,
-	float&	g,
-	float&	b
-)
-{
-	r=0.4f;
-	g=0.2f;
-	b=1.0f;
-}
 
 float
 GetGlowFromTime
