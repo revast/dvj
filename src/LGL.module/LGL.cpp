@@ -1329,7 +1329,7 @@ LGL_Init
 		LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 	}
 
-	sprintf(LGL.RecordFilePath,"data/record/%s.mp3",LGL_DateAndTimeOfDayOfExecution());
+	sprintf(LGL.RecordFilePath,"%s/.dvj/record/%s.mp3",LGL_GetHomeDir(),LGL_DateAndTimeOfDayOfExecution());
 
 	if(LGL.AudioAvailable)
 	{

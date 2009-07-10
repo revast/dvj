@@ -26,6 +26,7 @@
 #include "Visualizer.h"
 #include "Mixer.h"
 #include "Particle.h"
+#include "Config.h"
 
 #include "Input.h"
 #include "InputNull.h"
@@ -65,18 +66,22 @@ bool				VisualizerZoomOut=false;
 
 bool				eeepc=false;
 
-LGL_DirTree dirTreeMusic("data");
+char				recordPath[2048];
+char				recordOldPath[2048];
 
 void InitializeGlobalsPreLGL()
 {
+	sprintf(recordPath,"%s/.dvj/record",LGL_GetHomeDir());
+	sprintf(recordOldPath,"%s/old",recordPath);
 #ifdef	LGL_LINUX
-	//Move all old generic data/record files to data/record/old
-	if(LGL_DirectoryExists("data/record"))
+	//Move all old generic record files to old folder
+	if(LGL_DirectoryExists(recordPath))
 	{
-		LGL_DirTree dirTree("data/record");
-		if(LGL_DirectoryExists("data/record/old")==false)
+		LGL_DirTree dirTree(recordPath);
+		if(LGL_DirectoryExists(recordOldPath)==false)
 		{
-			assert(LGL_DirectoryCreate("data/record/old"));
+			bool ok=LGL_DirectoryCreate(recordOldPath);
+			assert(ok);
 		}
 		dirTree.WaitOnWorkerThread();
 		for(unsigned int a=0;a<dirTree.GetFileCount();a++)
@@ -94,7 +99,7 @@ void InitializeGlobalsPreLGL()
 				sprintf(newPath,"%s/old/%s",dirTree.GetPath(),target);
 				if(LGL_FileDirMove(oldPath,newPath)==false)
 				{
-					printf("\ndvj: Please verify that your user is the owner of 'data/record/old'\n\n");
+					printf("\ndvj: Please verify that your user is the owner of '%s'\n\n",recordOldPath);
 					exit(0);
 				}
 			}
@@ -141,7 +146,6 @@ void InitializeGlobals()
 	Visualizer=new VisualizerObj;
 	Mixer=new MixerObj;
 	Mixer->SetVisualizer(Visualizer);
-	dirTreeMusic.SetPath("music");
 }
 
 void
@@ -306,15 +310,19 @@ void NextFrame()
 		{
 			Mixer->SetRecording();
 
-			if(LGL_FileExists("data/record/drawlog.txt"))
+			char drawLogPath[2048];
+			sprintf(drawLogPath,"%s/drawlog.txt",recordPath);
+
+			if(LGL_FileExists(drawLogPath))
 			{
-				LGL_FileDelete("data/record/drawlog.txt");
+				LGL_FileDelete(drawLogPath);
 			}
-			LGL_DrawLogStart("data/record/drawlog.txt");
+			LGL_DrawLogStart(drawLogPath);
 
 			LGL_DrawLogWrite
 			(
-				"!dvj::Record.mp3|data/record/%s.mp3\n",
+				"!dvj::Record.mp3|%s/%s.mp3\n",
+				recordPath,
 				LGL_DateAndTimeOfDayOfExecution()
 			);
 		}
