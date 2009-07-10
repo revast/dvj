@@ -49,9 +49,6 @@ public:
 				);
 	void			ToggleFullScreen();
 
-	void			SetImageSetPrefix(char* prefix);
-	void			SetMovieClipPrefix(char* prefix);
-	
 	void			QueueScrollText(const char* text);
 	void			MaybeSetScrollTextTrackFile(const char* trackFileName);
 	bool			GetScrollTextEnabled();
@@ -74,24 +71,15 @@ public:
 					float	gain1,	float	eqLo1,	float	eqHi1
 				);
 
-	void			GetNextVideoPathAmbient(char* path);
-	void			GetNextVideoPathAmbientMellow(char* path);
+	void			GetNextVideoPathRandom(char* path);
+	void			ForceVideoToBackOfRandomQueue
+				(
+					const
+					char*	pathShort
+				);
 
 private:
 
-	void			LoadNewImageSet();
-	void			LoadNewMovieClip();
-	
-public:
-	
-	void			LoadNewImageSetThread();
-	void			LoadNewMovieClipThread();
-	
-private:
-
-	int			PickRandomValidMovieClip();
-	int			GetClipImageIndexNow(int whichClipInList);
-	void			ForceVideoToBackOfAmbientQueue(const char* pathShort);
 	void			PopulateCharStarBufferWithScrollTextFile(std::vector<char*>& buffer, const char* path);
 
 	float			ViewPortVisualsLeft;
@@ -103,9 +91,7 @@ private:
 
 	bool			FullScreen;
 
-	bool			MovieMode;
-
-	LGL_Image*		AccumulationNow;
+	//LGL_Image*		AccumulationNow;
 
 	LGL_Image*		NoSound;
 	LGL_Image*		BlueScreenOfDeath;
@@ -119,52 +105,6 @@ private:
 	bool			ScrollTextEnabled;
 	std::vector<char*>	ScrollTextAmbientFileQueue;
 	std::vector<char*>	ScrollTextAmbientFileQueueUsed;
-	
-	vector<LGL_Image*>	ImageSet;
-	vector<LGL_Image*>	ImageSetNext;
-	int			ImageSetNextStatus;
-	LGL_Timer		ImageSetTimer;
-	char			ImageSetName[256];
-	int			ImageSetLastWhich;
-	float			ImageSetLastPeak;
-	float			ImageSetThreashold;
-	char			ImageSetPrefix[256];
-
-	int			MovieClipNum;
-	int			MovieClipNow[4];
-	int			MovieClipSimultaneous;
-	vector<LGL_Image*>	MovieClipList[8];
-	vector<LGL_Image*>	MovieClipLoading;
-	int			MovieClipLoadingStatus;
-	char			MovieClipLoadingDir[1024];
-	float			MovieClipScratchL;
-	float			MovieClipScratchR;
-	float			MovieClipGlitch;
-	bool			MovieClipSlideDown[8];
-	float			MovieClipSlideDownTimeNow[8];
-	float			MovieClipSlideDownTimeMax[8];
-	int			MovieClipSlideDownNum[8];
-	float			MovieClipSlideDownNow[8][128];
-	float			MovieClipSlideDownDelta[8][128];
-	LGL_Timer		MovieClipTimerGlobal;
-	LGL_Timer		MovieClipTimer[8];
-	float			MovieClipAlpha[8];
-	bool			MovieClipQuad[8];
-	char			MovieClipPrefix[256];
-
-	float			JoyAuxTimeLast;
-	float			JoyAuxScratch;
-	float			JoyAuxScratchTimer;
-	float			JoyAuxSlideXNow;
-	int			JoyAuxSlideXNum;
-	float			JoyAuxSlideXDelta[64];
-	float			JoyAuxSlideXMomentum;
-	int			JoyAuxStrobeDelay;
-	bool			JoyAuxStrobeNow;
-
-	bool			DoNotLoadImages;
-
-	bool			VideoAvailable;
 
 	LGL_Video*		Videos[2];
 	float			VideoBrightness[2];
@@ -181,9 +121,9 @@ public:
 	void			DrawVideos(bool preview, int which, float l, float r, float b, float t, bool fullBrightness=false);
 
 private:
-	char			VideoAmbientPath[1024];
-	std::vector<char*>	VideoAmbientQueue;
-	unsigned int		VideoAmbientGetCount;
+	char			VideoRandomPath[1024];
+	std::vector<char*>	VideoRandomQueue;
+	unsigned int		VideoRandomGetCount;
 	
 	float			NoiseFactor[2];
 static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];

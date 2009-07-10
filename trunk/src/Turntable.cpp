@@ -58,27 +58,35 @@ videoEncoderThread
 	{
 		//We've been requested to encode a video. Joy!
 
-		if(LGL_DirectoryExists("data/video")==false)
+		char videoPath[2048];
+		sprintf(videoPath,"%s/.dvj/video",LGL_GetHomeDir());
+		char videoTmpPath[2048];
+		sprintf(videoTmpPath,"%s/tmp",videoPath);
+		char videoTracksPath[2048];
+		sprintf(videoTracksPath,"%s/tracks",videoPath);
+
+		if(LGL_DirectoryExists(videoPath)==false)
 		{
-			LGL_DirectoryCreate("data/video");
+			LGL_DirectoryCreateChain(videoPath);
 		}
-		if(LGL_DirectoryExists("data/video/tmp")==false)
+		if(LGL_DirectoryExists(videoTmpPath)==false)
 		{
-			LGL_DirectoryCreate("data/video/tmp");
+			LGL_DirectoryCreateChain(videoTmpPath);
 		}
-		if(LGL_DirectoryExists("data/video/tracks")==false)
+		if(LGL_DirectoryExists(videoTracksPath)==false)
 		{
-			LGL_DirectoryCreate("data/video/tracks");
+			LGL_DirectoryCreate(videoTracksPath);
 		}
 
 		char encoderDstTmp[2048];
-		sprintf(encoderDstTmp,"data/video/tmp/dvj-deleteme-mjpeg-encode-%i.avi",LGL_RandInt(0,32768));
+		sprintf(encoderDstTmp,"%s/dvj-deleteme-mjpeg-encode-%i.avi",videoTmpPath,LGL_RandInt(0,32768));
 
 		char encoderDst[2048];
 		sprintf
 		(
 			encoderDst,
-			"data/video/tracks/%s.mjpeg.avi",
+			"%s/%s.mjpeg.avi",
+			videoTracksPath,
 			&(strrchr(encoderSrc,'/')[1])
 		);
 
@@ -1208,7 +1216,7 @@ NextFrame
 		{
 			VideoEncoderPercent=-1.0f;
 			char videoFileName[1024];
-			sprintf(videoFileName,"data/video/tracks/%s.mjpeg.avi",SoundName);
+			sprintf(videoFileName,"%s/.dvj/video/tracks/%s.mjpeg.avi",LGL_GetHomeDir(),SoundName);
 			VideoFileExists=LGL_FileExists(videoFileName);
 			if(VideoFileExists)
 			{
@@ -1695,12 +1703,6 @@ NextFrame
 				ClearRecallOrigin();
 			}
 			*/
-
-			if(Visualizer!=NULL && MixerVolumeFront>.5f)
-			{
-				Visualizer->SetImageSetPrefix(ImageSetPrefix);
-				Visualizer->SetMovieClipPrefix(MovieClipPrefix);
-			}
 		}
 
 		if
@@ -1784,7 +1786,7 @@ NextFrame
 			LoadAllCachedData();
 
 			char videoFileName[1024];
-			sprintf(videoFileName,"data/video/tracks/%s.mjpeg.avi",SoundName);
+			sprintf(videoFileName,"%s/.dvj/video/tracks/%s.mjpeg.avi",LGL_GetHomeDir(),SoundName);
 			VideoFileExists=LGL_FileExists(videoFileName);
 			if(VideoFileExists)
 			{
@@ -3271,16 +3273,6 @@ SaveWaveArrayData()
 		return;
 	}
 	
-	if(LGL_DirectoryExists("data/cache")==false)
-	{
-		LGL_DirectoryCreate("data/cache");
-	}
-
-	if(LGL_DirectoryExists("data/cache/waveArrayData")==false)
-	{
-		LGL_DirectoryCreate("data/cache/waveArrayData");
-	}
-
 	char waveArrayDataPath[1024];
 	sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
 	FILE* fd=fopen(waveArrayDataPath,"wb");
@@ -3333,16 +3325,6 @@ SaveCachedMetadata()
 
 	CachedLengthSeconds=Sound->GetLengthSeconds();
 
-	if(LGL_DirectoryExists("data/cache")==false)
-	{
-		LGL_DirectoryCreate("data/cache");
-	}
-
-	if(LGL_DirectoryExists("data/cache/metadata")==false)
-	{
-		LGL_DirectoryCreate("data/cache/metadata");
-	}
-
 	char cachedLengthPath[1024];
 	sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
 	FILE* fd=fopen(cachedLengthPath,"w");
@@ -3393,16 +3375,6 @@ SaveCachedFileLength()
 	}
 
 	long actualFileLength=LGL_FileLengthBytes(Sound->GetPath());
-
-	if(LGL_DirectoryExists("data/cache")==false)
-	{
-		LGL_DirectoryCreate("data/cache");
-	}
-
-	if(LGL_DirectoryExists("data/cache/filelength")==false)
-	{
-		LGL_DirectoryCreate("data/cache/filelength");
-	}
 
 	char cachedFileLengthPath[1024];
 	sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),Sound->GetPathShort());
@@ -3669,14 +3641,14 @@ void
 TurntableObj::
 SelectNewVideo
 (
-	bool	forceAmbient
+	bool	forceRandom
 )
 {
 	char path[2048];
 	if(VideoFrequencySensitiveMode)
 	{
 		//Change the freq-videos
-		Visualizer->GetNextVideoPathAmbient(path);
+		Visualizer->GetNextVideoPathRandom(path);
 		if(VideoLo==NULL)
 		{
 			VideoLo=new LGL_Video(path);
@@ -3686,7 +3658,7 @@ SelectNewVideo
 			VideoLo->SetVideo(path);
 		}
 
-		Visualizer->GetNextVideoPathAmbient(path);
+		Visualizer->GetNextVideoPathRandom(path);
 		if(VideoHi==NULL)
 		{
 			VideoHi=new LGL_Video(path);
@@ -3702,15 +3674,15 @@ SelectNewVideo
 	{
 		//Change the normal videos
 		char videoFileName[1024];
-		sprintf(videoFileName,"data/video/tracks/%s.mjpeg.avi",SoundName);
+		sprintf(videoFileName,"%s/.dvj/video/tracks/%s.mjpeg.avi",LGL_GetHomeDir(),SoundName);
 		if
 		(
-			forceAmbient ||
+			forceRandom ||
 			VideoFileExists==false
 		)
 		{
-			//Get next ambient video from Visualizer.
-			Visualizer->GetNextVideoPathAmbient(path);
+			//Get next random video from Visualizer.
+			Visualizer->GetNextVideoPathRandom(path);
 
 			if(path[0]!='\0')
 			{

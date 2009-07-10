@@ -83,6 +83,48 @@ LoadDVJRC()
 	{
 		LGL_DirectoryCreate(dvjCacheWaveArrayData);
 	}
+	
+	char dvjRecord[2048];
+	sprintf(dvjRecord,"%s/record",dotDvj);
+	if(LGL_DirectoryExists(dvjRecord)==false)
+	{
+		LGL_DirectoryCreate(dvjRecord);
+	}
+	
+	char dvjRecordOld[2048];
+	sprintf(dvjRecordOld,"%s/old",dvjRecord);
+	if(LGL_DirectoryExists(dvjRecordOld)==false)
+	{
+		LGL_DirectoryCreate(dvjRecordOld);
+	}
+	
+	char dvjVideo[2048];
+	sprintf(dvjVideo,"%s/video",dotDvj);
+	if(LGL_DirectoryExists(dvjVideo)==false)
+	{
+		LGL_DirectoryCreate(dvjVideo);
+	}
+
+	char dvjVideoTracks[2048];
+	sprintf(dvjVideoTracks,"%s/tracks",dvjVideo);
+	if(LGL_DirectoryExists(dvjVideoTracks)==false)
+	{
+		LGL_DirectoryCreate(dvjVideoTracks);
+	}
+
+	char dvjVideoRandom[2048];
+	sprintf(dvjVideoRandom,"%s/random",dvjVideo);
+	if(LGL_DirectoryExists(dvjVideoRandom)==false)
+	{
+		LGL_DirectoryCreate(dvjVideoRandom);
+	}
+
+	char dvjVideoTmp[2048];
+	sprintf(dvjVideoTmp,"%s/tmp",dvjVideo);
+	if(LGL_DirectoryExists(dvjVideoTmp)==false)
+	{
+		LGL_DirectoryCreate(dvjVideoTmp);
+	}
 }
 
 void
