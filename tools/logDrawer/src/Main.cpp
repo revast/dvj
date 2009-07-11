@@ -28,6 +28,7 @@
 #include "Particle.h"
 
 #include "../../../src/Common.cpp"	//This is so screwy, but it works.
+#include "../../../src/Config.cpp"	//This is so screwy, but it works.
 #include "../../../src/Turntable.h"	//For NOISE_IMAGE_COUNT_256_64
 
 #define	ENTIRE_WAVE_ARRAY_COUNT	(1920)
