@@ -16,6 +16,7 @@
 #include "LGL.module/LGL.h"
 
 #include "../../../src/Common.cpp"	//This is so screwy, but it works.
+#include "../../../src/Config.cpp"	//This is so screwy, but it works.
 
 //const char* targetMusicPath="/home/emf/music/hypermind.mp3";
 /*
