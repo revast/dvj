@@ -117,7 +117,7 @@ VisualizerObj()
 			sprintf
 			(
 				path,
-				"data/noise/128x128/%02i.png",
+				"data/image/noise/128x128/%02i.png",
 				a
 			);
 			LGL_Assertf(LGL_FileExists(path),("Noise file '%s' doesn't exist\n",path));

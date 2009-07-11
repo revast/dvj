@@ -20733,11 +20733,7 @@ SetPath
 		return(true);
 	}
 
-	if
-	(
-		strlen(path)>1024 ||
-		path[0]=='/'
-	)
+	if(strlen(path)>1024)
 	{
 		return(false);
 	}
@@ -20859,12 +20855,6 @@ SetPath
 	{
 		char temp[1024];
 		strcpy(temp,&(Path[2]));
-		strcpy(Path,temp);
-	}
-	else if(Path[0]=='/')
-	{
-		char temp[1024];
-		strcpy(temp,&(Path[1]));
 		strcpy(Path,temp);
 	}
 
