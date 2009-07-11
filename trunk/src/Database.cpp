@@ -275,15 +275,9 @@ MatchesFilter
 //DatabaseObj
 
 DatabaseObj::
-DatabaseObj
-(
-	const char*	musicRoot
-) :
-	EntryDotDot("..")
+DatabaseObj() : EntryDotDot("..")
 {
-	assert(musicRoot);
-
-	strcpy(MusicRoot,musicRoot);
+	sprintf(MusicRoot,"%s/.dvj/music",LGL_GetHomeDir());
 
 	Refresh();
 }
@@ -348,6 +342,11 @@ Refresh
 	const char*	subdirPath
 )
 {
+	if(subdirPath==NULL)
+	{
+		subdirPath=MusicRoot;
+	}
+
 	LGL_DirTree dirTree(subdirPath);
 	dirTree.WaitOnWorkerThread();
 
@@ -359,7 +358,7 @@ Refresh
 
 		float bpm=0;
 		char pathMeta[2048];
-		sprintf(pathMeta,"data/metadata/%s.musefuse-metadata.txt",dirTree.GetFileName(a));
+		sprintf(pathMeta,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),dirTree.GetFileName(a));
 		if(FILE* fd=fopen(pathMeta,"r"))
 		{
 			FileInterfaceObj fi;

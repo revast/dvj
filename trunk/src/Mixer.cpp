@@ -29,7 +29,7 @@
 #define	CPU_TEMP_DANGER (70)
 
 MixerObj::
-MixerObj() : Database("data/music")
+MixerObj()
 {
 	for(int a=0;a<2;a++)
 	{
@@ -956,7 +956,7 @@ SetRecording
 		{
 			RecordingSecondsSinceExecution=LGL_SecondsSinceExecution();
 			char file[1024];
-			sprintf(file,"data/record/%s.tracklist",LGL_DateAndTimeOfDayOfExecution());
+			sprintf(file,"%s/.dvj/record/%s.tracklist",LGL_GetHomeDir(),LGL_DateAndTimeOfDayOfExecution());
 			RecordingTrackListFile=fopen(file,"w");
 			LGL_Assert(RecordingTrackListFile);
 			chmod

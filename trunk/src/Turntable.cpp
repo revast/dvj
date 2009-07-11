@@ -201,7 +201,6 @@ TurntableObj
 	CenterX=.5f*(ViewPortLeft+ViewPortRight);
 	CenterY=.5f*(ViewPortBottom+ViewPortTop);
 
-	LGL_Assertf(LGL_DirectoryExists("data/music"),("Error! Must create directory data/music!\n"));
 	FilterTextMostRecent[0]='\0';
 
 	BadFileFlash=0.0f;
@@ -271,7 +270,7 @@ TurntableObj
 			sprintf
 			(
 				path,
-				"data/noise/256x64/%02i.png",
+				"data/image/noise/256x64/%02i.png",
 				a
 			);
 			assert(LGL_FileExists(path));
@@ -282,7 +281,9 @@ TurntableObj
 	LowRez=false;
 
 	Database=database;
-	DatabaseFilter.SetDir("data/music");
+	char musicRoot[2048];
+	sprintf(musicRoot,"%s/.dvj/music",LGL_GetHomeDir());
+	DatabaseFilter.SetDir(musicRoot);
 	DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
 	FileTop=0;
 	for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
@@ -2314,13 +2315,16 @@ DrawFrame
 			bpm[a-FileTop]=DatabaseFilteredEntries[a]->BPM;
 		}
 
+		char drawDirPath[2048];
+		strcpy(drawDirPath,&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())+strlen("/.dvj/")]));
+
 		LGL_DrawLogWrite
 		(
 			//             01 02 03 04 05 06 07 08 09 10 11 12   13   14   15   16   17   18   19  20
 			"DirTreeDraw|%.3f|%s|%s|%s|%s|%s|%s|%s|%i|%i|%i|%i|%.4f|%.4f|%.3f|%.2f|%.2f|%.2f|%.2f|%.2f\n",
 			LGL_SecondsSinceExecution()*Focus,		//01
 			FilterText.GetString(),				//02
-			DatabaseFilter.Dir,				//03
+			drawDirPath,					//03
 			(fileNum>0)?nameArray[0]:"",			//04
 			(fileNum>1)?nameArray[1]:"",			//05
 			(fileNum>2)?nameArray[2]:"",			//06
@@ -2356,7 +2360,7 @@ DrawFrame
 		(
 			LGL_SecondsSinceExecution()*Focus,
 			FilterText.GetString(),
-			DatabaseFilter.Dir,
+			drawDirPath,
 			nameArray,
 			isDirBits,
 			alreadyPlayedBits,
@@ -3069,7 +3073,7 @@ LoadMetaData()
 	}
 
 	char metaDataPath[1024];
-	sprintf(metaDataPath,"data/metadata/%s.musefuse-metadata.txt",Sound->GetPathShort());
+	sprintf(metaDataPath,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
 	FILE* fd=fopen(metaDataPath,"r");
 	if(fd)
 	{
@@ -3129,7 +3133,7 @@ SaveMetaData()
 	}
 
 	char metaDataPath[1024];
-	sprintf(metaDataPath,"data/metadata/%s.musefuse-metadata.txt",Sound->GetPathShort());
+	sprintf(metaDataPath,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
 	FILE* fd=fopen(metaDataPath,"w");
 	if(fd)
 	{

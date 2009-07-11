@@ -325,7 +325,7 @@ Mixer_DrawGlowLinesStatus
 		brightness,brightness,brightness,1,
 		true,
 		1.0f,
-		"musefuse.org"
+		"interimdescriptor.blogspot.org"
 	);
 	*/
 	

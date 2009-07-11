@@ -77,12 +77,12 @@ void InitializeGlobalsPreLGL()
 	//Move all old generic record files to old folder
 	if(LGL_DirectoryExists(recordPath))
 	{
-		LGL_DirTree dirTree(recordPath);
 		if(LGL_DirectoryExists(recordOldPath)==false)
 		{
 			bool ok=LGL_DirectoryCreate(recordOldPath);
 			assert(ok);
 		}
+		LGL_DirTree dirTree(recordPath);
 		dirTree.WaitOnWorkerThread();
 		for(unsigned int a=0;a<dirTree.GetFileCount();a++)
 		{
@@ -151,8 +151,10 @@ void InitializeGlobals()
 void
 VerifyMusicDir()
 {
+	char musicDir[2048];
+	sprintf(musicDir,"%s/.dvj/music",LGL_GetHomeDir());
 #ifndef	LGL_WIN32
-	while(LGL_DirectoryExists("data/music")==false)
+	while(LGL_DirectoryExists(musicDir)==false)
 	{
 		LGL_InputBuffer outputBuffer;
 		char dir[2048];
@@ -193,7 +195,7 @@ VerifyMusicDir()
 				{
 					outputBuffer.ReleaseFocus();
 					char cmd[1024];
-					sprintf(cmd,"ln -s \"%s\" data/music",outputBuffer.GetString());
+					sprintf(cmd,"ln -s \"%s\" \"%s\"",outputBuffer.GetString(),musicDir);
 					system(cmd);
 				}
 				LGL_SwapBuffers();

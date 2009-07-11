@@ -64,16 +64,13 @@ class DatabaseObj
 
 public:
 
-		DatabaseObj
-		(
-			const char*	musicRoot
-		);
+		DatabaseObj();
 		~DatabaseObj();
 	
 	std::vector<DatabaseEntryObj*>
 		GetEntryListFromFilter(DatabaseFilterObj* filter);
 	
-	void	Refresh(const char* subdirPath="data/music");
+	void	Refresh(const char* subdirPath=NULL);
 
 	void	LoadMetadataFile(const char* file);
 	void	LoadMetadataDir(const char* dir);
