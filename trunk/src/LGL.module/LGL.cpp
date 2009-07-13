@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <signal.h>
 
 #ifdef	LGL_LINUX
 
@@ -17221,23 +17222,40 @@ int lgl_MidiInit2()
 	//Create corresponding LGL_MidiDevices
 	for(unsigned int a=0;a<LGL_MidiDeviceCount();a++)
 	{
-		if(strcmp(LGL_MidiDeviceName(a),"Xponent Port 1")==0)
+		if
+		(
+			strcmp(LGL_MidiDeviceName(a),"Xponent:0")==0 ||
+			strcmp(LGL_MidiDeviceName(a),"Xponent Port 1")==0
+		)
 		{
 			//We have an Xponent!
 			LGL.Xponent = new LGL_MidiDeviceXponent;
 			LGL.Xponent->DeviceID = a;
 		}
-		if(strcmp(LGL_MidiDeviceName(a),"Xponent Port 2")==0)
+		if
+		(
+			strcmp(LGL_MidiDeviceName(a),"Xponent:1")==0 ||
+			strcmp(LGL_MidiDeviceName(a),"Xponent Port 2")==0
+		)
 		{
 			//Meh
 		}
-		else if(strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 1")==0)
+		else if
+		(
+			strcmp(LGL_MidiDeviceName(a),"USB X-Session:0")==0 ||
+			strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 1")==0
+		)
 		{
 			//We have an Xsession!
 			LGL.Xsession = new LGL_MidiDevice;
 			LGL.Xsession->DeviceID = a;
 		}
-		else if(strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 2")==0)
+		else if
+		(
+
+			strcmp(LGL_MidiDeviceName(a),"USB X-Session:1")==0 ||
+			strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 2")==0
+		)
 		{
 			//Meh
 		}
@@ -17279,11 +17297,19 @@ int lgl_MidiUpdate()
 	{
 		RtMidiIn* midiRtIn = LGL.MidiRtInDevice[a];
 		LGL_MidiDevice* device=NULL;
-		if(strcmp(LGL_MidiDeviceName(a),"Xponent Port 1")==0)
+		if
+		(
+			strcmp(LGL_MidiDeviceName(a),"Xponent:0")==0 ||
+			strcmp(LGL_MidiDeviceName(a),"Xponent Port 1")==0
+		)
 		{
 			device = LGL.Xponent;
 		}
-		if(strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 1")==0)
+		if
+		(
+			strcmp(LGL_MidiDeviceName(a),"USB X-Session:0")==0 ||
+			strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 1")==0
+		)
 		{
 			device = LGL.Xsession;
 		}
