@@ -94,11 +94,11 @@ CC_LIN			= g++
 #MODEFLAGS_LIN		= -O4 -march=pentium4 -mfpmath=sse -fomit-frame-pointer -ffast-math -pipe
 #MODEFLAGS_LIN		= -g -pg
 MODEFLAGS_LIN		= -g
-DEFINES_LIN		= -DLGL_LINUX
+DEFINES_LIN		= -DLGL_LINUX -D__LINUX_ALSASEQ__
 CFLAGS_LIN		= -Wall -I$(OBJDIR_LIN) `sdl-config --cflags` $(MODEFLAGS_LIN) -I$(ROOT_SRC_DIR) -fsingle-precision-constant $(DEFINES_LIN)
 CPPFLAGS_LIN		= -include PrecompiledHeaders.h $(CFLAGS_LIN)
 AVCODECLIBRARIES_LIN	= -lavformat -lavcodec -lswscale -lavutil
-LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cflags --libs jack` -lSDL_image -lSDL_net -lGL -lfftw3f -lm $(AVCODECLIBRARIES_LIN) -lsamplerate -lcwiid
+LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cflags --libs jack` -lSDL_image -lSDL_net -lGL -lfftw3f -lm $(AVCODECLIBRARIES_LIN) -lsamplerate -lcwiid -lasound
 
 
 #DEFINE OSX BUILD OPTIONS
@@ -106,11 +106,11 @@ LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cfl
 AR_OSX			= ar rcs
 CC_OSX			= g++-4.0
 MODEFLAGS_OSX		= -g
-DEFINES_OSX		= -DLGL_LINUX -DLGL_OSX -Dfopen64=fopen
+DEFINES_OSX		= -DLGL_LINUX -DLGL_OSX -Dfopen64=fopen -D__MACOSX_CORE__
 CFLAGS_OSX		= -Wall -I$(OBJDIR_OSX) `sdl-config --cflags` $(MODEFLAGS_OSX) -I$(ROOT_SRC_DIR) $(DEFINES_OSX) -I/opt/local/include -L/opt/local/lib/ -L/usr/local/lib/ -I/usr/local/include/
 #-fsingle-precision-constant
 CPPFLAGS_OSX		= -include PrecompiledHeaders.h $(CFLAGS_OSX)
-LGLLIBRARIES_OSX	= -L/sw/lib -lSDL_image -lSDL_net -framework OpenGL -lSDL -framework AppKit -framework Foundation -lSDLmain -lsamplerate -ljack -lavcodec -lavformat -lswscale -lavutil -lz -lbz2 -lfftw3f
+LGLLIBRARIES_OSX	= -L/sw/lib -lSDL_image -lSDL_net -framework OpenGL -lSDL -framework AppKit -framework CoreMidi -framework CoreAudio -framework CoreFoundation -lSDLmain -lsamplerate -ljack -lavcodec -lavformat -lswscale -lavutil -lz -lbz2 -lfftw3f
 
 
 
