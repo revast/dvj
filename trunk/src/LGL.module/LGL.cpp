@@ -299,8 +299,9 @@ typedef struct
 
 	//MIDI
 
-	int			MidiFD;
-	std::vector<char*>	MidiDeviceNames;
+	RtMidiIn*		MidiRtIn;
+	std::vector<RtMidiIn*>	MidiRtInDevice;
+	std::vector<char*>	MidiRtInDeviceNames;
 
 	//M-Audio MIDI Devices
 
@@ -988,6 +989,8 @@ LGL_JackInit()
 	return(true);
 }
 
+int lgl_MidiInit2();
+
 bool
 LGL_Init
 (
@@ -1544,79 +1547,11 @@ LGL_Init
 	}
 #endif	//LGL_LINUX_VIDCAM
 
-
-	/*
-	for(;;)
-	{
-		SDL_JoystickUpdate();
-		
-	}
-	*/
-	
 	//MIDI
-
-	LGL.MidiFD = -1;
-#ifndef	LGL_OSX
-	LGL.MidiFD = open("/dev/sequencer",O_RDWR);
-	if(LGL.MidiFD != -1)
-	{
-		int status;
-		int deviceCount=0;
-		status = ioctl(LGL.MidiFD, SNDCTL_SEQ_NRMIDIS, &deviceCount);
-		assert(status==0);
-		struct midi_info midiInfo;
-		for(int a=0;a<deviceCount;a++)
-		{
-			midiInfo.device=a;
-			status = ioctl(LGL.MidiFD, SNDCTL_MIDI_INFO, &midiInfo);
-			assert(status==0);
-			if(status!=0)
-			{
-				break;
-			}
-			char* name = new char[strlen(midiInfo.name)+1];
-			strcpy(name,midiInfo.name);
-			LGL.MidiDeviceNames.push_back(name);
-		}
-		//close(LGL.MidiFD);
-		//LGL.MidiFD=-1;
-	}
-#endif	//LGL_OSX
 
 	//M-Audio MIDI Devices
 
-	LGL.Xponent=NULL;
-	LGL.Xsession=NULL;
-	LGL.TriggerFinger=NULL;
-	LGL.JP8k=NULL;
-
-	for(unsigned int a=0;a<LGL_MidiDeviceCount();a++)
-	{
-		if(strcmp(LGL_MidiDeviceName(a),"Xponent MIDI 1")==0)
-		{
-			//We have an Xponent!
-			LGL.Xponent = new LGL_MidiDeviceXponent;
-			LGL.Xponent->DeviceID = a;
-		}
-		else if(strcmp(LGL_MidiDeviceName(a),"USB X-Session MIDI 1")==0)
-		{
-			//We have an Xsession!
-			LGL.Xsession = new LGL_MidiDevice;
-			LGL.Xsession->DeviceID = a;
-		}
-		else if(strcmp(LGL_MidiDeviceName(a),"USB Trigger Finger MIDI 1")==0)
-		{
-			//We have a TriggerFinger!
-			LGL.TriggerFinger = new LGL_MidiDevice;
-			LGL.TriggerFinger->DeviceID = a;
-		}
-		else if(strcmp(LGL_MidiDeviceName(a),"USB Uno MIDI Interface MIDI 1")==0)
-		{
-			//We have a JP8k!
-			LGL.JP8k = new LGL_MidiDevice;
-			LGL.JP8k->DeviceID = a;
-		}
-	}
+	lgl_MidiInit2();
 	
 	//VidCam
 
@@ -2578,7 +2513,7 @@ LGL_FFT
 //Video
 
 float*	tempAudioBufferBackSilence=NULL;
-int	lgl_MidiUpdate(void* nothing);	//Internal LGL function
+int	lgl_MidiUpdate();	//Internal LGL function
 
 #define	FONT_BUFFER_SIZE (1024*1024)	//4MB for fonts... that sould be more than enough, right?
 float lgl_font_gl_buffer[FONT_BUFFER_SIZE];
@@ -3011,7 +2946,7 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 		LGL.DrawLogDataLength.clear();
 	}
 
-	lgl_MidiUpdate(NULL);
+	lgl_MidiUpdate();
 
 	if(LGL_GetXponent())
 	{
@@ -17239,10 +17174,380 @@ LGL_GetWiimote
 
 //MIDI
 
-int lgl_MidiUpdate
-(
-	void* delay
-)
+int lgl_MidiInit2()
+{
+	LGL.Xponent=NULL;
+	LGL.Xsession=NULL;
+	LGL.TriggerFinger=NULL;
+	LGL.JP8k=NULL;
+
+	try
+	{
+		LGL.MidiRtIn = new RtMidiIn();
+	}
+	catch(RtError& error)
+	{
+		printf("lgl_MidiInit2(): Error!\n");
+		error.printMessage();
+		return(-1);
+	}
+
+	for(unsigned int a=0; a<LGL.MidiRtIn->getPortCount(); a++)
+	{
+		try
+		{
+			//Make a new RtMidiIn
+			RtMidiIn* midiRtIn = new RtMidiIn();
+
+			//Get the name
+			std::string str = midiRtIn->getPortName(a);
+			char* name = new char[2048];
+			strcpy(name,str.c_str());
+			LGL.MidiRtInDeviceNames.push_back(name);
+
+			//Open the port
+			midiRtIn->openPort(a);
+
+			LGL.MidiRtInDevice.push_back(midiRtIn);
+		}
+		catch(RtError &error)
+		{
+			printf("lgl_MidiInit2(): Error!\n");
+			error.printMessage();
+			return(-1);
+		}
+	}
+
+	//Create corresponding LGL_MidiDevices
+	for(unsigned int a=0;a<LGL_MidiDeviceCount();a++)
+	{
+		if(strcmp(LGL_MidiDeviceName(a),"Xponent Port 1")==0)
+		{
+			//We have an Xponent!
+			LGL.Xponent = new LGL_MidiDeviceXponent;
+			LGL.Xponent->DeviceID = a;
+		}
+		if(strcmp(LGL_MidiDeviceName(a),"Xponent Port 2")==0)
+		{
+			//Meh
+		}
+		else if(strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 1")==0)
+		{
+			//We have an Xsession!
+			LGL.Xsession = new LGL_MidiDevice;
+			LGL.Xsession->DeviceID = a;
+		}
+		else if(strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 2")==0)
+		{
+			//Meh
+		}
+		else if(strcmp(LGL_MidiDeviceName(a),"USB Trigger Finger MIDI 1")==0)
+		{
+			//We have a TriggerFinger!
+			LGL.TriggerFinger = new LGL_MidiDevice;
+			LGL.TriggerFinger->DeviceID = a;
+		}
+		else if(strcmp(LGL_MidiDeviceName(a),"USB Uno MIDI Interface MIDI 1")==0)
+		{
+			//We have a JP8k!
+			LGL.JP8k = new LGL_MidiDevice;
+			LGL.JP8k->DeviceID = a;
+		}
+		else
+		{
+			printf("Unsupported MIDI Device: '%s'\n",LGL_MidiDeviceName(a));
+		};
+	}
+
+	return(0);
+}
+
+bool done;
+static void finish(int meh)
+{
+	done=true;
+}
+
+int lgl_MidiUpdate()
+{
+	if(LGL.MidiRtIn==NULL)
+	{
+		return(0);
+	}
+
+	for(unsigned int a=0;a<LGL.MidiRtInDevice.size();a++)
+	{
+		RtMidiIn* midiRtIn = LGL.MidiRtInDevice[a];
+		LGL_MidiDevice* device=NULL;
+		if(strcmp(LGL_MidiDeviceName(a),"Xponent Port 1")==0)
+		{
+			device = LGL.Xponent;
+		}
+		if(strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 1")==0)
+		{
+			device = LGL.Xsession;
+		}
+
+		done=false;
+		typedef void (*sighandler)(int);
+		sighandler oldie = signal(SIGINT, finish);
+		while(done==false)
+		{
+			std::vector<unsigned char> message;
+			midiRtIn->getMessage(&message);
+
+			if(message.size()==0)
+			{
+				break;
+			}
+			if(device==NULL)
+			{
+				continue;
+			}
+
+			/*
+			for(unsigned int a=0;a<message.size();a++)
+			{
+				printf("\tByte[%i] = %i\n",a,message[a]);
+			}
+			*/
+			
+			if(device==LGL.Xponent)
+			{
+				//Xponent!
+				if(message[0]==176)
+				{
+					//Left Knob
+					unsigned char knobWhich=message[1];
+					unsigned char knobValue=message[2];
+
+					device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (1)");
+					{
+						device->KnobTweakBack[knobWhich]=true;
+						device->KnobStatusBack[knobWhich]=knobValue;
+					}
+					device->BackBufferSemaphore.Unlock();
+				}
+				else if(message[0]==177)
+				{
+					//Right Knob
+					int knobWhich=message[1]+100;
+					unsigned char knobValue=message[2];
+					device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (2)");
+					{
+						device->KnobTweakBack[knobWhich]=true;
+						device->KnobStatusBack[knobWhich]=knobValue;
+					}
+					device->BackBufferSemaphore.Unlock();
+				}
+				else if(message[0]==224)
+				{
+					//Left Pitchbend
+					unsigned char knobWhich=30;	//o_0
+					unsigned char knobValue=message[2];
+					device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (3)");
+					{
+						device->KnobTweakBack[knobWhich]=true;
+						device->KnobStatusBack[knobWhich]=knobValue;
+					}
+					device->BackBufferSemaphore.Unlock();
+				}
+				else if(message[0]==225)
+				{
+					//Right Pitchbend
+					int knobWhich=30+100;	//o_0
+					unsigned char knobValue=message[2];
+					device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (4)");
+					{
+						device->KnobTweakBack[knobWhich]=true;
+						device->KnobStatusBack[knobWhich]=knobValue;
+					}
+					device->BackBufferSemaphore.Unlock();
+				}
+				else if(message[0]==178)
+				{
+					//Xfader or touchpad or Cue
+					if(message[1]==7)
+					{
+						//Xfader
+						unsigned char knobWhich=91;
+						unsigned char knobValue=message[2];
+						device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (5)");
+						{
+							device->KnobTweakBack[knobWhich]=true;
+							device->KnobStatusBack[knobWhich]=knobValue;
+						}
+						device->BackBufferSemaphore.Unlock();
+					}
+					else if(message[1]==8)
+					{
+						//Touchpad X
+						unsigned char knobWhich=92;
+						unsigned char knobValue=message[2];
+						device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (6)");
+						{
+							device->KnobTweakBack[knobWhich]=true;
+							device->KnobStatusBack[knobWhich]=knobValue;
+						}
+						device->BackBufferSemaphore.Unlock();
+
+						//Touchpad Y
+						/*
+						read(LGL.MidiFD, &readPacket, sizeof(readPacket));
+						if(readPacket[1]!=178)
+						{
+							printf("readPacket[1]: %i\n",readPacket[1]);
+							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
+							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
+							//assert(readPacket[1]==178);
+						}
+						else
+						{
+							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
+							assert(readPacket[1]==9);
+							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
+							knobNow=93;
+							knobValue=readPacket[1];
+							LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (7)");
+							{
+								LGL_GetXponent()->KnobTweakBack[knobNow]=true;
+								LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
+							}
+							LGL_GetXponent()->BackBufferSemaphore.Unlock();
+						}
+						*/
+					}
+					else if(message[1]==13)
+					{
+						unsigned char knobWhich=90;
+						unsigned char knobValue=message[2];
+						device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (8)");
+						{
+							device->KnobTweakBack[knobWhich]=true;
+							device->KnobStatusBack[knobWhich]=knobValue;
+						}
+						device->BackBufferSemaphore.Unlock();
+					}
+				}
+				else if(message[0]==144)
+				{
+					//Left Button Stroke
+					int button = message[1];
+					device->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (1)");
+					{
+						device->ButtonStrokeBack[button]=true;
+						device->ButtonForceBack[button]=1.0f;
+						device->ButtonDownBack[button]=true;
+						device->ButtonReleaseBack[button]=false;
+					}
+					device->BackBufferSemaphore.Unlock();
+				}
+				else if(message[0]==128)
+				{
+					//Left Button Release
+					int button = message[1];
+					device->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (2)");
+					{
+						device->ButtonStrokeBack[button]=false;
+						device->ButtonForceBack[button]=0.0f;
+						device->ButtonDownBack[button]=false;
+						device->ButtonReleaseBack[button]=true;
+					}
+					device->BackBufferSemaphore.Unlock();
+				}
+				else if(message[0]==145)
+				{
+					//Right Button Stroke
+					int button = message[1] + 100;
+					device->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (3)");
+					{
+						device->ButtonStrokeBack[button]=true;
+						device->ButtonForceBack[button]=1.0f;
+						device->ButtonDownBack[button]=true;
+						device->ButtonReleaseBack[button]=false;
+					}
+					device->BackBufferSemaphore.Unlock();
+				}
+				else if(message[1]==129)
+				{
+					//Right Button Release
+					int button = message[1] + 100;
+					device->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (4)");
+					{
+						device->ButtonStrokeBack[button]=false;
+						device->ButtonForceBack[button]=0.0f;
+						device->ButtonDownBack[button]=false;
+						device->ButtonReleaseBack[button]=true;
+					}
+					device->BackBufferSemaphore.Unlock();
+				}
+			}
+
+			if(device==LGL.Xsession)
+			{
+				//Xsession!
+				if(message[0]==176)
+				{
+					//Knob
+					unsigned char knobWhich=message[1];
+					unsigned char knobValue=message[2];
+					LGL_GetXsession()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (9)");
+					{
+						LGL_GetXsession()->KnobTweakBack[knobWhich]=true;
+						LGL_GetXsession()->KnobStatusBack[knobWhich]=knobValue;
+					}
+					LGL_GetXsession()->BackBufferSemaphore.Unlock();
+				}
+				else if(message[0]==144)
+				{
+					//Button
+					int button = message[1];
+					bool down = (message[2]==127);
+					LGL_GetXsession()->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (5)");
+					{
+						bool wasDown=device->ButtonDownBack[button];
+						if
+						(
+							wasDown==false &&
+							down
+						)
+						{
+							//Stroke!
+							LGL_GetXsession()->ButtonStrokeBack[button]=true;
+							LGL_GetXsession()->ButtonForceBack[button]=1.0f;
+							LGL_GetXsession()->ButtonDownBack[button]=true;
+							LGL_GetXsession()->ButtonReleaseBack[button]=false;
+						}
+						else if
+						(
+							wasDown==true &&
+							down==false
+						)
+						{
+							//Release
+							LGL_GetXsession()->ButtonStrokeBack[button]=false;
+							LGL_GetXsession()->ButtonForceBack[button]=0.0f;
+							LGL_GetXsession()->ButtonDownBack[button]=false;
+							LGL_GetXsession()->ButtonReleaseBack[button]=true;
+						}
+						else
+						{
+							printf("Strange button stroke...\n");
+						}
+					}
+					LGL_GetXsession()->BackBufferSemaphore.Unlock();
+				}
+			}
+		}
+
+		signal(SIGINT,oldie);
+	}
+
+	return(0);
+}
+
+#if 0
+int lgl_MidiUpdate()
 {
 #ifndef	LGL_OSX
 	unsigned char readPacket[4];
@@ -17250,83 +17555,13 @@ int lgl_MidiUpdate
 	int knobValue=-1;
 #endif	//LGL_OSX
 
-	if(LGL.MidiFD<=0)
-	{
-		return(-1);
-	}
-#if 0
-	//FILE* dumpFD = fopen("/home/emf/temp/debug","w");
-	unsigned char lastPacket[4];
-	int dupeCount=0;
-	for(;;)
-	{
-		int result = read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-		if(result==-1)
-		{
-			return(0);
-		}
-		else
-		{
-			if
-			(
-				readPacket[0]!=lastPacket[0] ||
-				readPacket[1]!=lastPacket[1] ||
-				readPacket[2]!=lastPacket[2] ||
-				readPacket[3]!=lastPacket[3]
-			)
-			{
-				if(dupeCount)
-				{
-					//fprintf(dumpFD,"x%i\n",dupeCount);
-					printf("x%i:\n",dupeCount);
-					dupeCount=0;
-				}
-				/*
-				fprintf
-				(
-					dumpFD,
-					"Midi Packet! %d\t%d\t%d\t%d\n",
-					readPacket[0],
-					readPacket[1],
-					readPacket[2],
-					readPacket[3]
-				);
-				*/
-				printf
-				(
-					"Midi Packet! %d\t%d\t%d\t%d\n",
-					readPacket[0],
-					readPacket[1],
-					readPacket[2],
-					readPacket[3]
-				);
-				lastPacket[0]=readPacket[0];
-				lastPacket[1]=readPacket[1];
-				lastPacket[2]=readPacket[2];
-				lastPacket[3]=readPacket[3];
-			}
-			else
-			{
-				dupeCount++;
-			}
-		}
-	}
-#endif	//MIDI_DUMP
 #ifndef	LGL_OSX
 	for(;;)
 	{
 		int result = read(LGL.MidiFD, &readPacket, sizeof(readPacket));
 		if(result==-1)
 		{
-			if(delay)
-			{
-				LGL_DelayMS(1);
-			}
-			else
-			{
-				//We're not actually a thread, but instead we're called from LGL_SwapBuffers()
-				return(0);
-			}
+			return(0);
 		}
 		else if
 		(
@@ -17772,11 +18007,12 @@ printf("knob %i @ %i\n",knob,value);
 
 	return(0);
 }
+#endif
 
 unsigned int
 LGL_MidiDeviceCount()
 {
-	return(LGL.MidiDeviceNames.size());
+	return(LGL.MidiRtInDeviceNames.size());
 }
 
 const char*
@@ -17790,7 +18026,7 @@ LGL_MidiDeviceName
 		printf("LGL_MidiDeviceName(%i): Error! [0 < arg < %i] violated!\n",which,LGL_MidiDeviceCount());
 		assert(which<LGL_MidiDeviceCount());
 	}
-	return(LGL.MidiDeviceNames[which]);
+	return(LGL.MidiRtInDeviceNames[which]);
 }
 
 

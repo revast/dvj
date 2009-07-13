@@ -57,6 +57,8 @@
 
 #include <fftw3.h>
 
+#include "RtMidi.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
