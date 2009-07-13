@@ -17416,32 +17416,18 @@ int lgl_MidiUpdate()
 							device->KnobStatusBack[knobWhich]=knobValue;
 						}
 						device->BackBufferSemaphore.Unlock();
-
+					}
+					else if(message[1]==9)
+					{
 						//Touchpad Y
-						/*
-						read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-						if(readPacket[1]!=178)
+						unsigned char knobWhich=93;
+						unsigned char knobValue=message[2];
+						device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (7)");
 						{
-							printf("readPacket[1]: %i\n",readPacket[1]);
-							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-							//assert(readPacket[1]==178);
+							device->KnobTweakBack[knobNow]=true;
+							device->KnobStatusBack[knobNow]=knobValue;
 						}
-						else
-						{
-							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-							assert(readPacket[1]==9);
-							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-							knobNow=93;
-							knobValue=readPacket[1];
-							LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (7)");
-							{
-								LGL_GetXponent()->KnobTweakBack[knobNow]=true;
-								LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
-							}
-							LGL_GetXponent()->BackBufferSemaphore.Unlock();
-						}
-						*/
+						device->BackBufferSemaphore.Unlock();
 					}
 					else if(message[1]==13)
 					{
