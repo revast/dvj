@@ -2312,7 +2312,7 @@ lgl_fftw_init()
 	if(wisdomLoaded==false)
 	{
 		LGL_Image* fft_img=NULL;
-		const char* fftwWisdomImagePath="data/image/fftw_wisdom.jpg";
+		const char* fftwWisdomImagePath="data/image/fftw_wisdom.png";
 		if(LGL_FileExists(fftwWisdomImagePath))
 		{
 			fft_img = new LGL_Image(fftwWisdomImagePath);
