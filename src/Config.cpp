@@ -22,6 +22,9 @@
  */
 
 #include "Config.h"
+#include "ConfigFile.h"
+
+ConfigFile* dvjrcConfigFile=NULL;
 
 void
 CreateDefaultDVJRC
@@ -33,6 +36,14 @@ CreateDefaultDVJRC
 	{
 		//TODO
 		fprintf(fd,"#dvjrc\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"colorCoolR=0.0\n");
+		fprintf(fd,"colorCoolG=0.0\n");
+		fprintf(fd,"colorCoolB=0.5\n");
+		fprintf(fd,"colorWarmR=0.4\n");
+		fprintf(fd,"colorWarmG=0.2\n");
+		fprintf(fd,"colorWarmB=1.0\n");
+		fprintf(fd,"\n");
 		fclose(fd);
 	}
 }
@@ -55,6 +66,8 @@ LoadDVJRC()
 	{
 		CreateDefaultDVJRC(dvjrc);
 	}
+
+	dvjrcConfigFile = new ConfigFile(dvjrc);
 
 	char dvjCache[2048];
 	sprintf(dvjCache,"%s/cache",dotDvj);
@@ -135,9 +148,9 @@ GetColorCool
 	float&	b
 )
 {
-	r=0.0f;
-	g=0.0f;
-	b=0.5f;
+	r=dvjrcConfigFile->read<float>("colorCoolR",0.0f);
+	g=dvjrcConfigFile->read<float>("colorCoolG",0.0f);
+	b=dvjrcConfigFile->read<float>("colorCoolB",0.5f);
 }
 
 void
@@ -148,9 +161,9 @@ GetColorWarm
 	float&	b
 )
 {
-	r=0.4f;
-	g=0.2f;
-	b=1.0f;
+	r=dvjrcConfigFile->read<float>("colorWarmR",0.4f);
+	g=dvjrcConfigFile->read<float>("colorWarmG",0.2f);
+	b=dvjrcConfigFile->read<float>("colorWarmB",1.0f);
 }
 
 
