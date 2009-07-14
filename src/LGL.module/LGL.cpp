@@ -17424,8 +17424,8 @@ int lgl_MidiUpdate()
 						unsigned char knobValue=message[2];
 						device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (7)");
 						{
-							device->KnobTweakBack[knobNow]=true;
-							device->KnobStatusBack[knobNow]=knobValue;
+							device->KnobTweakBack[knobWhich]=true;
+							device->KnobStatusBack[knobWhich]=knobValue;
 						}
 						device->BackBufferSemaphore.Unlock();
 					}
@@ -24785,7 +24785,6 @@ lgl_AudioOutCallbackGenerator
 		if(sc->FutureGlitchSamplesNow!=-10000)
 		{
 			sc->GlitchSamplesNow=sc->FutureGlitchSamplesNow;
-printf("GN2: %lf\n",sc->GlitchSamplesNow);
 			sc->FutureGlitchSamplesNow=-10000;
 		}
 
@@ -25191,8 +25190,9 @@ printf("GN2: %lf\n",sc->GlitchSamplesNow);
 					if(sc->SampleRateConverterBufferStartSamples!=-1)
 					{
 						sc->SampleRateConverterBufferStartSamples=-1;
-						src_reset(sc->SampleRateConverterL);
-						src_reset(sc->SampleRateConverterR);
+						//The below calls would be nice, but are way too expensive to execute in the audio thread...
+						//src_reset(sc->SampleRateConverterL);
+						//src_reset(sc->SampleRateConverterR);
 					}
 				}
 
