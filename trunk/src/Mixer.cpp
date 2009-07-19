@@ -108,10 +108,17 @@ NextFrame
 			}
 		}
 
-		if(LGL_KeyStroke(SDLK_F4))
+		if
+		(
+			CanDisplayJackWarning &&
+			LGL_AudioUsingJack()==false
+		)
 		{
-			system("firefox http://code.google.com/p/dvj/wiki/JACK &");
-			exit(0);
+			if(LGL_KeyStroke(SDLK_F1))
+			{
+				system("firefox http://code.google.com/p/dvj/wiki/JACK &");
+				exit(0);
+			}
 		}
 	}
 
@@ -1327,7 +1334,7 @@ DrawStatus
 			.015f,
 			1.0f,0,0,1.0f,
 			false,.5f,
-			"Press [F4] for more info"
+			"Press [F1] for more info"
 		);
 	}
 
