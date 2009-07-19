@@ -58,8 +58,17 @@ int main(int argc, char** argv)
 	FILE* fd;
 	if(recordToLame)
 	{
+		const char* lamePath;
+		if(LGL_FileExists("lame"))
+		{
+			lamePath = "./lame";
+		}
+		else
+		{
+			lamePath = "lame";
+		}
 		char cmd[1024];
-		sprintf(cmd,"lame -r %s -h -b 320 - \"%s\"",lameFreq==48000?"-s 48":"-s 44.1",argv[1]);
+		sprintf(cmd,"%s -r %s -h -b 320 - \"%s\"",lamePath,lameFreq==48000?"-s 48":"-s 44.1",argv[1]);
 //printf("Lame command line:\n");
 //printf("\t'%s'\n",cmd);
 		fd=popen(cmd,"w");
