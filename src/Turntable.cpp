@@ -2294,7 +2294,10 @@ DrawFrame
 		float g=coolG;
 		float b=coolB;
 		float localGlow=glow;
-		if(GetRecordScratch())
+		unsigned int target =
+			(Focus ? TARGET_FOCUS : 0) |
+			((Which==0) ? TARGET_TOP : TARGET_BOTTOM);
+		if(Input.WaveformRecordHold(target))
 		{
 			//r=warmR;
 			//g=warmG;
