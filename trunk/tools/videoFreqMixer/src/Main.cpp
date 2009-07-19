@@ -16,6 +16,7 @@
 #include "LGL.module/LGL.h"
 
 #include "../../../src/Common.cpp"	//This is so screwy, but it works.
+#include "../../../src/ConfigFile.cpp"	//This is so screwy, but it works.
 #include "../../../src/Config.cpp"	//This is so screwy, but it works.
 
 //const char* targetMusicPath="/home/emf/music/hypermind.mp3";
@@ -208,6 +209,8 @@ printf("\t[2]: %s\n",videoOutPath);
 	{
 		encodeVideo(argc,argv);
 	}
+
+	return(0);
 }
 
 int
