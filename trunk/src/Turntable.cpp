@@ -2290,11 +2290,22 @@ DrawFrame
 
 	if(Focus)
 	{
+		float r=coolR;
+		float g=coolG;
+		float b=coolB;
+		float localGlow=glow;
+		if(GetRecordScratch())
+		{
+			//r=warmR;
+			//g=warmG;
+			//b=warmB;
+			localGlow*=2.0f;
+		}
 		LGL_DrawRectToScreen
 		(
 			ViewPortLeft,ViewPortRight,
 			ViewPortBottom,ViewPortTop,
-			0.3f*coolR*glow,0.3f*coolG*glow,0.3f*coolB*glow,rectAlpha
+			0.3f*r*localGlow,0.3f*g*localGlow,0.3f*b*localGlow,rectAlpha
 		);
 	}
 	
