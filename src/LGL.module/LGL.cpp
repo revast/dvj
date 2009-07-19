@@ -1415,6 +1415,7 @@ LGL_Init
 	glLoadIdentity();
 	glFrustum(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 
+	LGL_ClearBackBuffer();
 	LGL_SwapBuffers();
 	LGL_SwapBuffers();
 
