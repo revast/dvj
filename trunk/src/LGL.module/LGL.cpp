@@ -838,10 +838,12 @@ LGL_JackInit()
 	LGL.AudioSpec->silence=0;
 	jack_options_t jack_options = JackNullOption;
 	jack_status_t status;
-
+	
 	//Open a client connection to the JACK server
 	const char* client_name = "dvj";
+	printf("LGL_JackInit(): JACK server starting...\n\n");
 	jack_client=jack_client_open(client_name,jack_options,&status);
+	printf("\n");
 	if(jack_client==NULL)
 	{
 		printf("LGL_JackInit(): Error! jack_client_open() failed! status = 0x%2.0x\n",status);
@@ -25568,7 +25570,7 @@ LGL_ShutDown()
 	*/
 
 	LGL.AudioQuitting=true;
-printf("LockAudio() 5\n");
+//printf("LockAudio() 5\n");
 
 	if(LGL.AudioUsingJack==false)
 	{
@@ -25646,5 +25648,7 @@ printf("LockAudio() 5\n");
 #endif	//LGL_WIN32
 		system(command);
 	}
+
+	printf("LGL_Shutdown(): Omega\n");
 }
 
