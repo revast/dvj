@@ -1907,7 +1907,7 @@ class LGL_MidiDevice
 public:
 
 			LGL_MidiDevice();
-			~LGL_MidiDevice();
+virtual			~LGL_MidiDevice();
 	
 	bool		GetButtonStroke(int button);
 	bool		GetButtonDown(int button);
