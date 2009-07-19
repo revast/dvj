@@ -688,7 +688,8 @@ Turntable_DrawWaveform
 	float*		entireWaveArrayFreqFactor,
 	float		cachedLengthSeconds,
 	LGL_Image*	noiseImage256x64,
-	int		freqSensitiveMode
+	int		freqSensitiveMode,
+	float		warpPointSecondsTrigger
 )
 {
 	float coolR;
@@ -1094,6 +1095,29 @@ Turntable_DrawWaveform
 			pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			0.25f*warmR,0.25f*warmG,0.25f*warmB,0.0f
 		);
+		
+		if(warpPointSecondsTrigger>0.0f)
+		{
+			//Draw warp line!
+			float centerSample=soundPositionSamples;
+			float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
+			float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
+			float warpSample=44100*warpPointSecondsTrigger;
+
+			float screenCenter=pointLeft + pointWidth*((warpSample-leftSample)/(rightSample-leftSample));
+			float screenRadius=0.0025f;
+			float screenLeft=screenCenter-screenRadius;
+			float screenRight=screenCenter+screenRadius;
+			noiseImage256x64->DrawToScreen
+			(
+				screenLeft,
+				screenRight,
+				pointBottom,
+				pointTop,
+				0,
+				warmR,warmG,warmB,0.0f
+			);
+		}
 
 		//Draw Glitch Rectangle
 		if

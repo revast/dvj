@@ -1563,6 +1563,7 @@ public:
 	bool		GetWarpPointIsSet(int channel);
 	bool		SetWarpPoint(int channel);
 	bool		SetWarpPoint(int channel, double triggerSeconds, double dstSeconds);
+	float		GetWarpPointSecondsTrigger(int channel);
 
 	float		GetVU(int channel) const;
 

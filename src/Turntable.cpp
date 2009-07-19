@@ -2539,7 +2539,7 @@ DrawFrame
 		LGL_DrawLogWrite
 		(
 			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35
-			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i\n",
+			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f\n",
 			Which,							//01
 			Sound->IsLoaded() ? 'T' : 'F',				//02
 			GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
@@ -2574,7 +2574,8 @@ DrawFrame
 			EQFinal[1],						//32
 			EQFinal[2],						//33
 			LowRez ? 'T' : 'F',					//34
-			VideoFrequencySensitiveMode				//35
+			VideoFrequencySensitiveMode,				//35
+			Sound->GetWarpPointSecondsTrigger(Channel)		//36
 			/*
 			EntireWaveArrayFillIndex,				//36
 			ENTIRE_WAVE_ARRAY_COUNT,				//37
@@ -2634,7 +2635,8 @@ DrawFrame
 			EntireWaveArrayFreqFactor,				//42
 			CachedLengthSeconds,					//43
 			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44
-			VideoFrequencySensitiveMode				//45
+			VideoFrequencySensitiveMode,				//45
+			Sound->GetWarpPointSecondsTrigger(Channel)		//46
 		);
 		LGL_DrawLogPause(false);
 		
