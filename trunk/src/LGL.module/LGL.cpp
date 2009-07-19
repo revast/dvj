@@ -13069,6 +13069,16 @@ if(channel<0)
 
 float
 LGL_Sound::
+GetWarpPointSecondsTrigger
+(
+	int	channel
+)
+{
+	return(LGL.SoundChannel[channel].WarpPointSecondsTrigger);
+}
+
+float
+LGL_Sound::
 GetVU
 (
 	int	channel

@@ -139,7 +139,8 @@ Turntable_DrawWaveform
 	float*		entireWaveArrayFreqFactor,
 	float		cachedLengthSeconds,
 	LGL_Image*	noiseImage256x64,
-	int		freqSensitiveMode
+	int		freqSensitiveMode,
+	float		warpPointSecondsTrigger
 );
 
 void
