@@ -1034,7 +1034,7 @@ DrawVideos
 				bright,
 				bright,
 				bright,
-				0.0f
+				preview?1.0f:0.0f
 			);
 		}
 		Videos[videoNow]->UnlockImage(image);
