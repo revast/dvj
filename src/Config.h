@@ -25,13 +25,7 @@
 #define	_DVJ_CONFIG_H_
 
 void
-CreateDefaultDVJRC
-(
-	const char*	path
-);
-
-void
-LoadDVJRC();
+ConfigInit();
 
 void
 GetColorCool
@@ -48,6 +42,70 @@ GetColorWarm
 	float&	g,
 	float&	b
 );
+
+int	GetInputKeyboardFocusChangeKey();
+int	GetInputKeyboardFocusBottomKey();
+int	GetInputKeyboardFocusTopKey();
+int	GetInputKeyboardXfaderSpeakersDeltaDownKey();
+int	GetInputKeyboardXfaderSpeakersDeltaUpKey();
+int	GetInputKeyboardXfaderHeadphonesDeltaDownKey();
+int	GetInputKeyboardXfaderHeadphonesDeltaUpKey();
+int	GetInputKeyboardSyncTopToBottomKey();
+int	GetInputKeyboardSyncBottomToTopKey();
+int	GetInputKeyboardFileScrollDownManyKey();
+int	GetInputKeyboardFileScrollUpManyKey();
+int	GetInputKeyboardFileScrollDownOneKey();
+int	GetInputKeyboardFileScrollUpOneKey();
+int	GetInputKeyboardFileSelectKey();
+int	GetInputKeyboardFileMarkUnopenedKey();
+int	GetInputKeyboardFileRefreshKey();
+int	GetInputKeyboardDecodeAbortKey();
+int	GetInputKeyboardWaveformEjectKey();
+int	GetInputKeyboardWaveformTogglePauseKey();
+int	GetInputKeyboardWaveformNudgeLeft1Key();
+int	GetInputKeyboardWaveformNudgeRight1Key();
+int	GetInputKeyboardWaveformNudgeLeft2Key();
+int	GetInputKeyboardWaveformNudgeRight2Key();
+int	GetInputKeyboardWaveformPitchbendDeltaDownSlowKey();
+int	GetInputKeyboardWaveformPitchbendDeltaUpSlowKey();
+int	GetInputKeyboardWaveformPitchbendDeltaDownFastKey();
+int	GetInputKeyboardWaveformPitchbendDeltaUpFastKey();
+int	GetInputKeyboardWaveformEQLowDeltaDownKey();
+int	GetInputKeyboardWaveformEQLowDeltaUpKey();
+int	GetInputKeyboardWaveformEQLowKillKey();
+int	GetInputKeyboardWaveformEQMidDeltaDownKey();
+int	GetInputKeyboardWaveformEQMidDeltaUpKey();
+int	GetInputKeyboardWaveformEQMidKillKey();
+int	GetInputKeyboardWaveformEQHighDeltaDownKey();
+int	GetInputKeyboardWaveformEQHighDeltaUpKey();
+int	GetInputKeyboardWaveformEQHighKillKey();
+int	GetInputKeyboardWaveformGainDeltaDownKey();
+int	GetInputKeyboardWaveformGainDeltaUpKey();
+int	GetInputKeyboardWaveformVolumeInvertKey();
+int	GetInputKeyboardWaveformVolumeSoloKey();
+int	GetInputKeyboardWaveformRewindKey();
+int	GetInputKeyboardWaveformFFKey();
+int	GetInputKeyboardWaveformRecordSpeedBackKey();
+int	GetInputKeyboardWaveformRecordSpeedForwardKey();
+int	GetInputKeyboardWaveformStutterKey();
+int	GetInputKeyboardWaveformSavePointPrevKey();
+int	GetInputKeyboardWaveformSavePointNextKey();
+int	GetInputKeyboardWaveformSavePointSetKey();
+int	GetInputKeyboardWaveformSavePointUnsetKey();
+int	GetInputKeyboardWaveformSavePointShiftLeftKey();
+int	GetInputKeyboardWaveformSavePointShiftRightKey();
+int	GetInputKeyboardWaveformSavePointShiftAllLeftKey();
+int	GetInputKeyboardWaveformSavePointShiftAllRightKey();
+int	GetInputKeyboardWaveformSavePointJumpNowKey();
+int	GetInputKeyboardWaveformSavePointJumpAtMeasureKey();
+int	GetInputKeyboardWaveformVideoSelectKey();
+int	GetInputKeyboardWaveformVideoFreqSenseModeKey();
+int	GetInputKeyboardWaveformSyncBPMKey();
+int	GetInputKeyboardRecordingStartKey();
+int	GetInputKeyboardFullScreenToggleKey();
+int	GetInputKeyboardVisualizerFullScreenToggleKey();
+int	GetInputKeyboardScreenshotKey();
+//int	GetInputKeyboardWaveformKey();
 
 #endif	//_DVJ_CONFIG_H_
 

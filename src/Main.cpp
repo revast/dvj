@@ -274,8 +274,7 @@ void NextFrame()
 	if
 	(
 		LGL_AudioAvailable()==false &&
-		LGL_AudioWasOnceAvailable() &&
-		LGL_KeyStroke(SDLK_F9)
+		LGL_AudioWasOnceAvailable()
 	)
 	{
 		LGL_AttemptAudioRevive();
@@ -303,7 +302,7 @@ void NextFrame()
 
 	if
 	(
-		LGL_KeyStroke(SDLK_F7) &&
+		LGL_KeyStroke(GetInputKeyboardRecordingStartKey()) &&
 		Mixer->GetRecording()==false
 	)
 	{
@@ -362,19 +361,33 @@ void NextFrame()
 		}
 	}
 
-	if(LGL_KeyStroke(SDLK_F2))
+	if(LGL_KeyStroke(GetInputKeyboardVisualizerFullScreenToggleKey()))
 	{
 		VisualizerFullScreen=!VisualizerFullScreen;
 		Visualizer->ToggleFullScreen();
 	}
 	
-	/*
-	if(LGL_KeyStroke(SDLK_F10))
+	if(LGL_KeyStroke(GetInputKeyboardScreenshotKey()))
 	{
-		LGL_ScreenShot();
+		char screenshotDir[2048];
+		sprintf(screenshotDir,"%s/.dvj/screenshots",LGL_GetHomeDir());
+		if(LGL_DirectoryExists(screenshotDir)==false)
+		{
+			LGL_DirectoryCreateChain(screenshotDir);
+		}
+
+		char screenshotPath[2048];
+		for(int a=0;a<1000;a++)
+		{
+			sprintf(screenshotPath,"%s/dvj_screenshot_%3i",screenshotDir,a);
+			if(LGL_FileExists(screenshotPath)==false)
+			{
+				break;
+			}
+		}
+		LGL_ScreenShot(".dvj/screenshot.bmp");
 	}
-	*/
-	if(LGL_KeyStroke(SDLK_F11))
+	if(LGL_KeyStroke(GetInputKeyboardFullScreenToggleKey()))
 	{
 		LGL_FullScreenToggle();
 	}
@@ -641,11 +654,10 @@ DrawLoadScreen()
 int main(int argc, char** argv)
 {
 	//Load config
-	LoadDVJRC();
+	ConfigInit();
 
 	//Initialize LGL
 	int channels=4;
-	bool fullscreen=true;
 	bool drawFPS=false;
 	float drawFPSSpike=0.0f;
 	int resX=9999;
@@ -691,12 +703,6 @@ int main(int argc, char** argv)
 	);
 
 	LGL_MouseVisible(false);
-
-	if(fullscreen)
-	{
-		//This seems weird, but it keeps us at fullscreen and lets us rotate our Compiz Cube
-		//LGL_FullScreenToggle();
-	}
 
 	VerifyMusicDir();
 

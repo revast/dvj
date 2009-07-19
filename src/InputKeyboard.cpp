@@ -25,6 +25,8 @@
 
 #include "LGL.module/LGL.h"
 
+#include "Config.h"
+
 //Core
 
 void
@@ -33,13 +35,13 @@ NextFrame()
 {
 	if
 	(
-		LGL_KeyDown(SDLK_KP5)==false ||
-		LGL_KeyDown(SDLK_TAB)
+		LGL_KeyDown(GetInputKeyboardWaveformSavePointUnsetKey())==false ||
+		LGL_KeyDown(GetInputKeyboardFocusChangeKey())
 	)
 	{
 		WaveformSavePointUnsetTimer.Reset();
 	}
-	if(LGL_KeyDown(SDLK_PERIOD)==false)
+	if(LGL_KeyDown(GetInputKeyboardWaveformVideoFreqSenseModeKey())==false)
 	{
 		WaveformFreqSenseMode2Timer.Reset();
 	}
@@ -51,21 +53,21 @@ bool
 InputKeyboardObj::
 FocusChange()		const
 {
-	return(LGL_KeyStroke(SDLK_TAB));
+	return(LGL_KeyStroke(GetInputKeyboardFocusChangeKey()));
 }
 
 bool
 InputKeyboardObj::
 FocusBottom()		const
 {
-	return(false);
+	return(LGL_KeyStroke(GetInputKeyboardFocusBottomKey()));
 }
 
 bool
 InputKeyboardObj::
 FocusTop()		const
 {
-	return(false);
+	return(LGL_KeyStroke(GetInputKeyboardFocusTopKey()));
 }
 
 float
@@ -80,8 +82,8 @@ InputKeyboardObj::
 XfaderSpeakersDelta()	const
 {
 	float delta=0.0f;
-	delta+=(LGL_KeyDown(SDLK_INSERT)?1:0)*LGL_SecondsSinceLastFrame();
-	delta-=(LGL_KeyDown(SDLK_DELETE)?1:0)*LGL_SecondsSinceLastFrame();
+	delta+=(LGL_KeyDown(GetInputKeyboardXfaderSpeakersDeltaUpKey())?1:0)*LGL_SecondsSinceLastFrame();
+	delta-=(LGL_KeyDown(GetInputKeyboardXfaderSpeakersDeltaDownKey())?1:0)*LGL_SecondsSinceLastFrame();
 	return(delta);
 }
 
@@ -97,8 +99,8 @@ InputKeyboardObj::
 XfaderHeadphonesDelta()	const
 {
 	float delta=0.0f;
-	delta+=(LGL_KeyDown(SDLK_HOME)?1:0)*LGL_SecondsSinceLastFrame();
-	delta-=(LGL_KeyDown(SDLK_END)?1:0)*LGL_SecondsSinceLastFrame();
+	delta+=(LGL_KeyDown(GetInputKeyboardXfaderHeadphonesDeltaUpKey())?1:0)*LGL_SecondsSinceLastFrame();
+	delta-=(LGL_KeyDown(GetInputKeyboardXfaderHeadphonesDeltaDownKey())?1:0)*LGL_SecondsSinceLastFrame();
 	return(delta);
 }
 
@@ -106,14 +108,14 @@ bool
 InputKeyboardObj::
 SyncTopToBottom()	const
 {
-	return(false);
+	return(LGL_KeyDown(GetInputKeyboardSyncTopToBottomKey()));
 }
 
 bool
 InputKeyboardObj::
 SyncBottomToTop()	const
 {
-	return(false);
+	return(LGL_KeyDown(GetInputKeyboardSyncBottomToTopKey()));
 }
 
 int
@@ -121,6 +123,14 @@ InputKeyboardObj::
 MasterToHeadphones()	const
 {
 	int to=-1;
+	if(XfaderHeadphonesDelta()!=0)
+	{
+		to=0;
+	}
+	if(XfaderSpeakersDelta()!=0)
+	{
+		to=1;
+	}
 	return(to);
 }
 
@@ -141,13 +151,13 @@ FileScroll
 	{
 		scroll+=
 		(
-			(LGL_KeyDown(SDLK_PAGEDOWN) ? LGL_SecondsSinceLastFrame()*RATE : 0) +
-			(LGL_KeyDown(SDLK_PAGEUP) ? -LGL_SecondsSinceLastFrame()*RATE : 0)
+			(LGL_KeyDown(GetInputKeyboardFileScrollDownManyKey()) ? LGL_SecondsSinceLastFrame()*RATE : 0) +
+			(LGL_KeyDown(GetInputKeyboardFileScrollUpManyKey()) ? -LGL_SecondsSinceLastFrame()*RATE : 0)
 		);
 		scroll+=
 		(
-			(LGL_KeyStroke(SDLK_DOWN) ? 1 : 0) +
-			(LGL_KeyStroke(SDLK_UP) ? -1 : 0)
+			(LGL_KeyStroke(GetInputKeyboardFileScrollDownOneKey()) ? 1 : 0) +
+			(LGL_KeyStroke(GetInputKeyboardFileScrollUpOneKey()) ? -1 : 0)
 		);
 	}
 
@@ -163,7 +173,7 @@ FileSelect
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_RETURN));
+		return(LGL_KeyStroke(GetInputKeyboardFileSelectKey()));
 	}
 	else
 	{
@@ -180,7 +190,7 @@ FileMarkUnopened
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_BACKQUOTE));
+		return(LGL_KeyStroke(GetInputKeyboardFileMarkUnopenedKey()));
 	}
 	else
 	{
@@ -197,7 +207,7 @@ FileRefresh
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_F5));
+		return(LGL_KeyStroke(GetInputKeyboardFileRefreshKey()));
 	}
 	else
 	{
@@ -216,7 +226,7 @@ DecodeAbort
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_BACKSPACE));
+		return(LGL_KeyStroke(GetInputKeyboardDecodeAbortKey()));
 	}
 	else
 	{
@@ -235,7 +245,7 @@ WaveformEject
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(SDLK_BACKSPACE));
+		return(LGL_KeyDown(GetInputKeyboardWaveformEjectKey()));
 	}
 	else
 	{
@@ -252,7 +262,7 @@ WaveformTogglePause
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_RETURN));
+		return(LGL_KeyStroke(GetInputKeyboardWaveformTogglePauseKey()));
 	}
 	else
 	{
@@ -273,10 +283,10 @@ WaveformNudge
 	{
 		return
 		(
-			(LGL_KeyDown(SDLK_LEFT) ? -DELTA : 0) +
-			(LGL_KeyDown(SDLK_RIGHT) ? DELTA : 0) +
-			(LGL_KeyDown(SDLK_KP7) ? -DELTA : 0) +
-			(LGL_KeyDown(SDLK_KP9) ? DELTA : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformNudgeLeft1Key()) ? -DELTA : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformNudgeRight1Key()) ? DELTA : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformNudgeLeft2Key()) ? -DELTA : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformNudgeRight2Key()) ? DELTA : 0)
 		);
 	}
 	else
@@ -311,10 +321,10 @@ WaveformPitchbendDelta
 	{
 		delta+=
 		(
-			(LGL_KeyDown(SDLK_DOWN) ? -RATE_SLOW*LGL_SecondsSinceLastFrame() : 0) +
-			(LGL_KeyDown(SDLK_UP) ? RATE_SLOW*LGL_SecondsSinceLastFrame() : 0) +
-			(LGL_KeyDown(SDLK_PAGEDOWN) ? -RATE_FAST*LGL_SecondsSinceLastFrame() : 0) +
-			(LGL_KeyDown(SDLK_PAGEUP) ? RATE_FAST*LGL_SecondsSinceLastFrame() : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaDownSlowKey()) ? -RATE_SLOW*LGL_SecondsSinceLastFrame() : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaUpSlowKey()) ? RATE_SLOW*LGL_SecondsSinceLastFrame() : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaDownFastKey()) ? -RATE_FAST*LGL_SecondsSinceLastFrame() : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaUpFastKey()) ? RATE_FAST*LGL_SecondsSinceLastFrame() : 0)
 		);
 	}
 
@@ -346,8 +356,8 @@ WaveformEQLowDelta
 	{
 		delta=
 		(
-			(LGL_KeyDown(SDLK_z) ? -EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0) +
-			(LGL_KeyDown(SDLK_x) ? EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformEQLowDeltaDownKey()) ? -EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformEQLowDeltaUpKey()) ? EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0)
 		);
 	}
 	return(delta);
@@ -362,7 +372,7 @@ WaveformEQLowKill
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(SDLK_c));
+		return(LGL_KeyDown(GetInputKeyboardWaveformEQLowKillKey()));
 	}
 	else
 	{
@@ -393,8 +403,8 @@ WaveformEQMidDelta
 	{
 		delta=
 		(
-			(LGL_KeyDown(SDLK_a) ? -EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0) +
-			(LGL_KeyDown(SDLK_s) ? EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformEQMidDeltaDownKey()) ? -EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformEQMidDeltaUpKey()) ? EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0)
 		);
 	}
 	return(delta);
@@ -409,7 +419,7 @@ WaveformEQMidKill
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(SDLK_d));
+		return(LGL_KeyDown(GetInputKeyboardWaveformEQMidKillKey()));
 	}
 	else
 	{
@@ -440,8 +450,8 @@ WaveformEQHighDelta
 	{
 		delta=
 		(
-			(LGL_KeyDown(SDLK_q) ? -EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0) +
-			(LGL_KeyDown(SDLK_w) ? EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformEQHighDeltaDownKey()) ? -EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformEQHighDeltaUpKey()) ? EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0)
 		);
 	}
 	return(delta);
@@ -456,7 +466,7 @@ WaveformEQHighKill
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(SDLK_e));
+		return(LGL_KeyDown(GetInputKeyboardWaveformEQHighKillKey()));
 	}
 	else
 	{
@@ -487,8 +497,8 @@ WaveformGainDelta
 	{
 		delta=
 		(
-			(LGL_KeyDown(SDLK_MINUS) ? -EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0) +
-			(LGL_KeyDown(SDLK_EQUALS) ? EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformGainDeltaDownKey()) ? -EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformGainDeltaUpKey()) ? EQ_DELTA_RATE*LGL_SecondsSinceLastFrame() : 0)
 		);
 	}
 	return(delta);
@@ -523,7 +533,7 @@ WaveformVolumeInvert
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(SDLK_KP0));
+		return(LGL_KeyDown(GetInputKeyboardWaveformVolumeInvertKey()));
 	}
 	else
 	{
@@ -538,7 +548,7 @@ WaveformVolumeSolo
 	unsigned int	target
 )	const
 {
-	return(false);
+	return(LGL_KeyDown(GetInputKeyboardWaveformVolumeSoloKey()));
 }
 
 float
@@ -553,8 +563,8 @@ WaveformRewindFF
 
 	if(target & TARGET_FOCUS)
 	{
-		speed-=(LGL_KeyDown(SDLK_LEFTBRACKET)?1:0)*SPEED_FAST;
-		speed+=(LGL_KeyDown(SDLK_RIGHTBRACKET)?1:0)*SPEED_FAST;
+		speed-=(LGL_KeyDown(GetInputKeyboardWaveformRewindKey())?1:0)*SPEED_FAST;
+		speed+=(LGL_KeyDown(GetInputKeyboardWaveformFFKey())?1:0)*SPEED_FAST;
 	}
 	
 	return(speed);
@@ -571,8 +581,7 @@ WaveformRecordHold
 
 	if(target & TARGET_FOCUS)
 	{
-		hold|=LGL_KeyDown(SDLK_SEMICOLON);
-		hold|=LGL_KeyDown(SDLK_QUOTE);
+		hold|=(WaveformRecordSpeed(target)!=0.0f);
 	}
 
 	return(hold);
@@ -590,8 +599,8 @@ WaveformRecordSpeed
 
 	if(target & TARGET_FOCUS)
 	{
-		speed-=(LGL_KeyDown(SDLK_SEMICOLON)?1:0)*SPEED_SLOW;
-		speed+=(LGL_KeyDown(SDLK_QUOTE)?1:0)*SPEED_SLOW;
+		speed-=(LGL_KeyDown(GetInputKeyboardWaveformRecordSpeedBackKey())?1:0)*SPEED_SLOW;
+		speed+=(LGL_KeyDown(GetInputKeyboardWaveformRecordSpeedForwardKey())?1:0)*SPEED_SLOW;
 	}
 
 	return(speed);
@@ -604,7 +613,7 @@ WaveformStutter
 	unsigned int	target
 )	const
 {
-	return(false);
+	return(LGL_KeyDown(GetInputKeyboardWaveformStutterKey()));
 }
 
 float
@@ -636,7 +645,7 @@ WaveformSavePointPrev
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_KP4));
+		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointPrevKey()));
 	}
 	else
 	{
@@ -653,7 +662,7 @@ WaveformSavePointNext
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_KP6));
+		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointNextKey()));
 	}
 	else
 	{
@@ -671,7 +680,7 @@ WaveformSavePointSet
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_KP5));
+		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointSetKey()));
 	}
 	else
 	{
@@ -714,8 +723,8 @@ WaveformSavePointShift
 	{
 		percent+=LGL_SecondsSinceLastFrame()*SPEED*
 		(
-			(LGL_KeyDown(SDLK_KP3) ? 1 : 0) -
-			(LGL_KeyDown(SDLK_KP1) ? 1 : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftLeftKey()) ? 1 : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftRightKey()) ? -1 : 0)
 		);
 	}
 
@@ -729,7 +738,19 @@ WaveformSavePointShiftAll
 	unsigned int	target
 )	const
 {
-	return(0.0f);
+	const float SPEED = 0.025f;
+	float percent=0.0f;
+
+	if((target & TARGET_FOCUS))
+	{
+		percent+=LGL_SecondsSinceLastFrame()*SPEED*
+		(
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllLeftKey()) ? 1 : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllRightKey()) ? -1 : 0)
+		);
+	}
+
+	return(percent);
 }
 
 bool
@@ -743,9 +764,9 @@ WaveformSavePointShiftAllHere
 	{
 		return
 		(
-			LGL_KeyDown(SDLK_KP4) &&
-			LGL_KeyDown(SDLK_KP6) &&
-			LGL_KeyStroke(SDLK_KP5)
+			LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftLeftKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftRightKey()) &&
+			LGL_KeyStroke(GetInputKeyboardWaveformSavePointSetKey())
 		);
 	}
 	else
@@ -763,7 +784,7 @@ WaveformSavePointJumpNow
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_KP2));
+		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointJumpNowKey()));
 	}
 	else
 	{
@@ -780,7 +801,7 @@ WaveformSavePointJumpAtMeasure
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(SDLK_KP8));
+		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointJumpAtMeasureKey()));
 	}
 	else
 	{
@@ -837,7 +858,7 @@ WaveformVideoSelect
 {
 	if(target & TARGET_FOCUS)
 	{
-		if(LGL_KeyStroke(SDLK_SPACE))
+		if(LGL_KeyStroke(GetInputKeyboardWaveformVideoSelectKey()))
 		{
 			return(true);
 		}
@@ -867,13 +888,13 @@ WaveformVideoFreqSenseMode
 
 	if(target & TARGET_FOCUS)
 	{
-		if(LGL_KeyStroke(SDLK_SLASH))
+		if(LGL_KeyStroke(GetInputKeyboardWaveformVideoFreqSenseModeKey()))
 		{
 			mode=-10;
 		}
 		if
 		(
-			LGL_KeyDown(SDLK_PERIOD) &&
+			LGL_KeyDown(GetInputKeyboardWaveformVideoFreqSenseModeKey()) &&
 			WaveformFreqSenseMode2Timer.SecondsSinceLastReset()>=1.0f
 		)
 		{
@@ -891,7 +912,7 @@ WaveformSyncBPM
 	unsigned int	target
 )	const
 {
-	return(LGL_KeyDown(SDLK_BACKSLASH));
+	return(LGL_KeyDown(GetInputKeyboardWaveformSyncBPMKey()));
 }
 
 float
