@@ -3064,6 +3064,10 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 void
 LGL_FullScreenToggle()
 {
+#ifdef	LGL_OSX
+	//Doesn't work in OSX...
+	return;
+#endif	//LGL_OSX
 	SDL_Surface *S;
 
 	S = SDL_GetVideoSurface();
