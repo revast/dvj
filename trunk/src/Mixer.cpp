@@ -1079,11 +1079,12 @@ DrawStatus
 
 	if(Recording || drawEverything)
 	{
-		int seconds=(int)
+		float secondsTotal=
 			(
 				LGL_SecondsSinceExecution()-
 				RecordingSecondsSinceExecution
 			);
+		int seconds=(int)secondsTotal;
 
 		int minutes=0;
 		while(seconds>=60)
@@ -1097,15 +1098,32 @@ DrawStatus
 			minutes-=60;
 			hours++;
 		}
+
+		char out[2048];
+		float bright=1.0f;
+		if(secondsTotal<5.0f)
+		{
+			sprintf(out,"Recording to %s",LGL_RecordDVJToFilePathShort());
+			bright=LGL_Min(1.0f,5.0f-secondsTotal);
+		}
+		else
+		{
+			sprintf
+			(
+				out,
+				"%.2i:%.2i.%.2i",
+				hours,minutes,seconds
+			);
+			bright=LGL_Min(1.0f,secondsTotal-5.0f);
+		}
 		LGL_GetFont().DrawString
 		(
 			l+.025f*w,
 			b+.95f*h,
 			.015f,
-			1.0f,1.0f,1.0f,1.0f,
+			bright,bright,bright,1.0f,
 			false,.5f,
-			"%.2i:%.2i.%.2i",
-			hours,minutes,seconds
+			out
 		);
 	}
 	else if(RecordingFailedTimer>0.0f)

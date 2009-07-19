@@ -242,6 +242,7 @@ typedef struct
 	float			FreqBufferR[512];
 	bool			RecordActive;
 	char			RecordFilePath[1024];
+	char			RecordFilePathShort[1024];
 	FILE*			RecordFileDescriptor;
 	unsigned long		RecordSamplesWritten;
 	Uint8			RecordBuffer[LGL_SAMPLESIZE*4*2];
@@ -1336,13 +1337,21 @@ LGL_Init
 	}
 
 	sprintf(LGL.RecordFilePath,"%s/.dvj/record/%s.mp3",LGL_GetHomeDir(),LGL_DateAndTimeOfDayOfExecution());
+	sprintf(LGL.RecordFilePathShort,"~/.dvj/record/%s.mp3",LGL_DateAndTimeOfDayOfExecution());
 
 	if(LGL.AudioAvailable)
 	{
-		if(LGL_FileExists("diskWriter.lin"))
+		const char* diskWriterPath = "./diskWriter";
+#ifdef	LGL_LINUX
+		diskWriterPath = "./diskWriter.lin";
+#endif	//LGL_LINUX
+#ifdef	LGL_OSX
+		diskWriterPath = "./diskWriter.osx";
+#endif	//LGL_OSX
+		if(LGL_FileExists(diskWriterPath))
 		{
 			char command[1024];
-			sprintf(command,"./diskWriter.lin \"%s\" --lame --freq %i",LGL.RecordFilePath,LGL.AudioSpec->freq);
+			sprintf(command,"%s \"%s\" --lame --freq %i",diskWriterPath,LGL.RecordFilePath,LGL.AudioSpec->freq);
 			LGL.RecordFileDescriptor=popen(command,"w");
 		}
 	}
@@ -14153,11 +14162,24 @@ LGL_RecordDVJToFileStart()
 		else
 		{
 			LGL.RecordActive=true;
+			printf("\nLGL_RecordDVJToFileStart(): Recording audio to path:\n\t%s\n\n",LGL.RecordFilePath);
 			return(true);
 		}
 	}
 
 	return(false);
+}
+
+const char*
+LGL_RecordDVJToFilePath()
+{
+	return(LGL.RecordFilePath);
+}
+
+const char*
+LGL_RecordDVJToFilePathShort()
+{
+	return(LGL.RecordFilePathShort);
 }
 
 void
@@ -23168,8 +23190,15 @@ LGL_DrawLogStart
 	if(outFile!=NULL)
 	{
 		sprintf(LGL.DrawLogFileName,"%s",outFile);
+		const char* diskWriterPath = "./diskWriter";
+#ifdef	LGL_LINUX
+		diskWriterPath = "./diskWriter.lin";
+#endif	//LGL_LINUX
+#ifdef	LGL_OSX
+		diskWriterPath = "./diskWriter.osx";
+#endif	//LGL_OSX
 		char command[1024];
-		sprintf(command,"./diskWriter.lin \"%s\" --gzip",outFile);
+		sprintf(command,"%s \"%s\" --gzip",diskWriterPath,outFile);
 		LGL.DrawLogFD=popen
 		(
 			command,
