@@ -15887,8 +15887,8 @@ LGL_ProcessInput()
 
 //Keyboard
 
-void
-LGL_KeySanityCheck
+bool
+lgl_KeySanityCheck
 (
 	int	key
 )
@@ -15897,10 +15897,14 @@ LGL_KeySanityCheck
 	{
 		printf
 		(
-			"LGL_KeySanityCheck(): Invalid parameter (%i)\n",
+			"lgl_KeySanityCheck(): Invalid parameter (%i)\n",
 			key
 		);
-		exit(0);
+		return(false);
+	}
+	else
+	{
+		return(true);
 	}
 }
 
@@ -15910,7 +15914,7 @@ LGL_KeyDown
 	int	key
 )
 {
-	LGL_KeySanityCheck(key);
+	if(lgl_KeySanityCheck(key)==false) return(false);
 	return(LGL.KeyDown[key]);
 }
 
@@ -15920,7 +15924,7 @@ LGL_KeyStroke
 	int	key
 )
 {
-	LGL_KeySanityCheck(key);
+	if(lgl_KeySanityCheck(key)==false) return(false);
 	return(LGL.KeyStroke[key]);
 }
 
@@ -15930,7 +15934,7 @@ LGL_KeyRelease
 	int	key
 )
 {
-	LGL_KeySanityCheck(key);
+	if(lgl_KeySanityCheck(key)) return(false);
 	return(LGL.KeyRelease[key]);
 }
 
