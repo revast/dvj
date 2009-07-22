@@ -996,7 +996,7 @@ exit(0);
 		}
 		else if(strcasecmp(fi[0],"dtt")==0)
 		{
-			assert(fi.Size()==36);
+			assert(fi.Size()==38);
 			
 			int which = atoi(fi[1]);
 			assert(which >=0 && which < 10);
@@ -1061,7 +1061,9 @@ exit(0);
 				entireWaveArrayFreqFactor,	//42: FreqFactor
 				soundList[which]->GetLengthSeconds(),			//43: CachedLengthSeconds
 				NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44: NoiseImage
-				atoi(fi[35])			//45: VideoFrequencySensitiveMode
+				atoi(fi[35]),			//45: VideoFrequencySensitiveMode
+				atof(fi[36]),			//46: SoundWarpPointSecondsTrigger
+				fi[37][0] == 'T'		//47: WaveformRecordHold
 			);
 		}
 		else if(strcasecmp(fi[0],"MixF")==0)

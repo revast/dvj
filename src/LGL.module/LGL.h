@@ -885,13 +885,16 @@ public:
 				~LGL_VideoEncoder();
 
 	bool			IsValid();
+	bool			IsUnsupportedCodec();
 	void			Encode(int frames);
 	float			GetPercentFinished();
 	bool			IsFinished();
+	const char*		GetCodecName();
 
 private:
 
 	bool			Valid;
+	bool			UnsupportedCodec;
 
 	//Src
 

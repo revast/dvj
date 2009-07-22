@@ -151,6 +151,16 @@ videoEncoderThread
 			tt->VideoEncoderPercent=-1.0f;
 		}
 
+		if(encoder->IsUnsupportedCodec())
+		{
+			strcpy
+			(
+				tt->VideoEncoderUnsupportedCodecName,
+				encoder->GetCodecName()
+			);
+			tt->VideoEncoderUnsupportedCodecTime=5.0f;
+		}
+
 		delete encoder;
 	}
 
@@ -301,6 +311,8 @@ TurntableObj
 	VideoEncoderPathSrc[0]='\0';
 	VideoEncoderThread=NULL;
 	VideoEncoderTerminateSignal=0;
+	VideoEncoderUnsupportedCodecTime=0.0f;
+	VideoEncoderUnsupportedCodecName[0]='\0';
 }
 
 TurntableObj::
@@ -402,6 +414,8 @@ NextFrame
 	bool noiseIncreasing=false;
 	bool glitchPurePrev=GlitchPure;
 	FinalSpeedLastFrame=FinalSpeed;
+	
+	VideoEncoderUnsupportedCodecTime = LGL_Max(0.0f,VideoEncoderUnsupportedCodecTime-secondsElapsed);
 
 	//Volume
 	candidate=Input.WaveformVolumeSlider(target);
@@ -1398,6 +1412,7 @@ NextFrame
 			Sound=NULL;
 			DatabaseEntryNow=NULL;
 			VideoEncoderPathSrc[0]='\0';
+			VideoEncoderUnsupportedCodecTime=0.0f;
 			Mode=0;
 			Mode0BackspaceTimer.Reset();
 		}
@@ -2185,9 +2200,33 @@ DrawFrame
 	float rectAlpha=1.0f;
 	if(Mode==2)
 	{
+		float centerX=0.5f*(right+left);
+		if(VideoEncoderUnsupportedCodecTime>0.0f)
+		{
+			float bright=LGL_Min(VideoEncoderUnsupportedCodecTime,1.0f);
+			LGL_GetFont().DrawString
+			(
+				centerX,bottom+0.90f*height,.015,
+				bright,0,0,bright,
+				true,.5,
+				"Unsupported Codec"
+			);
+			
+			float fontHeight=0.015f;
+			float fontWidth=LGL_GetFont().GetWidthString(fontHeight,VideoEncoderUnsupportedCodecName);
+			float fontWidthMax=0.175f;
+			fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
+			LGL_GetFont().DrawString
+			(
+				centerX,bottom+0.10f*height,fontHeight,
+				bright,0,0,bright,
+				true,.5,
+				VideoEncoderUnsupportedCodecName
+			);
+		}
+
 		if(VideoEncoderPercent!=-1.0f)
 		{
-			float centerX=0.5f*(right+left);
 			LGL_GetFont().DrawString
 			(
 				centerX,bottom+0.90f*height,.015,
@@ -2301,16 +2340,6 @@ DrawFrame
 		float g=coolG;
 		float b=coolB;
 		float localGlow=glow;
-		unsigned int target =
-			(Focus ? TARGET_FOCUS : 0) |
-			((Which==0) ? TARGET_TOP : TARGET_BOTTOM);
-		if(Input.WaveformRecordHold(target))
-		{
-			//r=warmR;
-			//g=warmG;
-			//b=warmB;
-			localGlow*=2.0f;
-		}
 		LGL_DrawRectToScreen
 		(
 			ViewPortLeft,ViewPortRight,
@@ -2469,6 +2498,10 @@ DrawFrame
 	}
 	if(Mode==2)
 	{
+		unsigned int target =
+			(Focus ? TARGET_FOCUS : 0) |
+			((Which==0) ? TARGET_TOP : TARGET_BOTTOM);
+
 		double currentSample=SmoothWaveformScrollingSample;
 
 		unsigned int savePointBitfield=0;
@@ -2546,7 +2579,7 @@ DrawFrame
 		LGL_DrawLogWrite
 		(
 			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35
-			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f\n",
+			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f|%c\n",
 			Which,							//01
 			Sound->IsLoaded() ? 'T' : 'F',				//02
 			GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
@@ -2582,14 +2615,15 @@ DrawFrame
 			EQFinal[2],						//33
 			LowRez ? 'T' : 'F',					//34
 			VideoFrequencySensitiveMode,				//35
-			Sound->GetWarpPointSecondsTrigger(Channel)		//36
+			Sound->GetWarpPointSecondsTrigger(Channel),		//36
+			Input.WaveformRecordHold(target) ? 'T' : 'F'		//37
 			/*
-			EntireWaveArrayFillIndex,				//36
-			ENTIRE_WAVE_ARRAY_COUNT,				//37
-			EntireWaveArrayMagnitudeAve,				//38
-			EntireWaveArrayMagnitudeMax,				//39
-			EntireWaveArrayFreqFactor,				//40
-			CachedLengthSeconds					//41
+			EntireWaveArrayFillIndex,				//38
+			ENTIRE_WAVE_ARRAY_COUNT,				//39
+			EntireWaveArrayMagnitudeAve,				//40
+			EntireWaveArrayMagnitudeMax,				//41
+			EntireWaveArrayFreqFactor,				//42
+			CachedLengthSeconds					//43
 			*/
 		);
 		
@@ -2643,10 +2677,11 @@ DrawFrame
 			CachedLengthSeconds,					//43
 			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44
 			VideoFrequencySensitiveMode,				//45
-			Sound->GetWarpPointSecondsTrigger(Channel)		//46
+			Sound->GetWarpPointSecondsTrigger(Channel),		//46
+			Input.WaveformRecordHold(target)			//47
 		);
 		LGL_DrawLogPause(false);
-		
+	
 		bool waveArrayFilledAfter=(EntireWaveArrayFillIndex==ENTIRE_WAVE_ARRAY_COUNT);
 
 		if(waveArrayFilledBefore!=waveArrayFilledAfter)
