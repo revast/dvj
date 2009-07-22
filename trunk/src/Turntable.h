@@ -253,6 +253,8 @@ public:
 	float				VideoEncoderPercent;
 	char				VideoEncoderPathSrc[2048];
 	int				VideoEncoderTerminateSignal;
+	float				VideoEncoderUnsupportedCodecTime;
+	char				VideoEncoderUnsupportedCodecName[64];
 
 	int				GetVideoFrequencySensitiveMode();
 	float				GetEQLo();

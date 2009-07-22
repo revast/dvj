@@ -366,7 +366,7 @@ void NextFrame()
 		VisualizerFullScreen=!VisualizerFullScreen;
 		Visualizer->ToggleFullScreen();
 	}
-	
+
 	if(LGL_KeyStroke(GetInputKeyboardScreenshotKey()))
 	{
 		char screenshotDir[2048];
@@ -374,18 +374,22 @@ void NextFrame()
 		if(LGL_DirectoryExists(screenshotDir)==false)
 		{
 			LGL_DirectoryCreateChain(screenshotDir);
+			if(LGL_DirectoryExists(screenshotDir)==false)
+			{
+				printf("LGL_DirectoryCreateChain() failed!\n");
+			}
 		}
 
 		char screenshotPath[2048];
 		for(int a=0;a<1000;a++)
 		{
-			sprintf(screenshotPath,"%s/dvj_screenshot_%3i",screenshotDir,a);
+			sprintf(screenshotPath,"%s/dvj_screenshot_%.3i.bmp",screenshotDir,a);
 			if(LGL_FileExists(screenshotPath)==false)
 			{
 				break;
 			}
 		}
-		LGL_ScreenShot(".dvj/screenshot.bmp");
+		LGL_ScreenShot(screenshotPath);
 	}
 	if(LGL_KeyStroke(GetInputKeyboardFullScreenToggleKey()))
 	{

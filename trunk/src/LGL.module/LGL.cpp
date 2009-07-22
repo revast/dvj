@@ -8080,6 +8080,7 @@ LGL_VideoEncoder
 	strcpy(DstPath,dst);
 
 	Valid=false;
+	UnsupportedCodec=false;
 
 	SrcFrame=NULL;
 	SrcFrameRGB=NULL;
@@ -8171,8 +8172,9 @@ LGL_VideoEncoder
 		SrcCodec=avcodec_find_decoder(SrcCodecContext->codec_id);
 		if(SrcCodec==NULL)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find codec for '%s'\n",src);
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find codec for '%s'. Codec = '%s'\n",src,SrcCodecContext->codec_name);
 			LGL.AVCodecSemaphore->Unlock();
+			UnsupportedCodec=true;
 			return;
 		}
 
@@ -8482,6 +8484,13 @@ IsValid()
 	return(Valid);
 }
 
+bool
+LGL_VideoEncoder::
+IsUnsupportedCodec()
+{
+	return(UnsupportedCodec);
+}
+
 void
 LGL_VideoEncoder::
 Encode
@@ -8642,6 +8651,13 @@ IsFinished()
 	}
 
 	return(DstFormatContext->pb==NULL);
+}
+
+const char*
+LGL_VideoEncoder::
+GetCodecName()
+{
+	return(SrcCodecContext->codec_name);
 }
 
 //LGL_Font
@@ -21865,6 +21881,10 @@ LGL_DirectoryCreateChain
 {
 	char path[2048];
 	LGL_SimplifyPath(path,dir);
+	if(path[strlen(path)-1]!='/')
+	{
+		strcat(path,"/");
+	}
 
 	char* next=path;
 	for(;;)
@@ -22701,6 +22721,8 @@ LGL_SimplifyPath
 		}
 	}
 
+	bool leadingSlash = (simplePath[0]=='/');
+
 	std::vector<char*> elements;
 	unsigned int start=0;
 	for(unsigned int a=0;a<strlen(simplePath)+1;a++)
@@ -22763,6 +22785,13 @@ LGL_SimplifyPath
 	for(unsigned int a=0;a<elements.size();a++)
 	{
 		delete elements[a];
+	}
+	
+	if(leadingSlash)
+	{
+		char tmp[2048];
+		sprintf(tmp,"/%s",simplePath);
+		strcpy(simplePath,tmp);
 	}
 }
 
