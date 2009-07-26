@@ -34,7 +34,12 @@ VisualizerObj()
 
 	//AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
 
-	SetViewPortVisuals(0.0f,0.5f,0.5f,1.0f);
+	float left=0.0f;
+	float right=GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX();
+	float bottom=1.0f-GetProjectorQuadrentResY()/(float)LGL_ScreenResolutionY();
+	float top=1.0f;
+
+	SetViewPortVisuals(left,right,bottom,top);
 
 	FullScreen=false;
 
@@ -635,6 +640,13 @@ SetViewPortVisuals
 	ViewPortVisualsHeight=top-bottom;
 
 	//AccumulationNow->FrameBufferViewPort(left,right,bottom,top);
+}
+
+float
+VisualizerObj::
+GetViewPortRight()
+{
+	return(ViewPortVisualsRight);
 }
 
 void

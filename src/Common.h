@@ -39,7 +39,8 @@ Main_DrawGlowLines
 	float	time,
 	float	brightness,
 	bool	visualizerQuadrent,
-	float	visualizerZoomOutPercent
+	float	visualizerZoomOutPercent,
+	float	visualizerRight
 );
 
 void

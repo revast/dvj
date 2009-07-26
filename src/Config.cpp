@@ -66,6 +66,9 @@ CreateDefaultDVJRC
 		fprintf(fd,"# dvjrc\n");
 		fprintf(fd,"#\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"#projectorQuadrentResX=0\n");
+		fprintf(fd,"#projectorQuadrentResY=0\n");
+		fprintf(fd,"\n");
 		fprintf(fd,"colorCoolR=0.0\n");
 		fprintf(fd,"colorCoolG=0.0\n");
 		fprintf(fd,"colorCoolB=0.5\n");
@@ -241,6 +244,28 @@ GetColorWarm
 	r=dvjrcConfigFile->read<float>("colorWarmR",0.4f);
 	g=dvjrcConfigFile->read<float>("colorWarmG",0.2f);
 	b=dvjrcConfigFile->read<float>("colorWarmB",1.0f);
+}
+
+int
+GetProjectorQuadrentResX()
+{
+	int resX=dvjrcConfigFile->read<int>("projectorQuadrentResX",0);
+	if(resX<=0)
+	{
+		resX=LGL_ScreenResolutionX()/2;
+	}
+	return(resX);
+}
+
+int
+GetProjectorQuadrentResY()
+{
+	int resY=dvjrcConfigFile->read<int>("projectorQuadrentResY",0);
+	if(resY<=0)
+	{
+		resY=LGL_ScreenResolutionY()/2;
+	}
+	return(resY);
 }
 
 #define MAP_STRING_TO_SDLK(X) if(strcasecmp(str,#X)==0) return(X)

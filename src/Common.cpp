@@ -43,7 +43,8 @@ Main_DrawGlowLines
 	float	time,
 	float	brightness,
 	bool	visualizerQuadrent,
-	float	visualizerZoomOutPercent
+	float	visualizerZoomOutPercent,
+	float	visualizerRight
 )
 {
 	float coolR;
@@ -52,7 +53,7 @@ Main_DrawGlowLines
 	GetColorCool(coolR,coolG,coolB);
 
 	float glow = GetGlowFromTime(time) * brightness;
-	float quadrentSplitX = 0.5f;
+	float quadrentSplitX = visualizerRight;
 	float quadrentSplitY = 0.5f;
 
 	if(visualizerQuadrent)
