@@ -278,6 +278,8 @@ void		LGL_FullScreenToggle();
 void		LGL_FullScreen(bool inFullScreen);
 int		LGL_VideoResolutionX();
 int		LGL_VideoResolutionY();
+int		LGL_ScreenResolutionX();
+int		LGL_ScreenResolutionY();
 float		LGL_VideoAspectRatio();
 
 void		LGL_ViewPortScreen

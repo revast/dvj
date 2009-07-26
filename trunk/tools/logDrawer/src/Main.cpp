@@ -1283,12 +1283,13 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 		}
 		else if(strcasecmp(fi[0],"dvj::MainDrawGlowLines")==0)
 		{
-			assert(fi.Size()==3);
+			assert(fi.Size()==4);
 			if(visualsOnly==false && ttLines)
 			{
 				bool visualsQuadrent = fi[1][0]=='T';
 				float visualizerZoomOutPercent = atof(fi[2]);
-				Main_DrawGlowLines(videoTimeActual,OmniFader,visualsQuadrent,visualizerZoomOutPercent);
+				float visualizerRight = atof(fi[3]);
+				Main_DrawGlowLines(videoTimeActual,OmniFader,visualsQuadrent,visualizerZoomOutPercent,visualizerRight);
 			}
 			ttLines=true;
 		}

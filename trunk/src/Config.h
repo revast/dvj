@@ -43,6 +43,12 @@ GetColorWarm
 	float&	b
 );
 
+int
+GetProjectorQuadrentResX();
+
+int
+GetProjectorQuadrentResY();
+
 int	GetInputKeyboardFocusChangeKey();
 int	GetInputKeyboardFocusBottomKey();
 int	GetInputKeyboardFocusTopKey();

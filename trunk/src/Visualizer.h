@@ -47,6 +47,7 @@ public:
 					float	left,	float	right,
 					float	bottom,	float	top
 				);
+	float			GetViewPortRight();
 	void			ToggleFullScreen();
 
 	void			QueueScrollText(const char* text);

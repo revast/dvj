@@ -189,6 +189,8 @@ typedef struct
 	
 	int			VideoResolutionX;
 	int			VideoResolutionY;
+	int			ScreenResolutionX;
+	int			ScreenResolutionY;
 	bool			VideoFullscreen;
 
 	float			ViewPortLeft;
@@ -1108,6 +1110,10 @@ LGL_Init
 	}
 
 #ifndef	LGL_NO_GRAPHICS
+	const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo();
+	assert(videoInfo);
+	LGL.ScreenResolutionX = videoInfo->current_w;
+	LGL.ScreenResolutionY = videoInfo->current_h;
 	if
 	(
 		inVideoResolutionX==9999 &&
@@ -1115,10 +1121,8 @@ LGL_Init
 	)
 	{
 		LGL.VideoFullscreen=true;
-		const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo();
-		assert(videoInfo);
-		LGL.VideoResolutionX=videoInfo->current_w;
-		LGL.VideoResolutionY=videoInfo->current_h;
+		LGL.VideoResolutionX=LGL.ScreenResolutionX;
+		LGL.VideoResolutionY=LGL.ScreenResolutionY;
 	}
 	else
 	{
@@ -3122,6 +3126,18 @@ int
 LGL_VideoResolutionY()
 {
 	return(LGL.VideoResolutionY);
+}
+
+int
+LGL_ScreenResolutionX()
+{
+	return(LGL.ScreenResolutionX);
+}
+
+int
+LGL_ScreenResolutionY()
+{
+	return(LGL.ScreenResolutionY);
 }
 
 float

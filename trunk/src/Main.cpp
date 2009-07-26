@@ -532,6 +532,9 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
 		if(LogEverything==false && LogVisuals==false) LGL_DrawLogPause(false);
 	}
+
+	Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+	/*
 	else if(EIGHT_WAY==false)
 	{
 		Visualizer->SetViewPortVisuals(0.0f,0.5f,0.5f,1.0f);
@@ -557,6 +560,7 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		Visualizer->SetViewPortVisuals(0.75f,1.0f,0.50f,0.75f);
 		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
 	}
+	*/
 
 	if(OmniFader<1.0f)
 	{
@@ -609,9 +613,10 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	//Draw Quadrent Lines
 	if(VisualizerFullScreen==false)
 	{
-		LGL_DrawLogWrite("dvj::MainDrawGlowLines|%c|%.3f\n",visualsQuadrent?'T':'F',visualizerZoomOutPercent);
+		float vizRight=Visualizer->GetViewPortRight();
+		LGL_DrawLogWrite("dvj::MainDrawGlowLines|%c|%.3f|%f\n",visualsQuadrent?'T':'F',visualizerZoomOutPercent,vizRight);
 		LGL_DrawLogPause();
-		Main_DrawGlowLines(LGL_SecondsSinceExecution(),1.0f,visualsQuadrent,visualizerZoomOutPercent);
+		Main_DrawGlowLines(LGL_SecondsSinceExecution(),1.0f,visualsQuadrent,visualizerZoomOutPercent,vizRight);
 		LGL_DrawLogPause(false);
 	}
 
