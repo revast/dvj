@@ -17555,7 +17555,7 @@ int lgl_MidiUpdate()
 					}
 					device->BackBufferSemaphore.Unlock();
 				}
-				else if(message[1]==129)
+				else if(message[0]==129)
 				{
 					//Right Button Release
 					int button = message[1] + 100;
