@@ -90,51 +90,62 @@ videoEncoderThread
 			&(strrchr(encoderSrc,'/')[1])
 		);
 
-		LGL_VideoEncoder* encoder = new LGL_VideoEncoder
-		(
-			encoderSrc,
-			encoderDstTmp
-		);
-
 		//Video Encoding Loop
 
-		if
-		(
-			LGL_FileExists(encoderDst)==false &&
-			encoder->IsValid()
-		)
+		if(LGL_FileExists(encoderDst)==false)
 		{
-			for(;;)
+printf("Encode Alpha: '%s'\n",encoderSrc);
+			LGL_VideoEncoder* encoder = new LGL_VideoEncoder
+			(
+				encoderSrc,
+				encoderDstTmp
+			);
+			if(encoder->IsValid())
 			{
-				if(tt->VideoEncoderTerminateSignal==1)
+				for(;;)
 				{
-					break;
+					if(tt->VideoEncoderTerminateSignal==1)
+					{
+						break;
+					}
+					char videoEncoderPathSrc[2048];
+					strcpy(videoEncoderPathSrc,tt->VideoEncoderPathSrc);
+					if(strcmp(encoderSrc,videoEncoderPathSrc)!=0)
+					{
+						//Turntable has decided it doesn't want the video we're currently encodeing. Pity.
+						LGL_FileDelete(encoderDstTmp);
+						tt->VideoEncoderPercent=-1.0f;
+						break;
+					}
+
+					encoder->Encode(1);
+					tt->VideoEncoderPercent=encoder->GetPercentFinished();
+					if(encoder->IsFinished())
+					{
+						LGL_FileDirMove(encoderDstTmp,encoderDst);
+						break;
+					}
+
+					//TODO: LGL_Delay()?
 				}
-				char videoEncoderPathSrc[2048];
-				strcpy(videoEncoderPathSrc,tt->VideoEncoderPathSrc);
-				if(strcmp(encoderSrc,videoEncoderPathSrc)!=0)
+
+				if(LGL_FileExists(encoderDstTmp))
 				{
-					//Turntable has decided it doesn't want the video we're currently encodeing. Pity.
 					LGL_FileDelete(encoderDstTmp);
-					tt->VideoEncoderPercent=-1.0f;
-					break;
 				}
-
-				encoder->Encode(1);
-				tt->VideoEncoderPercent=encoder->GetPercentFinished();
-				if(encoder->IsFinished())
-				{
-					LGL_FileDirMove(encoderDstTmp,encoderDst);
-					break;
-				}
-
-				//TODO: LGL_Delay()?
 			}
 
-			if(LGL_FileExists(encoderDstTmp))
+			if(encoder->IsUnsupportedCodec())
 			{
-				LGL_FileDelete(encoderDstTmp);
+				strcpy
+				(
+					tt->VideoEncoderUnsupportedCodecName,
+					encoder->GetCodecName()
+				);
+				tt->VideoEncoderUnsupportedCodecTime=5.0f;
 			}
+
+			delete encoder;
 		}
 
 		if(strcmp(encoderSrc,tt->VideoEncoderPathSrc)==0)
@@ -150,18 +161,6 @@ videoEncoderThread
 		{
 			tt->VideoEncoderPercent=-1.0f;
 		}
-
-		if(encoder->IsUnsupportedCodec())
-		{
-			strcpy
-			(
-				tt->VideoEncoderUnsupportedCodecName,
-				encoder->GetCodecName()
-			);
-			tt->VideoEncoderUnsupportedCodecTime=5.0f;
-		}
-
-		delete encoder;
 	}
 
 	tt->VideoEncoderTerminateSignal=-1;

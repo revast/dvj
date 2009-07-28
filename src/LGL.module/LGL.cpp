@@ -8098,14 +8098,18 @@ LGL_VideoEncoder
 	Valid=false;
 	UnsupportedCodec=false;
 
-	SrcFrame=NULL;
-	SrcFrameRGB=NULL;
+	SrcFormatContext=NULL;
 	SrcCodecContext=NULL;
 	SrcAudioCodecContext=NULL;
 	SrcCodec=NULL;
 	SrcAudioCodec=NULL;
+	SrcFrame=NULL;
+	SrcFrameRGB=NULL;
+	SrcBufferRGB=NULL;
 	SrcPacketPosMax=0;
 	SrcPacket.pos=0;
+
+	SwsConvertContext=NULL;
 
 	DstOutputFormat=NULL;
 	DstFormatContext=NULL;
@@ -8443,11 +8447,32 @@ LGL_VideoEncoder
 LGL_VideoEncoder::
 ~LGL_VideoEncoder()
 {
-	//FIXME: This probably leaks a little memory, since I'm not sure how much I need to av_free()...
-
 	LGL.AVCodecSemaphore->Lock("videoEncoderThread","LGL_VideoEncoder::LGL_VideoEncoder() (dst) (meh)");
 	{
 		//Src
+		if(SrcCodecContext)
+		{
+			avcodec_close(SrcCodecContext);
+			//av_free(SrcCodecContext);
+		}
+		if(SrcFormatContext)
+		{
+			av_close_input_file(SrcFormatContext);
+			//av_free(SrcFormatContext);
+		}
+		if(SrcAudioCodecContext)
+		{
+			avcodec_close(SrcAudioCodecContext);
+			//av_free(SrcAudioCodecContext);
+		}
+		if(SrcCodec)
+		{
+			//???
+		}
+		if(SrcAudioCodec)
+		{
+			//???
+		}
 		if(SrcFrame)
 		{
 			av_free(SrcFrame);
@@ -8456,41 +8481,56 @@ LGL_VideoEncoder::
 		{
 			av_free(SrcFrameRGB);
 		}
-		if(SrcCodec)
+		if(SrcBufferRGB)
 		{
-			avcodec_close(SrcCodecContext);
-			av_free(SrcCodecContext);
+			free(SrcBufferRGB);
+		}
+
+		if(SwsConvertContext)
+		{
+			sws_freeContext(SwsConvertContext);
 		}
 
 		//Dst
+		if(DstOutputFormat)
+		{
+			//Don't free this...
+			//av_free(DstOutputFormat);
+		}
+		if(DstCodecContext)
+		{
+			avcodec_close(DstCodecContext);
+		}
+		if(DstCodec)
+		{
+			//???
+		}
+		if(DstFormatContext)
+		{
+			free(DstFormatContext);
+		}
+		if(DstStream)
+		{
+			av_free(DstStream);
+		}
 		if(DstFrameYUV)
 		{
 			av_free(DstFrameYUV);
 		}
-		if(DstCodecContext)
+		if(DstBuffer)
 		{
-			//avcodec_close(DstCodecContext);
-			av_free(DstCodecContext);
+			free(DstBuffer);
+		}
+		if(DstMp3Buffer)
+		{
+			free(DstMp3Buffer);
+		}
+		if(DstMp3Buffer2)
+		{
+			free(DstMp3Buffer2);
 		}
 	}
 	LGL.AVCodecSemaphore->Unlock();
-
-	if(DstFormatContext)
-	{
-		free(DstFormatContext);
-	}
-	if(DstBuffer)
-	{
-		free(DstBuffer);
-	}
-	if(DstMp3Buffer)
-	{
-		free(DstMp3Buffer);
-	}
-	if(DstMp3Buffer2)
-	{
-		free(DstMp3Buffer2);
-	}
 }
 
 bool
@@ -8633,6 +8673,11 @@ Encode
 			LGL.AVCodecSemaphore->Unlock();
 		}
 #endif	//NOT_YET
+		LGL.AVCodecSemaphore->Lock("LGL_VideoEncoder::Encode()","Calling av_free_packet() (meh)");
+		{
+			av_free_packet(&SrcPacket);
+		}
+		LGL.AVCodecSemaphore->Unlock();
 	}
 }
 
