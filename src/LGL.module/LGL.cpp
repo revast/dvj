@@ -17307,7 +17307,7 @@ int lgl_MidiInit2()
 			LGL.Xponent = new LGL_MidiDeviceXponent;
 			LGL.Xponent->DeviceID = a;
 		}
-		if
+		else if
 		(
 			strcmp(LGL_MidiDeviceName(a),"Xponent:1")==0 ||
 			strcmp(LGL_MidiDeviceName(a),"Xponent Port 2")==0
