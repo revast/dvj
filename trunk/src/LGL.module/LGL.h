@@ -915,7 +915,6 @@ private:
 	int			SrcVideoStreamIndex;
 	long			SrcFileBytes;
 
-	unsigned char*		SrcBufferRGBBack;
 	unsigned int		SrcBufferBytes;
 	unsigned int		SrcBufferWidth;
 	unsigned int		SrcBufferHeight;
