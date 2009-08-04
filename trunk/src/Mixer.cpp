@@ -116,8 +116,10 @@ NextFrame
 		{
 			if(LGL_KeyStroke(SDLK_F1))
 			{
+#ifndef	LGL_OSX
 				system("firefox http://code.google.com/p/dvj/wiki/JACK &");
 				exit(0);
+#endif	//LGL_OSX
 			}
 		}
 	}
@@ -1345,6 +1347,7 @@ DrawStatus
 			false,.5f,
 			"Audio can lag & skip"
 		);
+#ifndef	LGL_OSX
 		LGL_GetFont().DrawString
 		(
 			l+.05f*w,
@@ -1354,6 +1357,7 @@ DrawStatus
 			false,.5f,
 			"Press [F1] for more info"
 		);
+#endif	//LGL_OSX
 	}
 
 	LGL_ClipRectDisable();
