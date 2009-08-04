@@ -137,10 +137,11 @@ printf("Encode Alpha: '%s'\n",encoderSrc);
 
 			if(encoder->IsUnsupportedCodec())
 			{
+				const char* codecName = encoder->GetCodecName() ? encoder->GetCodecName() : "Unknown";
 				strcpy
 				(
 					tt->VideoEncoderUnsupportedCodecName,
-					encoder->GetCodecName()
+					codecName
 				);
 				tt->VideoEncoderUnsupportedCodecTime=5.0f;
 			}
