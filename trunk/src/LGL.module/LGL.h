@@ -243,7 +243,7 @@ class LGL_Semaphore
 
 public:
 
-			LGL_Semaphore(const char* name);
+			LGL_Semaphore(const char* name, bool promiscuous=false);
 			~LGL_Semaphore();
 
 	bool		Lock
@@ -267,6 +267,8 @@ private:
 	char		Note[1024];
 	SDL_sem*	Sem;
 	float		TimeOfLock;
+
+	bool		Promiscuous;
 };
 
 
@@ -810,6 +812,7 @@ public:
 	bool			GetImageDecodedSinceBecomingPrimaryDecoder();
 
 	float			GetFPS();
+	int			GetFPSDisplayed();
 
 	const char*		GetPath();
 	const char* 		GetPathShort();
@@ -830,7 +833,7 @@ static	LGL_Semaphore*		PrimaryDecoderSemaphore;
 
 private:
 
-	void			SwapImages();
+	void			SwapImages(bool backLocked=false, bool frontLocked=false);
 
 	char			Path[2048];
 	char			PathShort[2048];
@@ -868,6 +871,9 @@ private:
 	double			SecondsNow;
 	double			SecondsNext;
 	float			FPS;
+	int			FPSDisplayed;
+	int			FPSDisplayedCounter;
+	LGL_Timer		FPSDisplayedTimer;
 	float			LengthSeconds;
 
 	bool			ThreadEndSignal;
@@ -903,6 +909,7 @@ private:
 	char			SrcPath[2048];
 	AVFormatContext*	SrcFormatContext;
 	AVCodecContext*		SrcCodecContext;
+	char			SrcCodecName[64];
 	AVCodecContext*		SrcAudioCodecContext;
 	AVCodec*		SrcCodec;
 	AVCodec*		SrcAudioCodec;

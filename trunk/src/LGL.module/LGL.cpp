@@ -78,7 +78,7 @@
 #define	LGL_PRIORITY_MAIN		(-0.1f)
 #endif	//LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
-#define	LGL_PRIORITY_AUDIO_DECODE	(-0.2f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(-0.3f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(-0.2f)
 
 #define LGL_EQ_SAMPLES_FFT	(512)
@@ -1520,7 +1520,7 @@ LGL_Init
 
 	//LGL_Assert(inAudioChannels==0 || inAudioChannels==2 || inAudioChannels==4);
 
-	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec Open/Close");
+	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec Open/Close",true);
 
 	//LGL.AudioSpec=AudioObtained;
 	//delete AudioObtained;
@@ -7463,6 +7463,8 @@ CleanUp()
 	}
 
 	FPS=30.0f;
+	FPSDisplayed=0;
+	FPSDisplayedCounter=0;
 	LengthSeconds=0.0f;
 
 	FormatContext=NULL;
@@ -7545,40 +7547,49 @@ LockImage
 					}
 				}
 
-				if(ImageBack==NULL)
-				{
-					ImageBack = new LGL_Image
-					(
-						BufferWidth,
-						BufferHeight,
-						3,
-						BufferRGBBack,
-						true,
-						imageName
-					);
-					assert(ImageBack->GetPath()[0]!='!' || ImageBack->GetPath()[1]!='!');
-				}
-				else
-				{
-					ImageBack->UpdateTexture
-					(
-						BufferWidth,
-						BufferHeight,
-						3,
-						BufferRGBBack,
-						true,
-						imageName
-					);
-					assert(ImageBack->GetPath()[0]!='!' || ImageBack->GetPath()[1]!='!');
-				}
 				if(BufferRGBBackReady)
 				{
+					if(ImageBack==NULL)
+					{
+						ImageBack = new LGL_Image
+						(
+							BufferWidth,
+							BufferHeight,
+							3,
+							BufferRGBBack,
+							true,
+							imageName
+						);
+						assert(ImageBack->GetPath()[0]!='!' || ImageBack->GetPath()[1]!='!');
+					}
+					else
+					{
+						ImageBack->UpdateTexture
+						(
+							BufferWidth,
+							BufferHeight,
+							3,
+							BufferRGBBack,
+							true,
+							imageName
+						);
+						assert(ImageBack->GetPath()[0]!='!' || ImageBack->GetPath()[1]!='!');
+					}
+
 					BufferRGBBackReady=false;
+
+					FPSDisplayedCounter++;
+					if(FPSDisplayedTimer.SecondsSinceLastReset()>1.0f)
+					{
+						FPSDisplayed=LGL_Min(FPS,FPSDisplayedCounter);
+						FPSDisplayedCounter=0;
+						FPSDisplayedTimer.Reset();
+					}
+
+					SwapImages(true,false);
 				}
 			}
 			ImageBackSemaphore->Unlock();
-
-			SwapImages();
 		}
 		BufferRGBFrontSemaphore->Unlock();
 	}
@@ -7647,6 +7658,20 @@ LGL_Video::
 GetFPS()
 {
 	return(FPS);
+}
+
+int
+LGL_Video::
+GetFPSDisplayed()
+{
+	if(FPSDisplayedTimer.SecondsSinceLastReset()<2.0f)
+	{
+		return(FPSDisplayed);
+	}
+	else
+	{
+		return(0);
+	}
 }
 
 const char*
@@ -8069,20 +8094,24 @@ GetImageDecodedSinceVideoChange()
 
 void
 LGL_Video::
-SwapImages()
+SwapImages
+(
+	bool	backLocked,
+	bool	frontLocked
+)
 {
 	assert(ImageFrontSemaphore);
-	ImageFrontSemaphore->Lock("lgl_video_thread","SwapImages() (1)");
+	if(frontLocked==false) ImageFrontSemaphore->Lock("lgl_video_thread","SwapImages() (1)");
 	{
-		ImageBackSemaphore->Lock("lgl_video_thread","SwapImages() (2)");
+		if(backLocked==false) ImageBackSemaphore->Lock("lgl_video_thread","SwapImages() (2)");
 		{
 			LGL_Image* imageTemp=ImageFront;
 			ImageFront=ImageBack;
 			ImageBack=imageTemp;
 		}
-		ImageBackSemaphore->Unlock();
+		if(backLocked==false) ImageBackSemaphore->Unlock();
 	}
-	ImageFrontSemaphore->Unlock();
+	if(frontLocked==false) ImageFrontSemaphore->Unlock();
 }
 
 LGL_VideoEncoder::
@@ -8100,6 +8129,7 @@ LGL_VideoEncoder
 
 	SrcFormatContext=NULL;
 	SrcCodecContext=NULL;
+	strcpy(SrcCodecName,"Unknown");
 	SrcAudioCodecContext=NULL;
 	SrcCodec=NULL;
 	SrcAudioCodec=NULL;
@@ -8185,6 +8215,7 @@ LGL_VideoEncoder
 
 		// Get a pointer to the codec context for the video stream
 		SrcCodecContext=fc->streams[SrcVideoStreamIndex]->codec;
+		strcpy(SrcCodecName,SrcCodecContext->codec_name);
 		SrcAudioCodecContext=fc->streams[SrcAudioStreamIndex]->codec;
 		SrcFormatContext=fc;	//Only set this once fc is fully initialized
 
@@ -8193,6 +8224,7 @@ LGL_VideoEncoder
 		if(SrcCodec==NULL)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find codec for '%s'. Codec = '%s'\n",src,SrcCodecContext->codec_name);
+			SrcCodecContext=NULL;
 			LGL.AVCodecSemaphore->Unlock();
 			UnsupportedCodec=true;
 			return;
@@ -8203,6 +8235,7 @@ LGL_VideoEncoder
 		if(SrcAudioCodec==NULL)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio codec for '%s'\n",src);
+			SrcAudioCodecContext=NULL;
 			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
@@ -8311,7 +8344,7 @@ LGL_VideoEncoder
 		// Set AVI format
 		DstOutputFormat = guess_format("avi", NULL, NULL);
 		DstOutputFormat->audio_codec = CODEC_ID_NONE;
-		DstOutputFormat->video_codec = CODEC_ID_LJPEG;
+		DstOutputFormat->video_codec = CODEC_ID_MJPEG;
 
 		// FormatContext
 		DstFormatContext = (AVFormatContext*)av_mallocz(sizeof(AVFormatContext));
@@ -8331,7 +8364,7 @@ LGL_VideoEncoder
 
 		DstCodecContext = DstStream->codec;
 		avcodec_get_context_defaults(DstCodecContext);
-		DstCodecContext->codec_id=CODEC_ID_MJPEG;
+		DstCodecContext->codec_id=CODEC_ID_LJPEG;
 		DstCodecContext->codec_type=CODEC_TYPE_VIDEO;
 		//const int bitrate = 8*1024*1024*8;	//Provides "quite good" quality for 1280x720. Completely unscientific.
 		const int bitrate = 1024*1024*128;	//This value is beyond the highest quality.
@@ -8348,6 +8381,7 @@ LGL_VideoEncoder
 		if(avcodec_open(DstCodecContext, DstCodec) < 0)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open MJPEG codec for '%s'\n",src);
+			DstCodecContext=NULL;
 			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
@@ -8358,6 +8392,7 @@ LGL_VideoEncoder
 		if(result<0)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't url_fopen() output file '%s' (%i)\n",dst,result);
+			DstCodecContext=NULL;
 			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
@@ -8455,15 +8490,15 @@ LGL_VideoEncoder::
 			avcodec_close(SrcCodecContext);
 			//av_free(SrcCodecContext);
 		}
+		if(SrcAudioCodecContext && SrcAudioCodec)
+		{
+			avcodec_close(SrcAudioCodecContext);
+			//av_free(SrcAudioCodecContext);
+		}
 		if(SrcFormatContext)
 		{
 			av_close_input_file(SrcFormatContext);
 			//av_free(SrcFormatContext);
-		}
-		if(SrcAudioCodecContext)
-		{
-			avcodec_close(SrcAudioCodecContext);
-			//av_free(SrcAudioCodecContext);
 		}
 		if(SrcCodec)
 		{
@@ -8718,7 +8753,7 @@ const char*
 LGL_VideoEncoder::
 GetCodecName()
 {
-	return(SrcCodecContext->codec_name);
+	return(SrcCodecName);
 }
 
 //LGL_Font
@@ -13663,6 +13698,7 @@ LoadToMemory()
 	unsigned char outbuf[AVCODEC_MAX_AUDIO_FRAME_SIZE];
 	int cyclesNow=0;
 	int cyclesMax=8;
+	int delayMS=1;
 
 	for(;;)
 	{
@@ -13792,7 +13828,7 @@ LoadToMemory()
 			cyclesNow=0;
 			if(HogCPU==false)
 			{
-				LGL_DelayMS(1);
+				LGL_DelayMS(delayMS);
 			}
 		}
 	}
@@ -24478,7 +24514,8 @@ LGL_ThreadSetCPUAffinity
 LGL_Semaphore::
 LGL_Semaphore
 (
-	const char*	name
+	const char*	name,
+	bool		promiscuous
 )
 {
 	strcpy(Name,name);
@@ -24488,6 +24525,7 @@ LGL_Semaphore
 		printf("LGL_Semaphore::LGL_Semaphore(): Error! Returned NULL.\n");
 		exit(0);
 	}
+	Promiscuous=promiscuous;
 }
 
 LGL_Semaphore::
@@ -24506,6 +24544,8 @@ Lock
 	float		timeoutSeconds
 )
 {
+	if(Promiscuous) return(true);
+
 	bool ret=false;
 	if(blockUntilTimeout==false)
 	{
@@ -24546,6 +24586,8 @@ bool
 LGL_Semaphore::
 Unlock()
 {
+	if(Promiscuous) return(true);
+
 	return(SDL_SemPost(Sem));
 }
 
@@ -24553,6 +24595,8 @@ bool
 LGL_Semaphore::
 IsLocked()
 {
+	if(Promiscuous) return(false);
+
 	return(Value()==0);
 }
 
@@ -24568,8 +24612,11 @@ int
 LGL_Semaphore::
 Value()
 {
+	if(Promiscuous) return(1);
+
 	return(SDL_SemValue(Sem));
 }
+
 
 
 
