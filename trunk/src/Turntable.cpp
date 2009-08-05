@@ -3506,6 +3506,17 @@ GetSoundLoaded()
 	return(Sound!=NULL);
 }
 
+bool
+TurntableObj::
+GetSoundLoadedFully()
+{
+	return
+	(
+		Sound!=NULL &&
+		Sound->IsLoaded()
+	);
+}
+
 int
 TurntableObj::
 GetMode()

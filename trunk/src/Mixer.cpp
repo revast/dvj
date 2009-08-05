@@ -805,6 +805,24 @@ NextFrame
 			Turntable[1]->VideoEncoderPercent==-1.0f ? Turntable[1]->GetVideo() : NULL,
 			Turntable[1]->GetMixerVolumeFront()*ttVideoBrightness[1]
 		);
+
+		bool anythingLoading =
+		(
+			(
+				Turntable[0]->GetSoundLoaded() &&
+				Turntable[0]->GetSoundLoadedFully()==false
+			) ||
+			(
+				Turntable[1]->GetSoundLoaded() &&
+				Turntable[1]->GetSoundLoadedFully()==false
+			)
+		);
+
+		Visualizer->SetSoundsLoaded
+		(
+			!anythingLoading,
+			!anythingLoading
+		);
 	}
 }
 

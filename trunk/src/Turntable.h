@@ -110,6 +110,7 @@ const	char*				GetSoundPathShort();
 	bool				GetPaused();
 	bool				GetRecordScratch();
 	bool				GetSoundLoaded();
+	bool				GetSoundLoadedFully();
 	int				GetMode();
 
 	void				SetLowRez(bool lowRez);
