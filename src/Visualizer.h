@@ -60,6 +60,7 @@ public:
 					LGL_Video* video0,	float videoBrightness0,
 					LGL_Video* video1,	float videoBrightness1
 				);
+	void			SetSoundsLoaded(bool loaded0, bool loaded1);
 	LGL_Video*		GetVideo(int which);
 	void			SetFrequencySensitiveVideos
 				(
@@ -106,6 +107,8 @@ private:
 	bool			ScrollTextEnabled;
 	std::vector<char*>	ScrollTextAmbientFileQueue;
 	std::vector<char*>	ScrollTextAmbientFileQueueUsed;
+
+	bool			SoundsLoaded[2];
 
 	LGL_Video*		Videos[2];
 	float			VideoBrightness[2];

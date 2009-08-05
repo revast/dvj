@@ -35,8 +35,8 @@ VisualizerObj()
 	//AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
 
 	float left=0.0f;
-	float right=GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX();
-	float bottom=1.0f-GetProjectorQuadrentResY()/(float)LGL_ScreenResolutionY();
+	float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX());
+	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_ScreenResolutionY());
 	float top=1.0f;
 
 	SetViewPortVisuals(left,right,bottom,top);
@@ -73,6 +73,7 @@ VisualizerObj()
 
 	for(int a=0;a<2;a++)
 	{
+		SoundsLoaded[a]=false;
 		Videos[a]=NULL;
 		NoiseFactor[a]=1.0f;
 	}
@@ -774,6 +775,18 @@ SetVideos
 	VideoBrightness[1]=videoBrightness1;
 }
 
+void
+VisualizerObj::
+SetSoundsLoaded
+(
+	bool	loaded0,
+	bool	loaded1
+)
+{
+	SoundsLoaded[0]=loaded0;
+	SoundsLoaded[1]=loaded1;
+}
+
 LGL_Video*
 VisualizerObj::
 GetVideo
@@ -990,6 +1003,9 @@ DrawVideos
 	bool	fullBrightness
 )
 {
+	float w=r-l;
+	float h=t-b;
+
 	int videoNow=which;
 
 	if(FreqMode[videoNow]>0)
@@ -1050,6 +1066,31 @@ DrawVideos
 			);
 		}
 		Videos[videoNow]->UnlockImage(image);
+
+		if(preview)
+		{
+			LGL_GetFont().DrawString
+			(
+				r+0.05f*w,t-0.15f*h,0.1f*h,
+				1,1,1,1,
+				false,
+				0.75f,
+				"%.0f",
+				Videos[videoNow]->GetFPS()
+			);
+
+			bool loaded=SoundsLoaded[videoNow];
+			float br=loaded ? 1.0f : 0.1f;
+			LGL_GetFont().DrawString
+			(
+				r+0.05f*w,b+0.05f*h,0.1f*h,
+				br,br,br,1,
+				false,
+				0.75f,
+				loaded ? "%i" : "(%i)",
+				Videos[videoNow]->GetFPSDisplayed()
+			);
+		}
 
 		bool videoReady = Videos[videoNow]->GetImageDecodedSinceVideoChange();
 		if(videoReady)
