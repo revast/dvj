@@ -72,6 +72,12 @@
 //<V4L>
 #endif //LGL_LINUX_VIDCAM
 
+#ifdef	LGL_OSX
+#include <mach/mach_init.h>
+#include <mach/thread_policy.h>
+#include <mach/thread_act.h>
+#endif	//LGL_OSX
+
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.8f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(0.5f)
@@ -7379,6 +7385,8 @@ LGL_Video
 	SecondsNow=0.0f;
 	SecondsNext=0.0f;
 	FPS=30.0f;
+	FPSDisplayed=0;
+	FPSDisplayedCounter=0;
 	LengthSeconds=0.0f;
 
 	SetVideo(path);
@@ -24433,15 +24441,45 @@ LGL_ThreadSetPriority
 )
 {
 	priority = LGL_Clamp(-1.0f,priority,1.0f);
-	struct sched_param schedParam;
+
 #ifdef	LGL_OSX
+
+	/*
+	struct thread_time_constraint_policy ttcpolicy;
+	ttcpolicy.period=period; // HZ/160
+	ttcpolicy.computation=computation; // HZ/3300;
+	ttcpolicy.constraint=constraint; // HZ/2200;
+	ttcpolicy.preemptible=1;
+	*/
+
+	thread_precedence_policy_data_t prepolicy;
+	prepolicy.importance=(int)(31+priority*40);
+
+	int result=thread_policy_set
+	(
+		mach_thread_self(),
+		THREAD_PRECEDENCE_POLICY,
+		&(prepolicy.importance),
+		THREAD_PRECEDENCE_POLICY_COUNT
+	);
+
+	if(result!=KERN_SUCCESS)
+	{
+		printf("Couldn't set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
+	}
+	else
+	{
+		//printf("Set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
+	}
+
+	/*
 	int policy;
 	pthread_t thread = pthread_self();
+	struct sched_param schedParam;
 	pthread_getschedparam(thread, &policy, &schedParam);
-
 	if(priority<0.0f)
 	{
-		policy=SCHED_OTHER;
+		policy=SCHED_RR;//OTHER;
 	}
 	else if(priority<1.0f)
 	{
@@ -24453,21 +24491,34 @@ LGL_ThreadSetPriority
 	}
 	float priorityScalar = 0.5f*(priority+1.0f);
 	schedParam.sched_priority =  (int)(sched_get_priority_min(policy) + priorityScalar*(sched_get_priority_max(policy)-sched_get_priority_min(policy)));
-	pthread_setschedparam(thread, policy, &schedParam);
+printf("sched_priority: %i (%i - %i)\n",schedParam.sched_priority,sched_get_priority_min(policy),sched_get_priority_max(policy));
+	if(pthread_setschedparam(thread, policy, &schedParam)!=0)
+	{
+		printf("Priority FAIL for '%s' (%i)\n",threadName,schedParam.sched_priority);
+	}
+	*/
 #else
+	struct sched_param schedParam;
 	if(priority<=0.0f && priority!=-1.0f)
 	{
 		//Vanilla Process Priority
 		int p=(int)(-20+(-priority*20));
-		setpriority(PRIO_PROCESS,0,p);
+		if(setpriority(PRIO_PROCESS,0,p)!=0)
+		{
+			printf("setpriority(): Error! (%s => %i)\n",threadName,p);
+		}
 		//printf("LGL_ThreadSetPriority(%.2f, '%s'): setpriority(%i) (A)\n",priority,threadName?threadName:"NULL",p);
 	}
 	else
 	{
-		setpriority(PRIO_PROCESS,0,priority*-20);
+		int p=(int)(priority*-20);
+		if(setpriority(PRIO_PROCESS,0,p)!=0)
+		{
+			printf("setpriority(): Error! (%s => %i)\n",threadName,p);
+		}
 		//printf("LGL_ThreadSetPriority(%.2f, '%s'): setpriority(%i) (B)\n",priority,threadName?threadName:"NULL",-20);
 	}
-	
+
 	if(priority<=0.0f)
 	{
 		//Not realtime
