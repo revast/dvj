@@ -72,14 +72,11 @@
 //<V4L>
 #endif //LGL_LINUX_VIDCAM
 
-#ifdef	LGL_OSX
-#define	LGL_PRIORITY_MAIN		(0.5f)
-#else
-#define	LGL_PRIORITY_MAIN		(-0.05f)
-#endif	//LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
-#define	LGL_PRIORITY_AUDIO_DECODE	(0.3f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(0.4f)
+#define	LGL_PRIORITY_MAIN		(0.8f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(0.5f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(0.4f)
+#define	LGL_PRIORITY_DISKWRITER		(-0.1f)
 
 #define LGL_EQ_SAMPLES_FFT	(512)
 #define LGL_SAMPLESIZE		(256)
@@ -1356,7 +1353,9 @@ LGL_Init
 		{
 			char command[1024];
 			sprintf(command,"%s \"%s\" --lame --freq %i",diskWriterPath,LGL.RecordFilePath,LGL.AudioSpec->freq);
+			LGL_ThreadSetPriority(LGL_PRIORITY_DISKWRITER,"DiskWriter");
 			LGL.RecordFileDescriptor=popen(command,"w");
+			LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 		}
 	}
 
@@ -13829,6 +13828,7 @@ LoadToMemory()
 			cyclesNow=0;
 			if(HogCPU==false)
 			{
+				//This is a hack. I don't want to delay. But the scheduler won't preempt me for higher priority processes, for some reason....
 				//LGL_DelayMS(delayMS);
 			}
 		}
@@ -24464,7 +24464,7 @@ LGL_ThreadSetPriority
 	}
 	else
 	{
-		setpriority(PRIO_PROCESS,0,-20);
+		setpriority(PRIO_PROCESS,0,priority*-20);
 		//printf("LGL_ThreadSetPriority(%.2f, '%s'): setpriority(%i) (B)\n",priority,threadName?threadName:"NULL",-20);
 	}
 	
