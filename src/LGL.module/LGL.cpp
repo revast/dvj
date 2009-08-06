@@ -73,13 +73,13 @@
 #endif //LGL_LINUX_VIDCAM
 
 #ifdef	LGL_OSX
-#define	LGL_PRIORITY_MAIN		(0.1f)
+#define	LGL_PRIORITY_MAIN		(0.5f)
 #else
-#define	LGL_PRIORITY_MAIN		(-0.1f)
+#define	LGL_PRIORITY_MAIN		(-0.05f)
 #endif	//LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
-#define	LGL_PRIORITY_AUDIO_DECODE	(-0.3f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(-0.2f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(0.3f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(0.4f)
 
 #define LGL_EQ_SAMPLES_FFT	(512)
 #define LGL_SAMPLESIZE		(256)
@@ -5039,7 +5039,7 @@ LGL_Image
 	(
 		w,
 		h,
-		3,
+		bytesperpixel,
 		data,
 		LinearInterpolation,
 		PathShort
@@ -6189,7 +6189,7 @@ UpdateTexture
 		0,			//Y-Offset
 		w,
 		h,
-		bytesperpixel==3?GL_RGB:GL_RGBA,
+		bytesperpixel==3?GL_RGB:GL_BGRA,
 		GL_UNSIGNED_BYTE,
 		pboReady?0:data
 	);
@@ -7555,20 +7555,20 @@ LockImage
 						(
 							BufferWidth,
 							BufferHeight,
-							3,
+							4,
 							BufferRGBBack,
 							true,
 							imageName
 						);
 						assert(ImageBack->GetPath()[0]!='!' || ImageBack->GetPath()[1]!='!');
 					}
-					else
+					//else
 					{
 						ImageBack->UpdateTexture
 						(
 							BufferWidth,
 							BufferHeight,
-							3,
+							4,
 							BufferRGBBack,
 							true,
 							imageName
@@ -7953,7 +7953,8 @@ MaybeChangeVideo()
 		CodecContext=fc->streams[VideoStreamIndex]->codec;
 		FormatContext=fc;	//Only set this once fc is fully initialized
 
-		FPS=CodecContext->time_base.den/(float)CodecContext->time_base.num;
+		FPS=fc->streams[VideoStreamIndex]->time_base.den/(float)fc->streams[VideoStreamIndex]->time_base.num;
+			//CodecContext->time_base.den/(float)CodecContext->time_base.num;
 		LengthSeconds=FormatContext->duration/(float)(AV_TIME_BASE);
 
 		// Find the decoder for the video stream
@@ -8001,7 +8002,7 @@ MaybeChangeVideo()
 			unsigned int bufferBytesOld=BufferBytes;
 			BufferBytes=avpicture_get_size
 			(
-				PIX_FMT_RGB24,
+				PIX_FMT_BGRA,
 				BufferWidth,
 				BufferHeight
 			);
@@ -8022,7 +8023,7 @@ MaybeChangeVideo()
 			(
 				(AVPicture*)FrameRGB,
 				BufferRGBBack,
-				PIX_FMT_RGB24,
+				PIX_FMT_BGRA,
 				BufferWidth,
 				BufferHeight
 			);
@@ -8038,7 +8039,7 @@ MaybeChangeVideo()
 			//dst
 			BufferWidth,
 			BufferHeight,
-			PIX_FMT_RGB24,
+			PIX_FMT_BGRA,
 			SWS_FAST_BILINEAR,
 			NULL,
 			NULL,
@@ -13828,7 +13829,7 @@ LoadToMemory()
 			cyclesNow=0;
 			if(HogCPU==false)
 			{
-				LGL_DelayMS(delayMS);
+				//LGL_DelayMS(delayMS);
 			}
 		}
 	}
