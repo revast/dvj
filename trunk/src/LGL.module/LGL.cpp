@@ -13699,7 +13699,7 @@ LoadToMemory()
 	unsigned char outbuf[AVCODEC_MAX_AUDIO_FRAME_SIZE];
 	int cyclesNow=0;
 	int cyclesMax=8;
-	int delayMS=1;
+	//int delayMS=1;
 
 	for(;;)
 	{
