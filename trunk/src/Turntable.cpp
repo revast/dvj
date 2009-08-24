@@ -45,7 +45,7 @@ videoEncoderThread
 )
 {
 	TurntableObj* tt = (TurntableObj*)ptr;
-	LGL_ThreadSetPriority(-0.5f,"videoEncoderThread");
+	LGL_ThreadSetPriority(0.1f,"videoEncoderThread");
 
 	char encoderSrc[2048];
 	strcpy(encoderSrc,tt->VideoEncoderPathSrc);
@@ -90,9 +90,17 @@ videoEncoderThread
 			&(strrchr(encoderSrc,'/')[1])
 		);
 
+		char encoderAudioDst[2048];
+		sprintf
+		(
+			encoderAudioDst,
+			"%s.ogg",
+			encoderDst
+		);
+
 		//Video Encoding Loop
 
-		if(LGL_FileExists(encoderDst)==false)
+		if(LGL_FileExists(encoderDst)==false || LGL_FileExists(encoderAudioDst)==false)
 		{
 printf("Encode Alpha: '%s'\n",encoderSrc);
 			LGL_VideoEncoder* encoder = new LGL_VideoEncoder
@@ -100,6 +108,8 @@ printf("Encode Alpha: '%s'\n",encoderSrc);
 				encoderSrc,
 				encoderDstTmp
 			);
+			encoder->SetEncodeAudio(LGL_FileExists(encoderAudioDst)==false);
+			encoder->SetEncodeVideo(LGL_FileExists(encoderDst)==false);
 			if(encoder->IsValid())
 			{
 				for(;;)
@@ -122,7 +132,19 @@ printf("Encode Alpha: '%s'\n",encoderSrc);
 					tt->VideoEncoderPercent=encoder->GetPercentFinished();
 					if(encoder->IsFinished())
 					{
-						LGL_FileDirMove(encoderDstTmp,encoderDst);
+						if(encoder->GetEncodeVideo())
+						{
+							LGL_FileDirMove(encoderDstTmp,encoderDst);
+						}
+						if(encoder->GetEncodeAudio())
+						{
+							//Audio too!
+							char encoderDstOgg[2048];
+							char encoderDstTmpOgg[2048];
+							sprintf(encoderDstOgg,"%s.ogg",encoderDst);
+							sprintf(encoderDstTmpOgg,"%s.ogg",encoderDstTmp);
+							LGL_FileDirMove(encoderDstTmpOgg,encoderDstOgg);
+						}
 						break;
 					}
 
@@ -265,7 +287,7 @@ TurntableObj
 	VideoAdvanceRate=1.0f;
 	VideoFrequencySensitiveMode=0;
 
-	ENTIRE_WAVE_ARRAY_COUNT=LGL_VideoResolutionX();
+	ENTIRE_WAVE_ARRAY_COUNT=LGL_ScreenResolutionX(0);
 
 	ClearRecallOrigin();
 
@@ -484,7 +506,7 @@ NextFrame
 		if
 		(
 			Focus &&
-			LGL_KeyDown(SDLK_BACKSPACE)
+			LGL_KeyDown(LGL_KEY_BACKSPACE)
 		)
 		{
 			if(Mode0BackspaceTimer.SecondsSinceLastReset()>0.5f)
@@ -501,7 +523,7 @@ NextFrame
 
 		if(Focus)
 		{
-			if(LGL_KeyStroke(SDLK_ESCAPE))
+			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
 			{
 				FilterText.SetString();
 			}
@@ -662,17 +684,39 @@ NextFrame
 					 "%s",
 					 target
 				);
+				strcpy(SoundSrcPath,filename);
+				
+				char videoTracksPath[2048];
+				sprintf(videoTracksPath,"%s/.dvj/video/tracks",LGL_GetHomeDir());
+				char filenameCached[2048];
+				sprintf
+				(
+					filenameCached,
+					"%s/%s.mjpeg.avi.ogg",
+					videoTracksPath,
+					&(strrchr(filename,'/')[1])
+				);
+
 				if(LGL_FileExists(filename))
 				{
-					LGL_DrawLogWrite("!dvj::NewSound|%s|%i\n",filename,Which);
+					strcpy(SoundName,&(strrchr(filename,'/')[1]));
+					LoadAllCachedData();
+
+					const char* filenameSnd = filename;
+					if(LGL_FileExists(filenameCached))
+					{
+						filenameSnd=filenameCached;
+					}
+					LGL_DrawLogWrite("!dvj::NewSound|%s|%i\n",filenameSnd,Which);
 					Sound=new LGL_Sound
 					(
-						 filename,
+						 filenameSnd,
 						 true,
 						 2,
 						 SoundBuffer,
 						 SoundBufferLength
 					);
+					Sound->SetVolumePeak(CachedVolumePeak);
 					DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed=true;
 					if(Sound->IsUnloadable())
 					{
@@ -698,7 +742,6 @@ NextFrame
 						LoopLengthMeasures=0;
 						LoopAtEndOfMeasure=false;
 						SavePointIndex=0;
-						strcpy(SoundName,Sound->GetPathShort());
 						for(int a=0;a<18;a++)
 						{
 							SavePointSeconds[a]=-1.0f;
@@ -1408,6 +1451,8 @@ NextFrame
 			Sound->ReadyForDelete()
 		)
 		{
+			if(GetVideoFront()) GetVideoFront()->InvalidateImages();
+			if(GetVideoBack()) GetVideoBack()->InvalidateImages();
 			delete Sound;
 			Sound=NULL;
 			DatabaseEntryNow=NULL;
@@ -1761,13 +1806,6 @@ NextFrame
 
 			BPMRecalculationRequired=true;
 
-			VideoEncoderTerminateSignal=0;
-			strcpy(VideoEncoderPathSrc,Sound->GetPath());
-			VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
-
-			//Load Video if possible
-			SelectNewVideo();
-
 			Channel=Sound->Play(1,true,0);
 			Sound->SetSpeedInterpolationFactor
 			(
@@ -1806,7 +1844,12 @@ NextFrame
 
 			VideoEncoderPercent=-1.0f;
 
-			LoadAllCachedData();
+			VideoEncoderTerminateSignal=0;
+			strcpy(VideoEncoderPathSrc,SoundSrcPath);
+			VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
+
+			//Load Video if possible
+			SelectNewVideo();
 
 			char videoFileName[1024];
 			sprintf(videoFileName,"%s/.dvj/video/tracks/%s.mjpeg.avi",LGL_GetHomeDir(),SoundName);
@@ -2616,7 +2659,8 @@ DrawFrame
 			LowRez ? 'T' : 'F',					//34
 			VideoFrequencySensitiveMode,				//35
 			Sound->GetWarpPointSecondsTrigger(Channel),		//36
-			Input.WaveformRecordHold(target) ? 'T' : 'F'		//37
+			Input.WaveformRecordHold(target) ? 'T' : 'F',		//37
+			SoundName						//38
 			/*
 			EntireWaveArrayFillIndex,				//38
 			ENTIRE_WAVE_ARRAY_COUNT,				//39
@@ -2678,7 +2722,8 @@ DrawFrame
 			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44
 			VideoFrequencySensitiveMode,				//45
 			Sound->GetWarpPointSecondsTrigger(Channel),		//46
-			Input.WaveformRecordHold(target)			//47
+			Input.WaveformRecordHold(target),			//47
+			SoundName						//48
 		);
 		LGL_DrawLogPause(false);
 	
@@ -3131,7 +3176,7 @@ LoadMetaData()
 	}
 
 	char metaDataPath[1024];
-	sprintf(metaDataPath,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
+	sprintf(metaDataPath,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
 	FILE* fd=fopen(metaDataPath,"r");
 	if(fd)
 	{
@@ -3155,7 +3200,7 @@ LoadMetaData()
 			{
 				if(fi.Size()!=19)
 				{
-					printf("TurntableObj::LoadMetaData('%s'): Warning!\n",Sound->GetPathShort());
+					printf("TurntableObj::LoadMetaData('%s'): Warning!\n",SoundName);
 					printf("\tSavePoints has strange fi.size() of '%i' (Expecting 11)\n",fi.Size());
 				}
 				for(unsigned int a=0;a<fi.Size()-1 && a<18;a++)
@@ -3167,13 +3212,6 @@ LoadMetaData()
 
 		fclose(fd);
 	}
-	/*
-	else
-	{
-		printf("TurntableObj::LoadMetaData('%s'): Warning!\n",Sound->GetPathShort());
-		printf("\tCouldn't load metadata: '%s'\n",metaDataPath);
-	}
-	*/
 }
 
 void
@@ -3191,7 +3229,7 @@ SaveMetaData()
 	}
 
 	char metaDataPath[1024];
-	sprintf(metaDataPath,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
+	sprintf(metaDataPath,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
 	FILE* fd=fopen(metaDataPath,"w");
 	if(fd)
 	{
@@ -3224,7 +3262,7 @@ SaveMetaData()
 	}
 	else
 	{
-		printf("TurntableObj::SaveMetaData('%s'): Warning!\n",Sound->GetPathShort());
+		printf("TurntableObj::SaveMetaData('%s'): Warning!\n",SoundName);
 		printf("\tCould not open '%s' for writing\n",metaDataPath);
 	}
 }
@@ -3244,10 +3282,10 @@ LoadAllCachedData()
 	//Initialize to default values
 	EntireWaveArrayFillIndex=0;
 	CachedLengthSeconds=0.0f;
+	CachedVolumePeak=0.0f;
 
 	//Check to see if our file has changed
 	bool cachedDataValid = LoadCachedFileLength();
-
 	if(cachedDataValid)
 	{
 		LoadWaveArrayData();
@@ -3255,29 +3293,37 @@ LoadAllCachedData()
 	}
 	else
 	{
-		//TODO: Delete stale cache files
-		if(Sound!=NULL)
+		char waveArrayDataPath[1024];
+		char cachedLengthPath[1024];
+		char cachedFileLengthPath[1024];
+		char cachedVideoPath[1024];
+		char cachedAudioPath[1024];
+
+		sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),SoundName,ENTIRE_WAVE_ARRAY_COUNT);
+		sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
+		sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),SoundName);
+		sprintf(cachedVideoPath,"%s/.dvj/video/tracks/%s.mjpeg.avi",LGL_GetHomeDir(),SoundName);
+		sprintf(cachedAudioPath,"%s.ogg",cachedVideoPath);
+
+		if(LGL_FileExists(waveArrayDataPath))
 		{
-			char waveArrayDataPath[1024];
-			char cachedLengthPath[1024];
-			char cachedFileLengthPath[1024];
-
-			sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
-			sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
-			sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),Sound->GetPathShort());
-
-			if(LGL_FileExists(waveArrayDataPath))
-			{
-				LGL_FileDelete(waveArrayDataPath);
-			}
-			if(LGL_FileExists(cachedLengthPath))
-			{
-				LGL_FileDelete(cachedLengthPath);
-			}
-			if(LGL_FileExists(cachedFileLengthPath))
-			{
-				LGL_FileDelete(cachedFileLengthPath);
-			}
+			LGL_FileDelete(waveArrayDataPath);
+		}
+		if(LGL_FileExists(cachedLengthPath))
+		{
+			LGL_FileDelete(cachedLengthPath);
+		}
+		if(LGL_FileExists(cachedFileLengthPath))
+		{
+			LGL_FileDelete(cachedFileLengthPath);
+		}
+		if(LGL_FileExists(cachedVideoPath))
+		{
+			LGL_FileDelete(cachedVideoPath);
+		}
+		if(LGL_FileExists(cachedAudioPath))
+		{
+			LGL_FileDelete(cachedAudioPath);
 		}
 	}
 }
@@ -3295,13 +3341,8 @@ void
 TurntableObj::
 LoadWaveArrayData()
 {
-	if(Sound==NULL)
-	{
-		return;
-	}
-
 	char waveArrayDataPath[1024];
-	sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
+	sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),SoundName,ENTIRE_WAVE_ARRAY_COUNT);
 
 	int expectedSize=sizeof(float)*ENTIRE_WAVE_ARRAY_COUNT*3;
 	if
@@ -3330,13 +3371,8 @@ void
 TurntableObj::
 SaveWaveArrayData()
 {
-	if(Sound==NULL)
-	{
-		return;
-	}
-	
 	char waveArrayDataPath[1024];
-	sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),Sound->GetPathShort(),ENTIRE_WAVE_ARRAY_COUNT);
+	sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),SoundName,ENTIRE_WAVE_ARRAY_COUNT);
 	FILE* fd=fopen(waveArrayDataPath,"wb");
 	if(fd)
 	{
@@ -3352,13 +3388,8 @@ void
 TurntableObj::
 LoadCachedMetadata()
 {
-	if(Sound==NULL)
-	{
-		return;
-	}
-
 	char cachedLengthPath[1024];
-	sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
+	sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
 
 	FILE* fd=fopen(cachedLengthPath,"r");
 	if(fd)
@@ -3367,7 +3398,7 @@ LoadCachedMetadata()
 		fgets(buf,1024,fd);
 		CachedLengthSeconds=atof(buf);
 		fgets(buf,1024,fd);
-		Sound->SetVolumePeak(atof(buf));
+		CachedVolumePeak=atof(buf);
 		fclose(fd);
 	}
 }
@@ -3388,7 +3419,7 @@ SaveCachedMetadata()
 	CachedLengthSeconds=Sound->GetLengthSeconds();
 
 	char cachedLengthPath[1024];
-	sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),Sound->GetPathShort());
+	sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
 	FILE* fd=fopen(cachedLengthPath,"w");
 	if(fd)
 	{
@@ -3402,13 +3433,8 @@ bool
 TurntableObj::
 LoadCachedFileLength()
 {
-	if(Sound==NULL)
-	{
-		return(false);
-	}
-
 	char cachedFileLengthPath[1024];
-	sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),Sound->GetPathShort());
+	sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),SoundName);
 
 	FILE* fd=fopen(cachedFileLengthPath,"r");
 	if(fd)
@@ -3417,8 +3443,8 @@ LoadCachedFileLength()
 		fgets(buf,1024,fd);
 		fclose(fd);
 
-		long cachedFileLength=atol(buf);
-		long actualFileLength=LGL_FileLengthBytes(Sound->GetPath());
+		double cachedFileLength=atof(buf);
+		double actualFileLength=LGL_FileLengthBytes(SoundSrcPath);
 		return(cachedFileLength==actualFileLength);
 	}
 	else
@@ -3436,14 +3462,14 @@ SaveCachedFileLength()
 		return;
 	}
 
-	long actualFileLength=LGL_FileLengthBytes(Sound->GetPath());
+	double actualFileLength=LGL_FileLengthBytes(SoundSrcPath);
 
 	char cachedFileLengthPath[1024];
-	sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),Sound->GetPathShort());
+	sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),SoundName);
 	FILE* fd=fopen(cachedFileLengthPath,"w");
 	if(fd)
 	{
-		fprintf(fd,"%li\n",actualFileLength);
+		fprintf(fd,"%lf\n",actualFileLength);
 		fclose(fd);
 	}
 }
@@ -3459,7 +3485,7 @@ GetSoundPath()
 	}
 	else
 	{
-		return(Sound->GetPath());
+		return(SoundSrcPath);
 	}
 }
 
@@ -3474,7 +3500,7 @@ GetSoundPathShort()
 	}
 	else
 	{
-		return(Sound->GetPathShort());
+		return(SoundName);
 	}
 }
 

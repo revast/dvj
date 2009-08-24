@@ -142,7 +142,8 @@ Turntable_DrawWaveform
 	LGL_Image*	noiseImage256x64,
 	int		freqSensitiveMode,
 	float		warpPointSecondsTrigger,
-	bool		waveformRecordHold
+	bool		waveformRecordHold,
+	const char*	soundName
 );
 
 void

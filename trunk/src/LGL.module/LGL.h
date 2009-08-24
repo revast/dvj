@@ -48,10 +48,13 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 #define	GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
-#endif
+#endif	//LGL_OSX
 
 #include <SDL.h>
 #include <SDL_main.h>
+#include <SDL_scancode.h>
+#include <SDL_compat.h>
+
 #include <SDL_thread.h>
 #include <pthread.h>
 
@@ -76,7 +79,145 @@ extern "C"
 	#include <libswscale/swscale.h>
 }
 
+enum
+{
+	LGL_KEY_UNKNOWN		= 0,
+	LGL_KEY_BACKSPACE	= SDLK_BACKSPACE,
+	LGL_KEY_TAB		= SDLK_TAB,
+	LGL_KEY_CLEAR		= SDL_SCANCODE_CLEAR,
+	LGL_KEY_RETURN		= SDLK_RETURN,
+	LGL_KEY_PAUSE		= SDL_SCANCODE_PAUSE,
+	LGL_KEY_ESCAPE		= SDLK_ESCAPE,
+	LGL_KEY_SPACE		= SDL_SCANCODE_SPACE,
+	LGL_KEY_EXCLAM		= SDL_SCANCODE_KP_EXCLAM,
+	LGL_KEY_QUOTEDBL	= SDLK_QUOTEDBL,
+	LGL_KEY_HASH		= SDLK_HASH,
+	LGL_KEY_DOLLAR		= SDLK_DOLLAR,
+	LGL_KEY_AMPERSAND	= SDLK_AMPERSAND,
+	LGL_KEY_QUOTE		= SDLK_QUOTE,
+	LGL_KEY_LEFTPAREN	= SDLK_LEFTPAREN,
+	LGL_KEY_RIGHTPAREN	= SDLK_RIGHTPAREN,
+	LGL_KEY_ASTERISK	= SDLK_ASTERISK,
+	LGL_KEY_PLUS		= SDLK_PLUS,
+	LGL_KEY_COMMA		= SDL_SCANCODE_COMMA,
+	LGL_KEY_MINUS		= SDL_SCANCODE_MINUS,
+	LGL_KEY_PERIOD		= SDL_SCANCODE_PERIOD,
+	LGL_KEY_SLASH		= SDL_SCANCODE_SLASH,
+	LGL_KEY_BACKSLASH	= SDL_SCANCODE_BACKSLASH,
+	LGL_KEY_0		= SDL_SCANCODE_0,
+	LGL_KEY_1		= SDL_SCANCODE_1,
+	LGL_KEY_2		= SDL_SCANCODE_2,
+	LGL_KEY_3		= SDL_SCANCODE_3,
+	LGL_KEY_4		= SDL_SCANCODE_4,
+	LGL_KEY_5		= SDL_SCANCODE_5,
+	LGL_KEY_6		= SDL_SCANCODE_6,
+	LGL_KEY_7		= SDL_SCANCODE_7,
+	LGL_KEY_8		= SDL_SCANCODE_8,
+	LGL_KEY_9		= SDL_SCANCODE_9,
+	LGL_KEY_COLON		= SDLK_COLON,
+	LGL_KEY_SEMICOLON	= ';',
+	LGL_KEY_LESS		= SDLK_LESS,
+	LGL_KEY_EQUALS		= '=',
+	LGL_KEY_GREATER		= SDLK_GREATER,
+	LGL_KEY_QUESTION	= SDLK_QUESTION,
+	LGL_KEY_AT		= SDLK_AT,
+	LGL_KEY_LEFTBRACKET	= '[',
+	LGL_KEY_RIGHTBRACKET	= ']',
+	LGL_KEY_CARET		= SDLK_CARET,
+	LGL_KEY_UNDERSCORE	= SDLK_UNDERSCORE,
+	LGL_KEY_BACKQUOTE	= SDLK_BACKQUOTE,
+	LGL_KEY_A		= SDLK_a,
+	LGL_KEY_B		= SDLK_b,
+	LGL_KEY_C		= SDLK_c,
+	LGL_KEY_D		= SDLK_d,
+	LGL_KEY_E		= SDLK_e,
+	LGL_KEY_F		= SDLK_f,
+	LGL_KEY_G		= SDLK_g,
+	LGL_KEY_H		= SDLK_h,
+	LGL_KEY_I		= SDLK_i,
+	LGL_KEY_J		= SDLK_j,
+	LGL_KEY_K		= SDLK_k,
+	LGL_KEY_L		= SDLK_l,
+	LGL_KEY_M		= SDLK_m,
+	LGL_KEY_N		= SDLK_n,
+	LGL_KEY_O		= SDLK_o,
+	LGL_KEY_P		= SDLK_p,
+	LGL_KEY_Q		= SDLK_q,
+	LGL_KEY_R		= SDLK_r,
+	LGL_KEY_S		= SDLK_s,
+	LGL_KEY_T		= SDLK_t,
+	LGL_KEY_U		= SDLK_u,
+	LGL_KEY_V		= SDLK_v,
+	LGL_KEY_W		= SDLK_w,
+	LGL_KEY_X		= SDLK_x,
+	LGL_KEY_Y		= SDLK_y,
+	LGL_KEY_Z		= SDLK_z,
+	LGL_KEY_DELETE		= SDL_SCANCODE_DELETE,
+	LGL_KEY_KP_0		= SDL_SCANCODE_KP_0,
+	LGL_KEY_KP_1		= SDL_SCANCODE_KP_1,
+	LGL_KEY_KP_2		= SDL_SCANCODE_KP_2,
+	LGL_KEY_KP_3		= SDL_SCANCODE_KP_3,
+	LGL_KEY_KP_4		= SDL_SCANCODE_KP_4,
+	LGL_KEY_KP_5		= SDL_SCANCODE_KP_5,
+	LGL_KEY_KP_6		= SDL_SCANCODE_KP_6,
+	LGL_KEY_KP_7		= SDL_SCANCODE_KP_7,
+	LGL_KEY_KP_8		= SDL_SCANCODE_KP_8,
+	LGL_KEY_KP_9		= SDL_SCANCODE_KP_9,
+	LGL_KEY_KP_PERIOD	= SDL_SCANCODE_KP_PERIOD,
+	LGL_KEY_KP_DIVIDE	= SDL_SCANCODE_KP_DIVIDE,
+	LGL_KEY_KP_MULTIPLY	= SDL_SCANCODE_KP_MULTIPLY,
+	LGL_KEY_KP_MINUS	= SDL_SCANCODE_KP_MINUS,
+	LGL_KEY_KP_PLUS		= SDL_SCANCODE_KP_PLUS,
+	LGL_KEY_KP_ENTER	= SDL_SCANCODE_KP_ENTER,
+	LGL_KEY_KP_EQUALS	= SDL_SCANCODE_KP_EQUALS,
+	LGL_KEY_UP		= 338,
+	LGL_KEY_DOWN		= 337,
+	LGL_KEY_LEFT		= 336,
+	LGL_KEY_RIGHT		= 335,
+	LGL_KEY_INSERT		= SDL_SCANCODE_INSERT,
+	LGL_KEY_HOME		= 330,
+	LGL_KEY_END		= 333,
+	LGL_KEY_PAGEUP		= 331,
+	LGL_KEY_PAGEDOWN	= 334,
+	LGL_KEY_F1		= 314,
+	LGL_KEY_F2		= 315,
+	LGL_KEY_F3		= 316,
+	LGL_KEY_F4		= 317,
+	LGL_KEY_F5		= 318,
+	LGL_KEY_F6		= 319,
+	LGL_KEY_F7		= 320,
+	LGL_KEY_F8		= 321,
+	LGL_KEY_F9		= 322,
+	LGL_KEY_F10		= 323,
+	LGL_KEY_F11		= 324,
+	LGL_KEY_F12		= 325,
+	LGL_KEY_F13		= 326,
+	LGL_KEY_F14		= 327,
+	LGL_KEY_F15		= 328,
+	LGL_KEY_NUMLOCK		= SDLK_NUMLOCK,
+	LGL_KEY_CAPSLOCK	= SDL_SCANCODE_CAPSLOCK,
+	LGL_KEY_SCROLLLOCK	= SDL_SCANCODE_SCROLLLOCK,
+	LGL_KEY_RSHIFT		= SDL_SCANCODE_RSHIFT,
+	LGL_KEY_LSHIFT		= SDL_SCANCODE_LSHIFT,
+	LGL_KEY_RCTRL		= SDL_SCANCODE_RCTRL,
+	LGL_KEY_LCTRL		= SDL_SCANCODE_LCTRL,
+	LGL_KEY_RALT		= SDL_SCANCODE_RALT,
+	LGL_KEY_LALT		= SDL_SCANCODE_LALT,
+	LGL_KEY_MODE		= SDL_SCANCODE_MODE,
+	LGL_KEY_APPLICATION	= SDL_SCANCODE_APPLICATION,
+	LGL_KEY_HELP		= SDL_SCANCODE_HELP,
+	LGL_KEY_PRINTSCREEN	= SDL_SCANCODE_PRINTSCREEN,
+	LGL_KEY_SYSREQ		= SDL_SCANCODE_SYSREQ,
+	LGL_KEY_STOP		= SDL_SCANCODE_STOP,
+	LGL_KEY_MENU		= SDL_SCANCODE_MENU,
+	LGL_KEY_POWER		= SDL_SCANCODE_POWER,
+	LGL_KEY_EURO		= SDLK_EURO,
+	LGL_KEY_UNDO		= SDL_SCANCODE_UNDO,
+	LGL_KEY_MAX		= 512
+};
+
 #define LGL_PI	3.1415926535
+#define LGL_SCREEN_MAX	2
 
 //Endian macros for dealing with OSX's big-endian-ness (this'll be fun when they move to intel...)
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN
@@ -278,11 +419,16 @@ private:
 void		LGL_SwapBuffers();
 void		LGL_FullScreenToggle();
 void		LGL_FullScreen(bool inFullScreen);
+bool		LGL_IsFullScreen();
 int		LGL_VideoResolutionX();
 int		LGL_VideoResolutionY();
-int		LGL_ScreenResolutionX();
-int		LGL_ScreenResolutionY();
+int		LGL_ScreenCount();
+int		LGL_ScreenResolutionX(int which);
+int		LGL_ScreenResolutionY(int which);
 float		LGL_VideoAspectRatio();
+float		LGL_ScreenAspectRatio();
+int		LGL_GetActiveScreen();
+void		LGL_SetActiveScreen(int screen);
 
 void		LGL_ViewPortScreen
 		(
@@ -297,8 +443,8 @@ void		LGL_GetViewPortScreen
 
 void		LGL_ClipRectEnable
 		(
-			float Left,	float Right,
-			float Bottom,	float Top
+			float left,	float right,
+			float bottom,	float top
 		);
 
 void		LGL_ClipRectDisable();
@@ -805,6 +951,7 @@ public:
 	bool			ImageUpToDate() const;
 	LGL_Image*		LockImage(bool blockUpdate=false);
 	void			UnlockImage(LGL_Image* image);
+	void			InvalidateImages();
 	float			GetLengthSeconds();
 	float			GetTime();
 	void			SetTime(float seconds);
@@ -874,6 +1021,7 @@ private:
 	int			FPSDisplayed;
 	int			FPSDisplayedCounter;
 	LGL_Timer		FPSDisplayedTimer;
+	LGL_Timer		FPSDisplayedConstTimeTimer;
 	float			LengthSeconds;
 
 	bool			ThreadEndSignal;
@@ -894,6 +1042,10 @@ public:
 
 	bool			IsValid();
 	bool			IsUnsupportedCodec();
+	void			SetEncodeAudio(bool encode=true);
+	void			SetEncodeVideo(bool encode=true);
+	bool			GetEncodeAudio();
+	bool			GetEncodeVideo();
 	void			Encode(int frames);
 	float			GetPercentFinished();
 	bool			IsFinished();
@@ -903,6 +1055,8 @@ private:
 
 	bool			Valid;
 	bool			UnsupportedCodec;
+	bool			EncodeAudio;
+	bool			EncodeVideo;
 
 	//Src
 
@@ -917,10 +1071,10 @@ private:
 	AVFrame*		SrcFrameRGB;
 	uint8_t*		SrcBufferRGB;
 	AVPacket		SrcPacket;
-	int			SrcPacketPosMax;
+	double			SrcPacketPosMax;
 	int			SrcAudioStreamIndex;
 	int			SrcVideoStreamIndex;
-	long			SrcFileBytes;
+	double			SrcFileBytes;
 
 	unsigned int		SrcBufferBytes;
 	unsigned int		SrcBufferWidth;
@@ -946,12 +1100,15 @@ private:
 	AVPacket		DstPacket;
 
 	char			DstMp3Path[2048];
+	FILE*			DstMp3FD;
 	AVOutputFormat*		DstMp3OutputFormat;
 	AVFormatContext*	DstMp3FormatContext;
 	AVCodecContext*		DstMp3CodecContext;
 	AVCodec*		DstMp3Codec;
 	AVStream*		DstMp3Stream;
 	int16_t*		DstMp3Buffer;
+	int16_t*		DstMp3BufferSamples;
+	int			DstMp3BufferSamplesIndex;
 	uint8_t*		DstMp3Buffer2;
 	AVPacket		DstMp3Packet;
 };
@@ -2509,7 +2666,7 @@ bool		LGL_DirectoryCreateChain(const char* dir);
 bool		LGL_FileDelete(const char* file);
 bool		LGL_DirectoryDelete(const char* dir);
 bool		LGL_FileDirMove(const char* oldLocation, const char* newLocation);
-long		LGL_FileLengthBytes(const char* file);
+double		LGL_FileLengthBytes(const char* file);
 char*		LGL_MD5sum(const char* file, char* output);	//output must be at least char[32]
 bool		LGL_FileExtension(const char* filename, const char* extension);
 void		LGL_SimplifyPath(char* simplePath, const char* complexPath);

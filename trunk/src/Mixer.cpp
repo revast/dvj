@@ -67,7 +67,7 @@ MixerObj()
 	LowRez=false;
 	CanDisplayJackWarning=true;
 
-	SetViewPortStatus(GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX(),1.0f,0.5f,1.0f);
+	SetViewPortStatus(GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX(0),1.0f,0.5f,1.0f);
 }
 
 MixerObj::
@@ -114,7 +114,7 @@ NextFrame
 			LGL_AudioUsingJack()==false
 		)
 		{
-			if(LGL_KeyStroke(SDLK_F1))
+			if(LGL_KeyStroke(LGL_KEY_F1))
 			{
 #ifndef	LGL_OSX
 				system("firefox http://code.google.com/p/dvj/wiki/JACK &");
@@ -784,8 +784,8 @@ NextFrame
 				ttVideoBrightness[a]=
 					(
 						(
-							(Turntable[a]->GetPaused() && Turntable[a]->GetRecordScratch()==false) ?
-							0.0f :
+							//(Turntable[a]->GetPaused() && Turntable[a]->GetRecordScratch()==false) ?
+							//0.0f :
 							1.0f
 						) *
 						(
@@ -1076,6 +1076,8 @@ DrawStatus
 	float t=ViewPortStatusTop;
 	float w=ViewPortStatusWidth;
 	float h=ViewPortStatusHeight;
+
+	if(l>1.0f) return;
 
 	LGL_ClipRectEnable
 	(
