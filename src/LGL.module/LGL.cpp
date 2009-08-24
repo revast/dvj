@@ -190,11 +190,22 @@ typedef struct
 {
 	//Video
 	
+	int			ScreenCount;
+	int			ScreenNow;
+	int			ScreenResolutionX[LGL_SCREEN_MAX];
+	int			ScreenResolutionY[LGL_SCREEN_MAX];
 	int			VideoResolutionX;
 	int			VideoResolutionY;
-	int			ScreenResolutionX;
-	int			ScreenResolutionY;
 	bool			VideoFullscreen;
+
+	SDL_WindowID		WindowID;
+	SDL_GLContext		GLContext;
+	//SDL_Surface*		GLVideoSurface;
+
+	float			ScreenViewPortLeft[LGL_SCREEN_MAX];
+	float			ScreenViewPortRight[LGL_SCREEN_MAX];
+	float			ScreenViewPortBottom[LGL_SCREEN_MAX];
+	float			ScreenViewPortTop[LGL_SCREEN_MAX];
 
 	float			ViewPortLeft;
 	float			ViewPortRight;
@@ -272,9 +283,9 @@ typedef struct
 
 	//Keyboard
 	
-	bool			KeyDown[512];
-	bool			KeyStroke[512];
-	bool			KeyRelease[512];
+	bool			KeyDown[LGL_KEY_MAX];
+	bool			KeyStroke[LGL_KEY_MAX];
+	bool			KeyRelease[LGL_KEY_MAX];
 	char			KeyStream[256];
 	LGL_InputBuffer*	InputBufferFocus;
 
@@ -1113,10 +1124,34 @@ LGL_Init
 	}
 
 #ifndef	LGL_NO_GRAPHICS
-	const SDL_VideoInfo* videoInfo = SDL_GetVideoInfo();
-	assert(videoInfo);
-	LGL.ScreenResolutionX = videoInfo->current_w;
-	LGL.ScreenResolutionY = videoInfo->current_h;
+	LGL.ScreenCount=SDL_GetNumVideoDisplays();
+	LGL.ScreenNow=0;
+
+printf("%i screens!\n",LGL.ScreenCount);
+	
+	for(int a=0;a<LGL.ScreenCount;a++)
+	{
+		SDL_SelectVideoDisplay(a);
+		SDL_DisplayMode mode;
+		SDL_GetDesktopDisplayMode(&mode);
+
+		LGL.ScreenResolutionX[a] = mode.w;
+		LGL.ScreenResolutionY[a] = mode.h;
+
+printf("\tScreen[%i]: %i x %i\n",a,
+	LGL.ScreenResolutionX[a],
+	LGL.ScreenResolutionY[a]
+);
+		SDL_DisplayMode displayMode;
+		SDL_GetFullscreenDisplayMode(&displayMode);
+		displayMode.w=LGL.ScreenResolutionX[a];
+		displayMode.h=LGL.ScreenResolutionY[a];
+		displayMode.refresh_rate=60;
+		SDL_SetFullscreenDisplayMode(&displayMode);
+	}
+
+	SDL_SelectVideoDisplay(0);
+
 	if
 	(
 		inVideoResolutionX==9999 &&
@@ -1124,8 +1159,17 @@ LGL_Init
 	)
 	{
 		LGL.VideoFullscreen=true;
-		LGL.VideoResolutionX=LGL.ScreenResolutionX;
-		LGL.VideoResolutionY=LGL.ScreenResolutionY;
+		LGL.VideoResolutionX=0;
+		LGL.VideoResolutionY=0;
+		for(int a=0;a<LGL.ScreenCount;a++)
+		{
+			LGL.VideoResolutionX+=LGL.ScreenResolutionX[a];
+			LGL.VideoResolutionY=LGL_Max
+			(
+				LGL.VideoResolutionY,
+				LGL.ScreenResolutionY[a]
+			);
+		}
 	}
 	else
 	{
@@ -1133,6 +1177,41 @@ LGL_Init
 		LGL.VideoResolutionX=inVideoResolutionX;
 		LGL.VideoResolutionY=inVideoResolutionY;
 	}
+
+	for(int a=0;a<LGL.ScreenCount;a++)
+	{
+		LGL.ScreenViewPortLeft[a]=0;
+		for(int b=0;b<a;b++)
+		{
+			LGL.ScreenViewPortLeft[a]+=LGL.VideoFullscreen ? LGL.ScreenResolutionX[b] : LGL.VideoResolutionX;
+		}
+		LGL.ScreenViewPortRight[a]=LGL.ScreenViewPortLeft[a]+(LGL.VideoFullscreen ? LGL.ScreenResolutionX[a] : LGL.VideoResolutionX);
+		LGL.ScreenViewPortLeft[a]/=LGL.VideoResolutionX;
+		LGL.ScreenViewPortRight[a]/=LGL.VideoResolutionX;
+
+#ifdef	LGL_OSX
+		if
+		(
+			a==0 &&
+			LGL.VideoFullscreen &&
+			LGL.ScreenCount > 1
+		)
+		{
+			LGL.ScreenResolutionY[a]-=70;	//OSX Dock
+		}
+#endif	//LGL_OSX
+		LGL.ScreenViewPortBottom[a]=(LGL.VideoResolutionY-LGL.ScreenResolutionY[a])/(float)LGL.VideoResolutionY;
+		LGL.ScreenViewPortTop[a]=1.0f;
+	}
+
+	if(LGL.VideoFullscreen==false)
+	{
+		LGL.ScreenViewPortLeft[0]=0.0f;
+		LGL.ScreenViewPortRight[0]=1.0f;
+		LGL.ScreenViewPortBottom[0]=0.0f;
+		LGL.ScreenViewPortTop[0]=1.0f;
+	}
+
 #endif	//LGL_NO_GRAPHICS
 	
 	//Time
@@ -1370,54 +1449,70 @@ LGL_Init
 
 	//Initialize Video
 
-	unsigned int Flags=SDL_OPENGL;
-	if(LGL.VideoFullscreen==true)
-	{
-		Flags=Flags|SDL_FULLSCREEN;
-		Flags=Flags|SDL_NOFRAME;
-	}
-
 #ifndef	LGL_NO_GRAPHICS
-	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
-	if
+	SDL_SelectVideoDisplay(0);
+
+	int windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
+	if(LGL.VideoFullscreen)
+	{
+		if(LGL.ScreenCount>1)
+		{
+			windowFlags |= SDL_WINDOW_BORDERLESS;
+		}
+		else
+		{
+			windowFlags |= SDL_WINDOW_FULLSCREEN;
+			windowFlags |= SDL_WINDOW_BORDERLESS;
+		}
+	}
+	LGL.WindowID = SDL_CreateWindow
 	(
-		SDL_SetVideoMode
+		inWindowTitle,
+		LGL.VideoFullscreen ? 0 : SDL_WINDOWPOS_CENTERED,
+		LGL.VideoFullscreen ? 0 : SDL_WINDOWPOS_CENTERED,
+		LGL.VideoResolutionX,
+		LGL.VideoResolutionY,
+		windowFlags
+	);
+
+	if(LGL.WindowID==0)
+	{
+		printf
 		(
+			"LGL_Init(): SDL_SetVideoMode \
+			(%i,%i) failed... %s\n",
 			LGL.VideoResolutionX,
 			LGL.VideoResolutionY,
-			32,			//Color depth
-			Flags
-		) == NULL
-	)
-	{
-		if(Flags==SDL_OPENGL)
-		{
-			printf
-			(
-				"LGL_Init(): SDL_SetVideoMode \
-				(%i,%i,SDL_OPENGL) failed... %s\n",
-				LGL.VideoResolutionX,
-				LGL.VideoResolutionY,
-				SDL_GetError()
-			);
-		}
-		if(Flags==(SDL_OPENGL|SDL_FULLSCREEN))
-		{
-			printf
-			(
-				"LGL_Init(): SDL_SetVideoMode \
-				(%i,%i,SDL_OPENGL|SDL_FULLSCREEN) \
-				failed... %s\n",
-				LGL.VideoResolutionX,
-				LGL.VideoResolutionY,
-				SDL_GetError()
-			);
-		}
-			
+			SDL_GetError()
+		);
 		return(false);
 	}
-	
+	else
+	{
+		LGL.GLContext = SDL_GL_CreateContext(LGL.WindowID);
+		SDL_GL_MakeCurrent(LGL.WindowID, LGL.GLContext);
+		/*
+		LGL.GLVideoSurface =
+			SDL_CreateRGBSurfaceFrom
+			(
+				NULL,
+				LGL.VideoResolutionX,
+				LGL.VideoResolutionY,
+				32,
+				0, 0, 0, 0, 0
+			);
+		int surface_flags=SDL_OPENGL;
+		if(LGL.VideoFullscreen)
+		{
+			surface_flags |= SDL_FULLSCREEN;
+		}
+		LGL.GLVideoSurface->flags |= surface_flags;
+		*/
+	}
+
 	//GL Settings
+
+	SDL_GL_SetSwapInterval((LGL.VideoFullscreen && LGL.ScreenCount>1) ? 0 : 1);//1);	//VSYNC
 
 	glDrawBuffer(GL_BACK);
 	glReadBuffer(GL_FRONT);
@@ -1436,6 +1531,8 @@ LGL_Init
 	LGL_ClearBackBuffer();
 	LGL_SwapBuffers();
 	LGL_SwapBuffers();
+
+	LGL_SetActiveScreen(0);
 
 	LGL.GPUSpeed=0;
 	LGL.GPUTemp=0;
@@ -2990,7 +3087,9 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 #ifdef	LGL_NO_GRAPHICS
 	LGL_DelaySeconds(1.0f/60.0f-LGL_SecondsSinceThisFrame());
 #else
-	SDL_GL_SwapBuffers();
+	//SDL_GL_SwapBuffers();
+	LGL_DelayMS(1);
+	SDL_GL_SwapWindow(LGL.WindowID);
 #endif	//LGL_NO_GRAPHICS
 
 	lgl_font_gl_buffer_ptr = &(lgl_font_gl_buffer[0]);
@@ -3121,6 +3220,12 @@ LGL_FullScreen
 	}
 }
 
+bool
+LGL_IsFullScreen()
+{
+	return(LGL.VideoFullscreen);
+}
+
 int
 LGL_VideoResolutionX()
 {
@@ -3134,21 +3239,67 @@ LGL_VideoResolutionY()
 }
 
 int
-LGL_ScreenResolutionX()
+LGL_ScreenCount()
 {
-	return(LGL.ScreenResolutionX);
+	return(LGL.ScreenCount);
 }
 
 int
-LGL_ScreenResolutionY()
+LGL_ScreenResolutionX(int which)
 {
-	return(LGL.ScreenResolutionY);
+	return(LGL.ScreenResolutionX[which]);
+}
+
+int
+LGL_ScreenResolutionY(int which)
+{
+	return(LGL.ScreenResolutionY[which]);
 }
 
 float
 LGL_VideoAspectRatio()
 {
-	return(LGL.VideoResolutionX/(float)LGL.VideoResolutionY);
+	return
+	(
+		LGL.VideoResolutionX/(float)
+		LGL.VideoResolutionY
+	);
+}
+
+float
+LGL_ScreenAspectRatio()
+{
+	return
+	(
+		LGL.ScreenResolutionX[LGL.ScreenNow]/(float)
+		LGL.ScreenResolutionY[LGL.ScreenNow]
+	);
+}
+
+int
+LGL_GetActiveScreen()
+{
+	return(LGL.ScreenNow);
+}
+
+void
+LGL_SetActiveScreen(int screen)
+{
+	screen=(int)(LGL_Clamp(0,screen,LGL.ScreenCount-1));
+	LGL.ScreenNow=screen;
+
+	float left=	(0.0f-LGL.ScreenViewPortLeft[screen])*(1.0f/(LGL.ScreenViewPortRight[screen]-LGL.ScreenViewPortLeft[screen]));
+	float right=	(1.0f-LGL.ScreenViewPortLeft[screen])*(1.0f/(LGL.ScreenViewPortRight[screen]-LGL.ScreenViewPortLeft[screen]));
+	float bottom=	(0.0f-LGL.ScreenViewPortBottom[screen])*(1.0f/(LGL.ScreenViewPortTop[screen]-LGL.ScreenViewPortBottom[screen]));
+	float top=	(1.0f-LGL.ScreenViewPortBottom[screen])*(1.0f/(LGL.ScreenViewPortTop[screen]-LGL.ScreenViewPortBottom[screen]));
+
+	LGL_ViewPortScreen
+	(
+		left,
+		right,
+		bottom,
+		top
+	);
 }
 
 inline
@@ -3229,10 +3380,10 @@ LGL_GetViewPortScreen
 void
 LGL_ClipRectEnable
 (
-	float	Left,
-	float	Right,
-	float	Bottom,
-	float	Top
+	float	left,
+	float	right,
+	float	bottom,
+	float	top
 )
 {
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
@@ -3242,20 +3393,54 @@ LGL_ClipRectEnable
 		(
 			neo,
 			"ce|%.4f|%.4f|%.4f|%.4f\n",
-			Left,Right,
-			Bottom,Top
+			left,right,
+			bottom,top
 		);
 		LGL.DrawLog.push_back(neo);
 	}
 
+	int sLeft = LGL.VideoResolutionX*(LGL.ScreenViewPortLeft[LGL.ScreenNow] + left *
+		(
+			LGL.ScreenViewPortRight[LGL.ScreenNow] -
+			LGL.ScreenViewPortLeft[LGL.ScreenNow]
+		));
+	int sRight = LGL.VideoResolutionX*(LGL.ScreenViewPortLeft[LGL.ScreenNow] + right *
+		(
+			LGL.ScreenViewPortRight[LGL.ScreenNow] -
+			LGL.ScreenViewPortLeft[LGL.ScreenNow]
+		));
+	int sBottom = LGL.VideoResolutionY*(LGL.ScreenViewPortBottom[LGL.ScreenNow] + bottom *
+		(
+			LGL.ScreenViewPortTop[LGL.ScreenNow] -
+			LGL.ScreenViewPortBottom[LGL.ScreenNow]
+		));
+	int sTop = LGL.VideoResolutionY*(LGL.ScreenViewPortBottom[LGL.ScreenNow] + top *
+		(
+			LGL.ScreenViewPortTop[LGL.ScreenNow] -
+			LGL.ScreenViewPortBottom[LGL.ScreenNow]
+		));
+
 	glEnable(GL_SCISSOR_TEST);
-	glScissor
-	(
-		(int)(Left*LGL.VideoResolutionX),
-		(int)(Bottom*LGL.VideoResolutionY),
-		(int)((Right-Left)*LGL.VideoResolutionX),
-		(int)((Top-Bottom)*LGL.VideoResolutionY)
-	);
+	if(LGL.VideoFullscreen)
+	{
+		glScissor
+		(
+			sLeft,
+			sBottom,
+			sRight,
+			sTop
+		);
+	}
+	else
+	{
+		glScissor
+		(
+			(int)(left*LGL.VideoResolutionX),
+			(int)(bottom*LGL.VideoResolutionY),
+			(int)((right-left)*LGL.VideoResolutionX),
+			(int)((top-bottom)*LGL.VideoResolutionY)
+		);
+	}
 }
 
 void
@@ -5016,8 +5201,8 @@ LGL_Image
 	DesiredFormat.Gloss=0;
 	DesiredFormat.Bloss=0;
 	DesiredFormat.Aloss=0;
-	DesiredFormat.colorkey=0;
-	DesiredFormat.alpha=255;
+	//DesiredFormat.colorkey=0;
+	//DesiredFormat.alpha=255;
 
 	SurfaceSDL=SDL_ConvertSurface(mySDL_Surface1,&DesiredFormat,SDL_SWSURFACE);
 	if(SurfaceSDL==NULL)
@@ -5107,7 +5292,7 @@ LGL_Image
 	TextureGL=0;
 	TextureGLMine=true;
 
-	glGenTextures(1,&TextureGL);
+	glGenTextures(1,&(TextureGL));
 	glBindTexture(GL_TEXTURE_2D,TextureGL);
 	glTexImage2D
 	(
@@ -5973,14 +6158,14 @@ LoadSurfaceToTexture
 			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 	//Check to see if we already have a texture loaded...
 	
 	if(TextureGL!=0)
 	{
 		//We already have a texture loaded. Axe it.
-		glDeleteTextures(1,&TextureGL);
+		glDeleteTextures(1,&(TextureGL));
 	}
 
 	//Load from SurfaceSDL to TextureGL
@@ -5988,7 +6173,7 @@ LoadSurfaceToTexture
 	if(loadToExistantGLTexture<=0)
 	{
 		TextureGLMine=true;
-		glGenTextures(1,&TextureGL);
+		glGenTextures(1,&(TextureGL));
 		glBindTexture(GL_TEXTURE_2D,TextureGL);
 		glTexImage2D
 		(
@@ -6084,16 +6269,18 @@ LoadSurfaceToTexture
 		);
 	}
 
+	/*
 	assert(SurfaceSDL!=NULL);
 	SDL_FreeSurface(SurfaceSDL);
 	SurfaceSDL=NULL;
+	*/
 
 	GLsizei size = w*h*(AlphaChannel?4:3);
 
 	if(PixelBufferEnable)
 	{
 		//Make a Pixel Buffer Object
-		gl2GenBuffers(1,&PixelBufferObjectFrontGL);
+		gl2GenBuffers(1,&(PixelBufferObjectFrontGL));
 		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
 		gl2BufferData
 		(
@@ -6105,7 +6292,7 @@ LoadSurfaceToTexture
 		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
 
 		//Make a Pixel Buffer Object
-		gl2GenBuffers(1,&PixelBufferObjectBackGL);
+		gl2GenBuffers(1,&(PixelBufferObjectBackGL));
 		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
 		gl2BufferData
 		(
@@ -6135,14 +6322,14 @@ UnloadSurfaceFromTexture()
 	}
 	else
 	{
-		glDeleteTextures(1,&TextureGL);
+		glDeleteTextures(1,&(TextureGL));
 		TextureGL=0;
 		LGL.TexturePixels-=TexW*TexH;
 	}
 
 	//Delete Pixel Buffer Object
-	gl2DeleteBuffers(1,&PixelBufferObjectFrontGL);
-	gl2DeleteBuffers(1,&PixelBufferObjectBackGL);
+	gl2DeleteBuffers(1,&(PixelBufferObjectFrontGL));
+	gl2DeleteBuffers(1,&(PixelBufferObjectBackGL));
 }
 
 void
@@ -6183,6 +6370,11 @@ UpdateTexture
 	}
 
 	bool pboReady = gl2IsBuffer(PixelBufferObjectFrontGL);
+
+	if(TextureGL==0)
+	{
+		return;
+	}
 
 	glBindTexture(GL_TEXTURE_2D,TextureGL);
 	if(pboReady) gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
@@ -6343,7 +6535,7 @@ GetPixelR
 			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 	if
 	(
@@ -6378,7 +6570,7 @@ GetPixelG
 			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 	if
 	(
@@ -6413,7 +6605,7 @@ GetPixelB
 			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 	if
 	(
@@ -6448,7 +6640,7 @@ GetPixelA
 			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 	if
 	(
@@ -6485,7 +6677,7 @@ SetPixelR
 			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 	if
 	(
@@ -6517,7 +6709,7 @@ SetPixelG
 			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 	if
 	(
@@ -6549,7 +6741,7 @@ SetPixelB
 			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 	if
 	(
@@ -6581,7 +6773,7 @@ SetPixelA
 			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
 			Path
 		);
-		exit(-1);
+		assert(false);
 	}
 	if
 	(
@@ -6678,8 +6870,8 @@ FileLoad
 	DesiredFormat.Gloss=0;
 	DesiredFormat.Bloss=0;
 	DesiredFormat.Aloss=0;
-	DesiredFormat.colorkey=0;
-	DesiredFormat.alpha=255;
+	//DesiredFormat.colorkey=0;
+	//DesiredFormat.alpha=255;
 
 	SurfaceSDL=SDL_ConvertSurface(mySDL_Surface1,&DesiredFormat,SDL_SWSURFACE);
 	if(SurfaceSDL==NULL)
@@ -7331,7 +7523,7 @@ lgl_video_thread
 		}
 		else
 		{
-			LGL_DelayMS(LGL_Video::PrimaryDecoder==video ? 1 : 10);
+			//LGL_DelayMS(LGL_Video::PrimaryDecoder==video ? 1 : 10);
 		}
 
 		LGL_DelayMS(1);
@@ -7410,9 +7602,6 @@ LGL_Video::
 	}
 	
 	CleanUp();
-
-	//FIXME: Delete semaphores and other dangling bits.
-printf("LGL_Video::~LGL_Video(): Memory leak!\n");
 }
 
 void
@@ -7588,7 +7777,18 @@ LockImage
 					FPSDisplayedCounter++;
 					if(FPSDisplayedTimer.SecondsSinceLastReset()>1.0f)
 					{
-						FPSDisplayed=LGL_Min(FPS,FPSDisplayedCounter);
+						if
+						(
+							FPSDisplayedTimer.SecondsSinceLastReset()<=2.0f &&
+							FPSDisplayedConstTimeTimer.SecondsSinceLastReset()<=0.1f
+						)
+						{
+							FPSDisplayed=(int)ceilf(LGL_Min(FPS,FPSDisplayedCounter));
+						}
+						else
+						{
+							FPSDisplayed=0;
+						}
 						FPSDisplayedCounter=0;
 						FPSDisplayedTimer.Reset();
 					}
@@ -7618,6 +7818,22 @@ UnlockImage
 	ImageFrontSemaphore->Unlock();
 }
 
+void
+LGL_Video::
+InvalidateImages()
+{
+	ImageBackSemaphore->Lock("Main","Inside LGL_Video::InvalidateImages() (Final)");
+	ImageFrontSemaphore->Lock("Main","Inside LGL_Video::InvalidateImages() (Final)");
+	{
+		delete ImageBack;
+		delete ImageFront;
+		ImageBack=NULL;
+		ImageFront=NULL;
+	}
+	ImageFrontSemaphore->Unlock();
+	ImageBackSemaphore->Unlock();
+}
+
 float
 LGL_Video::
 GetLengthSeconds()
@@ -7639,6 +7855,10 @@ SetTime
 	float	seconds
 )
 {
+	if(SecondsNext!=seconds)
+	{
+		FPSDisplayedConstTimeTimer.Reset();
+	}
 	SecondsNext=seconds;
 }
 
@@ -8131,9 +8351,12 @@ LGL_VideoEncoder
 {
 	strcpy(SrcPath,src);
 	strcpy(DstPath,dst);
+	sprintf(DstMp3Path,"%s.audio.avi",DstPath);
 
 	Valid=false;
 	UnsupportedCodec=false;
+	EncodeAudio=true;
+	EncodeVideo=true;
 
 	SrcFormatContext=NULL;
 	SrcCodecContext=NULL;
@@ -8163,6 +8386,8 @@ LGL_VideoEncoder
 	DstMp3Codec=NULL;
 	DstMp3Stream=NULL;
 	DstMp3Buffer=NULL;
+	DstMp3BufferSamples=NULL;
+	DstMp3BufferSamplesIndex=0;
 	DstMp3Buffer2=NULL;
 
 	LGL.AVCodecSemaphore->Lock("videoEncoderThread","LGL_VideoEncoder::LGL_VideoEncoder() (src) (meh)");
@@ -8419,27 +8644,29 @@ LGL_VideoEncoder
 
 		DstBuffer = (uint8_t*)malloc(SrcBufferWidth*SrcBufferHeight*4);
 
-#ifdef	NOT_YET
+#ifndef	NOT_YET
 		//Mp3 output
 
+		CodecID acodec = CODEC_ID_VORBIS;
+
 		// find the audio encoder
-		DstMp3Codec = avcodec_find_encoder(CODEC_ID_VORBIS);
+		DstMp3Codec = avcodec_find_encoder(acodec);
 		if(DstMp3Codec==NULL)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio codec for '%s'\n",src);
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio encoding codec for '%s'\n",src);
 			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
-		
+
 		// Set mp3 format
 		DstMp3OutputFormat = guess_format("ogg", NULL, NULL);
-		DstMp3OutputFormat->audio_codec = CODEC_ID_VORBIS;	//FIXME: mp3?? vorbis?? Pick one and name appropriately!
+		DstMp3OutputFormat->audio_codec = acodec;	//FIXME: mp3?? vorbis?? Pick one and name appropriately!
 		DstMp3OutputFormat->video_codec = CODEC_ID_NONE;
 
 		// FormatContext
 		DstMp3FormatContext = (AVFormatContext*)av_mallocz(sizeof(AVFormatContext));
 		DstMp3FormatContext->oformat = DstMp3OutputFormat;
-		strcpy(DstMp3FormatContext->filename, "data/video/tmp/test.ogg");
+		sprintf(DstMp3FormatContext->filename, "%s.ogg",dst);
 
 		// audio stream
 		DstMp3Stream = av_new_stream(DstMp3FormatContext,0);
@@ -8450,36 +8677,38 @@ LGL_VideoEncoder
 
 		DstMp3CodecContext = DstMp3Stream->codec;
 		avcodec_get_context_defaults(DstMp3CodecContext);
-		DstMp3CodecContext->codec_id=CODEC_ID_VORBIS;
+		DstMp3CodecContext->codec_id=acodec;
 		DstMp3CodecContext->codec_type=CODEC_TYPE_AUDIO;
 		DstMp3CodecContext->bit_rate=256*1000;	//This doesn't seem to matter much
 		DstMp3CodecContext->bit_rate_tolerance=DstMp3CodecContext->bit_rate/4;
 		DstMp3CodecContext->global_quality=20000;	//This is so fucking arbitrary.
 		DstMp3CodecContext->flags |= CODEC_FLAG_QSCALE;
 		DstMp3CodecContext->sample_rate=SrcAudioCodecContext->sample_rate;
-		DstMp3CodecContext->channels=SrcAudioCodecContext->channels;
+		DstMp3CodecContext->channels=2;//SrcAudioCodecContext->channels;
 
 		if(avcodec_open(DstMp3CodecContext, DstMp3Codec) < 0)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open MP3 codec for '%s'\n",src);
-			LGL.AVCodecSemaphore->Unlock();
-			return;
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open audio encoder codec for '%s'\n",src);
+			EncodeAudio=false;
 		}
-
-		dump_format(DstMp3FormatContext,0,DstMp3FormatContext->filename,1);
-		
-		result = url_fopen(&(DstMp3FormatContext->pb), DstMp3FormatContext->filename, URL_WRONLY);
-		if(result<0)
+		else
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't url_fopen() audio output file '%s' (%i)\n",DstMp3FormatContext->filename,result);
-			LGL.AVCodecSemaphore->Unlock();
-			return;
+			dump_format(DstMp3FormatContext,0,DstMp3FormatContext->filename,1);
+			
+			result = url_fopen(&(DstMp3FormatContext->pb), DstMp3FormatContext->filename, URL_WRONLY);
+			if(result<0)
+			{
+				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't url_fopen() audio output file '%s' (%i)\n",DstMp3FormatContext->filename,result);
+				LGL.AVCodecSemaphore->Unlock();
+				return;
+			}
+
+			av_write_header(DstMp3FormatContext);
+
+			DstMp3Buffer = (int16_t*)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
+			DstMp3BufferSamples = (int16_t*)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
+			DstMp3Buffer2 = (uint8_t*)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
 		}
-
-		av_write_header(DstMp3FormatContext);
-
-		DstMp3Buffer = (int16_t*)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
-		DstMp3Buffer2 = (uint8_t*)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
 #endif	//NOT_YET
 	}
 	LGL.AVCodecSemaphore->Unlock();
@@ -8568,6 +8797,10 @@ LGL_VideoEncoder::
 		{
 			free(DstMp3Buffer);
 		}
+		if(DstMp3BufferSamples)
+		{
+			free(DstMp3BufferSamples);
+		}
 		if(DstMp3Buffer2)
 		{
 			free(DstMp3Buffer2);
@@ -8588,6 +8821,34 @@ LGL_VideoEncoder::
 IsUnsupportedCodec()
 {
 	return(UnsupportedCodec);
+}
+
+void
+LGL_VideoEncoder::
+SetEncodeAudio(bool encode)
+{
+	EncodeAudio=EncodeAudio && encode;
+}
+
+void
+LGL_VideoEncoder::
+SetEncodeVideo(bool encode)
+{
+	EncodeVideo=encode;
+}
+
+bool
+LGL_VideoEncoder::
+GetEncodeAudio()
+{
+	return(EncodeAudio);
+}
+
+bool
+LGL_VideoEncoder::
+GetEncodeVideo()
+{
+	return(EncodeVideo);
 }
 
 void
@@ -8619,19 +8880,30 @@ Encode
 		if(result<0)
 		{
 			//We're done!
-			av_write_trailer(DstFormatContext);
-			url_fclose(DstFormatContext->pb);
+			if(EncodeVideo)
+			{
+				av_write_trailer(DstFormatContext);
+				url_fclose(DstFormatContext->pb);	//FIXME: Memleak
+			}
 			DstFormatContext->pb=NULL;
-#ifdef	NOT_YET
-			av_write_trailer(DstMp3FormatContext);
-			url_fclose(DstMp3FormatContext->pb);
+
+#ifndef	NOT_YET
+			if(EncodeAudio)
+			{
+				av_write_trailer(DstMp3FormatContext);
+				url_fclose(DstMp3FormatContext->pb);	//FIXME: Memleak
+			}
 			DstMp3FormatContext->pb=NULL;
 #endif	//NOT_YET
 			break;
 		}
 
 		// Is this a packet from the video stream?
-		if(SrcPacket.stream_index==SrcVideoStreamIndex)
+		if
+		(
+			SrcPacket.stream_index==SrcVideoStreamIndex &&
+			EncodeVideo
+		)
 		{
 			int frameFinished=0;
 			LGL.AVCodecSemaphore->Lock("videoEncoderThread","Calling avcodec_decode_video() (meh)");
@@ -8684,9 +8956,13 @@ Encode
 		}
 		
 		// Is this a packet from the audio stream?
-#ifdef	NOT_YET
-		else if(SrcPacket.stream_index==SrcAudioStreamIndex)
+		else if
+		(
+			SrcPacket.stream_index==SrcAudioStreamIndex &&
+			EncodeAudio
+		)
 		{
+#ifndef	NOT_YET
 			// Convert the audio from src format to dst
 			LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling avcodec_decode_audio2() (meh)");
 			{
@@ -8699,23 +8975,52 @@ Encode
 					SrcPacket.data,
 					SrcPacket.size
 				);
-				DstMp3Packet.size = avcodec_encode_audio(DstMp3CodecContext,DstMp3Buffer2,AVCODEC_MAX_AUDIO_FRAME_SIZE,DstMp3Buffer);
+				if(SrcAudioCodecContext->channels==2)
+				{
+					memcpy(&(DstMp3BufferSamples[DstMp3BufferSamplesIndex]),DstMp3Buffer,outbufsize);
+					DstMp3BufferSamplesIndex+=outbufsize/2;
+				}
+				else
+				{
+					int16_t* outbuf16 = (int16_t*)DstMp3Buffer;
+					int16_t* buf16 = (int16_t*)(&(DstMp3BufferSamples[DstMp3BufferSamplesIndex])); 
+					int samples=outbufsize/2;
+
+					for(int a=0;a<samples;a++)
+					{
+						buf16[2*a+0]=outbuf16[a];
+						buf16[2*a+1]=outbuf16[a];
+					}
+
+					DstMp3BufferSamplesIndex+=samples*2;
+				}
 			}
 			LGL.AVCodecSemaphore->Unlock();
 
-			DstMp3Packet.pts = av_rescale_q(DstMp3CodecContext->coded_frame->pts,DstMp3CodecContext->time_base,DstMp3Stream->time_base);
-			DstMp3Packet.dts = DstMp3Packet.pts;
-			DstMp3Packet.flags |= PKT_FLAG_KEY;
-			DstMp3Packet.stream_index = 0;
-			DstMp3Packet.data=DstMp3Buffer2;
-			DstMp3Packet.duration=SrcPacket.duration;
-			LGL.AVCodecSemaphore->Lock("videoEncoderThread","Calling audio av_write_frame() (meh)");
+			while(DstMp3BufferSamplesIndex>=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels)
 			{
-				result = av_write_frame(DstMp3FormatContext, &DstMp3Packet);
+				LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling avcodec_decode_audio2() (meh)");
+				{
+					DstMp3Packet.size = avcodec_encode_audio(DstMp3CodecContext,DstMp3Buffer2,AVCODEC_MAX_AUDIO_FRAME_SIZE,DstMp3BufferSamples);
+
+					int remainderIndex=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels;
+					int remainderSize=DstMp3BufferSamplesIndex-remainderIndex;
+					memcpy(DstMp3Buffer,&(DstMp3BufferSamples[remainderIndex]),remainderSize*2);
+					memcpy(DstMp3BufferSamples,DstMp3Buffer,remainderSize*2);
+					DstMp3BufferSamplesIndex=remainderSize;
+
+					DstMp3Packet.pts = av_rescale_q(DstMp3CodecContext->coded_frame->pts,DstMp3CodecContext->time_base,DstMp3Stream->time_base);
+					DstMp3Packet.dts = DstMp3Packet.pts;
+					DstMp3Packet.flags |= PKT_FLAG_KEY;
+					DstMp3Packet.stream_index = 0;
+					DstMp3Packet.data=DstMp3Buffer2;
+					DstMp3Packet.duration=0;
+					result = av_write_frame(DstMp3FormatContext, &DstMp3Packet);
+				}
+				LGL.AVCodecSemaphore->Unlock();
 			}
-			LGL.AVCodecSemaphore->Unlock();
-		}
 #endif	//NOT_YET
+		}
 		LGL.AVCodecSemaphore->Lock("LGL_VideoEncoder::Encode()","Calling av_free_packet() (meh)");
 		{
 			av_free_packet(&SrcPacket);
@@ -8739,9 +9044,8 @@ GetPercentFinished()
 
 	SrcPacketPosMax=LGL_Max(SrcPacket.pos,SrcPacketPosMax);
 
-	float bytePos = SrcPacketPosMax;
-	float byteLen = SrcFileBytes;
-
+	double bytePos = SrcPacketPosMax;
+	double byteLen = SrcFileBytes;
 	return(LGL_Clamp(0,bytePos/byteLen,1));
 }
 
@@ -8828,8 +9132,7 @@ LGL_Font
 //printf("Texture Size: %i x %i\n",TextureSideLength,TextureSideLength);
 
 	//Create our Font texture.
-
-	glGenTextures(1,&TextureGL);
+	glGenTextures(1,&(TextureGL));
 	glBindTexture(GL_TEXTURE_2D,TextureGL);
 	glTexImage2D
 	(
@@ -8854,7 +9157,7 @@ LGL_Font
 		GL_TEXTURE_MAG_FILTER,
 		GL_NEAREST
 	);
-	
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
@@ -9776,6 +10079,8 @@ LGL_INTERNAL_ProcessInput()
 			LGL_GetFont().QueryChar(LGL_KeyStream()[a])==false &&
 			LGL_KeyStream()[a]!=27 &&	//ESC
 			LGL_KeyStream()[a]!=9 &&	//Tab
+			LGL_KeyStream()[a]!=127 &&	//Backspace
+			LGL_KeyStream()[a] >= 0 &&
 			(
 				Buffer[0]!='\0' ||
 				LGL_KeyStream()[a]!=8	//Backspace at end
@@ -13706,7 +14011,7 @@ LoadToMemory()
 	unsigned char outbuf[AVCODEC_MAX_AUDIO_FRAME_SIZE];
 	int cyclesNow=0;
 	int cyclesMax=8;
-	//int delayMS=1;
+	int delayMS=1;
 
 	for(;;)
 	{
@@ -13837,7 +14142,7 @@ LoadToMemory()
 			if(HogCPU==false)
 			{
 				//This is a hack. I don't want to delay. But the scheduler won't preempt me for higher priority processes, for some reason....
-				//LGL_DelayMS(delayMS);
+				LGL_DelayMS(delayMS);
 			}
 		}
 	}
@@ -14443,6 +14748,15 @@ LGL_ProcessInput()
 		
 		if(event.type==SDL_KEYDOWN)
 		{
+			if(event.key.keysym.sym > 256)
+			{
+				event.key.keysym.sym = 256 + (event.key.keysym.sym % LGL_KEY_MAX);
+			}
+			if(event.key.keysym.sym > 512)
+			{
+				event.key.keysym.sym=0;
+			}
+
 			LGL.KeyDown[event.key.keysym.sym]=true;
 			LGL.KeyStroke[event.key.keysym.sym]=true;
 			if
@@ -14452,8 +14766,10 @@ LGL_ProcessInput()
 				event.key.keysym.unicode>0
 			)
 			{
+printf("AAAAAAAA\n");
 				if(isalpha((char)event.key.keysym.unicode))
 				{
+printf("BBBBBBBBBB\n");
 					if(SDL_GetModState() & KMOD_SHIFT)
 					{
 						LGL.KeyStream[StreamCounter]=toupper((char)event.key.keysym.unicode);
@@ -14474,8 +14790,19 @@ LGL_ProcessInput()
 		}
 		if(event.type==SDL_KEYUP)
 		{
+			if(event.key.keysym.sym > 256)
+			{
+				event.key.keysym.sym = 256 + (event.key.keysym.sym % LGL_KEY_MAX);
+			}
 			LGL.KeyDown[event.key.keysym.sym]=false;
 			LGL.KeyRelease[event.key.keysym.sym]=true;
+		}
+		if(event.type==SDL_TEXTINPUT)
+		{
+			SDL_TextInputEvent* input = (SDL_TextInputEvent*)(&(event));
+			LGL.KeyStream[StreamCounter]=input->text[0];
+			StreamCounter++;
+			LGL.KeyStream[StreamCounter]='\0';
 		}
 
 		//Mouse
@@ -16061,6 +16388,7 @@ lgl_KeySanityCheck
 			"lgl_KeySanityCheck(): Invalid parameter (%i)\n",
 			key
 		);
+		assert(false);
 		return(false);
 	}
 	else
@@ -16128,25 +16456,41 @@ LGL_MouseSanityCheck
 float
 LGL_MouseX()
 {
-	return(LGL.MouseX);
+	return
+	(
+		(LGL.MouseX-LGL.ScreenViewPortLeft[LGL.ScreenNow])/
+		(LGL.ScreenViewPortRight[LGL.ScreenNow]-LGL.ScreenViewPortLeft[LGL.ScreenNow])
+	);
 }
 
 float
 LGL_MouseY()
 {
-	return(LGL.MouseY);
+	return
+	(
+		(LGL.MouseY-LGL.ScreenViewPortBottom[LGL.ScreenNow])/
+		(LGL.ScreenViewPortTop[LGL.ScreenNow]-LGL.ScreenViewPortBottom[LGL.ScreenNow])
+	);
 }
 
 float
 LGL_MouseDX()
 {
-	return(LGL.MouseDX);
+	return
+	(
+		(LGL.MouseDX-LGL.ScreenViewPortLeft[LGL.ScreenNow])/
+		(LGL.ScreenViewPortRight[LGL.ScreenNow]-LGL.ScreenViewPortLeft[LGL.ScreenNow])
+	);
 }
 
 float
 LGL_MouseDY()
 {
-	return(LGL.MouseDY);
+	return
+	(
+		(LGL.MouseDY-LGL.ScreenViewPortBottom[LGL.ScreenNow])/
+		(LGL.ScreenViewPortTop[LGL.ScreenNow]-LGL.ScreenViewPortBottom[LGL.ScreenNow])
+	);
 }
 
 bool
@@ -16195,13 +16539,14 @@ LGL_MouseVisible
 	bool	visible
 )
 {
+	SDL_SelectMouse(0);
 	if(visible)
 	{
-		SDL_ShowCursor(SDL_ENABLE);
+		SDL_ShowCursor(1);
 	}
 	else
 	{
-		SDL_ShowCursor(SDL_DISABLE);
+		SDL_ShowCursor(0);
 	}
 }
 
@@ -19472,7 +19817,7 @@ lgl_NetConnectionSocketSendThread
 			char* file=nc->FileSendBuffer[0][0];
 			char meta[1024];
 			meta[0]='\0';
-			sprintf(&(meta[1]),"file?|%s|%li",file,LGL_FileLengthBytes(file));
+			sprintf(&(meta[1]),"file?|%s|%.0lf",file,LGL_FileLengthBytes(file));
 			Uint16 metaLength=strlen(&(meta[1]))+2;
 			LGL_Datagram* dg=new LGL_Datagram;
 			dg->LoadData
@@ -22285,24 +22630,38 @@ LGL_FileDirMove
 	return(result);
 }
 
-long
+double
 LGL_FileLengthBytes
 (
 	const
 	char*	file
 )
 {
-	FILE* fd=fopen(file,"r");
-	if(fd==NULL)
+	struct stat64 stbuf;
+	if(stat64(file, &stbuf) < 0)
+	{
+		printf("Can't stat() %s\n",file);
+		return(-1);
+	}
+	double ret = stbuf.st_size;
+	return(ret);
+
+/*
+	int fd=open(file,O_RDONLY);
+	if(fd<0)
 	{
 		printf("LGL_FileLengthBytes('%s'): Warning! Can't open file!\n",file);
 		printf("errno: %i\n",errno);
 		return(-1);
 	}
-	fseek(fd,0,SEEK_END);
-	long ret=ftell(fd);
-	fclose(fd);
-	return(ret);
+	long ret = lseek(fd,0,SEEK_END);
+	if(ret==-1)
+	{
+		printf("lseek error for '%s': %i (%i)\n",file,errno,EOVERFLOW);
+	}
+	close(fd);
+	return(-ret);
+*/
 }
 
 //Begin RSA Code
@@ -23201,23 +23560,6 @@ LGL_ScreenShot
 	const char*	bmpFile
 )
 {
-
-/*
-if(mencoderFD==NULL)
-{
-	char cmd[1024];
-	sprintf
-	(
-		cmd,
-		"mencoder - -nosound -demuxer rawvideo -rawvideo fps=30:w=%i:h=%i:format=rgb24 -flip -ovc lavc -lavcopts vcodec=mpeg4:vbitrate=2000 -o test.avi",
-		LGL.VideoResolutionX,
-		LGL.VideoResolutionY
-	);
-	mencoderFD=popen(cmd,"w");
-	assert(mencoderFD);
-}
-*/
-
 	SDL_Surface* temp=NULL;
 	unsigned char* pixels;
 
@@ -23252,7 +23594,6 @@ if(mencoderFD==NULL)
 		GL_RGB, GL_UNSIGNED_BYTE,
 		pixels
 	);
-//fwrite(pixels,3*LGL.VideoResolutionX*LGL.VideoResolutionY,1,mencoderFD);
 
 	for(int i=0;i<LGL.VideoResolutionY;i++)
 	{
@@ -24607,6 +24948,7 @@ Lock
 	{
 		if
 		(
+			0 &&
 			IsLocked() &&
 			strstr(note,"(meh)")==NULL
 		)

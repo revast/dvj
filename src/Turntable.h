@@ -29,8 +29,8 @@
 
 #include "Database.h"
 
-#define	NOISE_IMAGE_COUNT_256_64 64
-#define	ENTIRE_WAVE_ARRAY_COUNT_MAX 1920
+const int NOISE_IMAGE_COUNT_256_64 = 64;
+const int ENTIRE_WAVE_ARRAY_COUNT_MAX = 1920*2;
 
 class TurntableObj
 {
@@ -135,6 +135,7 @@ private:
 						//2=Waveform
 	LGL_Sound*			Sound;
 	char				SoundName[1024];
+	char				SoundSrcPath[1024];
 	Uint8*				SoundBuffer;
 	unsigned long			SoundBufferLength;
 	LGL_AudioGrainStream		GrainStream;
@@ -287,6 +288,7 @@ static	LGL_Image*			NoiseImage[NOISE_IMAGE_COUNT_256_64];
 	float				EntireWaveArrayFreqFactor[ENTIRE_WAVE_ARRAY_COUNT_MAX];
 	int				EntireWaveArrayFillIndex;
 	float				CachedLengthSeconds;
+	float				CachedVolumePeak;
 
 	LGL_Timer			Mode0BackspaceTimer;
 

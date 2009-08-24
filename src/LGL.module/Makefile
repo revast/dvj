@@ -259,6 +259,7 @@ $(OBJDIR_LIN)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
 $(OBJDIR_OSX)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
 	@echo "	$(CC_OSX) PrecompiledHeaders.gch"
 	@$(CC_OSX) $(CFLAGS_OSX) -x c++-header -c PrecompiledHeaders.pch -o $(OBJDIR_OSX)PrecompiledHeaders.h.gch
+	@rm -f ../PrecompiledHeaders.pch
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
 $(OBJDIR_W32)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch

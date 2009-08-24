@@ -35,8 +35,8 @@ VisualizerObj()
 	//AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
 
 	float left=0.0f;
-	float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX());
-	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_ScreenResolutionY());
+	float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX(0));
+	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_ScreenResolutionY(0));
 	float top=1.0f;
 
 	SetViewPortVisuals(left,right,bottom,top);
@@ -1079,15 +1079,14 @@ DrawVideos
 				Videos[videoNow]->GetFPS()
 			);
 
-			bool loaded=SoundsLoaded[videoNow];
-			float br=loaded ? 1.0f : 0.1f;
+			float br=1.0f;
 			LGL_GetFont().DrawString
 			(
 				r+0.05f*w,b+0.05f*h,0.1f*h,
 				br,br,br,1,
 				false,
 				0.75f,
-				loaded ? "%i" : "(%i)",
+				"%i",
 				Videos[videoNow]->GetFPSDisplayed()
 			);
 		}

@@ -189,7 +189,7 @@ VerifyMusicDir()
 				"> %s",
 				outputBuffer.GetString()
 			);
-			if(LGL_KeyStroke(SDLK_RETURN))
+			if(LGL_KeyStroke(LGL_KEY_RETURN))
 			{
 				if(dirExists)
 				{
@@ -202,7 +202,7 @@ VerifyMusicDir()
 				break;
 			}
 
-			if(LGL_KeyStroke(SDLK_ESCAPE)) exit(0);
+			if(LGL_KeyStroke(LGL_KEY_ESCAPE)) exit(0);
 
 			LGL_DelaySeconds(1.0f/60.0f-LGL_SecondsSinceThisFrame());	//Limit framerate to 60 fps
 			LGL_SwapBuffers();
@@ -218,7 +218,7 @@ void WarnVsync()
 	{
 		LGL_ProcessInput();
 		
-		if(LGL_KeyStroke(SDLK_ESCAPE))
+		if(LGL_KeyStroke(LGL_KEY_ESCAPE))
 		{
 			exit(-1);
 		}
@@ -337,14 +337,14 @@ void NextFrame()
 
 	if(ExitPrompt==false)
 	{
-		if(LGL_KeyStroke(SDLK_ESCAPE))
+		if(LGL_KeyStroke(LGL_KEY_ESCAPE))
 		{
 			ExitPrompt=true;
 		}
 	}
 	else
 	{
-		if(LGL_KeyStroke(SDLK_y))
+		if(LGL_KeyStroke(LGL_KEY_Y))
 		{
 			delete Visualizer;
 			delete Mixer;
@@ -352,8 +352,8 @@ void NextFrame()
 		}
 		if
 		(
-			LGL_KeyStroke(SDLK_n) ||
-			LGL_KeyStroke(SDLK_ESCAPE)
+			LGL_KeyStroke(LGL_KEY_N) ||
+			LGL_KeyStroke(LGL_KEY_ESCAPE)
 		)
 		{
 			ExitPrompt=false;
@@ -534,6 +534,18 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	}
 
 	Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+	if(LGL_ScreenCount()>1 && LGL_IsFullScreen())
+	{
+		LGL_SetActiveScreen(1);
+		Visualizer->SetViewPortVisuals(0.0f,1.0f,0.0f,1.0f);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		float left=0.0f;
+		float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX(0));
+		float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_ScreenResolutionY(0));
+		float top=1.0f;
+		Visualizer->SetViewPortVisuals(left,right,bottom,top);
+		LGL_SetActiveScreen(0);
+	}
 	/*
 	else if(EIGHT_WAY==false)
 	{
@@ -643,7 +655,7 @@ DrawLoadScreen()
 		logo = new LGL_Image("data/image/logo.png");
 	}
 	float height=0.03f;
-	float aspect = LGL_VideoAspectRatio();
+	float aspect = LGL_ScreenAspectRatio();
 	logo->DrawToScreen
 	(
 		0.5f-0.5f*height,	0.5f+0.5f*height,
@@ -708,7 +720,7 @@ int main(int argc, char** argv)
 		resX,
 		resY,
 		channels,
-		"dvj"
+		"ZEBBLERTRON"
 	);
 
 	LGL_MouseVisible(false);
@@ -748,6 +760,7 @@ int main(int argc, char** argv)
 	for(;;)
 	{
 		DrawFrame(false);
+		/*
 		if(VisualizerZoomOutPercentSmooth!=0.0f)
 		{
 			float left=0.0f;
@@ -765,6 +778,7 @@ int main(int argc, char** argv)
 			DrawFrame(true,VisualizerZoomOutPercentSmooth);
 			LGL_ViewPortScreen();
 		}
+		*/
 		NextFrame();
 		/*
 		LGL_DrawAudioOutBufferGraph

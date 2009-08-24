@@ -68,15 +68,18 @@ Main_DrawGlowLines
 	}
 	if(EIGHT_WAY==false)
 	{
-		float myX = quadrentSplitX + 1.0f/LGL_VideoResolutionX();
-		LGL_DrawLineToScreen
-		(
-			myX,quadrentSplitY,
-			myX,1,
-			2*coolR*glow,2*coolG*glow,2*coolB*glow,glow,
-			1,
-			false
-		);
+		float myX = quadrentSplitX + 1.0f/LGL_ScreenResolutionX(0);
+		if(myX<=1.0f)
+		{
+			LGL_DrawLineToScreen
+			(
+				myX,quadrentSplitY,
+				myX,1,
+				2*coolR*glow,2*coolG*glow,2*coolB*glow,glow,
+				1,
+				false
+			);
+		}
 	}
 
 	for(float a=1;a<7;a++)
@@ -628,7 +631,7 @@ turntable_DrawBPMLines
 	}
 }
 
-const long pointResolutionMax=1920+1;
+const long pointResolutionMax=(1920*2)+1;
 float arrayV[pointResolutionMax*2];
 float arrayC[pointResolutionMax*4];
 bool overdriven[pointResolutionMax];
@@ -691,7 +694,8 @@ Turntable_DrawWaveform
 	LGL_Image*	noiseImage256x64,
 	int		freqSensitiveMode,
 	float		warpPointSecondsTrigger,
-	bool		waveformRecordHold
+	bool		waveformRecordHold,
+	const char*	soundName
 )
 {
 	float coolR;
@@ -1584,7 +1588,7 @@ Turntable_DrawWaveform
 
 	//Draw Text
 	char tmp[2048];
-	strcpy(tmp,sound->GetPathShort());
+	strcpy(tmp,soundName);
 	if(strstr(tmp,".mp3"))
 	{
 		strstr(tmp,".mp3")[0]='\0';
