@@ -14122,6 +14122,10 @@ LoadToMemory()
 					secondsMetadataAlpha=MetadataFilledSize/(float)LGL_SOUND_METADATA_ENTRIES_PER_SECOND;
 				}
 			}
+			else
+			{
+				LGL_DelayMS(5);
+			}
 
 			// Free the data in the packet that was allocated by av_read_frame (but not the packet object itself)
 			LGL.AVCodecSemaphore->Lock("LGL_Sound::LoadToMemory()","Calling av_free_packet() (meh)");
