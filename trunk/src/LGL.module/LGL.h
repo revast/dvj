@@ -412,6 +412,37 @@ private:
 	bool		Promiscuous;
 };
 
+class LGL_ScopeLock
+{
+
+public:
+
+			LGL_ScopeLock
+			(
+				LGL_Semaphore&	semaphore,
+				float		timeoutSeconds=-1
+			);
+			LGL_ScopeLock
+			(
+				LGL_Semaphore*	semaphore,
+				float		timeoutSeconds=-1
+			);
+			~LGL_ScopeLock();
+
+	bool		GetLockObtained();
+
+private:
+
+	void		Init
+			(
+				LGL_Semaphore*	semaphore,
+				float		timeoutSeconds=-1
+			);
+
+	LGL_Semaphore*	Semaphore;
+	bool		LockObtained;
+};
+
 
 
 //Video
@@ -829,6 +860,9 @@ const	char*		GetPathShort() const;
 	void		IncrementReferenceCount();
 	void		DecrementReferenceCount();
 
+	long		GetTimestamp();
+	void		SetTimestamp(long timestamp);
+
 //private:
 
 	int		w;
@@ -859,6 +893,7 @@ const	char*		GetPathShort() const;
 	int		HeightInt;
 
 	int		ReferenceCount;
+	long		Timestamp;
 };
 
 class LGL_Animation
@@ -937,6 +972,7 @@ private:
 	LGL_Animation*	Animation;
 };
 
+/*
 class LGL_Video
 {
 
@@ -1026,6 +1062,113 @@ private:
 
 	bool			ThreadEndSignal;
 	SDL_Thread*		DecoderThread;
+};
+*/
+
+class lgl_FrameBuffer
+{
+
+public:
+
+				lgl_FrameBuffer();
+				~lgl_FrameBuffer();
+	
+	unsigned char*		SwapInNewBuffer
+				(
+					unsigned char*	buffer,
+					long		timestamp
+				);
+	unsigned char*		GetBuffer() const;
+	long			GetTimestamp() const;
+
+private:
+
+	unsigned char*		Buffer;
+	long			Timestamp;
+
+};
+
+class LGL_VideoDecoder
+{
+
+public:
+
+				LGL_VideoDecoder(const char* path);
+				~LGL_VideoDecoder();
+
+	void			Init();
+	void			UnloadVideo();
+	void			SetVideo(const char* path);
+	const char*		GetPath();
+	const char*		GetPathShort();
+	void			SetTime(float seconds);
+	float			GetTime();
+	float			GetLengthSeconds();
+	int			GetFPS();
+	int			GetFPSDisplayed();
+	int			GetFPSMissed();
+	LGL_Image*		GetImage();
+
+	//Thread Functions
+
+	void			MaybeLoadVideo();
+	void			MaybeDecodeImage();
+	void			MaybeRecycleBuffers();
+	bool			GetThreadTerminate();
+
+private:
+
+	char			Path[2048];
+	char			PathShort[2048];
+	char			PathNext[2048];
+	
+	int			FPS;
+	int			FPSDisplayed;
+	int			FPSMissed;
+	int			FPSDisplayedHitCounter;
+	int			FPSDisplayedMissCounter;
+	LGL_Timer		FPSDisplayedTimer;
+	LGL_Timer		FPSDisplayedConstTimeTimer;
+	float			LengthSeconds;
+	float			TimeSeconds;
+	float			TimeSecondsPrev;
+	long			TimestampNext;
+	long			TimestampDisplayed;
+
+	std::vector<lgl_FrameBuffer*>
+				FrameBufferReady;
+	LGL_Semaphore		FrameBufferReadySemaphore;
+	std::vector<lgl_FrameBuffer*>
+				FrameBufferRecycled;
+	int			FrameBufferAddRadius;
+
+	bool			ThreadTerminate;
+	SDL_Thread*		Thread;
+	LGL_Semaphore		PathSemaphore;
+
+	AVFormatContext*	FormatContext;
+	AVCodecContext*		CodecContext;
+	AVCodec*		Codec;
+	int			VideoStreamIndex;
+	AVFrame*		FrameNative;
+	AVFrame*		FrameRGB;
+	unsigned char*		BufferRGB;
+	unsigned int		BufferWidth;
+	unsigned int		BufferHeight;
+	unsigned int		BufferBytes;
+	SwsContext*		SwsConvertContext;
+
+	LGL_Image*		Image;
+
+private:
+
+	//Internal Functions
+
+	float			TimestampToSeconds(long timestamp);
+	long			SecondsToTimestamp(float seconds);
+	long			GetNextTimestampToDecode();
+	void			RecycleFrameBuffer(lgl_FrameBuffer* frameBuffer);
+	lgl_FrameBuffer*	GetRecycledFrameBuffer();
 };
 
 class LGL_VideoEncoder

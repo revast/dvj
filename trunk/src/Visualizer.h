@@ -57,15 +57,15 @@ public:
 	bool			IsVideoAvailable() const;
 	void			SetVideos
 				(
-					LGL_Video* video0,	float videoBrightness0,
-					LGL_Video* video1,	float videoBrightness1
+					LGL_VideoDecoder* video0,	float videoBrightness0,
+					LGL_VideoDecoder* video1,	float videoBrightness1
 				);
 	void			SetSoundsLoaded(bool loaded0, bool loaded1);
-	LGL_Video*		GetVideo(int which);
+	LGL_VideoDecoder*	GetVideo(int which);
 	void			SetFrequencySensitiveVideos
 				(
-					LGL_Video* video0l, LGL_Video* video0h, float volAve0, float volMax0, float freqFactor0, int mode0,
-					LGL_Video* video1l, LGL_Video* video1h, float volAve1, float volMax1, float freqFactor1, int mode1
+					LGL_VideoDecoder* video0l, LGL_VideoDecoder* video0h, float volAve0, float volMax0, float freqFactor0, int mode0,
+					LGL_VideoDecoder* video1l, LGL_VideoDecoder* video1h, float volAve1, float volMax1, float freqFactor1, int mode1
 				);
 	void			SetFrequencySensitiveGainEQ
 				(
@@ -110,11 +110,11 @@ private:
 
 	bool			SoundsLoaded[2];
 
-	LGL_Video*		Videos[2];
+	LGL_VideoDecoder*	Videos[2];
 	float			VideoBrightness[2];
 
 	int			FreqMode[2];
-	LGL_Video*		FreqVideos[4];
+	LGL_VideoDecoder*	FreqVideos[4];
 	float			FreqVolume[2];
 	float			FreqFreqFactor[2];
 	float			FreqGain[2];

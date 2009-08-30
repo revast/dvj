@@ -1451,8 +1451,6 @@ NextFrame
 			Sound->ReadyForDelete()
 		)
 		{
-			if(GetVideoFront()) GetVideoFront()->InvalidateImages();
-			if(GetVideoBack()) GetVideoBack()->InvalidateImages();
 			delete Sound;
 			Sound=NULL;
 			DatabaseEntryNow=NULL;
@@ -3011,7 +3009,7 @@ GetTrackListFileUpdates()
 	return(TrackListFileUpdates);
 }
 
-LGL_Video*
+LGL_VideoDecoder*
 TurntableObj::
 GetVideo()
 {
@@ -3030,28 +3028,28 @@ GetVideo()
 	}
 }
 
-LGL_Video*
+LGL_VideoDecoder*
 TurntableObj::
 GetVideoFront()
 {
 	return(VideoFront);
 }
 
-LGL_Video*
+LGL_VideoDecoder*
 TurntableObj::
 GetVideoBack()
 {
 	return(VideoBack);
 }
 
-LGL_Video*
+LGL_VideoDecoder*
 TurntableObj::
 GetVideoLo()
 {
 	return(VideoLo);
 }
 
-LGL_Video*
+LGL_VideoDecoder*
 TurntableObj::
 GetVideoHi()
 {
@@ -3731,7 +3729,7 @@ void
 TurntableObj::
 SwapVideos()
 {
-	LGL_Video* temp=VideoFront;
+	LGL_VideoDecoder* temp=VideoFront;
 	VideoFront=VideoBack;
 	VideoBack=temp;
 }
@@ -3750,7 +3748,7 @@ SelectNewVideo
 		Visualizer->GetNextVideoPathRandom(path);
 		if(VideoLo==NULL)
 		{
-			VideoLo=new LGL_Video(path);
+			VideoLo=new LGL_VideoDecoder(path);
 		}
 		else
 		{
@@ -3760,7 +3758,7 @@ SelectNewVideo
 		Visualizer->GetNextVideoPathRandom(path);
 		if(VideoHi==NULL)
 		{
-			VideoHi=new LGL_Video(path);
+			VideoHi=new LGL_VideoDecoder(path);
 		}
 		else
 		{
@@ -3787,7 +3785,7 @@ SelectNewVideo
 			{
 				if(VideoBack==NULL)
 				{
-					VideoBack=new LGL_Video(path);
+					VideoBack=new LGL_VideoDecoder(path);
 				}
 				else
 				{
@@ -3817,7 +3815,7 @@ SelectNewVideo
 
 			if(VideoBack==NULL)
 			{
-				VideoBack=new LGL_Video(videoFileName);
+				VideoBack=new LGL_VideoDecoder(videoFileName);
 			}
 			else
 			{
