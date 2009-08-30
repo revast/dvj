@@ -700,6 +700,7 @@ NextFrame
 		}
 
 		//Pick a video to advance
+		/*
 		if(highlighted!=-1)
 		{
 			if(Turntable[highlighted]->GetVideoFront())
@@ -707,6 +708,7 @@ NextFrame
 				Turntable[highlighted]->GetVideoFront()->SetPrimaryDecoder();
 			}
 		}
+		*/
 
 		for(int i=0;i<2;i++)
 		{
@@ -728,8 +730,8 @@ NextFrame
 		float volMax[2];
 		float freqFactor[2];
 		float peak[2];
-		LGL_Video* vidBack[2];
-		LGL_Video* vidFront[2];
+		LGL_VideoDecoder* vidBack[2];
+		LGL_VideoDecoder* vidFront[2];
 		int mode[2];
 		float eqLo[2];
 		float eqHi[2];

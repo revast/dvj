@@ -75,11 +75,11 @@ public:
 
 	std::vector<char*>		GetTrackListFileUpdates();
 
-	LGL_Video*			GetVideo();
-	LGL_Video*			GetVideoFront();
-	LGL_Video*			GetVideoBack();
-	LGL_Video*			GetVideoLo();
-	LGL_Video*			GetVideoHi();
+	LGL_VideoDecoder*		GetVideo();
+	LGL_VideoDecoder*		GetVideoFront();
+	LGL_VideoDecoder*		GetVideoBack();
+	LGL_VideoDecoder*		GetVideoLo();
+	LGL_VideoDecoder*		GetVideoHi();
 	float				GetVideoTimeSeconds();
 	bool				GetVideoSolo();
 	float				GetTimeSeconds();
@@ -240,10 +240,10 @@ static	VisualizerObj*			Visualizer;
 
 	std::vector<char*>		TrackListFileUpdates;
 
-	LGL_Video*			VideoFront;
-	LGL_Video*			VideoBack;
-	LGL_Video*			VideoLo;
-	LGL_Video*			VideoHi;
+	LGL_VideoDecoder*		VideoFront;
+	LGL_VideoDecoder*		VideoBack;
+	LGL_VideoDecoder*		VideoLo;
+	LGL_VideoDecoder*		VideoHi;
 	float				VideoSwitchInterval;
 	float				VideoOffsetSeconds;
 	float				VideoAdvanceRate;

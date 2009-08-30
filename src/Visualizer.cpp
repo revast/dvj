@@ -151,12 +151,12 @@ NextFrame
 	//Frequency-sensitive video mixing
 	for(int tt=0;tt<2;tt++)
 	{
-		LGL_Video* vidL=FreqVideos[tt*2+0];
-		LGL_Video* vidH=FreqVideos[tt*2+1];
+		LGL_VideoDecoder* vidL=FreqVideos[tt*2+0];
+		LGL_VideoDecoder* vidH=FreqVideos[tt*2+1];
 		for(int a=0;a<2;a++)
 		{
 			float speedFactor=(a==0) ? 1.0f : 4.0f;
-			LGL_Video* vid = (a==0) ? vidL : vidH;
+			LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
 			if(vid)
 			{
 				vid->SetTime(vid->GetTime()+speedFactor*(1.0f/60.0f));
@@ -763,10 +763,10 @@ void
 VisualizerObj::
 SetVideos
 (
-	LGL_Video*	video0,
-	float		videoBrightness0,
-	LGL_Video*	video1,
-	float		videoBrightness1
+	LGL_VideoDecoder*	video0,
+	float			videoBrightness0,
+	LGL_VideoDecoder*	video1,
+	float			videoBrightness1
 )
 {
 	Videos[0]=video0;
@@ -787,7 +787,7 @@ SetSoundsLoaded
 	SoundsLoaded[1]=loaded1;
 }
 
-LGL_Video*
+LGL_VideoDecoder*
 VisualizerObj::
 GetVideo
 (
@@ -801,8 +801,8 @@ void
 VisualizerObj::
 SetFrequencySensitiveVideos
 (
-	LGL_Video* video0l, LGL_Video* video0h, float volAve0, float volMax0, float freqFactor0, int mode0,
-	LGL_Video* video1l, LGL_Video* video1h, float volAve1, float volMax1, float freqFactor1, int mode1
+	LGL_VideoDecoder* video0l, LGL_VideoDecoder* video0h, float volAve0, float volMax0, float freqFactor0, int mode0,
+	LGL_VideoDecoder* video1l, LGL_VideoDecoder* video1h, float volAve1, float volMax1, float freqFactor1, int mode1
 )
 {
 	FreqVideos[0]=video0l;
@@ -816,7 +816,7 @@ SetFrequencySensitiveVideos
 	//See if we should time-jump in any of our vids
 	for(int a=0;a<4;a++)
 	{
-		LGL_Video* vid=FreqVideos[a];
+		LGL_VideoDecoder* vid=FreqVideos[a];
 		if(vid)
 		{
 			bool getHi=a%2;
@@ -1012,12 +1012,12 @@ DrawVideos
 	{
 		//Frequency-sensitive video mixing
 
-		LGL_Video* vidL=FreqVideos[videoNow*2+0];
-		LGL_Video* vidH=FreqVideos[videoNow*2+1];
+		LGL_VideoDecoder* vidL=FreqVideos[videoNow*2+0];
+		LGL_VideoDecoder* vidH=FreqVideos[videoNow*2+1];
 
 		for(int a=0;a<2;a++)
 		{
-			LGL_Video* vid = (a==0) ? vidL : vidH;
+			LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
 			if(vid)
 			{
 				float vol = LGL_Min(1,FreqVolume[videoNow]*FreqGain[videoNow]);
@@ -1026,9 +1026,13 @@ DrawVideos
 				float bright = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
 				if(fullBrightness==false) bright*=VideoBrightness[videoNow];
 
-				LGL_Image* image = vid->LockImage(EIGHT_WAY ? !preview : preview);
+				LGL_Image* image = vid->GetImage();//EIGHT_WAY ? !preview : preview);
 				{
-					if(image)
+					if
+					(
+						image &&
+						image->GetTimestamp()!=-1
+					)
 					{
 						while(bright>0.0f)
 						{
@@ -1045,15 +1049,18 @@ DrawVideos
 						}
 					}
 				}
-				vid->UnlockImage(image);
 			}
 		}
 	}
 	else if(Videos[videoNow])
 	{
 		float bright = fullBrightness ? 1.0f : VideoBrightness[videoNow];
-		LGL_Image* image=Videos[videoNow]->LockImage(EIGHT_WAY ? !preview : preview);
-		if(image!=NULL)
+		LGL_Image* image=Videos[videoNow]->GetImage();//EIGHT_WAY ? !preview : preview);
+		if
+		(
+			image!=NULL &&
+			image->GetTimestamp()!=-1
+		)
 		{
 			image->DrawToScreen
 			(
@@ -1065,7 +1072,6 @@ DrawVideos
 				preview?1.0f:0.0f
 			);
 		}
-		Videos[videoNow]->UnlockImage(image);
 
 		if(preview)
 		{
@@ -1075,7 +1081,7 @@ DrawVideos
 				1,1,1,1,
 				false,
 				0.75f,
-				"%.0f",
+				"%i",
 				Videos[videoNow]->GetFPS()
 			);
 
@@ -1089,9 +1095,22 @@ DrawVideos
 				"%i",
 				Videos[videoNow]->GetFPSDisplayed()
 			);
+
+			if(Videos[videoNow]->GetFPSMissed())
+			{
+				LGL_GetFont().DrawString
+				(
+					r+0.25f*w,b+0.05f*h,0.1f*h,
+					br,0,0,1,
+					false,
+					0.75f,
+					"(%i)",
+					Videos[videoNow]->GetFPSMissed()
+				);
+			}
 		}
 
-		bool videoReady = Videos[videoNow]->GetImageDecodedSinceVideoChange();
+		bool videoReady = true;//Videos[videoNow]->GetImageDecodedSinceVideoChange();
 		if(videoReady)
 		{
 			NoiseFactor[videoNow]=LGL_Max(0.0f,NoiseFactor[videoNow]-4.0f*LGL_SecondsSinceLastFrame());
@@ -1115,6 +1134,7 @@ DrawVideos
 			);
 		}
 
+		/*
 		float secondsSinceVideoChange = Videos[videoNow]->GetSecondsSinceVideoChange();
 		if(secondsSinceVideoChange<0.25f)
 		{
@@ -1128,6 +1148,7 @@ DrawVideos
 				0.0f
 			);
 		}
+		*/
 
 		ForceVideoToBackOfRandomQueue(Videos[videoNow]->GetPathShort());
 	}

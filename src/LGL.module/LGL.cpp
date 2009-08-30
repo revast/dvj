@@ -1616,6 +1616,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	av_register_all();
 	avcodec_init(); 
 	avcodec_register_all();
+	av_log_set_level(AV_LOG_WARNING);	//QUIET, ERROR, WARNING, DEBUG
 
 	//bool audioIn=inAudioChannels < 0;
 	inAudioChannels=abs(inAudioChannels);
@@ -5122,6 +5123,8 @@ LGL_Image
 
 	LinearInterpolation=inLinearInterpolation;
 	PixelBufferEnable=true;
+	PixelBufferObjectFrontGL=0;
+	PixelBufferObjectBackGL=0;
 
 	if(loadToGLTexture)
 	{
@@ -5135,6 +5138,7 @@ LGL_Image
 	}
 
 	ReferenceCount=0;
+	Timestamp=-1;
 }
 
 LGL_Image::
@@ -5160,86 +5164,106 @@ LGL_Image
 
 	//Load via SDL_CreateRGBSurfaceFrom to an SDL_Surface
 
-	SDL_Surface *mySDL_Surface1=SDL_CreateRGBSurfaceFrom
-	(
-		data,
-		width,height,8*bytesperpixel,
-		width*bytesperpixel,
-		0x000000FF,
-		0x0000FF00,
-		0x00FF0000,
-		0x00000000
-	);
-	if(mySDL_Surface1==NULL)
+	SDL_Surface* mySDL_Surface1=NULL;
+	if(data)
 	{
-		printf
+		mySDL_Surface1=SDL_CreateRGBSurfaceFrom
 		(
-			"LGL_Image::LGL_Image(): Error loading '%s' to an SDL_Surface...\n",
-			Path
+			data,
+			width,height,8*bytesperpixel,
+			width*bytesperpixel,
+			0x000000FF,
+			0x0000FF00,
+			0x00FF0000,
+			0x00000000
 		);
-		assert(false);
+		if(mySDL_Surface1==NULL)
+		{
+			printf
+			(
+				"LGL_Image::LGL_Image(): Error loading '%s' to an SDL_Surface...\n",
+				Path
+			);
+			assert(false);
+		}
 	}
 
-	AlphaChannel=mySDL_Surface1->flags & SDL_SRCALPHA;
+	AlphaChannel=bytesperpixel==4;//mySDL_Surface1->flags & SDL_SRCALPHA;
 	PixelBufferEnable=true;
+	PixelBufferObjectFrontGL=0;
+	PixelBufferObjectBackGL=0;
 
 	//Convert mySDL_Surface1 to the desired format for SDL_Surface2
 
-	SDL_PixelFormat DesiredFormat;
-	DesiredFormat.palette=NULL;
-	DesiredFormat.BitsPerPixel=32;
-	DesiredFormat.BytesPerPixel=4;
-	DesiredFormat.Rmask=0x000000FF;
-	DesiredFormat.Gmask=0x0000FF00;
-	DesiredFormat.Bmask=0x00FF0000;
-	DesiredFormat.Amask=0xFF000000;
-	DesiredFormat.Rshift=0;
-	DesiredFormat.Gshift=0;
-	DesiredFormat.Bshift=0;
-	DesiredFormat.Ashift=0;
-	DesiredFormat.Rloss=0;
-	DesiredFormat.Gloss=0;
-	DesiredFormat.Bloss=0;
-	DesiredFormat.Aloss=0;
-	//DesiredFormat.colorkey=0;
-	//DesiredFormat.alpha=255;
-
-	SurfaceSDL=SDL_ConvertSurface(mySDL_Surface1,&DesiredFormat,SDL_SWSURFACE);
-	if(SurfaceSDL==NULL)
+	if(mySDL_Surface1)
 	{
-		printf
-		(
-			"LGL_Image::LGL_Image(): Error converting '%s' to our desired format (1)...\n",
-			Path
-		);
-		printf("SDL_Error: '%s'\n",SDL_GetError());
-		assert(SurfaceSDL);
+		SDL_PixelFormat DesiredFormat;
+		DesiredFormat.palette=NULL;
+		DesiredFormat.BitsPerPixel=32;
+		DesiredFormat.BytesPerPixel=4;
+		DesiredFormat.Rmask=0x000000FF;
+		DesiredFormat.Gmask=0x0000FF00;
+		DesiredFormat.Bmask=0x00FF0000;
+		DesiredFormat.Amask=0xFF000000;
+		DesiredFormat.Rshift=0;
+		DesiredFormat.Gshift=0;
+		DesiredFormat.Bshift=0;
+		DesiredFormat.Ashift=0;
+		DesiredFormat.Rloss=0;
+		DesiredFormat.Gloss=0;
+		DesiredFormat.Bloss=0;
+		DesiredFormat.Aloss=0;
+		//DesiredFormat.colorkey=0;
+		//DesiredFormat.alpha=255;
+
+		SurfaceSDL=SDL_ConvertSurface(mySDL_Surface1,&DesiredFormat,SDL_SWSURFACE);
+		if(SurfaceSDL==NULL)
+		{
+			printf
+			(
+				"LGL_Image::LGL_Image(): Error converting '%s' to our desired format (1)...\n",
+				Path
+			);
+			printf("SDL_Error: '%s'\n",SDL_GetError());
+			assert(SurfaceSDL);
+		}
+	}
+	else
+	{
+		SurfaceSDL=NULL;
 	}
 
-	w=SurfaceSDL->w;
-	h=SurfaceSDL->h;
+	w=width;//SurfaceSDL->w;
+	h=height;//SurfaceSDL->h;
 	TexW=LGL_NextPowerOfTwo(w);
 	TexH=LGL_NextPowerOfTwo(h);
 
 	TextureGL=0;
 	TextureGLMine=true;
 	FrameBufferImage=false;
-	LoadSurfaceToTexture(LinearInterpolation);
-	UpdateTexture
-	(
-		w,
-		h,
-		bytesperpixel,
-		data,
-		LinearInterpolation,
-		PathShort
-	);
+	if(data)
+	{
+		LoadSurfaceToTexture(LinearInterpolation);
+		UpdateTexture
+		(
+			w,
+			h,
+			bytesperpixel,
+			data,
+			LinearInterpolation,
+			PathShort
+		);
+	}
 
 	//Delete temporary SDL_Surface
 
-	SDL_FreeSurface(mySDL_Surface1);
+	if(mySDL_Surface1)
+	{
+		SDL_FreeSurface(mySDL_Surface1);
+	}
 
 	ReferenceCount=0;
+	Timestamp=-1;
 }
 
 LGL_Image::
@@ -5280,6 +5304,8 @@ LGL_Image
 
 	AlphaChannel=false;
 	PixelBufferEnable=true;
+	PixelBufferObjectFrontGL=0;
+	PixelBufferObjectBackGL=0;
 
 	SurfaceSDL=NULL;
 
@@ -5313,6 +5339,7 @@ LGL_Image
 	FrameBufferUpdate();
 
 	ReferenceCount=0;
+	Timestamp=-1;
 }
 
 LGL_Image::
@@ -6151,17 +6178,8 @@ LoadSurfaceToTexture
 	int	loadToExistantGLTextureY
 )
 {
-	if(SurfaceSDL==NULL)
-	{
-		printf
-		(
-			"LGL_Image::LGL_Image(): '%s' can't yet be treated as an SDL_Surface...\n",
-			Path
-		);
-		assert(false);
-	}
 	//Check to see if we already have a texture loaded...
-	
+
 	if(TextureGL!=0)
 	{
 		//We already have a texture loaded. Axe it.
@@ -6169,7 +6187,6 @@ LoadSurfaceToTexture
 	}
 
 	//Load from SurfaceSDL to TextureGL
-	
 	if(loadToExistantGLTexture<=0)
 	{
 		TextureGLMine=true;
@@ -6187,18 +6204,22 @@ LoadSurfaceToTexture
 			NULL
 		);
 
-		glTexSubImage2D
-		(
-			GL_TEXTURE_2D,
-			0,					//Level of Detail=0
-			0,					//X-Offset
-			0,					//Y-Offset
-			w,
-			h,
-			GL_RGBA,
-			GL_UNSIGNED_BYTE,
-			SurfaceSDL->pixels
-		);
+		if(SurfaceSDL)
+		{
+			glTexSubImage2D
+			(
+				GL_TEXTURE_2D,
+				0,					//Level of Detail=0
+				0,					//X-Offset
+				0,					//Y-Offset
+				w,
+				h,
+				GL_RGBA,
+				GL_UNSIGNED_BYTE,
+				SurfaceSDL->pixels
+			);
+		}
+
 		if(LinearInterpolation)
 		{
 			glTexParameteri
@@ -6255,25 +6276,22 @@ LoadSurfaceToTexture
 		TextureGL=loadToExistantGLTexture;
 		TextureGLMine=false;
 		glBindTexture(GL_TEXTURE_2D,TextureGL);
-		glTexSubImage2D
-		(
-			GL_TEXTURE_2D,
-			0,				//Level of Detail=0
-			loadToExistantGLTextureX,	//X-Offset
-			loadToExistantGLTextureY,	//Y-Offset
-			w,
-			h,
-			GL_RGBA,
-			GL_UNSIGNED_BYTE,
-			SurfaceSDL->pixels
-		);
+		if(SurfaceSDL)
+		{
+			glTexSubImage2D
+			(
+				GL_TEXTURE_2D,
+				0,				//Level of Detail=0
+				loadToExistantGLTextureX,	//X-Offset
+				loadToExistantGLTextureY,	//Y-Offset
+				w,
+				h,
+				GL_RGBA,
+				GL_UNSIGNED_BYTE,
+				SurfaceSDL->pixels
+			);
+		}
 	}
-
-	/*
-	assert(SurfaceSDL!=NULL);
-	SDL_FreeSurface(SurfaceSDL);
-	SurfaceSDL=NULL;
-	*/
 
 	GLsizei size = w*h*(AlphaChannel?4:3);
 
@@ -6305,8 +6323,8 @@ LoadSurfaceToTexture
 	}
 	else
 	{
-		PixelBufferObjectFrontGL=-1;
-		PixelBufferObjectBackGL=-1;
+		PixelBufferObjectFrontGL=0;
+		PixelBufferObjectBackGL=0;
 	}
 }
 
@@ -6346,13 +6364,13 @@ UpdateTexture
 {
 	if(x!=w)
 	{
-		printf("x!=w (%i vs %i)\n",x,w);
-		assert(x==w);
+		//printf("x!=w (%i vs %i)\n",x,w);
+		w=LGL_Min(x,TexW);
 	}
 	if(y!=h)
 	{
-		printf("y!=h (%i vs %i)\n",y,h);
-		assert(y==h);
+		//printf("y!=h (%i vs %i)\n",y,h);
+		h=LGL_Min(y,TexH);
 	}
 	assert(bytesperpixel==3 || bytesperpixel==4);
 	assert(data!=NULL);
@@ -6368,16 +6386,41 @@ UpdateTexture
 		sprintf(Path,"!%s",name);
 		sprintf(PathShort,"!%s",name);
 	}
-
+/*
+	if(PixelBufferObjectFrontGL==0)
+	{
+		GLsizei size = w*h*(AlphaChannel?4:3);
+		gl2GenBuffers(1,&PixelBufferObjectFrontGL);
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
+		gl2BufferData
+		(
+			GL_PIXEL_UNPACK_BUFFER,
+			(GLsizeiptr)(&size),
+			NULL,
+			GL_STREAM_DRAW
+		);
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+	}
+*/
 	bool pboReady = gl2IsBuffer(PixelBufferObjectFrontGL);
 
 	if(TextureGL==0)
 	{
-		return;
+		//Though surface might be quite undefined at this point... Hmm...
+		LoadSurfaceToTexture(LinearInterpolation);
 	}
 
 	glBindTexture(GL_TEXTURE_2D,TextureGL);
-	if(pboReady) gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
+	if(pboReady)
+	{
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
+		gl2BufferData(GL_PIXEL_UNPACK_BUFFER, w*h*bytesperpixel, data, GL_STREAM_DRAW);
+	}
+	else
+	{
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+	}
+
 	glTexSubImage2D
 	(
 		GL_TEXTURE_2D,
@@ -6393,22 +6436,26 @@ UpdateTexture
 
 	if(pboReady)
 	{
-		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
-		gl2BufferData(GL_PIXEL_UNPACK_BUFFER, w*h*bytesperpixel, 0, GL_STREAM_DRAW);
+		//gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
+		//gl2BufferData(GL_PIXEL_UNPACK_BUFFER, w*h*bytesperpixel, 0, GL_STREAM_DRAW);
+		/*
 		GLubyte* pbo = (GLubyte*)gl2MapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
 		if(pbo)
 		{
 			memcpy(pbo,data,w*h*bytesperpixel);
 			gl2UnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		}
+		*/
 	}
 
 	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
 
 	//Swap
+	/*
 	GLuint tmp=PixelBufferObjectBackGL;
 	PixelBufferObjectBackGL=PixelBufferObjectFrontGL;
 	PixelBufferObjectFrontGL=tmp;
+	*/
 }
 
 void
@@ -6998,6 +7045,23 @@ DecrementReferenceCount()
 	assert(ReferenceCount>=0);
 }
 
+long
+LGL_Image::
+GetTimestamp()
+{
+	return(Timestamp);
+}
+
+void
+LGL_Image::
+SetTimestamp
+(
+	long	timestamp
+)
+{
+	Timestamp=timestamp;
+}
+
 int
 ThreadAnimationLoader
 (
@@ -7469,6 +7533,8 @@ SetAnimation
 	return(true);
 }
 
+#if 0
+
 LGL_Video* LGL_Video::PrimaryDecoder=NULL;
 LGL_Semaphore* LGL_Video::PrimaryDecoderSemaphore=NULL;
 
@@ -7722,7 +7788,7 @@ LockImage
 
 			if(ImageBackSemaphore->Lock("Main","Inside LGL_Video::LockImage() (3)",false)==false)
 			{
-				//We didn't get the lock, and we're not goint to wait.
+				//We didn't get the lock, and we're not going to wait.
 				BufferRGBFrontSemaphore->Unlock();
 				ImageFrontSemaphore->Lock("Main","Inside LGL_Video::LockImage() (4)");
 				return(ImageFront);
@@ -8188,7 +8254,7 @@ MaybeChangeVideo()
 		Codec=avcodec_find_decoder(CodecContext->codec_id);
 		if(Codec==NULL)
 		{
-			printf("LGL_Video::MaybeChangeVideo(): Couldn't find codec for '%s'\n",Path);
+			printf("LGL_Video::MaybeChangeVideo(): Couldn't find codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
 			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
@@ -8341,6 +8407,798 @@ SwapImages
 	}
 	if(frontLocked==false) ImageFrontSemaphore->Unlock();
 }
+#endif
+
+bool lgl_FrameBufferSortPredicate(const lgl_FrameBuffer* d1, const lgl_FrameBuffer* d2)
+{
+	  return(d1->GetTimestamp() < d2->GetTimestamp());
+}
+
+lgl_FrameBuffer::
+lgl_FrameBuffer()
+{
+	Buffer = (unsigned char*)malloc(1920*1080*4);
+	Timestamp=-1;
+}
+
+lgl_FrameBuffer::
+~lgl_FrameBuffer()
+{
+	free(Buffer);
+	Buffer=NULL;
+	Timestamp=-1;
+}
+
+unsigned char*
+lgl_FrameBuffer::
+SwapInNewBuffer
+(
+	unsigned char*	buf,
+	long		timestamp
+)
+{
+	unsigned char* ret=Buffer;
+	Buffer=buf;;
+	Timestamp=timestamp;
+	return(ret);
+}
+
+unsigned char*
+lgl_FrameBuffer::
+GetBuffer()	const
+{
+	return(Buffer);
+}
+
+long
+lgl_FrameBuffer::
+GetTimestamp()	const
+{
+	return(Timestamp);
+}
+
+
+
+int
+lgl_video_decoder_thread
+(
+	void* ptr
+)
+{
+	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_DECODE,"LGL_VideoDecoder");
+	LGL_VideoDecoder* dec = (LGL_VideoDecoder*)ptr;
+
+	for(;;)
+	{
+		if(dec->GetThreadTerminate())
+		{
+			break;
+		}
+
+		dec->MaybeLoadVideo();
+		dec->MaybeDecodeImage();
+		dec->MaybeRecycleBuffers();
+
+		LGL_DelayMS(1);
+	}
+
+	return(0);
+}
+
+LGL_VideoDecoder::
+LGL_VideoDecoder
+(
+	const char* path
+) :
+	FrameBufferReadySemaphore("Path Semaphore"),
+	PathSemaphore("Path Semaphore")
+{
+	Init();
+	SetVideo(path);
+}
+
+LGL_VideoDecoder::
+~LGL_VideoDecoder()
+{
+	UnloadVideo();
+
+	ThreadTerminate=true;
+	LGL_ThreadWait(Thread);
+	Thread=NULL;
+}
+
+void
+LGL_VideoDecoder::
+Init()
+{
+	Path[0]='\0';
+	PathShort[0]='\0';
+	PathNext[0]='\0';
+
+	FPS=0;
+	FPSDisplayed=0;
+	FPSMissed=0;
+	FPSDisplayedHitCounter=0;
+	FPSDisplayedMissCounter=0;
+	LengthSeconds=0;
+	TimeSeconds=0;
+	TimeSecondsPrev=0;
+	TimestampNext=-1;
+
+	FrameBufferAddRadius=4;
+
+	FormatContext=NULL;
+	CodecContext=NULL;
+	Codec=NULL;
+	VideoStreamIndex=-1;
+	FrameNative=NULL;
+	FrameRGB=NULL;
+	BufferRGB=NULL;
+	BufferWidth=-1;
+	BufferHeight=-1;
+	BufferBytes=0;
+	SwsConvertContext=NULL;
+
+	Image = NULL;
+
+	ThreadTerminate=false;
+	Thread=LGL_ThreadCreate(lgl_video_decoder_thread,this);
+}
+
+void
+LGL_VideoDecoder::
+UnloadVideo()
+{
+	//
+}
+
+void
+LGL_VideoDecoder::
+SetVideo
+(
+	const char*	path
+)
+{
+	LGL_ScopeLock pathLock(PathSemaphore);
+	strcpy(PathNext,path);
+}
+
+const char*
+LGL_VideoDecoder::
+GetPath()
+{
+	return(Path);
+}
+
+const char*
+LGL_VideoDecoder::
+GetPathShort()
+{
+	return(PathShort);
+}
+
+void
+LGL_VideoDecoder::
+SetTime
+(
+	float	seconds
+)
+{
+	if(TimeSeconds!=seconds)
+	{
+		TimeSecondsPrev=TimeSeconds;
+		TimeSeconds=seconds;
+	}
+}
+
+float
+LGL_VideoDecoder::
+GetTime()
+{
+	return(TimeSeconds);
+}
+
+float
+LGL_VideoDecoder::
+GetLengthSeconds()
+{
+	return(LengthSeconds);
+}
+
+int
+LGL_VideoDecoder::
+GetFPS()
+{
+	return(FPS);
+}
+
+int
+LGL_VideoDecoder::
+GetFPSDisplayed()
+{
+	return(FPSDisplayed);
+}
+int
+LGL_VideoDecoder::
+GetFPSMissed()
+{
+	return(FPSMissed);
+}
+
+void
+LGL_VideoDecoder::
+MaybeLoadVideo()
+{
+	if(PathNext[0]=='\0')
+	{
+		return;
+	}
+
+	//PathNext => Path
+	{
+		LGL_ScopeLock pathLock(PathSemaphore);
+
+		if(LGL_FileExists(PathNext)==false)
+		{
+			PathNext[0]='\0';
+			return;
+		}
+
+		strcpy(Path,PathNext);
+		if(const char* lastSlash = strrchr(Path,'/'))
+		{
+			strcpy(PathShort,&(lastSlash[1]));
+		}
+		else
+		{
+			strcpy(PathShort,Path);
+		}
+
+		PathNext[0]='\0';
+	}
+
+	//Go for it!!
+
+	UnloadVideo();
+
+	LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+
+	//Open file
+	AVFormatContext* fc=NULL;
+	if(av_open_input_file(&fc, Path, NULL, 0, NULL)!=0)
+	{
+		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open '%s'\n",Path);
+		return;
+	}
+
+	//Find streams
+	if(av_find_stream_info(fc)<0)
+	{
+		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find streams for '%s'\n",Path);
+		return;
+	}
+
+	// Find the first video stream
+	for(unsigned int i=0; i<fc->nb_streams; i++)
+	{
+		if(fc->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO)
+		{
+			VideoStreamIndex=i;
+			break;
+		}
+	}
+	if(VideoStreamIndex==-1)
+	{
+		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find video stream for '%s' in %i streams\n",Path,fc->nb_streams);
+		return;
+	}
+
+	// Get a pointer to the codec context for the video stream
+	CodecContext=fc->streams[VideoStreamIndex]->codec;
+	FormatContext=fc;	//Only set this once fc is fully initialized
+
+	FPS=(int)ceilf(fc->streams[VideoStreamIndex]->time_base.den/(float)fc->streams[VideoStreamIndex]->time_base.num);
+	LengthSeconds=FormatContext->duration/(float)(AV_TIME_BASE);
+
+	// Find the decoder for the video stream
+	Codec=avcodec_find_decoder(CodecContext->codec_id);
+	if(Codec==NULL)
+	{
+		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
+		UnloadVideo();
+		return;
+	}
+
+	// Inform the codec that we can handle truncated bitstreams -- i.e.,
+	// bitstreams where frame boundaries can fall in the middle of packets
+	if(Codec->capabilities & CODEC_CAP_TRUNCATED)
+	{
+		CodecContext->flags|=CODEC_FLAG_TRUNCATED;
+	}
+
+	// Open codec
+	if(avcodec_open(CodecContext, Codec)<0)
+	{
+		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
+		UnloadVideo();
+		return;
+	}
+
+	FrameNative=avcodec_alloc_frame();
+	FrameRGB=avcodec_alloc_frame();
+
+	if(FrameNative==NULL || FrameRGB==NULL)
+	{
+		printf("LGL_Video::MaybeChangeVideo(): Couldn't open frames for '%s'\n",Path);
+		return;
+	}
+
+	// Determine required buffer size and pseudo-allocate buffer
+	BufferWidth=LGL_Min(1920,CodecContext->width);
+	BufferHeight=LGL_Min(1080,CodecContext->height);
+	unsigned int bufferBytesNew=avpicture_get_size
+	(
+		PIX_FMT_BGRA,
+		1920,//BufferWidth,
+		1080//BufferHeight
+	);
+
+	if(BufferBytes<bufferBytesNew)
+	{
+		if(BufferRGB)
+		{
+			delete BufferRGB;
+			BufferRGB=NULL;
+		}
+		BufferBytes=bufferBytesNew;
+	}
+
+	if(BufferRGB==NULL)
+	{
+		BufferRGB=new uint8_t[BufferBytes];
+	}
+
+	// Assign appropriate parts of buffer to image planes in FrameRGB
+	avpicture_fill
+	(
+		(AVPicture*)FrameRGB,
+		BufferRGB,
+		PIX_FMT_BGRA,
+		BufferWidth,
+		BufferHeight
+	);
+
+	SwsConvertContext = sws_getContext
+	(
+		//src
+		BufferWidth,
+		BufferHeight, 
+		CodecContext->pix_fmt, 
+		//dst
+		BufferWidth,
+		BufferHeight,
+		PIX_FMT_BGRA,
+		SWS_FAST_BILINEAR,
+		NULL,
+		NULL,
+		NULL
+	);
+	if(SwsConvertContext==NULL)
+	{
+		printf("LGL_VideoDecoder::MaybeLoadVideo(): NULL SwsConvertContext for '%s'\n",Path);
+		return;
+	}
+}
+
+void
+LGL_VideoDecoder::
+MaybeDecodeImage()
+{
+	if
+	(
+		FormatContext==NULL ||
+		CodecContext==NULL ||
+		FrameNative==NULL ||
+		FrameRGB==NULL
+	)
+	{
+		return;
+	}
+
+	//Find timestamp of image to add
+	long timestampTarget=GetNextTimestampToDecode();
+	if(timestampTarget==-1)
+	{
+		return;
+	}
+
+	//Seek to the appropriate frame...
+	if(TimestampNext!=timestampTarget)
+	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		av_seek_frame
+		(
+			FormatContext,
+			VideoStreamIndex,
+			timestampTarget,
+			AVSEEK_FLAG_ANY
+		);
+		TimestampNext=timestampTarget+1;
+	}
+
+	AVPacket Packet;
+	bool frameRead=false;
+	for(;;)
+	{
+		int result=0;
+		{
+			LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+			result = av_read_frame(FormatContext, &Packet);
+		}
+		if(result>=0)
+		{
+			// Is this a packet from the video stream?
+			if(Packet.stream_index==VideoStreamIndex)
+			{
+				// Decode video frame
+				int frameFinished=0;
+				{
+					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+					avcodec_decode_video
+					(
+						CodecContext,
+						FrameNative,
+						&frameFinished, 
+						Packet.data,
+						Packet.size
+					);
+				}
+
+				// Did we get a video frame?
+				if(frameFinished)
+				{
+					{
+						LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+						sws_scale
+						(
+							SwsConvertContext,
+							FrameNative->data,
+							FrameNative->linesize,
+							0, 
+							BufferHeight,
+							FrameRGB->data,
+							FrameRGB->linesize
+						);
+					}
+
+					frameRead=true;
+				}
+			}
+
+			// Free the packet that was allocated by av_read_frame
+			{
+				LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+				av_free_packet(&Packet);
+			}
+		}
+		else
+		{
+			break;
+		}
+
+		if(frameRead)
+		{
+			break;
+		}
+	}
+
+	//If we read a frame, put it into an lgl_FrameBuffer
+	if(frameRead)
+	{
+		//Prepare a framebuffer, and swap its buffer with BufferRGB
+		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
+		unsigned char* swappedOutBuffer = frameBuffer->SwapInNewBuffer
+		(
+			BufferRGB,
+			timestampTarget
+		);
+		BufferRGB=swappedOutBuffer;
+
+		//Update FrameRGB to point to the newly swapped BufferRGB.
+		avpicture_fill
+		(
+			(AVPicture*)FrameRGB,
+			BufferRGB,
+			PIX_FMT_BGRA,
+			BufferWidth,
+			BufferHeight
+		);
+
+		//Add framebuffer to FrameBufferReady, and sort.
+		{
+			LGL_ScopeLock lock(FrameBufferReadySemaphore);
+			FrameBufferReady.push_back(frameBuffer);
+			std::sort
+			(
+				FrameBufferReady.begin(),
+				FrameBufferReady.end(),
+				lgl_FrameBufferSortPredicate
+			);
+		}
+	}
+}
+
+void
+LGL_VideoDecoder::
+MaybeRecycleBuffers()
+{
+	LGL_ScopeLock lock(FrameBufferReadySemaphore);
+
+	long timestamp=SecondsToTimestamp(TimeSeconds);
+	long timestampLength=SecondsToTimestamp(LengthSeconds);
+	for(unsigned int a=0;a<FrameBufferReady.size();a++)
+	{
+		if
+		(
+			fabsf(timestamp-FrameBufferReady[a]->GetTimestamp())>FrameBufferAddRadius*2 &&
+			fabsf((timestamp-timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferAddRadius*2 &&
+			fabsf((timestamp+timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferAddRadius*2
+		)
+		{
+			FrameBufferRecycled.push_back(FrameBufferReady[a]);
+			FrameBufferReady.erase
+			(
+				(std::vector<lgl_FrameBuffer*>::iterator)
+				(&(FrameBufferReady[a]))
+			);
+		}
+	}
+}
+
+bool
+LGL_VideoDecoder::
+GetThreadTerminate()
+{
+	return(ThreadTerminate);
+}
+
+long
+LGL_VideoDecoder::
+SecondsToTimestamp
+(
+	float	seconds
+)
+{
+	if(CodecContext==NULL)
+	{
+		return(0);
+	}
+	else
+	{
+		long timestamp = (long)floorf(seconds*FormatContext->streams[VideoStreamIndex]->time_base.den/(float)FormatContext->streams[VideoStreamIndex]->time_base.num);
+		return(timestamp);
+	}
+}
+
+long
+LGL_VideoDecoder::
+GetNextTimestampToDecode()
+{
+	LGL_ScopeLock lock(FrameBufferReadySemaphore);
+
+	long timestampNow = SecondsToTimestamp(TimeSeconds);
+	long timestampLength = SecondsToTimestamp(LengthSeconds);
+
+	//TODO: Search direction of playback first
+
+	//First search forwards
+	int frameBufferIndex=0;
+	long timestampFinal = timestampNow+FrameBufferAddRadius;
+	for(long a=timestampNow;a<timestampFinal;a++)
+	{
+		//Handle wrap-around
+		long timestampFind=a;
+		while(timestampFind>timestampLength)
+		{
+			timestampFind-=timestampLength;
+			frameBufferIndex=0;
+		}
+
+		bool found=false;
+		for(unsigned int b=frameBufferIndex;b<FrameBufferReady.size();b++)
+		{
+			frameBufferIndex++;
+			long timestampImage=FrameBufferReady[b]->GetTimestamp();
+			if(timestampFind<timestampImage)
+			{
+				return(timestampFind);
+			}
+			else if(timestampFind==timestampImage)
+			{
+				found=true;
+				break;
+			}
+			else //timestampFind>timestampImage
+			{
+				continue;
+			}
+		}
+
+		if(found==false)
+		{
+			return(timestampFind);
+		}
+	}
+
+	//Second search backwards
+	frameBufferIndex=FrameBufferReady.size()-1;
+	timestampFinal = timestampNow-FrameBufferAddRadius;
+	for(long a=timestampNow-1;a>timestampFinal;a--)
+	{
+		//Handle wrap-around
+		long timestampFind=a;
+		while(timestampFind<0)
+		{
+			timestampFind+=timestampLength;
+			frameBufferIndex=FrameBufferReady.size()-1;
+		}
+
+		bool found=false;
+		for(int b=frameBufferIndex;b>=0;b--)
+		{
+			frameBufferIndex--;
+			long timestampImage=FrameBufferReady[b]->GetTimestamp();
+			if(timestampFind>timestampImage)
+			{
+				return(timestampFind);
+			}
+			else if(timestampFind==timestampImage)
+			{
+				found=true;
+				break;
+			}
+			else //timestampFind<timestampImage
+			{
+				continue;
+			}
+		}
+
+		if(found==false)
+		{
+			return(timestampFind);
+		}
+	}
+
+	return(-1);
+}
+
+void
+LGL_VideoDecoder::
+RecycleFrameBuffer
+(
+	lgl_FrameBuffer*	frameBuffer
+)
+{
+	FrameBufferRecycled.push_back(frameBuffer);
+}
+
+lgl_FrameBuffer*
+LGL_VideoDecoder::
+GetRecycledFrameBuffer()
+{
+	if(FrameBufferRecycled.size()>0)
+	{
+		lgl_FrameBuffer* frameBuffer = FrameBufferRecycled[FrameBufferRecycled.size()-1];
+		FrameBufferRecycled.pop_back();
+		return(frameBuffer);
+	}
+	else
+	{
+		lgl_FrameBuffer* frameBuffer = new lgl_FrameBuffer;
+		return(frameBuffer);
+	}
+}
+
+LGL_Image*
+LGL_VideoDecoder::
+GetImage()
+{
+	//Ensure Image Exists
+	if(Image==NULL)
+	{
+		Image = new LGL_Image
+		(
+			1920,
+			1080,
+			4,
+			NULL,
+			true,
+			"Empty LGL_VideoDecoder"
+		);
+	}
+
+	long timestamp = SecondsToTimestamp(TimeSeconds);
+	lgl_FrameBuffer* buffer=NULL;
+
+	{
+		LGL_ScopeLock lock(FrameBufferReadySemaphore);
+
+		//Early out if nothing decoded...
+		if(FrameBufferReady.size()==0)
+		{
+			return(Image);
+		}
+
+		//Find the nearest framebuffer
+		if(timestamp<FrameBufferReady[0]->GetTimestamp())
+		{
+			FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+			buffer=FrameBufferReady[0];
+		}
+		else if(timestamp>FrameBufferReady[FrameBufferReady.size()-1]->GetTimestamp())
+		{
+			FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+			buffer=FrameBufferReady[FrameBufferReady.size()-1];
+		}
+		else
+		{
+			for(unsigned int a=0;a<FrameBufferReady.size();a++)
+			{
+				if(timestamp==FrameBufferReady[a]->GetTimestamp())
+				{
+					FPSDisplayedHitCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+					buffer=FrameBufferReady[a];
+				}
+			}
+		}
+
+		if(buffer==NULL)
+		{
+			printf("strange... %li\n",timestamp);
+			for(unsigned int a=0;a<FrameBufferReady.size();a++)
+			{
+				printf("\t[%i]: %li\n",a,FrameBufferReady[a]->GetTimestamp());
+			}
+			printf("\n");
+			return(Image);
+		}
+
+		//Is our image already up to date?
+		if(Image->GetTimestamp()==buffer->GetTimestamp())
+		{
+			TimestampDisplayed=timestamp;
+			return(Image);
+		}
+	}
+
+	//Update Image
+	char name[1024];
+	sprintf(name,"%s|%li\n",PathShort,timestamp);
+	Image->UpdateTexture
+	(
+		BufferWidth,
+		BufferHeight,
+		4,
+		buffer->GetBuffer(),
+		true,
+		name
+	);
+	Image->SetTimestamp(timestamp);
+	TimestampDisplayed=timestamp;
+
+	if(FPSDisplayedTimer.SecondsSinceLastReset()>=1.0f)
+	{
+		FPSDisplayed=FPSDisplayedHitCounter;
+		FPSMissed=FPSDisplayedMissCounter;
+		FPSDisplayedHitCounter=0;
+		FPSDisplayedMissCounter=0;
+		FPSDisplayedTimer.Reset();
+	}
+
+	return(Image);
+}
+
+
 
 LGL_VideoEncoder::
 LGL_VideoEncoder
@@ -8467,7 +9325,7 @@ LGL_VideoEncoder
 		SrcAudioCodec=avcodec_find_decoder(SrcAudioCodecContext->codec_id);
 		if(SrcAudioCodec==NULL)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio codec for '%s'\n",src);
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio codec for '%s'. Codec = '%s'\n",src,SrcAudioCodecContext->codec_name);
 			SrcAudioCodecContext=NULL;
 			LGL.AVCodecSemaphore->Unlock();
 			return;
@@ -13968,7 +14826,7 @@ LoadToMemory()
 		codec=avcodec_find_decoder(codecContext->codec_id);
 		if(codec==NULL)
 		{
-			printf("LGL_Sound::LoadToMemory(): Couldn't find codec for '%s'\n",Path);
+			printf("LGL_Sound::LoadToMemory: Couldn't find audio codec for '%s'. Codec = '%s'\n",Path,codecContext->codec_name);
 			BadFile=true;
 			LGL.AVCodecSemaphore->Unlock();
 			return;
@@ -24950,17 +25808,6 @@ Lock
 	}
 	else
 	{
-		if
-		(
-			0 &&
-			IsLocked() &&
-			strstr(note,"(meh)")==NULL
-		)
-		{
-			printf("LGL_Semaphore::Lock('%s'):\n\tThread '%s' must wait. Note: '%s'\n",Name,threadName,note);
-			printf("\tCurrent lock owner: '%s'. Note: '%s'\n",LockOwner,Note);
-		}
-
 		if(timeoutSeconds<0)
 		{
 			ret = (SDL_SemWait(Sem)==0);
@@ -25017,7 +25864,74 @@ Value()
 
 
 
+LGL_ScopeLock::
+LGL_ScopeLock
+(
+	LGL_Semaphore&	semaphore,
+	float		timeoutSeconds
+)
+{
+	Init
+	(
+		&semaphore,
+		timeoutSeconds
+	);
+}
 
+LGL_ScopeLock::
+LGL_ScopeLock
+(
+	LGL_Semaphore*	semaphore,
+	float		timeoutSeconds
+)
+{
+	Init
+	(
+		semaphore,
+		timeoutSeconds
+	);
+}
+
+void
+LGL_ScopeLock::
+Init
+(
+	LGL_Semaphore*	semaphore,
+	float		timeoutSeconds
+)
+{
+	Semaphore=semaphore;
+	LockObtained=false;
+	if(Semaphore)
+	{
+		LockObtained=Semaphore->Lock
+		(
+			"Nameless ScopeLock",
+			"Noteless ScopeLock (meh)",
+			timeoutSeconds!=0,
+			timeoutSeconds
+		);
+	}
+}
+
+LGL_ScopeLock::
+~LGL_ScopeLock()
+{
+	if(Semaphore && LockObtained)
+	{
+		Semaphore->Unlock();
+	}
+
+	Semaphore=NULL;
+	LockObtained=false;
+}
+
+bool
+LGL_ScopeLock::
+GetLockObtained()
+{
+	return(LockObtained);
+}
 
 
 
