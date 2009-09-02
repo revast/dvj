@@ -143,7 +143,9 @@ Turntable_DrawWaveform
 	int		freqSensitiveMode,
 	float		warpPointSecondsTrigger,
 	bool		waveformRecordHold,
-	const char*	soundName
+	const char*	soundName,
+	float		videoSecondsBufferedLeft,
+	float		videoSecondsBufferedRight
 );
 
 void

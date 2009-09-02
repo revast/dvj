@@ -695,7 +695,9 @@ Turntable_DrawWaveform
 	int		freqSensitiveMode,
 	float		warpPointSecondsTrigger,
 	bool		waveformRecordHold,
-	const char*	soundName
+	const char*	soundName,
+	float		videoSecondsBufferedLeft,
+	float		videoSecondsBufferedRight
 )
 {
 	float coolR;
@@ -1101,6 +1103,35 @@ Turntable_DrawWaveform
 			pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			0.25f*warmR,0.25f*warmG,0.25f*warmB,0.0f
 		);
+
+		//Draw video buffer
+		if
+		(
+			videoSecondsBufferedLeft != 0 ||
+			videoSecondsBufferedRight != 0
+		)
+		{
+			float secondsRadius = (soundPositionSamples - sampleLeft)/44100.0f;
+			//float secondsNow = soundPositionSamples/44100.0f;
+			float videoBufferedLeft = centerX+(pointLeft-centerX)*(videoSecondsBufferedLeft/secondsRadius);
+			float videoBufferedRight = centerX+(pointRight-centerX)*(videoSecondsBufferedRight/secondsRadius);
+			LGL_DrawLineToScreen
+			(
+				centerX,
+				pointBottom,
+				videoBufferedLeft,
+				pointBottom,
+				warmR,warmG,warmB,1.0f
+			);
+			LGL_DrawLineToScreen
+			(
+				centerX,
+				pointBottom,
+				videoBufferedRight,
+				pointBottom,
+				warmR,warmG,warmB,1.0f
+			);
+		}
 		
 		if(warpPointSecondsTrigger>0.0f)
 		{
