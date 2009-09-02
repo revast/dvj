@@ -674,6 +674,12 @@ DrawLoadScreen()
 
 int main(int argc, char** argv)
 {
+#ifdef	LGL_OSX
+	printf("Purging inactive RAM: Alpha\n");
+	system("purge");
+	printf("Purging inactive RAM: Omega\n");
+#endif	//LGL_OSX
+
 	//Load config
 	ConfigInit();
 
@@ -728,10 +734,6 @@ int main(int argc, char** argv)
 	VerifyMusicDir();
 
 	DrawLoadScreen();
-
-	//malloc + free 1GB to encourage OS to page out as much memory as possible, so it's not doing that while we run... Will this even work?
-	void* baka=malloc(1024*1024*1024);
-	free(baka);
 
 	InitializeGlobals();
 

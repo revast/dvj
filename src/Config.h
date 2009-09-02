@@ -49,6 +49,9 @@ GetProjectorQuadrentResX();
 int
 GetProjectorQuadrentResY();
 
+int
+GetVideoBufferFrames();
+
 int	GetInputKeyboardFocusChangeKey();
 int	GetInputKeyboardFocusBottomKey();
 int	GetInputKeyboardFocusTopKey();
