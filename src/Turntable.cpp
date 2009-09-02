@@ -381,10 +381,10 @@ TurntableObj::
 		delete VideoLo;
 		VideoLo=NULL;
 	}
-	if(VideoBack)
+	if(VideoHi)
 	{
-		delete VideoBack;
-		VideoBack=NULL;
+		delete VideoHi;
+		VideoHi=NULL;
 	}
 	if(Sound)
 	{
@@ -2551,6 +2551,15 @@ DrawFrame
 			savePointBitfield|=(SavePointSeconds[a]==-1.0f)?0:(1<<a);
 		}
 
+		float videoSecondsBufferedLeft=0.0f;
+		float videoSecondsBufferedRight=0.0f;
+		if(VideoFront)
+		{
+			videoSecondsBufferedLeft=VideoFront->GetSecondsBufferedLeft();
+			videoSecondsBufferedRight=VideoFront->GetSecondsBufferedRight();
+		}
+if(videoSecondsBufferedRight > 10) printf("r: %.2f\n",videoSecondsBufferedRight);
+
 		LGL_DrawLogWrite
 		(
 			"dttprehps|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
@@ -2619,8 +2628,8 @@ DrawFrame
 		);
 		LGL_DrawLogWrite
 		(
-			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35
-			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f|%c\n",
+			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35   36 37 38   39   40
+			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f|%c|%s|%.2f|%.2f\n",
 			Which,							//01
 			Sound->IsLoaded() ? 'T' : 'F',				//02
 			GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
@@ -2658,7 +2667,9 @@ DrawFrame
 			VideoFrequencySensitiveMode,				//35
 			Sound->GetWarpPointSecondsTrigger(Channel),		//36
 			Input.WaveformRecordHold(target) ? 'T' : 'F',		//37
-			SoundName						//38
+			SoundName,						//38
+			videoSecondsBufferedLeft,				//39
+			videoSecondsBufferedRight				//40
 			/*
 			EntireWaveArrayFillIndex,				//38
 			ENTIRE_WAVE_ARRAY_COUNT,				//39
@@ -2721,7 +2732,9 @@ DrawFrame
 			VideoFrequencySensitiveMode,				//45
 			Sound->GetWarpPointSecondsTrigger(Channel),		//46
 			Input.WaveformRecordHold(target),			//47
-			SoundName						//48
+			SoundName,						//48
+			videoSecondsBufferedLeft,				//49
+			videoSecondsBufferedRight				//50
 		);
 		LGL_DrawLogPause(false);
 	
@@ -3813,19 +3826,19 @@ SelectNewVideo
 				return;
 			}
 
-			if(VideoBack==NULL)
+			if(VideoFront==NULL)
 			{
-				VideoBack=new LGL_VideoDecoder(videoFileName);
+				VideoFront=new LGL_VideoDecoder(videoFileName);
 			}
 			else
 			{
-				VideoBack->SetVideo(videoFileName);
+				VideoFront->SetVideo(videoFileName);
 			}
 			VideoOffsetSeconds=0;
 		}
-		assert(VideoBack);
-		SwapVideos();
-		assert(VideoFront);
+		//assert(VideoBack);
+		//SwapVideos();
+		//assert(VideoFront);
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoFront->GetPath());
 	}
 }

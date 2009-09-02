@@ -1292,7 +1292,10 @@ printf("\tScreen[%i]: %i x %i\n",a,
 #endif	//LGL_OSX
 #endif	//LGL_LINUX
 
-		LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
+		if(LGL.AudioUsingJack==false)
+		{
+			LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
+		}
 		if
 		(
 			pulserunning==false &&
@@ -7533,881 +7536,7 @@ SetAnimation
 	return(true);
 }
 
-#if 0
 
-LGL_Video* LGL_Video::PrimaryDecoder=NULL;
-LGL_Semaphore* LGL_Video::PrimaryDecoderSemaphore=NULL;
-
-int
-lgl_video_thread
-(
-	void* object
-)
-{
-	//LGL_ThreadSetCPUAffinity(0);
-	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_DECODE,"VideoDecode");
-	LGL_Video* video=(LGL_Video*)object;
-	if(!video)
-	{
-		printf("NO VIDEO OBJECT!!\n");
-		assert(video);
-	}
-	while(video->GetThreadEndSignal()==false)
-	{
-		video->MaybeChangeVideo();
-		video->RespectTime();
-		if(LGL_Video::PrimaryDecoder==NULL)
-		{
-			LGL_Video::PrimaryDecoder=video;
-		}
-		if
-		(
-			video->GetImageDecodeRequired() &&
-			(
-				LGL_Video::PrimaryDecoder==video ||
-				LGL_Video::PrimaryDecoderSemaphore->IsLocked()==false
-			)
-		)
-		{
-			bool locked=false;
-			if(LGL_Video::PrimaryDecoder==video)
-			{
-				LGL_Video::PrimaryDecoderSemaphore->Lock("lgl_video_thread","We are primary decoder: decode! maybe change video!");
-				locked=true;
-			}
-			{
-				video->MaybeChangeVideo();
-				if(video->GetImageDecodeRequired())
-				{
-					video->DecodeFrameToImageBuffer();
-				}
-			}
-			if(locked)
-			{
-				LGL_Video::PrimaryDecoderSemaphore->Unlock();
-			}
-		}
-		else
-		{
-			//LGL_DelayMS(LGL_Video::PrimaryDecoder==video ? 1 : 10);
-		}
-
-		LGL_DelayMS(1);
-	}
-	return(0);
-}
-
-//LGL_Video
-
-LGL_Video::
-LGL_Video
-(
-	const
-	char*	path
-)
-{
-	if(PrimaryDecoderSemaphore==NULL)
-	{
-		PrimaryDecoderSemaphore=new LGL_Semaphore("Video Primary Decoder");
-	}
-	if(PrimaryDecoder==NULL)
-	{
-		PrimaryDecoder=this;
-	}
-
-	FormatContext=NULL;
-	CodecContext=NULL;
-	Codec=NULL;
-	Frame=NULL;
-	FrameRGB=NULL;
-	SwsConvertContext=NULL;
-	BufferRGBBack=NULL;
-	BufferRGBBackReady=false;
-	BufferRGBFrontSemaphore=new LGL_Semaphore("Video BufferRGBFront");
-	BufferRequiresLoading=false;
-	ImageDecodedSinceBecomingPrimaryDecoder=false;
-	ImageFrontSemaphore=new LGL_Semaphore("Video ImageFront");
-	ImageBackSemaphore=new LGL_Semaphore("Video ImageBack");
-	ImageFront=NULL;
-	ImageBack=NULL;
-
-	assert(path!=NULL);
-	ThreadEndSignal=false;
-	DecoderThread=NULL;
-
-	Path[0]='\0';
-	PathShort[0]='\0';
-	PathNext[0]='\0';
-	PathNextShort[0]='\0';
-
-	SecondsNow=0.0f;
-	SecondsNext=0.0f;
-	FPS=30.0f;
-	FPSDisplayed=0;
-	FPSDisplayedCounter=0;
-	LengthSeconds=0.0f;
-
-	SetVideo(path);
-
-	DecoderThread=LGL_ThreadCreate(lgl_video_thread,this);
-}
-
-LGL_Video::
-~LGL_Video()
-{
-	ThreadEndSignal=true;
-	if(DecoderThread!=NULL)
-	{
-		//LGL_ThreadWait(NULL);
-		LGL_ThreadWait(DecoderThread);
-	}
-	DecoderThread=NULL;
-	if(PrimaryDecoder==this)
-	{
-		PrimaryDecoder=NULL;
-	}
-	
-	CleanUp();
-}
-
-void
-LGL_Video::
-SetVideo
-(
-	const
-	char*	path
-)
-{
-	strcpy(PathNext,path);
-
-	char temp[2048];
-	strcpy(temp,PathNextShort);
-	char* ptr=&(temp[0]);
-	while(strstr(ptr,"/"))
-	{
-		ptr=&(strstr(ptr,"/")[1]);
-	}
-	strcpy(PathNextShort,ptr);
-	VideoChangeTimer.Reset();
-}
-
-void
-LGL_Video::
-CleanUp()
-{
-	BufferRequiresLoading=false;
-
-	if(FrameRGB!=NULL) av_free(FrameRGB);
-	if(Frame!=NULL) av_free(Frame);
-	if(CodecContext!=NULL)
-	{
-		LGL.AVCodecSemaphore->Lock("LGL_Video::CleanUp()","Calling avcodec_close(CodecContext) (meh)");
-		{
-			avcodec_close(CodecContext);
-		}
-		LGL.AVCodecSemaphore->Unlock();
-	}
-	if(FormatContext!=NULL)
-	{
-		LGL.AVCodecSemaphore->Lock("LGL_Video::CleanUp()","Calling av_close_input_file() (meh)");
-		{
-			av_close_input_file(FormatContext);
-		}
-		LGL.AVCodecSemaphore->Unlock();
-	}
-	if(SwsConvertContext!=NULL)
-	{
-		LGL.AVCodecSemaphore->Lock("LGL_Video::CleanUp()","Calling sws_freeContext() (meh)");
-		{
-			sws_freeContext(SwsConvertContext);
-		}
-		LGL.AVCodecSemaphore->Unlock();
-	}
-
-	FPS=30.0f;
-	FPSDisplayed=0;
-	FPSDisplayedCounter=0;
-	LengthSeconds=0.0f;
-
-	FormatContext=NULL;
-	CodecContext=NULL;
-	Codec=NULL;
-	Frame=NULL;
-	FrameRGB=NULL;
-	SwsConvertContext=NULL;
-}
-
-bool
-LGL_Video::
-ImageUpToDate()	const
-{
-	bool rightVid=true;
-	if(ImageFront)
-	{
-		char frontPath[2048];
-		strcpy(frontPath,&(ImageFront->GetPath()[1]));
-		strrchr(frontPath,'!')[0]='\0';
-		if(strcmp(frontPath,PathNext)!=0)
-		{
-			rightVid=false;
-		}
-	}
-
-	return
-	(
-		rightVid &&
-		(
-			SecondsNow==SecondsNext ||
-			ImageDecodeRequired==false
-		)
-	);
-}
-
-LGL_Image*
-LGL_Video::
-LockImage
-(
-	bool	blockUpdate
-)
-{
-	if
-	(
-		blockUpdate==false &&
-		BufferRequiresLoading
-	)
-	{
-		if(BufferRGBFrontSemaphore->Lock("Main","Inside LGL_Video::LockImage() (1)",false)==false)
-		{
-			//We didn't get the lock, and we're not going to wait.
-			ImageFrontSemaphore->Lock("Main","Inside LGL_Video::LockImage() (2)");
-			return(ImageFront);
-		}
-		{
-			char imageName[1024];
-			sprintf(imageName,"%s!%f",Path,SecondsNow);
-
-			if(ImageBackSemaphore->Lock("Main","Inside LGL_Video::LockImage() (3)",false)==false)
-			{
-				//We didn't get the lock, and we're not going to wait.
-				BufferRGBFrontSemaphore->Unlock();
-				ImageFrontSemaphore->Lock("Main","Inside LGL_Video::LockImage() (4)");
-				return(ImageFront);
-			}
-			else
-			{
-				if(ImageBack!=NULL)
-				{
-					//Verify it's valid or delete.
-
-					bool invalid=false;
-					invalid|=(ImageBack->w != (int)BufferWidth);
-					invalid|=(ImageBack->h != (int)BufferHeight);
-					if(invalid)
-					{
-						delete ImageBack;
-						ImageBack=NULL;
-					}
-				}
-
-				if(BufferRGBBackReady)
-				{
-					if(ImageBack==NULL)
-					{
-						ImageBack = new LGL_Image
-						(
-							BufferWidth,
-							BufferHeight,
-							4,
-							BufferRGBBack,
-							true,
-							imageName
-						);
-						assert(ImageBack->GetPath()[0]!='!' || ImageBack->GetPath()[1]!='!');
-					}
-					//else
-					{
-						ImageBack->UpdateTexture
-						(
-							BufferWidth,
-							BufferHeight,
-							4,
-							BufferRGBBack,
-							true,
-							imageName
-						);
-						assert(ImageBack->GetPath()[0]!='!' || ImageBack->GetPath()[1]!='!');
-					}
-
-					BufferRGBBackReady=false;
-
-					FPSDisplayedCounter++;
-					if(FPSDisplayedTimer.SecondsSinceLastReset()>1.0f)
-					{
-						if
-						(
-							FPSDisplayedTimer.SecondsSinceLastReset()<=2.0f &&
-							FPSDisplayedConstTimeTimer.SecondsSinceLastReset()<=0.1f
-						)
-						{
-							FPSDisplayed=(int)ceilf(LGL_Min(FPS,FPSDisplayedCounter));
-						}
-						else
-						{
-							FPSDisplayed=0;
-						}
-						FPSDisplayedCounter=0;
-						FPSDisplayedTimer.Reset();
-					}
-
-					SwapImages(true,false);
-				}
-			}
-			ImageBackSemaphore->Unlock();
-		}
-		BufferRGBFrontSemaphore->Unlock();
-	}
-
-	assert(ImageFrontSemaphore);
-	ImageFrontSemaphore->Lock("Main","Inside LGL_Video::LockImage() (Final)");
-	return(ImageFront);
-}
-
-void
-LGL_Video::
-UnlockImage
-(
-	LGL_Image* image
-)
-{
-	assert(image==ImageFront);
-	assert(ImageFrontSemaphore);
-	ImageFrontSemaphore->Unlock();
-}
-
-void
-LGL_Video::
-InvalidateImages()
-{
-	ImageBackSemaphore->Lock("Main","Inside LGL_Video::InvalidateImages() (Final)");
-	ImageFrontSemaphore->Lock("Main","Inside LGL_Video::InvalidateImages() (Final)");
-	{
-		delete ImageBack;
-		delete ImageFront;
-		ImageBack=NULL;
-		ImageFront=NULL;
-	}
-	ImageFrontSemaphore->Unlock();
-	ImageBackSemaphore->Unlock();
-}
-
-float
-LGL_Video::
-GetLengthSeconds()
-{
-	return(LengthSeconds);
-}
-
-float
-LGL_Video::
-GetTime()
-{
-	return(SecondsNext);
-}
-
-void
-LGL_Video::
-SetTime
-(
-	float	seconds
-)
-{
-	if(SecondsNext!=seconds)
-	{
-		FPSDisplayedConstTimeTimer.Reset();
-	}
-	SecondsNext=seconds;
-}
-
-void
-LGL_Video::
-SetPrimaryDecoder()
-{
-	if(PrimaryDecoder!=this)
-	{
-		ImageDecodedSinceBecomingPrimaryDecoder=false;
-	}
-	PrimaryDecoder=this;
-}
-
-bool
-LGL_Video::
-GetImageDecodedSinceBecomingPrimaryDecoder()
-{
-	return(ImageDecodedSinceBecomingPrimaryDecoder);
-}
-
-float
-LGL_Video::
-GetFPS()
-{
-	return(FPS);
-}
-
-int
-LGL_Video::
-GetFPSDisplayed()
-{
-	if(FPSDisplayedTimer.SecondsSinceLastReset()<2.0f)
-	{
-		return(FPSDisplayed);
-	}
-	else
-	{
-		return(0);
-	}
-}
-
-const char*
-LGL_Video::
-GetPath()
-{
-	assert(Path || PathNext);
-	return(Path?Path:PathNext);
-}
-
-const char*
-LGL_Video::
-GetPathShort()
-{
-	assert(PathShort || PathNextShort);
-	return(PathShort?PathShort:PathNextShort);
-}
-
-void
-LGL_Video::
-DecodeFrameToImageBuffer()
-{
-	if(TimestampNow==TimestampNext)
-	{
-		//printf("DecodeFrameToImage(): Nothing to do...\n");
-		return;
-	}
-
-	if(FormatContext==NULL)
-	{
-		return;
-	}
-
-	if(TimestampNext!=TimestampNow+1)
-	{
-		if(FormatContext==NULL)
-		{
-			printf("LGL_Video::DecodeFrameToImageBuffer('%s'): Warning! Failed FormatContext!!\n",PathShort);
-			return;
-		}
-		LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling av_seek_frame() (meh)");
-		{
-			av_seek_frame(FormatContext,VideoStreamIndex,TimestampNext,AVSEEK_FLAG_ANY);
-		}
-		LGL.AVCodecSemaphore->Unlock();
-	}
-	TimestampNow=TimestampNext;
-	for(;;)
-	{
-		bool frameRead=false;
-		int result=0;
-		if(FormatContext==NULL)
-		{
-			printf("LGL_Video::DecodeFrameToImageBuffer('%s'): Warning! Failed FormatContext!!\n",PathShort);
-			return;
-		}
-		LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling av_read_frame() (meh)");
-		{
-			result = av_read_frame(FormatContext, &Packet);
-		}
-		LGL.AVCodecSemaphore->Unlock();
-		if(result>=0)
-		{
-			// Is this a packet from the video stream?
-			if(Packet.stream_index==VideoStreamIndex)
-			{
-				// Decode video frame
-				int frameFinished=0;
-				if
-				(
-					CodecContext==NULL ||
-					Frame==NULL
-				)
-				{
-					printf("LGL_Video::DecodeFrameToImageBuffer('%s'): Warning! Failed CodecContext or Frame!!\n",PathShort);
-					return;
-				}
-				LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling avcodec_decode_video() (meh)");
-				{
-					avcodec_decode_video
-					(
-						CodecContext,
-						Frame,
-						&frameFinished, 
-						Packet.data,
-						Packet.size
-					);
-				}
-				LGL.AVCodecSemaphore->Unlock();
-
-				// Did we get a video frame?
-				if(frameFinished)
-				{
-					// Convert the image from its native format to RGB
-					if(BufferRGBBackReady==false)
-					{
-						if
-						(
-							CodecContext==NULL ||
-							Frame==NULL ||
-							FrameRGB==NULL
-						)
-						{
-							printf("LGL_Video::DecodeFrameToImageBuffer('%s'): Warning! Failed CodecContext or Frame or FrameRGB!!\n",PathShort);
-							BufferRGBFrontSemaphore->Unlock();
-							return;
-						}
-
-						LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling sws_scale() (meh)");
-						{
-							sws_scale
-							(
-								SwsConvertContext,
-								Frame->data,
-								Frame->linesize,
-								0, 
-								BufferHeight,
-								FrameRGB->data,
-								FrameRGB->linesize
-							);
-						}
-						LGL.AVCodecSemaphore->Unlock();
-
-						BufferRGBBackReady=true;
-					}
-					BufferRequiresLoading=true;
-					ImageDecodedSinceBecomingPrimaryDecoder=true;
-
-					frameRead=true;
-				}
-			}
-
-			// Free the packet that was allocated by av_read_frame
-			LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling av_free_packet() (meh)");
-			{
-				av_free_packet(&Packet);
-			}
-			LGL.AVCodecSemaphore->Unlock();
-		}
-		else
-		{
-			break;
-		}
-
-		if(frameRead)
-		{
-			break;
-		}
-	}
-	ImageDecodeRequired=false;
-}
-
-void
-LGL_Video::
-RespectTime()
-{
-	if(CodecContext==NULL)
-	{
-		return;
-	}
-
-	if(SecondsNow==SecondsNext)
-	{
-		return;
-	}
-
-	//We don't support videos shorter than a second
-	if(!FormatContext)
-	{
-printf("LGL_Video::RespectTime(): Warning: No FormatContext!!\n");
-		return;
-	}
-
-	float duration=FormatContext->duration;
-	float durationSeconds = duration/(float)(AV_TIME_BASE);
-
-	while(SecondsNext<0)
-	{
-		if(ThreadEndSignal) return;
-		SecondsNext+=durationSeconds;
-	}
-	while(SecondsNext>durationSeconds)
-	{
-		if(ThreadEndSignal) return;
-		SecondsNext-=durationSeconds;
-	}
-
-	//FIXME: This looks like a race condition with ImageUpToDate()... Harmless, but should be fixed...
-	SecondsNow=SecondsNext;
-	TimestampNext=(long)(SecondsNow*CodecContext->time_base.den/(float)CodecContext->time_base.num);
-
-	if(TimestampNow!=TimestampNext)
-	{
-		ImageDecodeRequired=true;
-	}
-
-	//This next line doesn't seem to be necessary
-	//avcodec_flush_buffers(CodecContext);
-}
-
-bool
-LGL_Video::
-GetImageDecodeRequired()
-{
-	return(ImageDecodeRequired);
-}
-
-void
-LGL_Video::
-MaybeChangeVideo()
-{
-	if(strcmp(PathNext,Path)==0)
-	{
-		return;
-	}
-
-	if(LGL_FileExists(PathNext)==false)
-	{
-		//printf("LGL_Video::MaybeChangeVideo(): Warning! File '%s' doesn't exist!\n",PathNext);
-		return;
-	}
-
-	//Ah HA! Change Video.
-
-	CleanUp();
-
-	strcpy(Path,PathNext);
-	int shortPathFirstCharIndex=0;
-	for(int a=0;a<1024;a++)
-	{
-		if(Path[a]=='\0')
-		{
-			break;
-		}
-		if(Path[a]=='/')
-		{
-			shortPathFirstCharIndex=a+1;
-		}
-	}
-	strcpy(PathShort,&(Path[shortPathFirstCharIndex]));
-	
-	LGL.AVCodecSemaphore->Lock("lgl_video_thread","MaybeChangeVideo() (meh)");
-	{
-		//Open file
-		AVFormatContext* fc=NULL;
-		if(av_open_input_file(&fc, Path, NULL, 0, NULL)!=0)
-		{
-			printf("LGL_Video::MaybeChangeVideo(): Couldn't open '%s'\n",Path);
-			LGL.AVCodecSemaphore->Unlock();
-			return;
-		}
-
-		//Find streams
-		if(av_find_stream_info(fc)<0)
-		{
-			//printf("LGL_Video::MaybeChangeVideo(): Couldn't find streams for '%s'\n",Path);
-			LGL.AVCodecSemaphore->Unlock();
-			return;
-		}
-
-		// Find the first video stream
-		VideoStreamIndex=-1;
-		for(unsigned int i=0; i<fc->nb_streams; i++)
-		{
-			if(fc->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO)
-			{
-				VideoStreamIndex=i;
-				break;
-			}
-		}
-		if(VideoStreamIndex==-1)
-		{
-			printf("LGL_Video::MaybeChangeVideo(): Couldn't find video stream for '%s' in %i streams\n",Path,fc->nb_streams);
-			LGL.AVCodecSemaphore->Unlock();
-			return;
-		}
-
-		// Get a pointer to the codec context for the video stream
-		CodecContext=fc->streams[VideoStreamIndex]->codec;
-		FormatContext=fc;	//Only set this once fc is fully initialized
-
-		FPS=fc->streams[VideoStreamIndex]->time_base.den/(float)fc->streams[VideoStreamIndex]->time_base.num;
-			//CodecContext->time_base.den/(float)CodecContext->time_base.num;
-		LengthSeconds=FormatContext->duration/(float)(AV_TIME_BASE);
-
-		// Find the decoder for the video stream
-		Codec=avcodec_find_decoder(CodecContext->codec_id);
-		if(Codec==NULL)
-		{
-			printf("LGL_Video::MaybeChangeVideo(): Couldn't find codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
-			LGL.AVCodecSemaphore->Unlock();
-			return;
-		}
-
-		// Inform the codec that we can handle truncated bitstreams -- i.e.,
-		// bitstreams where frame boundaries can fall in the middle of packets
-		if(Codec->capabilities & CODEC_CAP_TRUNCATED)
-		{
-			CodecContext->flags|=CODEC_FLAG_TRUNCATED;
-		}
-
-		// Open codec
-		if(avcodec_open(CodecContext, Codec)<0)
-		{
-			printf("LGL_Video::MaybeChangeVideo(): Couldn't open codec for '%s'\n",Path);
-			CodecContext=NULL;
-			LGL.AVCodecSemaphore->Unlock();
-			return;
-		}
-
-		//assert(Frame==NULL);
-		//assert(FrameRGB==NULL);
-		Frame=avcodec_alloc_frame();
-		FrameRGB=avcodec_alloc_frame();
-
-		if(Frame==NULL || FrameRGB==NULL)
-		{
-			printf("LGL_Video::MaybeChangeVideo(): Couldn't open frames for '%s'\n",Path);
-			LGL.AVCodecSemaphore->Unlock();
-			return;
-		}
-
-		// Determine required buffer size and pseudo-allocate buffer
-		BufferRGBFrontSemaphore->Lock("MaybeChangeVideo","Making a new BufferRGBBack (meh)");
-		{
-			BufferWidth=CodecContext->width;
-			BufferHeight=CodecContext->height;
-			unsigned int bufferBytesOld=BufferBytes;
-			BufferBytes=avpicture_get_size
-			(
-				PIX_FMT_BGRA,
-				BufferWidth,
-				BufferHeight
-			);
-			BufferBytes = LGL_Max(1920*1080*4,BufferBytes);	//Initialize a huge buffer at the start, so reallocating is rare.
-
-			if(bufferBytesOld<BufferBytes)
-			{
-				delete BufferRGBBack;
-				BufferRGBBack=NULL;
-			}
-			if(BufferRGBBack==NULL)
-			{
-				BufferRGBBack=new uint8_t[BufferBytes];
-			}
-
-			// Assign appropriate parts of buffer to image planes in FrameRGB
-			avpicture_fill
-			(
-				(AVPicture*)FrameRGB,
-				BufferRGBBack,
-				PIX_FMT_BGRA,
-				BufferWidth,
-				BufferHeight
-			);
-		}
-		BufferRGBFrontSemaphore->Unlock();
-
-		SwsConvertContext = sws_getContext
-		(
-			//src
-			BufferWidth,
-			BufferHeight, 
-			CodecContext->pix_fmt, 
-			//dst
-			BufferWidth,
-			BufferHeight,
-			PIX_FMT_BGRA,
-			SWS_FAST_BILINEAR,
-			NULL,
-			NULL,
-			NULL
-		);
-		if(SwsConvertContext==NULL)
-		{
-			printf("LGL_Video::MaybeChangeVideo(): NULL SwsConvertContext for '%s'\n",Path);
-			LGL.AVCodecSemaphore->Unlock();
-			return;
-		}
-
-		ImageDecodeRequired=true;
-
-		TimestampNow=-1;
-		TimestampNext=0;
-		SecondsNow=0;
-	}
-	LGL.AVCodecSemaphore->Unlock();
-}
-
-bool
-LGL_Video::
-GetThreadEndSignal()
-{
-	return(ThreadEndSignal);
-}
-
-float
-LGL_Video::
-GetSecondsSinceVideoChange()
-{
-	return(VideoChangeTimer.SecondsSinceLastReset());
-}
-
-bool
-LGL_Video::
-GetImageDecodedSinceVideoChange()
-{
-	bool rightVid=true;
-	if(ImageFront)
-	{
-		char frontPath[2048];
-		strcpy(frontPath,&(ImageFront->GetPath()[1]));
-		strrchr(frontPath,'!')[0]='\0';
-		if(strcmp(frontPath,PathNext)!=0)
-		{
-			rightVid=false;
-		}
-	}
-	return(rightVid);
-}
-
-void
-LGL_Video::
-SwapImages
-(
-	bool	backLocked,
-	bool	frontLocked
-)
-{
-	assert(ImageFrontSemaphore);
-	if(frontLocked==false) ImageFrontSemaphore->Lock("lgl_video_thread","SwapImages() (1)");
-	{
-		if(backLocked==false) ImageBackSemaphore->Lock("lgl_video_thread","SwapImages() (2)");
-		{
-			LGL_Image* imageTemp=ImageFront;
-			ImageFront=ImageBack;
-			ImageBack=imageTemp;
-		}
-		if(backLocked==false) ImageBackSemaphore->Unlock();
-	}
-	if(frontLocked==false) ImageFrontSemaphore->Unlock();
-}
-#endif
 
 bool lgl_FrameBufferSortPredicate(const lgl_FrameBuffer* d1, const lgl_FrameBuffer* d2)
 {
@@ -8417,7 +7546,8 @@ bool lgl_FrameBufferSortPredicate(const lgl_FrameBuffer* d1, const lgl_FrameBuff
 lgl_FrameBuffer::
 lgl_FrameBuffer()
 {
-	Buffer = (unsigned char*)malloc(1920*1080*4);
+	Buffer = NULL;
+	BufferBytes=0;
 	Timestamp=-1;
 }
 
@@ -8426,6 +7556,7 @@ lgl_FrameBuffer::
 {
 	free(Buffer);
 	Buffer=NULL;
+	BufferBytes=0;
 	Timestamp=-1;
 }
 
@@ -8433,14 +7564,18 @@ unsigned char*
 lgl_FrameBuffer::
 SwapInNewBuffer
 (
-	unsigned char*	buf,
+	unsigned char*	buffer,
+	unsigned int&	bufferBytes,
 	long		timestamp
 )
 {
-	unsigned char* ret=Buffer;
-	Buffer=buf;;
+	unsigned char* bufferOld=Buffer;
+	unsigned int bufferBytesOld=BufferBytes;
+	Buffer=buffer;
+	BufferBytes=bufferBytes;
+	bufferBytes=bufferBytesOld;
 	Timestamp=timestamp;
-	return(ret);
+	return(bufferOld);
 }
 
 unsigned char*
@@ -8515,7 +7650,7 @@ Init()
 	PathShort[0]='\0';
 	PathNext[0]='\0';
 
-	FPS=0;
+	FPS=0.0f;
 	FPSDisplayed=0;
 	FPSMissed=0;
 	FPSDisplayedHitCounter=0;
@@ -8525,7 +7660,8 @@ Init()
 	TimeSecondsPrev=0;
 	TimestampNext=-1;
 
-	FrameBufferAddRadius=4;
+	FrameBufferAddRadius=20;
+	FrameBufferSubtractRadius=(int)(FrameBufferAddRadius*1.5f);;
 
 	FormatContext=NULL;
 	CodecContext=NULL;
@@ -8584,11 +7720,8 @@ SetTime
 	float	seconds
 )
 {
-	if(TimeSeconds!=seconds)
-	{
-		TimeSecondsPrev=TimeSeconds;
-		TimeSeconds=seconds;
-	}
+	TimeSecondsPrev=TimeSeconds;
+	TimeSeconds=seconds;
 }
 
 float
@@ -8609,7 +7742,7 @@ int
 LGL_VideoDecoder::
 GetFPS()
 {
-	return(FPS);
+	return((int)ceilf(FPS));
 }
 
 int
@@ -8624,6 +7757,254 @@ GetFPSMissed()
 {
 	return(FPSMissed);
 }
+
+LGL_Image*
+LGL_VideoDecoder::
+GetImage()
+{
+	//Ensure Image Exists
+	if(Image==NULL)
+	{
+		Image = new LGL_Image
+		(
+			1920,
+			1080,
+			4,
+			NULL,
+			true,
+			"Empty LGL_VideoDecoder"
+		);
+	}
+
+	long timestamp = SecondsToTimestamp(TimeSeconds);
+	lgl_FrameBuffer* buffer=NULL;
+
+	{
+		LGL_ScopeLock lock(FrameBufferReadySemaphore);
+
+		//Early out if nothing decoded...
+		if(FrameBufferReady.size()==0)
+		{
+			return(Image);
+		}
+
+		//Find the nearest framebuffer
+		if(timestamp<FrameBufferReady[0]->GetTimestamp())
+		{
+			FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+			buffer=FrameBufferReady[0];
+		}
+		else if(timestamp>FrameBufferReady[FrameBufferReady.size()-1]->GetTimestamp())
+		{
+			FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+			buffer=FrameBufferReady[FrameBufferReady.size()-1];
+		}
+		else
+		{
+			long nearestDistance=99999999;
+			for(unsigned int a=0;a<FrameBufferReady.size();a++)
+			{
+				if((long)fabsf(timestamp-FrameBufferReady[a]->GetTimestamp())<nearestDistance)
+				{
+					buffer=FrameBufferReady[a];
+					nearestDistance=(long)fabsf(timestamp-FrameBufferReady[a]->GetTimestamp());
+				}
+			}
+			
+			if(buffer)
+			{
+				if(timestamp==buffer->GetTimestamp())
+				{
+					FPSDisplayedHitCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+				}
+				else
+				{
+					FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+				}
+			}
+		}
+
+		if(buffer==NULL)
+		{
+			return(Image);
+		}
+
+		//Is our image already up to date?
+		if(Image->GetTimestamp()==buffer->GetTimestamp())
+		{
+			TimestampDisplayed=timestamp;
+			return(Image);
+		}
+	}
+
+	//Update Image
+	char name[1024];
+	sprintf(name,"%s|%li\n",PathShort,timestamp);
+	Image->UpdateTexture
+	(
+		BufferWidth,
+		BufferHeight,
+		4,
+		buffer->GetBuffer(),
+		true,
+		name
+	);
+	Image->SetTimestamp(timestamp);
+	TimestampDisplayed=timestamp;
+
+	if(FPSDisplayedTimer.SecondsSinceLastReset()>=1.0f)
+	{
+		FPSDisplayed=FPSDisplayedHitCounter;
+		FPSMissed=FPSDisplayedMissCounter;
+		FPSDisplayedHitCounter=0;
+		FPSDisplayedMissCounter=0;
+		FPSDisplayedTimer.Reset();
+	}
+
+	return(Image);
+}
+
+float
+LGL_VideoDecoder::
+GetSecondsBufferedLeft()
+{
+	LGL_ScopeLock lock(FrameBufferReadySemaphore);
+
+	if(FrameBufferReady.size()==0)
+	{
+		return(0.0f);
+	}
+
+	long currentTimestamp = SecondsToTimestamp(TimeSeconds);
+	int currentIndex=-1;
+	for(unsigned int a=0;a<FrameBufferReady.size();a++)
+	{
+		if(FrameBufferReady[a]->GetTimestamp()==currentTimestamp)
+		{
+			currentIndex=a;
+			break;
+		}
+	}
+
+	if(currentIndex==-1)
+	{
+		return(0.0f);
+	}
+
+	float seconds=0.0f;
+
+	bool wrap=false;
+	for(int a=currentIndex;;a--)
+	{
+		if(a==-1)
+		{
+			a=FrameBufferReady.size()-1;
+			wrap=true;
+		}
+
+		if(wrap && a==currentIndex)
+		{
+			printf("\t\t\t\tB-1: %i\n\n\n",(int)FrameBufferReady.size());
+			break;
+		}
+
+		int next=a-1;
+		if(next==-1)
+		{
+			next=FrameBufferReady.size()-1;
+		}
+
+		if
+		(
+			FrameBufferReady[a]->GetTimestamp()-FrameBufferReady[next]->GetTimestamp() == 1 ||
+			(
+				next==(int)FrameBufferReady.size()-1 &&
+				fabsf(FrameBufferReady[next]->GetTimestamp() - SecondsToTimestamp(LengthSeconds))<=1.0f &&
+				FrameBufferReady[a]->GetTimestamp() == 0
+			)
+		)
+		{
+			seconds+=1.0f/FPS;
+		}
+		else
+		{
+			break;
+		}
+	}
+	
+	return(seconds);
+}
+
+float
+LGL_VideoDecoder::
+GetSecondsBufferedRight()
+{
+	LGL_ScopeLock lock(FrameBufferReadySemaphore);
+
+	if(FrameBufferReady.size()==0)
+	{
+		return(0.0f);
+	}
+
+	long currentTimestamp = SecondsToTimestamp(TimeSeconds);
+	int currentIndex=-1;
+	for(unsigned int a=0;a<FrameBufferReady.size();a++)
+	{
+		if(FrameBufferReady[a]->GetTimestamp()==currentTimestamp)
+		{
+			currentIndex=a;
+			break;
+		}
+	}
+
+	if(currentIndex==-1)
+	{
+		return(0.0f);
+	}
+	
+	float seconds=0.0f;
+	bool wrap=false;
+	for(int a=currentIndex;;a++)
+	{
+		if(a==(int)FrameBufferReady.size())
+		{
+			a=0;
+			wrap=true;
+		}
+
+		if(wrap && a==currentIndex)
+		{
+			break;
+		}
+
+		int next=a+1;
+		if(next==(int)FrameBufferReady.size())
+		{
+			next=0;
+		}
+
+		if
+		(
+			FrameBufferReady[next]->GetTimestamp()-FrameBufferReady[a]->GetTimestamp() == 1 ||
+			(
+				next==0 &&
+				fabsf(FrameBufferReady[a]->GetTimestamp() - SecondsToTimestamp(LengthSeconds))<=1.0f &&
+				FrameBufferReady[next]->GetTimestamp() == 0
+			)
+		)
+		{
+			seconds+=1.0f/FPS;
+		}
+		else
+		{
+			break;
+		}
+	}
+	
+	return(seconds);
+}
+
+
 
 void
 LGL_VideoDecoder::
@@ -8697,9 +8078,6 @@ MaybeLoadVideo()
 	CodecContext=fc->streams[VideoStreamIndex]->codec;
 	FormatContext=fc;	//Only set this once fc is fully initialized
 
-	FPS=(int)ceilf(fc->streams[VideoStreamIndex]->time_base.den/(float)fc->streams[VideoStreamIndex]->time_base.num);
-	LengthSeconds=FormatContext->duration/(float)(AV_TIME_BASE);
-
 	// Find the decoder for the video stream
 	Codec=avcodec_find_decoder(CodecContext->codec_id);
 	if(Codec==NULL)
@@ -8724,6 +8102,9 @@ MaybeLoadVideo()
 		return;
 	}
 
+	FPS=CodecContext->time_base.den/(float)CodecContext->time_base.num;
+	LengthSeconds=FormatContext->duration/(float)(AV_TIME_BASE);
+
 	FrameNative=avcodec_alloc_frame();
 	FrameRGB=avcodec_alloc_frame();
 
@@ -8734,39 +8115,8 @@ MaybeLoadVideo()
 	}
 
 	// Determine required buffer size and pseudo-allocate buffer
-	BufferWidth=LGL_Min(1920,CodecContext->width);
-	BufferHeight=LGL_Min(1080,CodecContext->height);
-	unsigned int bufferBytesNew=avpicture_get_size
-	(
-		PIX_FMT_BGRA,
-		1920,//BufferWidth,
-		1080//BufferHeight
-	);
-
-	if(BufferBytes<bufferBytesNew)
-	{
-		if(BufferRGB)
-		{
-			delete BufferRGB;
-			BufferRGB=NULL;
-		}
-		BufferBytes=bufferBytesNew;
-	}
-
-	if(BufferRGB==NULL)
-	{
-		BufferRGB=new uint8_t[BufferBytes];
-	}
-
-	// Assign appropriate parts of buffer to image planes in FrameRGB
-	avpicture_fill
-	(
-		(AVPicture*)FrameRGB,
-		BufferRGB,
-		PIX_FMT_BGRA,
-		BufferWidth,
-		BufferHeight
-	);
+	BufferWidth=CodecContext->width;
+	BufferHeight=CodecContext->height;
 
 	SwsConvertContext = sws_getContext
 	(
@@ -8859,6 +8209,33 @@ MaybeDecodeImage()
 				{
 					{
 						LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+
+						unsigned int bufferBytesNow=avpicture_get_size
+						(
+							PIX_FMT_BGRA,
+							BufferWidth,
+							BufferHeight
+						);
+						if
+						(
+							BufferRGB==NULL ||
+							BufferBytes<bufferBytesNow
+						)
+						{
+							BufferBytes=bufferBytesNow;
+							delete BufferRGB;
+							BufferRGB=new uint8_t[BufferBytes];
+						}
+
+						//Update FrameRGB to point to BufferRGB.
+						avpicture_fill
+						(
+							(AVPicture*)FrameRGB,
+							BufferRGB,
+							PIX_FMT_BGRA,
+							BufferWidth,
+							BufferHeight
+						);
 						sws_scale
 						(
 							SwsConvertContext,
@@ -8900,19 +8277,10 @@ MaybeDecodeImage()
 		unsigned char* swappedOutBuffer = frameBuffer->SwapInNewBuffer
 		(
 			BufferRGB,
+			BufferBytes,	//Changes...
 			timestampTarget
 		);
 		BufferRGB=swappedOutBuffer;
-
-		//Update FrameRGB to point to the newly swapped BufferRGB.
-		avpicture_fill
-		(
-			(AVPicture*)FrameRGB,
-			BufferRGB,
-			PIX_FMT_BGRA,
-			BufferWidth,
-			BufferHeight
-		);
 
 		//Add framebuffer to FrameBufferReady, and sort.
 		{
@@ -8934,15 +8302,27 @@ MaybeRecycleBuffers()
 {
 	LGL_ScopeLock lock(FrameBufferReadySemaphore);
 
-	long timestamp=SecondsToTimestamp(TimeSeconds);
-	long timestampLength=SecondsToTimestamp(LengthSeconds);
+	long timestampNow = SecondsToTimestamp(TimeSeconds);
+	long timestampLength = SecondsToTimestamp(LengthSeconds);
+
+	long timestampPrev = SecondsToTimestamp(TimeSecondsPrev);
+	long timestampTarget = timestampNow + (timestampNow-timestampPrev);
+
+	//Handle wrap-around
+	long timestampPredict=timestampTarget;
+	while(timestampPredict>timestampLength)
+	{
+		timestampPredict-=timestampLength;
+	}
+
 	for(unsigned int a=0;a<FrameBufferReady.size();a++)
 	{
 		if
 		(
-			fabsf(timestamp-FrameBufferReady[a]->GetTimestamp())>FrameBufferAddRadius*2 &&
-			fabsf((timestamp-timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferAddRadius*2 &&
-			fabsf((timestamp+timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferAddRadius*2
+			fabsf(timestampNow-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius &&
+			fabsf(timestampPredict-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius &&
+			fabsf((timestampNow-timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius &&
+			fabsf((timestampNow+timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius
 		)
 		{
 			FrameBufferRecycled.push_back(FrameBufferReady[a]);
@@ -8962,6 +8342,13 @@ GetThreadTerminate()
 	return(ThreadTerminate);
 }
 
+float
+LGL_VideoDecoder::
+TimestampToSeconds(long timestamp)
+{
+	return(timestamp/FPS);
+}
+
 long
 LGL_VideoDecoder::
 SecondsToTimestamp
@@ -8969,15 +8356,7 @@ SecondsToTimestamp
 	float	seconds
 )
 {
-	if(CodecContext==NULL)
-	{
-		return(0);
-	}
-	else
-	{
-		long timestamp = (long)floorf(seconds*FormatContext->streams[VideoStreamIndex]->time_base.den/(float)FormatContext->streams[VideoStreamIndex]->time_base.num);
-		return(timestamp);
-	}
+	return(seconds*FPS);
 }
 
 long
@@ -8986,19 +8365,105 @@ GetNextTimestampToDecode()
 {
 	LGL_ScopeLock lock(FrameBufferReadySemaphore);
 
+	long ret=-1;
+
+	ret = GetNextTimestampToDecodePredictNext();
+	if(ret!=-1)
+	{
+		return(ret);
+	}
+
+	if(TimeSeconds>=TimeSecondsPrev)
+	{
+		ret = GetNextTimestampToDecodeForwards();
+		if(ret!=-1)
+		{
+			return(ret);
+		}
+		ret = GetNextTimestampToDecodeBackwards();
+		if(ret!=-1)
+		{
+			return(ret);
+		}
+	}
+	else
+	{
+		ret = GetNextTimestampToDecodeBackwards();
+		if(ret!=-1)
+		{
+			return(ret);
+		}
+		ret = GetNextTimestampToDecodeForwards();
+		if(ret!=-1)
+		{
+			return(ret);
+		}
+	}
+
+	return(-1);
+}
+
+long
+LGL_VideoDecoder::
+GetNextTimestampToDecodePredictNext()
+{
 	long timestampNow = SecondsToTimestamp(TimeSeconds);
 	long timestampLength = SecondsToTimestamp(LengthSeconds);
 
-	//TODO: Search direction of playback first
+	long timestampPrev = SecondsToTimestamp(TimeSecondsPrev);
+	long timestampTarget = timestampNow + (timestampNow-timestampPrev);
 
-	//First search forwards
+	//Handle wrap-around
+	long timestampFind=timestampTarget;
+	while(timestampFind>timestampLength)
+	{
+		timestampFind-=timestampLength;
+	}
+
+	if(timestampFind<0) timestampFind=0;
+	if(timestampFind>timestampLength) timestampFind=timestampLength;
+
+	bool found=false;
+	for(unsigned int b=0;b<FrameBufferReady.size();b++)
+	{
+		long timestampImage=FrameBufferReady[b]->GetTimestamp();
+		if(timestampFind<timestampImage)
+		{
+			return(timestampFind);
+		}
+		else if(timestampFind==timestampImage)
+		{
+			found=true;
+			break;
+		}
+		else //timestampFind>timestampImage
+		{
+			continue;
+		}
+	}
+
+	if(found==false)
+	{
+		return(timestampFind);
+	}
+
+	return(-1);
+}
+
+long
+LGL_VideoDecoder::
+GetNextTimestampToDecodeForwards()
+{
+	long timestampNow = SecondsToTimestamp(TimeSeconds);
+	long timestampLength = SecondsToTimestamp(LengthSeconds);
+
 	int frameBufferIndex=0;
 	long timestampFinal = timestampNow+FrameBufferAddRadius;
 	for(long a=timestampNow;a<timestampFinal;a++)
 	{
 		//Handle wrap-around
 		long timestampFind=a;
-		while(timestampFind>timestampLength)
+		while(timestampFind>=timestampLength)
 		{
 			timestampFind-=timestampLength;
 			frameBufferIndex=0;
@@ -9030,9 +8495,19 @@ GetNextTimestampToDecode()
 		}
 	}
 
+	return(-1);
+}
+
+long
+LGL_VideoDecoder::
+GetNextTimestampToDecodeBackwards()
+{
+	long timestampNow = SecondsToTimestamp(TimeSeconds);
+	long timestampLength = SecondsToTimestamp(LengthSeconds);
+
 	//Second search backwards
-	frameBufferIndex=FrameBufferReady.size()-1;
-	timestampFinal = timestampNow-FrameBufferAddRadius;
+	int frameBufferIndex=FrameBufferReady.size()-1;
+	long timestampFinal = timestampNow-FrameBufferAddRadius;
 	for(long a=timestampNow-1;a>timestampFinal;a--)
 	{
 		//Handle wrap-around
@@ -9097,105 +8572,6 @@ GetRecycledFrameBuffer()
 		lgl_FrameBuffer* frameBuffer = new lgl_FrameBuffer;
 		return(frameBuffer);
 	}
-}
-
-LGL_Image*
-LGL_VideoDecoder::
-GetImage()
-{
-	//Ensure Image Exists
-	if(Image==NULL)
-	{
-		Image = new LGL_Image
-		(
-			1920,
-			1080,
-			4,
-			NULL,
-			true,
-			"Empty LGL_VideoDecoder"
-		);
-	}
-
-	long timestamp = SecondsToTimestamp(TimeSeconds);
-	lgl_FrameBuffer* buffer=NULL;
-
-	{
-		LGL_ScopeLock lock(FrameBufferReadySemaphore);
-
-		//Early out if nothing decoded...
-		if(FrameBufferReady.size()==0)
-		{
-			return(Image);
-		}
-
-		//Find the nearest framebuffer
-		if(timestamp<FrameBufferReady[0]->GetTimestamp())
-		{
-			FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
-			buffer=FrameBufferReady[0];
-		}
-		else if(timestamp>FrameBufferReady[FrameBufferReady.size()-1]->GetTimestamp())
-		{
-			FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
-			buffer=FrameBufferReady[FrameBufferReady.size()-1];
-		}
-		else
-		{
-			for(unsigned int a=0;a<FrameBufferReady.size();a++)
-			{
-				if(timestamp==FrameBufferReady[a]->GetTimestamp())
-				{
-					FPSDisplayedHitCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
-					buffer=FrameBufferReady[a];
-				}
-			}
-		}
-
-		if(buffer==NULL)
-		{
-			printf("strange... %li\n",timestamp);
-			for(unsigned int a=0;a<FrameBufferReady.size();a++)
-			{
-				printf("\t[%i]: %li\n",a,FrameBufferReady[a]->GetTimestamp());
-			}
-			printf("\n");
-			return(Image);
-		}
-
-		//Is our image already up to date?
-		if(Image->GetTimestamp()==buffer->GetTimestamp())
-		{
-			TimestampDisplayed=timestamp;
-			return(Image);
-		}
-	}
-
-	//Update Image
-	char name[1024];
-	sprintf(name,"%s|%li\n",PathShort,timestamp);
-	Image->UpdateTexture
-	(
-		BufferWidth,
-		BufferHeight,
-		4,
-		buffer->GetBuffer(),
-		true,
-		name
-	);
-	Image->SetTimestamp(timestamp);
-	TimestampDisplayed=timestamp;
-
-	if(FPSDisplayedTimer.SecondsSinceLastReset()>=1.0f)
-	{
-		FPSDisplayed=FPSDisplayedHitCounter;
-		FPSMissed=FPSDisplayedMissCounter;
-		FPSDisplayedHitCounter=0;
-		FPSDisplayedMissCounter=0;
-		FPSDisplayedTimer.Reset();
-	}
-
-	return(Image);
 }
 
 
@@ -9380,16 +8756,6 @@ LGL_VideoEncoder
 
 		SrcBufferRGB=new uint8_t[SrcBufferBytes];
 
-		// Assign appropriate parts of buffer to image planes in SrcFrameRGB
-		avpicture_fill
-		(
-			(AVPicture*)SrcFrameRGB,
-			SrcBufferRGB,
-			PIX_FMT_RGB24,
-			SrcBufferWidth,
-			SrcBufferHeight
-		);
-
 		SwsConvertContext = sws_getContext
 		(
 			//src
@@ -9455,6 +8821,7 @@ LGL_VideoEncoder
 
 		DstCodecContext = DstStream->codec;
 		avcodec_get_context_defaults(DstCodecContext);
+		//DstCodecContext->pix_fmt=PIX_FMT_YUVJ422P;
 		DstCodecContext->codec_id=CODEC_ID_LJPEG;
 		DstCodecContext->codec_type=CODEC_TYPE_VIDEO;
 		//const int bitrate = 8*1024*1024*8;	//Provides "quite good" quality for 1280x720. Completely unscientific.
