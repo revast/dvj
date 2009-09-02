@@ -863,6 +863,9 @@ const	char*		GetPathShort() const;
 	long		GetTimestamp();
 	void		SetTimestamp(long timestamp);
 
+	const char*	GetVideoPath();
+	void		SetVideoPath(const char* videoPath);
+
 //private:
 
 	int		w;
@@ -894,6 +897,7 @@ const	char*		GetPathShort() const;
 
 	int		ReferenceCount;
 	long		Timestamp;
+	char		VideoPath[2048];
 };
 
 class LGL_Animation
@@ -982,15 +986,18 @@ public:
 	
 	unsigned char*		SwapInNewBuffer
 				(
+					char*		videoPath,
 					unsigned char*	buffer,
 					unsigned int&	bufferBytes,
 					long		timestamp
 				);
+	const char*		GetVideoPath() const;
 	unsigned char*		GetBuffer() const;
 	long			GetTimestamp() const;
 
 private:
 
+	char			VideoPath[2048];
 	unsigned char*		Buffer;
 	unsigned int		BufferBytes;
 	long			Timestamp;
@@ -1019,6 +1026,7 @@ public:
 	LGL_Image*		GetImage();
 	float			GetSecondsBufferedLeft();
 	float			GetSecondsBufferedRight();
+	void			SetFrameBufferAddRadius(int frames);
 
 	//Thread Functions
 

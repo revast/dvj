@@ -79,9 +79,9 @@
 #endif	//LGL_OSX
 
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
-#define	LGL_PRIORITY_MAIN		(0.8f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(0.5f)
-#define	LGL_PRIORITY_AUDIO_DECODE	(0.4f)
+#define	LGL_PRIORITY_MAIN		(0.9f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
 #define	LGL_PRIORITY_DISKWRITER		(-0.1f)
 
 #define LGL_EQ_SAMPLES_FFT	(512)
@@ -5142,6 +5142,7 @@ LGL_Image
 
 	ReferenceCount=0;
 	Timestamp=-1;
+	VideoPath[0]='\0';
 }
 
 LGL_Image::
@@ -5267,6 +5268,7 @@ LGL_Image
 
 	ReferenceCount=0;
 	Timestamp=-1;
+	VideoPath[0]='\0';
 }
 
 LGL_Image::
@@ -5343,6 +5345,7 @@ LGL_Image
 
 	ReferenceCount=0;
 	Timestamp=-1;
+	VideoPath[0]='\0';
 }
 
 LGL_Image::
@@ -7065,6 +7068,23 @@ SetTimestamp
 	Timestamp=timestamp;
 }
 
+const char*
+LGL_Image::
+GetVideoPath()
+{
+	return(VideoPath);
+}
+
+void
+LGL_Image::
+SetVideoPath
+(
+	const char*	videoPath
+)
+{
+	strcpy(VideoPath,videoPath);
+}
+
 int
 ThreadAnimationLoader
 (
@@ -7564,11 +7584,13 @@ unsigned char*
 lgl_FrameBuffer::
 SwapInNewBuffer
 (
+	char*		videoPath,
 	unsigned char*	buffer,
 	unsigned int&	bufferBytes,
 	long		timestamp
 )
 {
+	strcpy(VideoPath,videoPath);
 	unsigned char* bufferOld=Buffer;
 	unsigned int bufferBytesOld=BufferBytes;
 	Buffer=buffer;
@@ -7576,6 +7598,13 @@ SwapInNewBuffer
 	bufferBytes=bufferBytesOld;
 	Timestamp=timestamp;
 	return(bufferOld);
+}
+
+const char*
+lgl_FrameBuffer::
+GetVideoPath()	const
+{
+	return(VideoPath);
 }
 
 unsigned char*
@@ -7660,8 +7689,7 @@ Init()
 	TimeSecondsPrev=0;
 	TimestampNext=-1;
 
-	FrameBufferAddRadius=20;
-	FrameBufferSubtractRadius=(int)(FrameBufferAddRadius*1.5f);;
+	SetFrameBufferAddRadius(30);
 
 	FormatContext=NULL;
 	CodecContext=NULL;
@@ -7696,6 +7724,13 @@ SetVideo
 )
 {
 	LGL_ScopeLock pathLock(PathSemaphore);
+	if(strcmp(Path,path)!=0)
+	{
+		if(Image)
+		{
+			Image->SetTimestamp(-1);
+		}
+	}
 	strcpy(PathNext,path);
 }
 
@@ -7776,6 +7811,16 @@ GetImage()
 		);
 	}
 
+	char path[2048];
+	{
+		LGL_ScopeLock pathLock(PathSemaphore);
+		strcpy(path,Path);
+	}
+	if(strcmp(Image->GetVideoPath(),path)!=0)
+	{
+		Image->SetTimestamp(-1);
+	}
+
 	long timestamp = SecondsToTimestamp(TimeSeconds);
 	lgl_FrameBuffer* buffer=NULL;
 
@@ -7830,10 +7875,12 @@ GetImage()
 		}
 
 		//Is our image already up to date?
-		if(Image->GetTimestamp()==buffer->GetTimestamp())
 		{
-			TimestampDisplayed=timestamp;
-			return(Image);
+			if(Image->GetTimestamp()==buffer->GetTimestamp())
+			{
+				TimestampDisplayed=timestamp;
+				return(Image);
+			}
 		}
 	}
 
@@ -7850,6 +7897,7 @@ GetImage()
 		name
 	);
 	Image->SetTimestamp(timestamp);
+	Image->SetVideoPath(path);
 	TimestampDisplayed=timestamp;
 
 	if(FPSDisplayedTimer.SecondsSinceLastReset()>=1.0f)
@@ -8004,7 +8052,16 @@ GetSecondsBufferedRight()
 	return(seconds);
 }
 
-
+void
+LGL_VideoDecoder::
+SetFrameBufferAddRadius
+(
+	int	frames
+)
+{
+	FrameBufferAddRadius=LGL_Max(2,frames);
+	FrameBufferSubtractRadius=(int)(FrameBufferAddRadius*1.5f);;
+}
 
 void
 LGL_VideoDecoder::
@@ -8272,10 +8329,13 @@ MaybeDecodeImage()
 	//If we read a frame, put it into an lgl_FrameBuffer
 	if(frameRead)
 	{
+		LGL_ScopeLock pathLock(PathSemaphore);
+
 		//Prepare a framebuffer, and swap its buffer with BufferRGB
 		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
 		unsigned char* swappedOutBuffer = frameBuffer->SwapInNewBuffer
 		(
+			Path,
 			BufferRGB,
 			BufferBytes,	//Changes...
 			timestampTarget
@@ -8300,7 +8360,13 @@ void
 LGL_VideoDecoder::
 MaybeRecycleBuffers()
 {
-	LGL_ScopeLock lock(FrameBufferReadySemaphore);
+	char path[2048];
+	{
+		LGL_ScopeLock pathLock(PathSemaphore);
+		strcpy(path,Path);
+	}
+
+	LGL_ScopeLock frameBufferReadyLock(FrameBufferReadySemaphore);
 
 	long timestampNow = SecondsToTimestamp(TimeSeconds);
 	long timestampLength = SecondsToTimestamp(LengthSeconds);
@@ -8319,10 +8385,13 @@ MaybeRecycleBuffers()
 	{
 		if
 		(
-			fabsf(timestampNow-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius &&
-			fabsf(timestampPredict-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius &&
-			fabsf((timestampNow-timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius &&
-			fabsf((timestampNow+timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius
+			strcmp(FrameBufferReady[a]->GetVideoPath(),path)!=0 ||
+			(
+				fabsf(timestampNow-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius &&
+				fabsf(timestampPredict-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius &&
+				fabsf((timestampNow-timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius &&
+				fabsf((timestampNow+timestampLength)-FrameBufferReady[a]->GetTimestamp())>FrameBufferSubtractRadius
+			)
 		)
 		{
 			FrameBufferRecycled.push_back(FrameBufferReady[a]);

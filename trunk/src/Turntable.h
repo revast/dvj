@@ -138,6 +138,7 @@ private:
 	char				SoundSrcPath[1024];
 	Uint8*				SoundBuffer;
 	unsigned long			SoundBufferLength;
+	unsigned long			SoundBufferCurrentPageIndex;
 	LGL_AudioGrainStream		GrainStream;
 	bool				GrainStreamActive;
 	float				GrainStreamActiveSeconds;

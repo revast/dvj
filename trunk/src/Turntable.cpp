@@ -207,6 +207,7 @@ TurntableObj
 	Sound=NULL;
 	sprintf(SoundName,"No Track Selected");
 	SoundBufferLength=4*44100*60*20;
+	SoundBufferCurrentPageIndex=0;
 	//SoundBufferLength=(unsigned long)(1024*1024*200*(1.0/0.987875));	//20 minutes
 	SoundBuffer=(Uint8*)malloc(SoundBufferLength);
 	bzero(SoundBuffer,SoundBufferLength);	//Not necessary, but used for testing
@@ -421,6 +422,34 @@ NextFrame
 		(Focus ? TARGET_FOCUS : 0) |
 		((Which==0) ? TARGET_TOP : TARGET_BOTTOM);
 	float candidate = 0.0f;
+
+#ifdef	LGL_OSX
+	//Apple doesn't allow us to mlockall().
+	//FUCK YOU APPLE
+	//FUCK YOU APPLE
+	//FUCK YOU APPLE
+	//As such, we must loop on each page in our soundbuffer,
+	//to ensure it remains in active memory... UGH.
+	//TODO: Does mlock() work? I doubt it...
+	int loops=0;
+	const int pageSize=2048;
+	for(unsigned long a=SoundBufferCurrentPageIndex;a<SoundBufferLength;a+=pageSize)
+	{
+		Uint8 pageMeInFucker = SoundBuffer[a];
+		candidate+=pageMeInFucker*0;
+
+		SoundBufferCurrentPageIndex=a+pageSize;
+		loops++;
+		if(loops==1000)
+		{
+			break;
+		}
+	}
+	if(SoundBufferCurrentPageIndex>=SoundBufferLength)
+	{
+		SoundBufferCurrentPageIndex=0;
+	}
+#endif	//LGL_OSX
 
 	for(unsigned int a=0;a<TrackListFileUpdates.size();a++)
 	{
@@ -1456,6 +1485,14 @@ NextFrame
 			DatabaseEntryNow=NULL;
 			VideoEncoderPathSrc[0]='\0';
 			VideoEncoderUnsupportedCodecTime=0.0f;
+			if(VideoFront)
+			{
+				VideoFront->GetImage()->SetTimestamp(-1);
+			}
+			if(VideoBack)
+			{
+				VideoBack->GetImage()->SetTimestamp(-1);
+			}
 			Mode=0;
 			Mode0BackspaceTimer.Reset();
 		}
@@ -3762,6 +3799,7 @@ SelectNewVideo
 		if(VideoLo==NULL)
 		{
 			VideoLo=new LGL_VideoDecoder(path);
+			VideoLo->SetFrameBufferAddRadius(GetVideoBufferFrames());
 		}
 		else
 		{
@@ -3772,6 +3810,7 @@ SelectNewVideo
 		if(VideoHi==NULL)
 		{
 			VideoHi=new LGL_VideoDecoder(path);
+			VideoHi->SetFrameBufferAddRadius(GetVideoBufferFrames());
 		}
 		else
 		{
@@ -3799,6 +3838,7 @@ SelectNewVideo
 				if(VideoBack==NULL)
 				{
 					VideoBack=new LGL_VideoDecoder(path);
+					VideoBack->SetFrameBufferAddRadius(GetVideoBufferFrames());
 				}
 				else
 				{
@@ -3829,6 +3869,7 @@ SelectNewVideo
 			if(VideoFront==NULL)
 			{
 				VideoFront=new LGL_VideoDecoder(videoFileName);
+				VideoFront->SetFrameBufferAddRadius(GetVideoBufferFrames());
 			}
 			else
 			{

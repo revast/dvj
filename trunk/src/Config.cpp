@@ -71,6 +71,8 @@ CreateDefaultDVJRC
 		fprintf(fd,"#projectorQuadrentResX=0\n");
 		fprintf(fd,"#projectorQuadrentResY=0\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"videoBufferFrames=20\n");
+		fprintf(fd,"\n");
 		fprintf(fd,"colorCoolR=0.0\n");
 		fprintf(fd,"colorCoolG=0.0\n");
 		fprintf(fd,"colorCoolB=0.5\n");
@@ -257,6 +259,17 @@ GetProjectorQuadrentResX()
 		resX=LGL_ScreenResolutionX(0);
 	}
 	return(resX);
+}
+
+int
+GetVideoBufferFrames()
+{
+	int videoBufferFrames=dvjrcConfigFile->read<int>("videoBufferFrames",20);
+	if(videoBufferFrames<=2)
+	{
+		videoBufferFrames=2;
+	}
+	return(videoBufferFrames);
 }
 
 int
