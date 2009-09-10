@@ -674,14 +674,37 @@ DrawLoadScreen()
 
 int main(int argc, char** argv)
 {
-#ifdef	LGL_OSX
-	printf("Purging inactive RAM: Alpha\n");
-	system("purge");
-	printf("Purging inactive RAM: Omega\n");
+	//Set working directory
+	char wd[2048];
+	strcpy(wd,argv[0]);
+	if(char* lastSlash = strrchr(wd,'/'))
+	{
+		lastSlash[0]='\0';
+#ifndef	LGL_OSX
+		chdir(wd);
+#else	//LGL_OSX
+		//Currently wd is /path/to/dvj.app/Contents/MacOS
+		chdir(wd);
 #endif	//LGL_OSX
+	}
+
+	//Purge active memory
 
 	//Load config
 	ConfigInit();
+
+#ifdef	LGL_OSX
+	if
+	(
+		LGL_IsOsxAppBundle() &&
+		GetPurgeInactiveMemory()
+	)
+	{
+		printf("Purging inactive RAM: Alpha\n");
+		system("purge");
+		printf("Purging inactive RAM: Omega\n");
+	}
+#endif	//LGL_OSX
 
 	//Initialize LGL
 	int channels=4;
