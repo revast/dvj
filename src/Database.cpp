@@ -433,7 +433,11 @@ Refresh
 	//Recurse on subdirs
 	for(unsigned int a=0;a<dirTree.GetDirCount();a++)
 	{
-		if(dirTree.GetDirName(a)[0]!='.')
+		if
+		(
+			dirTree.GetDirName(a)[0]!='.' &&
+			strcmp(dirTree.GetDirName(a),"dvj")!=0
+		)
 		{
 			char path[2048];
 			sprintf(path,"%s/%s",subdirPath,dirTree.GetDirName(a));
