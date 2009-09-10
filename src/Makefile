@@ -32,6 +32,8 @@ TARGET_BIN_OSX		= ../$(PREFIX_BIN).$(SUFFIX_BIN_OSX)
 TARGET_BIN_W32		= ../$(PREFIX_BIN).$(SUFFIX_BIN_W32)
 TARGET_BIN_ALL		= $(TARGET_BIN_LIN) $(TARGET_BIN_OSX) $(TARGET_BIN_W32)
 
+TARGET_APP_BUNDLE_BIN_OSX	= ../dist/osx/root/$(PREFIX_BIN).app/Contents/MacOS/$(PREFIX_BIN)
+
 OBJDIR			= obj/
 OBJDIR_LIN		= $(OBJDIR)lin/
 OBJDIR_OSX		= $(OBJDIR)osx/
@@ -110,7 +112,7 @@ DEFINES_OSX		= -DLGL_LINUX -DLGL_OSX -Dfopen64=fopen -D__MACOSX_CORE__
 CFLAGS_OSX		= -Wall -I$(OBJDIR_OSX) `sdl-config --cflags` $(MODEFLAGS_OSX) -I$(ROOT_SRC_DIR) $(DEFINES_OSX) -I/opt/local/include -L/opt/local/lib/ -L/usr/local/lib/ -I/usr/local/include/
 #-fsingle-precision-constant
 CPPFLAGS_OSX		= -include PrecompiledHeaders.h $(CFLAGS_OSX)
-LGLLIBRARIES_OSX	= -L/sw/lib -lSDL_image -lSDL_net -framework OpenGL -lSDL -framework AppKit -framework CoreMidi -framework CoreAudio -framework CoreFoundation -lSDLmain -lsamplerate -ljack -lavcodec -lavformat -lswscale -lavutil -lz -lbz2 -lfftw3f
+LGLLIBRARIES_OSX	= -L/sw/lib -lSDL_image -lpng -ljpeg -lSDL_net -framework OpenGL -lSDL -framework AppKit -framework CoreMidi -framework CoreAudio -framework CoreFoundation -framework IOKit -lSDLmain -lsamplerate -ljack -ljackserver -lavcodec -lavformat -lswscale -lavutil -lz -lbz2 -lfftw3f -headerpad_max_install_names
 
 
 
@@ -174,6 +176,15 @@ $(TARGET_BIN_LIN): $(TARGET_LIB_LIN)
 $(TARGET_BIN_OSX): $(TARGET_LIB_OSX)
 	@echo "	$(CC_OSX) $(TARGET_BIN_OSX)"
 	@$(CC_OSX) $(OBJ_FULL_OSX) $(LGLLIBRARIES_OSX) -o $(TARGET_BIN_OSX)
+	@cp $(TARGET_BIN_OSX) $(TARGET_APP_BUNDLE_BIN_OSX)
+	@install_name_tool -change /usr/local/lib/libSDL_image-1.2.0.dylib @executable_path/lib/libSDL_image-1.2.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
+	@install_name_tool -change /usr/local/lib/libpng12.0.dylib @executable_path/lib/libpng12.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
+	@install_name_tool -change /usr/local/lib/libjpeg.62.dylib @executable_path/lib/libjpeg.62.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
+	@install_name_tool -change /usr/local/lib/libSDL_net-1.2.0.dylib @executable_path/lib/libSDL_net-1.2.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
+	@install_name_tool -change /usr/local/lib/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
+	@install_name_tool -change /usr/local/lib/libsamplerate.0.dylib @executable_path/lib/libsamplerate.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
+	@install_name_tool -change /usr/local/lib/libjack.0.dylib @executable_path/lib/libjack.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
+	@install_name_tool -change /usr/local/lib/libjackserver.0.dylib @executable_path/lib/libjackserver.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
 $(TARGET_BIN_W32): $(TARGET_LIB_W32)

@@ -87,6 +87,7 @@
 #define LGL_EQ_SAMPLES_FFT	(512)
 #define LGL_SAMPLESIZE		(256)
 unsigned int LGL_SAMPLESIZE_SDL;
+const int LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE = (AVCODEC_MAX_AUDIO_FRAME_SIZE*2);
 
 void lgl_AudioOutCallback(void* userdata, Uint8* stream, int len8);
 
@@ -267,6 +268,7 @@ typedef struct
 				AudioStreamList;
 	LGL_Semaphore*		AudioStreamListSemaphore;
 	LGL_Semaphore*		AVCodecSemaphore;
+	LGL_Semaphore*		AVOpenCloseSemaphore;
 	bool			AudioMasterToHeadphones;
 
 	//AudioIn
@@ -855,6 +857,18 @@ LGL_JackInit()
 	LGL.AudioSpec->silence=0;
 	jack_options_t jack_options = JackNullOption;
 	jack_status_t status;
+
+	//Setup environment
+	if(LGL_IsOsxAppBundle())
+	{
+		//PATH must be supplemented so jack_client_init() finds jackd
+		char path[2048];
+		sprintf(path,"%s:./",getenv("PATH"));
+		setenv("PATH",path,1);
+
+		//Our JACK drivers live inside our App Bundle
+		setenv("JACK_DRIVER_DIR","lib/jack",1);
+	}
 	
 	//Open a client connection to the JACK server
 	const char* client_name = "dvj";
@@ -1626,7 +1640,8 @@ printf("\tScreen[%i]: %i x %i\n",a,
 
 	//LGL_Assert(inAudioChannels==0 || inAudioChannels==2 || inAudioChannels==4);
 
-	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec Open/Close",true);
+	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec");
+	LGL.AVOpenCloseSemaphore=new LGL_Semaphore("AV Codec Open/Close");
 
 	//LGL.AudioSpec=AudioObtained;
 	//delete AudioObtained;
@@ -5185,10 +5200,14 @@ LGL_Image
 		{
 			printf
 			(
-				"LGL_Image::LGL_Image(): Error loading '%s' to an SDL_Surface...\n",
-				Path
+				"LGL_Image::LGL_Image(): Error loading '%s' to an SDL_Surface: %s\n",
+				Path,
+				IMG_GetError()
 			);
-			assert(false);
+			char wd[2048];
+			getwd(wd);
+			printf("Working Directory: %s\n",wd);
+			exit(0);
 		}
 	}
 
@@ -6893,7 +6912,10 @@ FileLoad
 			Path,
 			IMG_GetError()
 		);
-		assert(false);
+		char wd[2048];
+		getwd(wd);
+		printf("Working Directory: %s\n",wd);
+		exit(0);
 	}
 
 	AlphaChannel=mySDL_Surface1->flags & SDL_SRCALPHA;
@@ -8103,10 +8125,13 @@ MaybeLoadVideo()
 
 	//Open file
 	AVFormatContext* fc=NULL;
-	if(av_open_input_file(&fc, Path, NULL, 0, NULL)!=0)
 	{
-		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open '%s'\n",Path);
-		return;
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+		if(av_open_input_file(&fc, Path, NULL, 0, NULL)!=0)
+		{
+			printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open '%s'\n",Path);
+			return;
+		}
 	}
 
 	//Find streams
@@ -8152,11 +8177,14 @@ MaybeLoadVideo()
 	}
 
 	// Open codec
-	if(avcodec_open(CodecContext, Codec)<0)
 	{
-		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
-		UnloadVideo();
-		return;
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+		if(avcodec_open(CodecContext, Codec)<0)
+		{
+			printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
+			UnloadVideo();
+			return;
+		}
 	}
 
 	FPS=CodecContext->time_base.den/(float)CodecContext->time_base.num;
@@ -8649,12 +8677,13 @@ LGL_VideoEncoder::
 LGL_VideoEncoder
 (
 	const char*	src,
-	const char*	dst
+	const char*	dstVideo,
+	const char*	dstAudio
 )
 {
 	strcpy(SrcPath,src);
-	strcpy(DstPath,dst);
-	sprintf(DstMp3Path,"%s.audio.avi",DstPath);
+	strcpy(DstPath,dstVideo);
+	sprintf(DstMp3Path,dstAudio);
 
 	Valid=false;
 	UnsupportedCodec=false;
@@ -8693,25 +8722,27 @@ LGL_VideoEncoder
 	DstMp3BufferSamplesIndex=0;
 	DstMp3Buffer2=NULL;
 
-	LGL.AVCodecSemaphore->Lock("videoEncoderThread","LGL_VideoEncoder::LGL_VideoEncoder() (src) (meh)");
 	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+
 		av_init_packet(&DstPacket);
 		av_init_packet(&DstMp3Packet);
 
 		//Open file
 		AVFormatContext* fc=NULL;
-		if(av_open_input_file(&fc, src, NULL, 0, NULL)!=0)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open '%s'\n",src);
-			LGL.AVCodecSemaphore->Unlock();
-			return;
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			if(av_open_input_file(&fc, src, NULL, 0, NULL)!=0)
+			{
+				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open '%s'\n",src);
+				return;
+			}
 		}
 
 		//Find streams
 		if(av_find_stream_info(fc)<0)
 		{
 			//printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find streams for '%s'\n",src);
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -8728,7 +8759,6 @@ LGL_VideoEncoder
 		if(SrcVideoStreamIndex==-1)
 		{
 			//printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find video stream for '%s' in %i streams\n",src,fc->nb_streams);
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -8745,7 +8775,6 @@ LGL_VideoEncoder
 		if(SrcAudioStreamIndex==-1)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio stream for '%s' in %i streams\n",src,fc->nb_streams);
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -8761,7 +8790,6 @@ LGL_VideoEncoder
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find codec for '%s'. Codec = '%s'\n",src,SrcCodecContext->codec_name);
 			SrcCodecContext=NULL;
-			LGL.AVCodecSemaphore->Unlock();
 			UnsupportedCodec=true;
 			return;
 		}
@@ -8772,7 +8800,6 @@ LGL_VideoEncoder
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio codec for '%s'. Codec = '%s'\n",src,SrcAudioCodecContext->codec_name);
 			SrcAudioCodecContext=NULL;
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -8784,21 +8811,25 @@ LGL_VideoEncoder
 		}
 
 		// Open codec
-		if(avcodec_open(SrcCodecContext, SrcCodec)<0)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open codec for '%s'\n",src);
-			SrcCodecContext=NULL;
-			LGL.AVCodecSemaphore->Unlock();
-			return;
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			if(avcodec_open(SrcCodecContext, SrcCodec)<0)
+			{
+				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open codec for '%s'\n",src);
+				SrcCodecContext=NULL;
+				return;
+			}
 		}
 		
 		// Open audio codec
-		if(avcodec_open(SrcAudioCodecContext, SrcAudioCodec)<0)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open audio codec for '%s'\n",src);
-			SrcAudioCodecContext=NULL;
-			LGL.AVCodecSemaphore->Unlock();
-			return;
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			if(avcodec_open(SrcAudioCodecContext, SrcAudioCodec)<0)
+			{
+				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open audio codec for '%s'\n",src);
+				SrcAudioCodecContext=NULL;
+				return;
+			}
 		}
 
 		//assert(SrcFrame==NULL);
@@ -8809,7 +8840,6 @@ LGL_VideoEncoder
 		if(SrcFrame==NULL || SrcFrameRGB==NULL)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open frames for '%s'\n",src);
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -8843,25 +8873,23 @@ LGL_VideoEncoder
 		if(SwsConvertContext==NULL)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): NULL SwsConvertContext for '%s'\n",src);
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
 		SrcFrameNow=0;
 		SrcSecondsNow=0;
 	}
-	LGL.AVCodecSemaphore->Unlock();
 
 	//Prepare dst video
 
-	LGL.AVCodecSemaphore->Lock("videoEncoderThread","LGL_VideoEncoder::LGL_VideoEncoder() (dst) (meh)");
 	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+
 		// find the video encoder
 		DstCodec = avcodec_find_encoder(CODEC_ID_MJPEG);
 		if(DstCodec==NULL)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find MJPEG codec for '%s'\n",src);
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -8875,7 +8903,7 @@ LGL_VideoEncoder
 		// FormatContext
 		DstFormatContext = (AVFormatContext*)av_mallocz(sizeof(AVFormatContext));
 		DstFormatContext->oformat = DstOutputFormat;
-		strcpy(DstFormatContext->filename, dst);
+		strcpy(DstFormatContext->filename, DstPath);
 
 		// Video stream
 		DstStream = av_new_stream(DstFormatContext,0);
@@ -8905,12 +8933,14 @@ LGL_VideoEncoder
 		DstCodecContext->time_base = DstStream->time_base;//SrcCodecContext->time_base;
 		DstCodecContext->pix_fmt = PIX_FMT_YUVJ422P;
 
-		if(avcodec_open(DstCodecContext, DstCodec) < 0)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open MJPEG codec for '%s'\n",src);
-			DstCodecContext=NULL;
-			LGL.AVCodecSemaphore->Unlock();
-			return;
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			if(avcodec_open(DstCodecContext, DstCodec) < 0)
+			{
+				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open MJPEG codec for '%s'\n",src);
+				DstCodecContext=NULL;
+				return;
+			}
 		}
 
 		dump_format(DstFormatContext,0,DstFormatContext->filename,1);
@@ -8918,9 +8948,8 @@ LGL_VideoEncoder
 		int result = url_fopen(&(DstFormatContext->pb), DstFormatContext->filename, URL_WRONLY);
 		if(result<0)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't url_fopen() output file '%s' (%i)\n",dst,result);
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't url_fopen() output file '%s' (%i)\n",DstPath,result);
 			DstCodecContext=NULL;
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -8948,7 +8977,6 @@ LGL_VideoEncoder
 		if(DstMp3Codec==NULL)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio encoding codec for '%s'\n",src);
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -8960,7 +8988,7 @@ LGL_VideoEncoder
 		// FormatContext
 		DstMp3FormatContext = (AVFormatContext*)av_mallocz(sizeof(AVFormatContext));
 		DstMp3FormatContext->oformat = DstMp3OutputFormat;
-		sprintf(DstMp3FormatContext->filename, "%s.ogg",dst);
+		sprintf(DstMp3FormatContext->filename, "%s",DstMp3Path);
 
 		// audio stream
 		DstMp3Stream = av_new_stream(DstMp3FormatContext,0);
@@ -8980,7 +9008,12 @@ LGL_VideoEncoder
 		DstMp3CodecContext->sample_rate=SrcAudioCodecContext->sample_rate;
 		DstMp3CodecContext->channels=2;//SrcAudioCodecContext->channels;
 
-		if(avcodec_open(DstMp3CodecContext, DstMp3Codec) < 0)
+		int openResult=-1;
+		{
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			openResult = avcodec_open(DstMp3CodecContext, DstMp3Codec);
+		}
+		if(openResult < 0)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open audio encoder codec for '%s'\n",src);
 			EncodeAudio=false;
@@ -8993,19 +9026,17 @@ LGL_VideoEncoder
 			if(result<0)
 			{
 				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't url_fopen() audio output file '%s' (%i)\n",DstMp3FormatContext->filename,result);
-				LGL.AVCodecSemaphore->Unlock();
 				return;
 			}
 
 			av_write_header(DstMp3FormatContext);
 
-			DstMp3Buffer = (int16_t*)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
-			DstMp3BufferSamples = (int16_t*)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
-			DstMp3Buffer2 = (uint8_t*)malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
+			DstMp3Buffer = (int16_t*)malloc(LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
+			DstMp3BufferSamples = (int16_t*)malloc(LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
+			DstMp3Buffer2 = (int16_t*)malloc(LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
 		}
 #endif	//NOT_YET
 	}
-	LGL.AVCodecSemaphore->Unlock();
 
 	Valid=true;
 }
@@ -9013,94 +9044,96 @@ LGL_VideoEncoder
 LGL_VideoEncoder::
 ~LGL_VideoEncoder()
 {
-	LGL.AVCodecSemaphore->Lock("videoEncoderThread","LGL_VideoEncoder::LGL_VideoEncoder() (dst) (meh)");
+	LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+
+	//Src
+	if(SrcCodecContext)
 	{
-		//Src
-		if(SrcCodecContext)
-		{
-			avcodec_close(SrcCodecContext);
-			//av_free(SrcCodecContext);
-		}
-		if(SrcAudioCodecContext && SrcAudioCodec)
-		{
-			avcodec_close(SrcAudioCodecContext);
-			//av_free(SrcAudioCodecContext);
-		}
-		if(SrcFormatContext)
-		{
-			av_close_input_file(SrcFormatContext);
-			//av_free(SrcFormatContext);
-		}
-		if(SrcCodec)
-		{
-			//???
-		}
-		if(SrcAudioCodec)
-		{
-			//???
-		}
-		if(SrcFrame)
-		{
-			av_free(SrcFrame);
-		}
-		if(SrcFrameRGB)
-		{
-			av_free(SrcFrameRGB);
-		}
-		if(SrcBufferRGB)
-		{
-			free(SrcBufferRGB);
-		}
-
-		if(SwsConvertContext)
-		{
-			sws_freeContext(SwsConvertContext);
-		}
-
-		//Dst
-		if(DstOutputFormat)
-		{
-			//Don't free this...
-			//av_free(DstOutputFormat);
-		}
-		if(DstCodecContext)
-		{
-			avcodec_close(DstCodecContext);
-		}
-		if(DstCodec)
-		{
-			//???
-		}
-		if(DstFormatContext)
-		{
-			free(DstFormatContext);
-		}
-		if(DstStream)
-		{
-			av_free(DstStream);
-		}
-		if(DstFrameYUV)
-		{
-			av_free(DstFrameYUV);
-		}
-		if(DstBuffer)
-		{
-			free(DstBuffer);
-		}
-		if(DstMp3Buffer)
-		{
-			free(DstMp3Buffer);
-		}
-		if(DstMp3BufferSamples)
-		{
-			free(DstMp3BufferSamples);
-		}
-		if(DstMp3Buffer2)
-		{
-			free(DstMp3Buffer2);
-		}
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+		avcodec_close(SrcCodecContext);
+		//av_free(SrcCodecContext);
 	}
-	LGL.AVCodecSemaphore->Unlock();
+	if(SrcAudioCodecContext && SrcAudioCodec)
+	{
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+		avcodec_close(SrcAudioCodecContext);
+		//av_free(SrcAudioCodecContext);
+	}
+	if(SrcFormatContext)
+	{
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+		av_close_input_file(SrcFormatContext);
+		//av_free(SrcFormatContext);
+	}
+	if(SrcCodec)
+	{
+		//???
+	}
+	if(SrcAudioCodec)
+	{
+		//???
+	}
+	if(SrcFrame)
+	{
+		av_free(SrcFrame);
+	}
+	if(SrcFrameRGB)
+	{
+		av_free(SrcFrameRGB);
+	}
+	if(SrcBufferRGB)
+	{
+		free(SrcBufferRGB);
+	}
+
+	if(SwsConvertContext)
+	{
+		sws_freeContext(SwsConvertContext);
+	}
+
+	//Dst
+	if(DstOutputFormat)
+	{
+		//Don't free this...
+		//av_free(DstOutputFormat);
+	}
+	if(DstCodecContext)
+	{
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+		avcodec_close(DstCodecContext);
+	}
+	if(DstCodec)
+	{
+		//???
+	}
+	if(DstFormatContext)
+	{
+		free(DstFormatContext);
+	}
+	if(DstStream)
+	{
+		av_free(DstStream);
+	}
+	if(DstFrameYUV)
+	{
+		av_free(DstFrameYUV);
+	}
+	if(DstBuffer)
+	{
+		free(DstBuffer);
+	}
+	if(DstMp3Buffer)
+	{
+		free(DstMp3Buffer);
+	}
+	if(DstMp3BufferSamples)
+	{
+		free(DstMp3BufferSamples);
+	}
+	if(DstMp3Buffer2)
+	{
+		free(DstMp3Buffer2);
+	}
 }
 
 bool
@@ -9260,7 +9293,7 @@ Encode
 			// Convert the audio from src format to dst
 			LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling avcodec_decode_audio2() (meh)");
 			{
-				int outbufsize = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+				int outbufsize = LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE;
 				result = avcodec_decode_audio2
 				(
 					SrcAudioCodecContext,
@@ -9295,7 +9328,13 @@ Encode
 			{
 				LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling avcodec_decode_audio2() (meh)");
 				{
-					DstMp3Packet.size = avcodec_encode_audio(DstMp3CodecContext,DstMp3Buffer2,AVCODEC_MAX_AUDIO_FRAME_SIZE,DstMp3BufferSamples);
+					DstMp3Packet.size = avcodec_encode_audio
+					(
+						DstMp3CodecContext,
+						(uint8_t*)DstMp3Buffer2,
+						LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE,
+						DstMp3BufferSamples
+					);
 
 					int remainderIndex=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels;
 					int remainderSize=DstMp3BufferSamplesIndex-remainderIndex;
@@ -9307,7 +9346,7 @@ Encode
 					DstMp3Packet.dts = DstMp3Packet.pts;
 					DstMp3Packet.flags |= PKT_FLAG_KEY;
 					DstMp3Packet.stream_index = 0;
-					DstMp3Packet.data=DstMp3Buffer2;
+					DstMp3Packet.data=(uint8_t*)DstMp3Buffer2;
 					DstMp3Packet.duration=0;
 					result = av_write_frame(DstMp3FormatContext, &DstMp3Packet);
 				}
@@ -14217,15 +14256,17 @@ LoadToMemory()
 	int			audioStreamIndex=-1;
 	int			channels=0;
 
-	LGL.AVCodecSemaphore->Lock("LGL_Sound::LoadToMemory()","Opening file... (meh)");
 	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 		//Open file
-		if(av_open_input_file(&formatContext, Path, NULL, 0, NULL)!=0)
 		{
-			printf("LGL_Sound::LoadToMemory(): av_open_input_file() couldn't open '%s'\n",Path);
-			BadFile=true;
-			LGL.AVCodecSemaphore->Unlock();
-			return;
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			if(av_open_input_file(&formatContext, Path, NULL, 0, NULL)!=0)
+			{
+				printf("LGL_Sound::LoadToMemory(): av_open_input_file() couldn't open '%s'\n",Path);
+				BadFile=true;
+				return;
+			}
 		}
 
 		//Find streams
@@ -14233,7 +14274,6 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): Couldn't find streams for '%s'\n",Path);
 			BadFile=true;
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -14251,7 +14291,6 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): Couldn't find audio stream for '%s' in %i streams\n",Path,formatContext->nb_streams);
 			BadFile=true;
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -14264,7 +14303,6 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory: Couldn't find audio codec for '%s'. Codec = '%s'\n",Path,codecContext->codec_name);
 			BadFile=true;
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
@@ -14277,23 +14315,23 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): Invalid channel found for '%s': %i\n",Path,channels);
 			BadFile=true;
-			LGL.AVCodecSemaphore->Unlock();
 			return;
 		}
 
 		Hz=codecContext->sample_rate;
 
 		// Open codec
-		if(avcodec_open(codecContext,codec)<0)
 		{
-			printf("LGL_Sound::LoadToMemory(): Couldn't open codec for '%s'\n",Path);
-			av_close_input_file(formatContext);
-			BadFile=true;
-			LGL.AVCodecSemaphore->Unlock();
-			return;
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			if(avcodec_open(codecContext,codec)<0)
+			{
+				printf("LGL_Sound::LoadToMemory(): Couldn't open codec for '%s'\n",Path);
+				av_close_input_file(formatContext);
+				BadFile=true;
+				return;
+			}
 		}
 	}
-	LGL.AVCodecSemaphore->Unlock();
 
 	// Inform the codec that we can handle truncated bitstreams -- i.e.,
 	// bitstreams where frame boundaries can fall in the middle of packets
@@ -14302,10 +14340,10 @@ LoadToMemory()
 		codecContext->flags|=CODEC_FLAG_TRUNCATED;
 	}
     
-	unsigned char outbuf[AVCODEC_MAX_AUDIO_FRAME_SIZE];
 	int cyclesNow=0;
 	int cyclesMax=8;
 	int delayMS=1;
+	int16_t* outbuf=new int16_t[LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE];
 
 	for(;;)
 	{
@@ -14317,11 +14355,10 @@ LoadToMemory()
 		AVPacket packet;
 
 		int result=0;
-		LGL.AVCodecSemaphore->Lock("LGL_Sound::LoadToMemory()","Calling av_read_frame() (meh)");
 		{
+			LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 			result = av_read_frame(formatContext, &packet);
 		}
-		LGL.AVCodecSemaphore->Unlock();
 
 		if(result>=0)
 		{
@@ -14330,9 +14367,9 @@ LoadToMemory()
 			if(packet.stream_index==audioStreamIndex)
 			{
 				// Decode audio frame
-				int outbufsize = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-				LGL.AVCodecSemaphore->Lock("LGL_Sound::LoadToMemory()","Calling avcodec_decode_audio2() (meh)");
+				int outbufsize = LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE;
 				{
+					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 					avcodec_decode_audio2	//FIXME: This undercounts totalFileBytesUsed...
 					(
 						codecContext,
@@ -14342,7 +14379,6 @@ LoadToMemory()
 						packet.size
 					);
 				}
-				LGL.AVCodecSemaphore->Unlock();
 
 				PercentLoaded = totalFileBytesUsed/(float)totalFileBytes;
 
@@ -14362,7 +14398,6 @@ LoadToMemory()
 							buf16[BufferLength/2+2*a+0]=outbuf16[a];
 							buf16[BufferLength/2+2*a+1]=outbuf16[a];
 						}
-
 						BufferLength+=samples*2*2;
 					}
 					else
@@ -14422,11 +14457,10 @@ LoadToMemory()
 			}
 
 			// Free the data in the packet that was allocated by av_read_frame (but not the packet object itself)
-			LGL.AVCodecSemaphore->Lock("LGL_Sound::LoadToMemory()","Calling av_free_packet() (meh)");
 			{
+				LGL.AVCodecSemaphore->Unlock();
 				av_free_packet(&packet);
 			}
-			LGL.AVCodecSemaphore->Unlock();
 		}
 		else
 		{
@@ -14448,13 +14482,15 @@ LoadToMemory()
 	Loaded=true;
 	LoadedMin=1;
 	PercentLoaded=1.0f;
+	delete outbuf;
+	outbuf=NULL;
 	
-	LGL.AVCodecSemaphore->Lock("LGL_Sound::LoadToMemory()","Calling avcodec_close(codecContext), av_close_input_file(formatContext) (meh)");
 	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 		avcodec_close(codecContext);
 		av_close_input_file(formatContext);
 	}
-	LGL.AVCodecSemaphore->Unlock();
 }
 
 bool
@@ -25028,6 +25064,14 @@ LGL_CPUTemp()
 #endif	//LGL_LINUX
 }
 
+bool
+LGL_IsOsxAppBundle()
+{
+	char wd[2048];
+	getcwd(wd,20480);
+	return(strstr(wd,"Contents/MacOS"));
+}
+
 
 
 //Multithreading
@@ -26572,6 +26616,21 @@ LGL_ShutDown()
 		);
 #endif	//LGL_WIN32
 		system(command);
+	}
+
+	//Delete tmp files
+
+	char path[2048];
+	sprintf(path,"%s/.dvj/video/tmp",LGL_GetHomeDir());
+	if(LGL_DirectoryExists(path))
+	{
+		LGL_DirTree dirTree(path);
+		for(unsigned int a=0;a<dirTree.GetFileCount();a++)
+		{
+			char delPath[2048];
+			sprintf(delPath,"%s/%s",dirTree.GetPath(),dirTree.GetFileName(a));
+			LGL_FileDelete(delPath);
+		}
 	}
 
 	printf("LGL_Shutdown(): Omega\n");

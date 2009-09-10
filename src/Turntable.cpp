@@ -38,6 +38,129 @@ int ENTIRE_WAVE_ARRAY_COUNT;
 VisualizerObj* TurntableObj::Visualizer;
 LGL_Image* TurntableObj::NoiseImage[NOISE_IMAGE_COUNT_256_64];
 
+void
+findCachedPath
+(
+	char*		foundPath,
+	const char*	srcPath,
+	const char*	extension
+)
+{
+	//Comments assume srcPath is /home/id/mp3/hajnal.mov, extension is mjpeg.avi
+
+	strcpy(foundPath,srcPath);
+	char dotExtension[64];
+	sprintf(dotExtension,".%s",extension);
+	if
+	(
+		strstr(srcPath,dotExtension) &&
+		strcmp(dotExtension,".mjpeg.avi")==0
+	)
+	{
+		//hajnal.mov has .mjpeg.avi extension in it, indicating we look no further.
+		return;
+	}
+
+	char soundSrcDir[2048];
+	strcpy(soundSrcDir,srcPath);
+	if(char* lastSlash = strrchr(soundSrcDir,'/'))
+	{
+		lastSlash[0]='\0';
+	}
+	else
+	{
+		soundSrcDir[0]='\0';
+	}
+	
+	char soundName[2048];
+	if(strrchr(soundSrcDir,'/'))
+	{
+		strcpy(soundName,&(strrchr(srcPath,'/')[1]));
+	}
+	else
+	{
+		strcpy(soundName,srcPath);
+	}
+
+	sprintf(foundPath,"%s/dvj/%s.%s",soundSrcDir,soundName,extension);
+	if(LGL_FileExists(foundPath))
+	{
+		//Found /home/id/mp3/dvj/hajnal.mov.mjpeg.avi
+		return;
+	}
+
+	if
+	(
+		strstr(srcPath,".mjpeg.avi") &&
+		strcmp(extension,"ogg")==0
+	)
+	{
+		sprintf(foundPath,"%s/dvj/%s",soundSrcDir,soundName);
+		sprintf(strstr(foundPath,".mjpeg.avi"),".%s",extension);
+		if(LGL_FileExists(foundPath))
+		{
+			//Found /home/id/mp3/dvj/hajnal.mov.mjpeg.avi
+			return;
+		}
+	}
+
+	sprintf(foundPath,"%s/.dvj/video/tracks/%s.%s",LGL_GetHomeDir(),soundName,extension);
+	if(LGL_FileExists(foundPath))
+	{
+		//Found /home/id/.dvj/video/tracks/hajnal.mov.mjpeg.avi
+		return;
+	}
+
+	if
+	(
+		strstr(srcPath,".mjpeg.avi") &&
+		strcmp(extension,"ogg")==0
+	)
+	{
+		sprintf(foundPath,"%s/.dvj/video/tracks/%s",LGL_GetHomeDir(),soundName);
+		sprintf(strstr(foundPath,".mjpeg.avi"),".%s",extension);
+		if(LGL_FileExists(foundPath))
+		{
+			//Found /home/id/mp3/dvj/hajnal.mov.mjpeg.avi
+			return;
+		}
+	}
+
+	strcpy(foundPath,srcPath);
+	if
+	(
+		strstr(extension,".mjpeg.avi") &&
+		LGL_FileExists(foundPath)
+	)
+	{
+		//Found /home/id/mp3/hajnal.mov
+		return;
+	}
+
+	//Found nothing
+	foundPath[0]='\0';
+}
+
+void
+findVideoPath
+(
+	char*		foundPath,
+	const char*	srcPath
+)
+{
+	findCachedPath(foundPath,srcPath,"mjpeg.avi");
+}
+
+void
+findAudioPath
+(
+	char*		foundPath,
+	const char*	srcPath
+)
+{
+	findCachedPath(foundPath,srcPath,"ogg");
+}
+
 int
 videoEncoderThread
 (
@@ -50,6 +173,17 @@ videoEncoderThread
 	char encoderSrc[2048];
 	strcpy(encoderSrc,tt->VideoEncoderPathSrc);
 
+	char encoderSrcDir[2048];
+	strcpy(encoderSrcDir,encoderSrc);
+	if(char* lastSlash = strrchr(encoderSrcDir,'/'))
+	{
+		lastSlash[0]='\0';
+	}
+	else
+	{
+		encoderSrcDir[0]='\0';
+	}
+
 	if
 	(
 		encoderSrc[0]!='\0' &&
@@ -59,11 +193,9 @@ videoEncoderThread
 		//We've been requested to encode a video. Joy!
 
 		char videoPath[2048];
-		sprintf(videoPath,"%s/.dvj/video",LGL_GetHomeDir());
+		sprintf(videoPath,"%s/dvj",encoderSrcDir);
 		char videoTmpPath[2048];
-		sprintf(videoTmpPath,"%s/tmp",videoPath);
-		char videoTracksPath[2048];
-		sprintf(videoTracksPath,"%s/tracks",videoPath);
+		sprintf(videoTmpPath,"%s/.dvj/video/tmp",LGL_GetHomeDir());
 
 		if(LGL_DirectoryExists(videoPath)==false)
 		{
@@ -73,30 +205,64 @@ videoEncoderThread
 		{
 			LGL_DirectoryCreateChain(videoTmpPath);
 		}
-		if(LGL_DirectoryExists(videoTracksPath)==false)
-		{
-			LGL_DirectoryCreate(videoTracksPath);
-		}
+
+		int rand = LGL_RandInt(0,32768);
 
 		char encoderDstTmp[2048];
-		sprintf(encoderDstTmp,"%s/dvj-deleteme-mjpeg-encode-%i.avi",videoTmpPath,LGL_RandInt(0,32768));
+		sprintf(encoderDstTmp,"%s/dvj-deleteme-mjpeg-encode-%i.avi",videoTmpPath,rand);
 
 		char encoderDst[2048];
 		sprintf
 		(
 			encoderDst,
 			"%s/%s.mjpeg.avi",
-			videoTracksPath,
+			videoPath,
 			&(strrchr(encoderSrc,'/')[1])
 		);
+
+		char encoderAudioDstTmp[2048];
+		sprintf(encoderAudioDstTmp,"%s/dvj-deleteme-ogg-encode-%i.ogg",videoTmpPath,rand);
 
 		char encoderAudioDst[2048];
 		sprintf
 		(
 			encoderAudioDst,
-			"%s.ogg",
-			encoderDst
+			"%s/%s.ogg",
+			videoPath,
+			&(strrchr(encoderSrc,'/')[1])
 		);
+
+		if(strstr(encoderSrc,".mjpeg.avi"))
+		{
+			strcpy(encoderDst,encoderSrc);
+		}
+		else if(LGL_FileExists(encoderDst)==false)
+		{
+			char foundVideo[2048];
+			findAudioPath
+			(
+				foundVideo,
+				encoderSrc
+			);
+			if(LGL_FileExists(foundVideo))
+			{
+				strcpy(encoderDst,foundVideo);
+			}
+		}
+
+		if(LGL_FileExists(encoderAudioDst)==false)
+		{
+			char foundAudio[2048];
+			findAudioPath
+			(
+				foundAudio,
+				encoderSrc
+			);
+			if(LGL_FileExists(foundAudio))
+			{
+				strcpy(encoderAudioDst,foundAudio);
+			}
+		}
 
 		//Video Encoding Loop
 
@@ -106,7 +272,8 @@ printf("Encode Alpha: '%s'\n",encoderSrc);
 			LGL_VideoEncoder* encoder = new LGL_VideoEncoder
 			(
 				encoderSrc,
-				encoderDstTmp
+				encoderDstTmp,
+				encoderAudioDstTmp
 			);
 			encoder->SetEncodeAudio(LGL_FileExists(encoderAudioDst)==false);
 			encoder->SetEncodeVideo(LGL_FileExists(encoderDst)==false);
@@ -132,18 +299,61 @@ printf("Encode Alpha: '%s'\n",encoderSrc);
 					tt->VideoEncoderPercent=encoder->GetPercentFinished();
 					if(encoder->IsFinished())
 					{
+						char dotDvjPath[2048];
+						sprintf
+						(
+							dotDvjPath,
+							"%s/.dvj/video/tracks",
+							LGL_GetHomeDir()
+						);
 						if(encoder->GetEncodeVideo())
 						{
 							LGL_FileDirMove(encoderDstTmp,encoderDst);
+
+							char targetPath[2048];
+							sprintf
+							(
+								targetPath,
+								"%s/%s.mjpeg.avi",
+								dotDvjPath,
+								&(strrchr(encoderSrc,'/')[1])
+							);
+							LGL_FileDelete(targetPath);	//For stale symlinks...
+
+							char cmd[2048];
+							sprintf
+							(
+								cmd,
+								"ln -s '%s' '%s'",
+								encoderDst,
+								targetPath
+							);
+							system(cmd);
 						}
 						if(encoder->GetEncodeAudio())
 						{
 							//Audio too!
-							char encoderDstOgg[2048];
-							char encoderDstTmpOgg[2048];
-							sprintf(encoderDstOgg,"%s.ogg",encoderDst);
-							sprintf(encoderDstTmpOgg,"%s.ogg",encoderDstTmp);
-							LGL_FileDirMove(encoderDstTmpOgg,encoderDstOgg);
+							LGL_FileDirMove(encoderAudioDstTmp,encoderAudioDst);
+
+							char targetPath[2048];
+							sprintf
+							(
+								targetPath,
+								"%s/%s.ogg",
+								dotDvjPath,
+								&(strrchr(encoderSrc,'/')[1])
+							);
+							LGL_FileDelete(targetPath);	//For stale symlinks...
+
+							char cmd[2048];
+							sprintf
+							(
+								cmd,
+								"ln -s '%s' '%s'",
+								encoderAudioDst,
+								targetPath
+							);
+							system(cmd);
 						}
 						break;
 					}
@@ -714,17 +924,42 @@ NextFrame
 					 target
 				);
 				strcpy(SoundSrcPath,filename);
+				strcpy(SoundSrcDir,SoundSrcPath);
+				if(char* lastSlash = strrchr(SoundSrcDir,'/'))
+				{
+					lastSlash[0]='\0';
+				}
+				else
+				{
+					SoundSrcDir[0]='\0';
+				}
 				
 				char videoTracksPath[2048];
-				sprintf(videoTracksPath,"%s/.dvj/video/tracks",LGL_GetHomeDir());
+				sprintf(videoTracksPath,"%s/dvj",SoundSrcDir);
 				char filenameCached[2048];
+				findAudioPath(filenameCached,SoundSrcPath);
+				/*
 				sprintf
 				(
 					filenameCached,
-					"%s/%s.mjpeg.avi.ogg",
+					"%s/%s.ogg",
 					videoTracksPath,
 					&(strrchr(filename,'/')[1])
 				);
+				if
+				(
+					strstr(SoundName,".mjpeg.avi") &&
+					strstr(filenameCached,".mjpeg.avi") &&
+					LGL_FileExists(filenameCached)==false
+				)
+				{
+					sprintf
+					(
+						strstr(filenameCached,".mjpeg.avi"),
+						".ogg"
+					);
+				}
+				*/
 
 				if(LGL_FileExists(filename))
 				{
@@ -737,6 +972,7 @@ NextFrame
 						filenameSnd=filenameCached;
 					}
 					LGL_DrawLogWrite("!dvj::NewSound|%s|%i\n",filenameSnd,Which);
+printf("new LGL_Sound(): %s\n",filenameSnd);
 					Sound=new LGL_Sound
 					(
 						 filenameSnd,
@@ -1310,7 +1546,11 @@ NextFrame
 		{
 			VideoEncoderPercent=-1.0f;
 			char videoFileName[1024];
-			sprintf(videoFileName,"%s/.dvj/video/tracks/%s.mjpeg.avi",LGL_GetHomeDir(),SoundName);
+			findVideoPath
+			(
+				videoFileName,
+				SoundSrcPath
+			);
 			VideoFileExists=LGL_FileExists(videoFileName);
 			if(VideoFileExists)
 			{
@@ -1887,7 +2127,11 @@ NextFrame
 			SelectNewVideo();
 
 			char videoFileName[1024];
-			sprintf(videoFileName,"%s/.dvj/video/tracks/%s.mjpeg.avi",LGL_GetHomeDir(),SoundName);
+			findVideoPath
+			(
+				videoFileName,
+				SoundSrcPath
+			);
 			VideoFileExists=LGL_FileExists(videoFileName);
 			if(VideoFileExists)
 			{
@@ -2231,7 +2475,7 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 	WhiteFactor = LGL_Max(0.0f,WhiteFactor-4.0f*LGL_SecondsSinceLastFrame());
 	if(noiseIncreasing==false)
 	{
-		NoiseFactor = LGL_Max(0.0f,NoiseFactor-2.0f*LGL_SecondsSinceLastFrame());
+		NoiseFactor = LGL_Max(0.0f,NoiseFactor-2.0f*1.0f/60.0f);
 	}
 }
 
@@ -3350,8 +3594,8 @@ LoadAllCachedData()
 		sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),SoundName,ENTIRE_WAVE_ARRAY_COUNT);
 		sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
 		sprintf(cachedFileLengthPath,"%s/.dvj/cache/fileLength/%s.dvj-filelength.txt",LGL_GetHomeDir(),SoundName);
-		sprintf(cachedVideoPath,"%s/.dvj/video/tracks/%s.mjpeg.avi",LGL_GetHomeDir(),SoundName);
-		sprintf(cachedAudioPath,"%s.ogg",cachedVideoPath);
+		sprintf(cachedVideoPath,"%s/dvj/%s.mjpeg.avi",SoundSrcDir,SoundName);
+		sprintf(cachedAudioPath,"%s/dvj/%s.ogg",SoundSrcDir,SoundName);
 
 		if(LGL_FileExists(waveArrayDataPath))
 		{
@@ -3823,7 +4067,12 @@ SelectNewVideo
 	{
 		//Change the normal videos
 		char videoFileName[1024];
-		sprintf(videoFileName,"%s/.dvj/video/tracks/%s.mjpeg.avi",LGL_GetHomeDir(),SoundName);
+		findVideoPath
+		(
+			videoFileName,
+			SoundSrcPath
+		);
+
 		if
 		(
 			forceRandom ||
@@ -3866,6 +4115,7 @@ SelectNewVideo
 				return;
 			}
 
+printf("VideoDecoder: %s\n",videoFileName);
 			if(VideoFront==NULL)
 			{
 				VideoFront=new LGL_VideoDecoder(videoFileName);

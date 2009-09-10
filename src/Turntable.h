@@ -136,6 +136,7 @@ private:
 	LGL_Sound*			Sound;
 	char				SoundName[1024];
 	char				SoundSrcPath[1024];
+	char				SoundSrcDir[1024];
 	Uint8*				SoundBuffer;
 	unsigned long			SoundBufferLength;
 	unsigned long			SoundBufferCurrentPageIndex;
