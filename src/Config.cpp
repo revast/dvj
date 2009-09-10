@@ -31,6 +31,9 @@
 using namespace std;
 
 void
+CreateDotJackdrc();
+
+void
 CreateDotDVJTree();
 
 void
@@ -51,6 +54,7 @@ ConfigInit()
 {
 	sprintf(dotDvj,"%s/.dvj",LGL_GetHomeDir());
 
+	CreateDotJackdrc();
 	CreateDotDVJTree();
 	LoadDVJRC();
 	LoadKeyboardInput();
@@ -70,6 +74,8 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"#projectorQuadrentResX=0\n");
 		fprintf(fd,"#projectorQuadrentResY=0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"purgeInactiveMemory=true\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"videoBufferFrames=20\n");
 		fprintf(fd,"\n");
@@ -119,6 +125,21 @@ LoadKeyboardInput()
 	inputKeyboardConfigFile = new ConfigFile(inputKeyboard);
 
 	PrepareKeyMap();
+}
+
+void
+CreateDotJackdrc()
+{
+	char dotJackdrcPath[2048];
+	sprintf(dotJackdrcPath,"%s/.jackdrc",LGL_GetHomeDir());
+	if(LGL_FileExists(dotJackdrcPath)==false)
+	{
+		if(FILE* fd=fopen(dotJackdrcPath,"w"))
+		{
+			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio\n");
+			fclose(fd);
+		}
+	}
 }
 
 void
@@ -222,6 +243,12 @@ CreateDotDVJTree()
 	{
 		LGL_DirectoryCreate(dvjVideoTmp);
 	}
+}
+
+bool
+GetPurgeInactiveMemory()
+{
+	return(dvjrcConfigFile->read<bool>("purgeInactiveMemory",true));
 }
 
 void
