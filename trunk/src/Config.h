@@ -27,6 +27,9 @@
 void
 ConfigInit();
 
+bool
+GetPurgeInactiveMemory();
+
 void
 GetColorCool
 (
