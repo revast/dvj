@@ -368,7 +368,7 @@ private:
 unsigned int	LGL_CPUCount();
 unsigned int	LGL_CPUSpeed(int which=-1);		//Returns MHz
 int		LGL_CPUTemp();				//Returns Celsius
-
+bool		LGL_IsOsxAppBundle();
 
 
 //Threading
@@ -1102,7 +1102,8 @@ public:
 				LGL_VideoEncoder
 				(
 					const char*	src,
-					const char*	dst
+					const char*	dstVideo,
+					const char*	dstAudio
 				);
 				~LGL_VideoEncoder();
 
@@ -1175,7 +1176,7 @@ private:
 	int16_t*		DstMp3Buffer;
 	int16_t*		DstMp3BufferSamples;
 	int			DstMp3BufferSamplesIndex;
-	uint8_t*		DstMp3Buffer2;
+	int16_t*		DstMp3Buffer2;
 	AVPacket		DstMp3Packet;
 };
 
