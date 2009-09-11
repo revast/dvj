@@ -8100,6 +8100,11 @@ MaybeLoadVideo()
 		return;
 	}
 
+	FPSDisplayed=0;
+	FPSMissed=0;
+	FPSDisplayedHitCounter=0;
+	FPSDisplayedMissCounter=0;
+
 	if(strcmp(PathNext,"NULL")==0)
 	{
 		strcpy(Path,PathNext);
@@ -8247,7 +8252,8 @@ MaybeDecodeImage()
 		FormatContext==NULL ||
 		CodecContext==NULL ||
 		FrameNative==NULL ||
-		FrameRGB==NULL
+		FrameRGB==NULL ||
+		strcmp(Path,"NULL")==0
 	)
 	{
 		return;

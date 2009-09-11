@@ -1106,42 +1106,42 @@ DrawVideos
 				bright,
 				preview?1.0f:0.0f
 			);
-		}
 
-		if(preview)
-		{
-			LGL_GetFont().DrawString
-			(
-				rOrig+0.05f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
-				1,1,1,1,
-				false,
-				0.75f,
-				"%i",
-				Videos[videoNow]->GetFPS()
-			);
-
-			float br=1.0f;
-			LGL_GetFont().DrawString
-			(
-				rOrig+0.05f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
-				br,br,br,1,
-				false,
-				0.75f,
-				"%i",
-				Videos[videoNow]->GetFPSDisplayed()
-			);
-
-			if(Videos[videoNow]->GetFPSMissed())
+			if(preview)
 			{
 				LGL_GetFont().DrawString
 				(
-					rOrig+0.25f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
-					br,0,0,1,
+					rOrig+0.05f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
+					1,1,1,1,
 					false,
 					0.75f,
-					"(%i)",
-					Videos[videoNow]->GetFPSMissed()
+					"%i",
+					Videos[videoNow]->GetFPS()
 				);
+
+				float br=1.0f;
+				LGL_GetFont().DrawString
+				(
+					rOrig+0.05f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
+					br,br,br,1,
+					false,
+					0.75f,
+					"%i",
+					Videos[videoNow]->GetFPSDisplayed()
+				);
+
+				if(Videos[videoNow]->GetFPSMissed())
+				{
+					LGL_GetFont().DrawString
+					(
+						rOrig+0.25f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
+						br,0,0,1,
+						false,
+						0.75f,
+						"(%i)",
+						Videos[videoNow]->GetFPSMissed()
+					);
+				}
 			}
 		}
 
