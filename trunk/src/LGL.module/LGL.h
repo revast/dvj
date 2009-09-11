@@ -1135,8 +1135,6 @@ private:
 	AVCodec*		SrcCodec;
 	AVCodec*		SrcAudioCodec;
 	AVFrame*		SrcFrame;
-	AVFrame*		SrcFrameRGB;
-	uint8_t*		SrcBufferRGB;
 	AVPacket		SrcPacket;
 	double			SrcPacketPosMax;
 	int			SrcAudioStreamIndex;
