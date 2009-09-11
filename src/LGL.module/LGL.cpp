@@ -7746,6 +7746,7 @@ SetVideo
 )
 {
 	LGL_ScopeLock pathLock(PathSemaphore);
+	if(path==NULL) path="NULL";
 	if(strcmp(Path,path)!=0)
 	{
 		if(Image)
@@ -7831,6 +7832,11 @@ GetImage()
 			true,
 			"Empty LGL_VideoDecoder"
 		);
+	}
+	if(strcmp(Path,"NULL")==0)
+	{
+		Image->SetTimestamp(-1);
+		return(Image);
 	}
 
 	char path[2048];
@@ -8091,6 +8097,13 @@ MaybeLoadVideo()
 {
 	if(PathNext[0]=='\0')
 	{
+		return;
+	}
+
+	if(strcmp(PathNext,"NULL")==0)
+	{
+		strcpy(Path,PathNext);
+		PathNext[0]='\0';
 		return;
 	}
 
@@ -8697,8 +8710,6 @@ LGL_VideoEncoder
 	SrcCodec=NULL;
 	SrcAudioCodec=NULL;
 	SrcFrame=NULL;
-	SrcFrameRGB=NULL;
-	SrcBufferRGB=NULL;
 	SrcPacketPosMax=0;
 	SrcPacket.pos=0;
 
@@ -8833,11 +8844,9 @@ LGL_VideoEncoder
 		}
 
 		//assert(SrcFrame==NULL);
-		//assert(SrcFrameRGB==NULL);
 		SrcFrame=avcodec_alloc_frame();
-		SrcFrameRGB=avcodec_alloc_frame();
 
-		if(SrcFrame==NULL || SrcFrameRGB==NULL)
+		if(SrcFrame==NULL)
 		{
 			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open frames for '%s'\n",src);
 			return;
@@ -8852,8 +8861,6 @@ LGL_VideoEncoder
 			SrcBufferWidth,
 			SrcBufferHeight
 		);
-
-		SrcBufferRGB=new uint8_t[SrcBufferBytes];
 
 		SwsConvertContext = sws_getContext
 		(
@@ -8965,7 +8972,7 @@ LGL_VideoEncoder
 			SrcBufferHeight
 		);
 
-		DstBuffer = (uint8_t*)malloc(SrcBufferWidth*SrcBufferHeight*4);
+		DstBuffer = (uint8_t*)av_mallocz(SrcBufferWidth*SrcBufferHeight*4);
 
 #ifndef	NOT_YET
 		//Mp3 output
@@ -9031,9 +9038,9 @@ LGL_VideoEncoder
 
 			av_write_header(DstMp3FormatContext);
 
-			DstMp3Buffer = (int16_t*)malloc(LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
-			DstMp3BufferSamples = (int16_t*)malloc(LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
-			DstMp3Buffer2 = (int16_t*)malloc(LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
+			DstMp3Buffer = (int16_t*)av_mallocz(LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
+			DstMp3BufferSamples = (int16_t*)av_mallocz(LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
+			DstMp3Buffer2 = (int16_t*)av_mallocz(LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
 		}
 #endif	//NOT_YET
 	}
@@ -9077,14 +9084,6 @@ LGL_VideoEncoder::
 	{
 		av_free(SrcFrame);
 	}
-	if(SrcFrameRGB)
-	{
-		av_free(SrcFrameRGB);
-	}
-	if(SrcBufferRGB)
-	{
-		free(SrcBufferRGB);
-	}
 
 	if(SwsConvertContext)
 	{
@@ -9108,7 +9107,7 @@ LGL_VideoEncoder::
 	}
 	if(DstFormatContext)
 	{
-		free(DstFormatContext);
+		av_freep(&DstFormatContext);
 	}
 	if(DstStream)
 	{
@@ -9120,19 +9119,19 @@ LGL_VideoEncoder::
 	}
 	if(DstBuffer)
 	{
-		free(DstBuffer);
+		av_freep(&DstBuffer);
 	}
 	if(DstMp3Buffer)
 	{
-		free(DstMp3Buffer);
+		av_freep(&DstMp3Buffer);
 	}
 	if(DstMp3BufferSamples)
 	{
-		free(DstMp3BufferSamples);
+		av_freep(&DstMp3BufferSamples);
 	}
 	if(DstMp3Buffer2)
 	{
-		free(DstMp3Buffer2);
+		av_freep(&DstMp3Buffer2);
 	}
 }
 
@@ -12779,7 +12778,7 @@ LGL_Sound
 	if(buffer==NULL)
 	{
 		BufferLengthTotal=4*44100*60*20;
-		Buffer=(Uint8*)malloc(BufferLengthTotal);
+		Buffer=(Uint8*)av_mallocz(BufferLengthTotal);
 	}
 
 	BufferReaderCount=0;

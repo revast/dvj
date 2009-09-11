@@ -1726,10 +1726,12 @@ printf("new LGL_Sound(): %s\n",filenameSnd);
 			if(VideoFront)
 			{
 				VideoFront->GetImage()->SetTimestamp(-1);
+				VideoFront->SetVideo(NULL);
 			}
 			if(VideoBack)
 			{
 				VideoBack->GetImage()->SetTimestamp(-1);
+				VideoBack->SetVideo(NULL);
 			}
 			Mode=0;
 			Mode0BackspaceTimer.Reset();
