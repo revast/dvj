@@ -650,25 +650,48 @@ LGL_Image* logo=NULL;
 void
 DrawLoadScreen()
 {
-	if(logo==NULL)
+	char loadScreenPath[2048];
+
+	//Try user-specified (defaults to ~/.dvj/data/image/loadscreen.png
+	GetLoadScreenPath(loadScreenPath);
+
+	if(LGL_FileExists(loadScreenPath)==false)
 	{
-		logo = new LGL_Image("data/image/logo.png");
+		//Fall back on default, which might not exist...
+		strcpy(loadScreenPath,"data/image/loadscreen.png");
 	}
-	float height=0.03f;
-	float aspect = LGL_DisplayAspectRatio();
-	logo->DrawToScreen
-	(
-		0.5f-0.5f*height,	0.5f+0.5f*height,
-		0.5f-0.5f*height*aspect,0.5f+0.5f*height*aspect
-	);
-	LGL_GetFont().DrawString
-	(
-		.5,.3,.02,
-		1,1,1,1,
-		true,
-		.75,
-		" loading..."
-	);
+
+
+	if(LGL_FileExists(loadScreenPath))
+	{
+		if(logo==NULL)
+		{
+			logo = new LGL_Image(loadScreenPath);
+		}
+		logo->DrawToScreen();
+	}
+	else
+	{
+		if(logo==NULL)
+		{
+			logo = new LGL_Image("data/image/logo.png");
+		}
+		float height=0.03f;
+		float aspect = LGL_DisplayAspectRatio();
+		logo->DrawToScreen
+		(
+			0.5f-0.5f*height,	0.5f+0.5f*height,
+			0.5f-0.5f*height*aspect,0.5f+0.5f*height*aspect
+		);
+		LGL_GetFont().DrawString
+		(
+			.5,.3,.02,
+			1,1,1,1,
+			true,
+			.75,
+			" loading..."
+		);
+	}
 	LGL_SwapBuffers();
 }
 
@@ -744,12 +767,22 @@ int main(int argc, char** argv)
 
 	InitializeGlobalsPreLGL();
 
+	const char* appName = "dvj";
+	if(LGL_IsOsxAppBundle())
+	{
+		appName=argv[0];
+		if(const char* lastSlash = strrchr(argv[0],'/'))
+		{
+			appName = &(lastSlash[1]);
+		}
+	}
+
 	LGL_Init
 	(
 		resX,
 		resY,
 		channels,
-		"ZEBBLERTRON"
+		appName
 	);
 
 	LGL_MouseVisible(false);
