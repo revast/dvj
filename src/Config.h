@@ -31,6 +31,12 @@ bool
 GetPurgeInactiveMemory();
 
 void
+GetLoadScreenPath
+(
+	char*	loadScreenPath
+);
+
+void
 GetColorCool
 (
 	float&	r,

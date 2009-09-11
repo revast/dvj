@@ -32,8 +32,6 @@ TARGET_BIN_OSX		= ../$(PREFIX_BIN).$(SUFFIX_BIN_OSX)
 TARGET_BIN_W32		= ../$(PREFIX_BIN).$(SUFFIX_BIN_W32)
 TARGET_BIN_ALL		= $(TARGET_BIN_LIN) $(TARGET_BIN_OSX) $(TARGET_BIN_W32)
 
-TARGET_APP_BUNDLE_BIN_OSX	= ../dist/osx/root/$(PREFIX_BIN).app/Contents/MacOS/$(PREFIX_BIN)
-
 OBJDIR			= obj/
 OBJDIR_LIN		= $(OBJDIR)lin/
 OBJDIR_OSX		= $(OBJDIR)osx/
@@ -176,15 +174,6 @@ $(TARGET_BIN_LIN): $(TARGET_LIB_LIN)
 $(TARGET_BIN_OSX): $(TARGET_LIB_OSX)
 	@echo "	$(CC_OSX) $(TARGET_BIN_OSX)"
 	@$(CC_OSX) $(OBJ_FULL_OSX) $(LGLLIBRARIES_OSX) -o $(TARGET_BIN_OSX)
-	@cp $(TARGET_BIN_OSX) $(TARGET_APP_BUNDLE_BIN_OSX)
-	@install_name_tool -change /usr/local/lib/libSDL_image-1.2.0.dylib @executable_path/lib/libSDL_image-1.2.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
-	@install_name_tool -change /usr/local/lib/libpng12.0.dylib @executable_path/lib/libpng12.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
-	@install_name_tool -change /usr/local/lib/libjpeg.62.dylib @executable_path/lib/libjpeg.62.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
-	@install_name_tool -change /usr/local/lib/libSDL_net-1.2.0.dylib @executable_path/lib/libSDL_net-1.2.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
-	@install_name_tool -change /usr/local/lib/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
-	@install_name_tool -change /usr/local/lib/libsamplerate.0.dylib @executable_path/lib/libsamplerate.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
-	@install_name_tool -change /usr/local/lib/libjack.0.dylib @executable_path/lib/libjack.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
-	@install_name_tool -change /usr/local/lib/libjackserver.0.dylib @executable_path/lib/libjackserver.0.dylib $(TARGET_APP_BUNDLE_BIN_OSX)
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
 $(TARGET_BIN_W32): $(TARGET_LIB_W32)

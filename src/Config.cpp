@@ -75,7 +75,9 @@ CreateDefaultDVJRC
 		fprintf(fd,"#projectorQuadrentResX=0\n");
 		fprintf(fd,"#projectorQuadrentResY=0\n");
 		fprintf(fd,"\n");
-		fprintf(fd,"purgeInactiveMemory=true\n");
+		fprintf(fd,"purgeInactiveMemory=false\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"loadScreenPath=~/.dvj/data/image/loadscreen.png\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"videoBufferFrames=20\n");
 		fprintf(fd,"\n");
@@ -243,12 +245,53 @@ CreateDotDVJTree()
 	{
 		LGL_DirectoryCreate(dvjVideoTmp);
 	}
+
+	char dvjData[2048];
+	sprintf(dvjData,"%s/data",dotDvj);
+	if(LGL_DirectoryExists(dvjData)==false)
+	{
+		LGL_DirectoryCreate(dvjData);
+	}
+
+	char dvjDataImage[2048];
+	sprintf(dvjDataImage,"%s/image",dvjData);
+	if(LGL_DirectoryExists(dvjDataImage)==false)
+	{
+		LGL_DirectoryCreate(dvjDataImage);
+	}
 }
 
 bool
 GetPurgeInactiveMemory()
 {
-	return(dvjrcConfigFile->read<bool>("purgeInactiveMemory",true));
+	return(dvjrcConfigFile->read<bool>("purgeInactiveMemory",false));
+}
+
+void
+GetLoadScreenPath
+(
+	char*	loadScreenPath
+)
+{
+	const char* defaultLoadScreenPath = "~/.dvj/data/image/loadscreen.png";
+	std::string pathStr = dvjrcConfigFile->read<std::string>("loadScreenPath",defaultLoadScreenPath);
+	strcpy(loadScreenPath,pathStr.c_str());
+	if(loadScreenPath[0]=='~')
+	{
+		char tmp[2048];
+		sprintf(tmp,"%s/%s",LGL_GetHomeDir(),&(loadScreenPath[2]));
+		strcpy(loadScreenPath,tmp);
+	}
+
+	if(char* dot = strrchr(loadScreenPath,'.'))
+	{
+		if(strcasecmp(dot,".png")==0)
+		{
+			return;
+		}
+	}
+
+	strcpy(loadScreenPath,defaultLoadScreenPath);
 }
 
 void
