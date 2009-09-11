@@ -1038,8 +1038,8 @@ DrawVideos
 		t=yCenter+(previewPixelAR/projAR)*yRadius;
 	}
 
-	float w=r-l;
-	float h=t-b;
+	//float w=r-l;
+	//float h=t-b;
 
 	int videoNow=which;
 
@@ -1135,7 +1135,7 @@ DrawVideos
 			{
 				LGL_GetFont().DrawString
 				(
-					r+0.25f*w,b+0.05f*h,0.1f*h,
+					rOrig+0.25f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
 					br,0,0,1,
 					false,
 					0.75f,
