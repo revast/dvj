@@ -3446,8 +3446,8 @@ LGL_ClipRectEnable
 		(
 			sLeft,
 			sBottom,
-			sRight,
-			sTop
+			sRight-sLeft,
+			sTop-sBottom
 		);
 	}
 	else
