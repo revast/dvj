@@ -239,7 +239,7 @@ videoEncoderThread
 		else if(LGL_FileExists(encoderDst)==false)
 		{
 			char foundVideo[2048];
-			findAudioPath
+			findVideoPath
 			(
 				foundVideo,
 				encoderSrc
@@ -265,10 +265,8 @@ videoEncoderThread
 		}
 
 		//Video Encoding Loop
-
 		if(LGL_FileExists(encoderDst)==false || LGL_FileExists(encoderAudioDst)==false)
 		{
-printf("Encode Alpha: '%s'\n",encoderSrc);
 			LGL_VideoEncoder* encoder = new LGL_VideoEncoder
 			(
 				encoderSrc,
