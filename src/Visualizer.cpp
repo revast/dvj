@@ -35,8 +35,8 @@ VisualizerObj()
 	//AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
 
 	float left=0.0f;
-	float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX(0));
-	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_ScreenResolutionY(0));
+	float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
+	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
 	float top=1.0f;
 
 	SetViewPortVisuals(left,right,bottom,top);
@@ -1003,6 +1003,41 @@ DrawVideos
 	bool	fullBrightness
 )
 {
+	//float lOrig=l;
+	float rOrig=r;
+	float wOrig=r-l;
+	float bOrig=b;
+	float tOrig=t;
+	float hOrig=t-b;
+
+	if(preview)
+	{
+		float projAR=
+			(LGL_WindowResolutionX()*(ViewPortVisualsRight-ViewPortVisualsLeft))/(float)
+			(LGL_WindowResolutionY()*(ViewPortVisualsTop-ViewPortVisualsBottom));
+
+		if(LGL_DisplayCount()>1)
+		{
+			int oldDisplay=LGL_GetActiveDisplay();
+			LGL_SetActiveDisplay(1);
+			projAR=LGL_DisplayAspectRatio();
+			LGL_SetActiveDisplay(oldDisplay);
+		}
+
+		int previewPixelL=l*LGL_WindowResolutionX();
+		int previewPixelR=r*LGL_WindowResolutionX();
+		int previewPixelB=b*LGL_WindowResolutionY();
+		int previewPixelT=t*LGL_WindowResolutionY();
+
+		float previewPixelAR = (previewPixelR-previewPixelL)/(float)(previewPixelT-previewPixelB);
+
+		float yCenter=(b+t)/2.0f;
+		float yRadius=yCenter-b;
+
+		b=yCenter-(previewPixelAR/projAR)*yRadius;
+		t=yCenter+(previewPixelAR/projAR)*yRadius;
+	}
+
 	float w=r-l;
 	float h=t-b;
 
@@ -1077,7 +1112,7 @@ DrawVideos
 		{
 			LGL_GetFont().DrawString
 			(
-				r+0.05f*w,t-0.15f*h,0.1f*h,
+				rOrig+0.05f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
 				1,1,1,1,
 				false,
 				0.75f,
@@ -1088,7 +1123,7 @@ DrawVideos
 			float br=1.0f;
 			LGL_GetFont().DrawString
 			(
-				r+0.05f*w,b+0.05f*h,0.1f*h,
+				rOrig+0.05f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
 				br,br,br,1,
 				false,
 				0.75f,

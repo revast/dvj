@@ -67,7 +67,7 @@ MixerObj()
 	LowRez=false;
 	CanDisplayJackWarning=true;
 
-	SetViewPortStatus(GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX(0),1.0f,0.5f,1.0f);
+	SetViewPortStatus(GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0),1.0f,0.5f,1.0f);
 }
 
 MixerObj::

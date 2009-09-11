@@ -68,7 +68,7 @@ Main_DrawGlowLines
 	}
 	if(EIGHT_WAY==false)
 	{
-		float myX = quadrentSplitX + 1.0f/LGL_ScreenResolutionX(0);
+		float myX = quadrentSplitX + 1.0f/LGL_DisplayResolutionX(0);
 		if(myX<=1.0f)
 		{
 			LGL_DrawLineToScreen
