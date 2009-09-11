@@ -283,9 +283,20 @@ GetProjectorQuadrentResX()
 	int resX=dvjrcConfigFile->read<int>("projectorQuadrentResX",0);
 	if(resX<=0)
 	{
-		resX=LGL_ScreenResolutionX(0);
+		resX=LGL_DisplayResolutionX(0);
 	}
 	return(resX);
+}
+
+int
+GetProjectorQuadrentResY()
+{
+	int resY=dvjrcConfigFile->read<int>("projectorQuadrentResY",0);
+	if(resY<=0)
+	{
+		resY=LGL_DisplayResolutionY(0)/2;
+	}
+	return(resY);
 }
 
 int
@@ -297,17 +308,6 @@ GetVideoBufferFrames()
 		videoBufferFrames=2;
 	}
 	return(videoBufferFrames);
-}
-
-int
-GetProjectorQuadrentResY()
-{
-	int resY=dvjrcConfigFile->read<int>("projectorQuadrentResY",0);
-	if(resY<=0)
-	{
-		resY=LGL_ScreenResolutionY(0)/2;
-	}
-	return(resY);
 }
 
 #define MAP_STRING_TO_SDLK(X) if(strcasecmp(str,#X)==0) return(X)

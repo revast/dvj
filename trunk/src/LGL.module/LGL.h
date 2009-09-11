@@ -217,7 +217,7 @@ enum
 };
 
 #define LGL_PI	3.1415926535
-#define LGL_SCREEN_MAX	2
+#define LGL_DISPLAY_MAX	2
 
 //Endian macros for dealing with OSX's big-endian-ness (this'll be fun when they move to intel...)
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN
@@ -451,22 +451,22 @@ void		LGL_SwapBuffers();
 void		LGL_FullScreenToggle();
 void		LGL_FullScreen(bool inFullScreen);
 bool		LGL_IsFullScreen();
-int		LGL_VideoResolutionX();
-int		LGL_VideoResolutionY();
-int		LGL_ScreenCount();
-int		LGL_ScreenResolutionX(int which);
-int		LGL_ScreenResolutionY(int which);
-float		LGL_VideoAspectRatio();
-float		LGL_ScreenAspectRatio();
-int		LGL_GetActiveScreen();
-void		LGL_SetActiveScreen(int screen);
+int		LGL_WindowResolutionX();
+int		LGL_WindowResolutionY();
+int		LGL_DisplayCount();
+int		LGL_DisplayResolutionX(int which);
+int		LGL_DisplayResolutionY(int which);
+float		LGL_WindowAspectRatio();
+float		LGL_DisplayAspectRatio();
+int		LGL_GetActiveDisplay();
+void		LGL_SetActiveDisplay(int display);
 
-void		LGL_ViewPortScreen
+void		LGL_ViewPortDisplay
 		(
 			float left=0,	float right=1,
 			float bottom=0,	float top=1
 		);
-void		LGL_GetViewPortScreen
+void		LGL_GetViewPortDisplay
 		(
 			float&	left,	float&	right,
 			float&	bottom,	float&	top

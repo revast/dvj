@@ -498,7 +498,7 @@ TurntableObj
 	VideoAdvanceRate=1.0f;
 	VideoFrequencySensitiveMode=0;
 
-	ENTIRE_WAVE_ARRAY_COUNT=LGL_ScreenResolutionX(0);
+	ENTIRE_WAVE_ARRAY_COUNT=LGL_WindowResolutionX();
 
 	ClearRecallOrigin();
 
@@ -2475,7 +2475,7 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 	WhiteFactor = LGL_Max(0.0f,WhiteFactor-4.0f*LGL_SecondsSinceLastFrame());
 	if(noiseIncreasing==false)
 	{
-		NoiseFactor = LGL_Max(0.0f,NoiseFactor-2.0f*1.0f/60.0f);
+		NoiseFactor = LGL_Max(0.0f,NoiseFactor-2.0f*LGL_Min(LGL_SecondsSinceLastFrame(),1.0f/60.0f));
 	}
 }
 

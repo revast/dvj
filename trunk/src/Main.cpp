@@ -534,17 +534,17 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	}
 
 	Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
-	if(LGL_ScreenCount()>1 && LGL_IsFullScreen())
+	if(LGL_DisplayCount()>1 && LGL_IsFullScreen())
 	{
-		LGL_SetActiveScreen(1);
+		LGL_SetActiveDisplay(1);
 		Visualizer->SetViewPortVisuals(0.0f,1.0f,0.0f,1.0f);
 		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
 		float left=0.0f;
-		float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_ScreenResolutionX(0));
-		float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_ScreenResolutionY(0));
+		float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
+		float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
 		float top=1.0f;
 		Visualizer->SetViewPortVisuals(left,right,bottom,top);
-		LGL_SetActiveScreen(0);
+		LGL_SetActiveDisplay(0);
 	}
 	/*
 	else if(EIGHT_WAY==false)
@@ -655,7 +655,7 @@ DrawLoadScreen()
 		logo = new LGL_Image("data/image/logo.png");
 	}
 	float height=0.03f;
-	float aspect = LGL_ScreenAspectRatio();
+	float aspect = LGL_DisplayAspectRatio();
 	logo->DrawToScreen
 	(
 		0.5f-0.5f*height,	0.5f+0.5f*height,
