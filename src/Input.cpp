@@ -935,76 +935,127 @@ WaveformSavePointJumpAtMeasure
 	return(jump);
 }
 
-bool
-InputObj::
-WaveformLoopBegin
-(
-	unsigned int	target
-)	const
-{
-	bool begin=false;
-	
-	for(unsigned int a=0;a<Children.size();a++)
-	{
-		begin|=Children[a]->WaveformLoopBegin(target);
-	}
-
-	return(begin);
-}
-
-bool
-InputObj::
-WaveformLoopEnd
-(
-	unsigned int	target
-)	const
-{
-	bool end=false;
-	
-	for(unsigned int a=0;a<Children.size();a++)
-	{
-		end|=Children[a]->WaveformLoopEnd(target);
-	}
-
-	return(end);
-}
-
-bool
-InputObj::
-WaveformLoopDisable
-(
-	unsigned int	target
-)	const
-{
-	bool disable=false;
-	
-	for(unsigned int a=0;a<Children.size();a++)
-	{
-		disable|=Children[a]->WaveformLoopDisable(target);
-	}
-
-	return(disable);
-}
-
 int
 InputObj::
-WaveformLoopMeasures
+WaveformLoopMeasuresExponent
 (
 	unsigned int	target
 )	const
 {
-	int measures=-1;
+	int exponent=WAVEFORM_LOOP_MEASURES_EXPONENT_NULL;
 
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		int candidate=Children[a]->WaveformLoopMeasures(target);
-		if(candidate!=-1)
+		int candidate=Children[a]->WaveformLoopMeasuresExponent(target);
+		if(candidate!=WAVEFORM_LOOP_MEASURES_EXPONENT_NULL)
 		{
-			measures=candidate;
+			exponent=candidate;
 		}
 	}
 
-	return(measures);
+	return(exponent);
+}
+
+bool
+InputObj::
+WaveformLoopMeasuresHalf
+(
+	unsigned int	target
+)	const
+{
+	bool half=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		half|=Children[a]->WaveformLoopMeasuresHalf(target);
+	}
+
+	return(half);
+}
+
+bool
+InputObj::
+WaveformLoopMeasuresDouble
+(
+	unsigned int	target
+)	const
+{
+	bool twoX=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		twoX|=Children[a]->WaveformLoopMeasuresDouble(target);
+	}
+
+	return(twoX);
+}
+
+bool
+InputObj::
+WaveformLoopSecondsLess
+(
+	unsigned int	target
+)	const
+{
+	bool less=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		less|=Children[a]->WaveformLoopSecondsLess(target);
+	}
+
+	return(less);
+}
+
+bool
+InputObj::
+WaveformLoopSecondsMore
+(
+	unsigned int	target
+)	const
+{
+	bool more=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		more|=Children[a]->WaveformLoopSecondsMore(target);
+	}
+
+	return(more);
+}
+
+bool
+InputObj::
+WaveformLoopToggle
+(
+	unsigned int	target
+)	const
+{
+	bool toggle=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		toggle|=Children[a]->WaveformLoopToggle(target);
+	}
+
+	return(toggle);
+}
+
+bool
+InputObj::
+WaveformLoopThenRecallActive
+(
+	unsigned int	target
+)	const
+{
+	bool active=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		active|=Children[a]->WaveformLoopThenRecallActive(target);
+	}
+
+	return(active);
 }
 
 bool
@@ -1022,6 +1073,27 @@ WaveformVideoSelect
 	}
 
 	return(select);
+}
+
+float
+InputObj::
+WaveformVideoBrightness
+(
+	unsigned int	target
+)	const
+{
+	float bright=-1.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformVideoBrightness(target);
+		if(candidate!=-1.0f)
+		{
+			bright=candidate;
+		}
+	}
+
+	return(bright);
 }
 
 float

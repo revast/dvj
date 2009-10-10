@@ -802,10 +802,10 @@ NextFrame
 
 		Visualizer->SetVideos
 		(
-			Turntable[0]->VideoEncoderPercent==-1.0f ? Turntable[0]->GetVideo() : NULL,
-			Turntable[0]->GetMixerVolumeFront()*ttVideoBrightness[0],
-			Turntable[1]->VideoEncoderPercent==-1.0f ? Turntable[1]->GetVideo() : NULL,
-			Turntable[1]->GetMixerVolumeFront()*ttVideoBrightness[1]
+			(Turntable[0]->VideoEncoderPercent==-1.0f || Turntable[0]->VideoEncoderAudioOnly) ? Turntable[0]->GetVideo() : NULL,
+			Turntable[0]->GetVideoBrightness()*ttVideoBrightness[0],
+			(Turntable[1]->VideoEncoderPercent==-1.0f || Turntable[1]->VideoEncoderAudioOnly) ? Turntable[1]->GetVideo() : NULL,
+			Turntable[1]->GetVideoBrightness()*ttVideoBrightness[1]
 		);
 
 		bool anythingLoading =

@@ -727,48 +727,81 @@ WaveformSavePointJumpAtMeasure
 	return(jump);
 }
 
-bool
-InputWiimoteObj::
-WaveformLoopBegin
-(
-	unsigned int	target
-)	const
-{
-	bool begin=false;
-	return(begin);
-}
-
-bool
-InputWiimoteObj::
-WaveformLoopEnd
-(
-	unsigned int	target
-)	const
-{
-	bool end=false;
-	return(end);
-}
-
-bool
-InputWiimoteObj::
-WaveformLoopDisable
-(
-	unsigned int	target
-)	const
-{
-	bool disable=false;
-	return(disable);
-}
-
 int
 InputWiimoteObj::
-WaveformLoopMeasures
+WaveformLoopMeasuresExponent
 (
 	unsigned int	target
 )	const
 {
-	int measures=-1;
-	return(measures);
+	int exponent=WAVEFORM_LOOP_MEASURES_EXPONENT_NULL;
+	return(exponent);
+}
+
+bool
+InputWiimoteObj::
+WaveformLoopMeasuresHalf
+(
+	unsigned int	target
+)	const
+{
+	bool half=false;
+	return(half);
+}
+
+bool
+InputWiimoteObj::
+WaveformLoopMeasuresDouble
+(
+	unsigned int	target
+)	const
+{
+	bool twoX=false;
+	return(twoX);
+}
+
+bool
+InputWiimoteObj::
+WaveformLoopSecondsLess
+(
+	unsigned int	target
+)	const
+{
+	bool less=false;
+	return(less);
+}
+
+bool
+InputWiimoteObj::
+WaveformLoopSecondsMore
+(
+	unsigned int	target
+)	const
+{
+	bool more=false;
+	return(more);
+}
+
+bool
+InputWiimoteObj::
+WaveformLoopToggle
+(
+	unsigned int	target
+)	const
+{
+	bool toggle=false;
+	return(toggle);
+}
+
+bool
+InputWiimoteObj::
+WaveformLoopThenRecallActive
+(
+	unsigned int	target
+)	const
+{
+	bool active=false;
+	return(active);
 }
 
 bool
@@ -780,6 +813,17 @@ WaveformVideoSelect
 {
 	bool select=false;
 	return(select);
+}
+
+float
+InputWiimoteObj::
+WaveformVideoBrightness
+(
+	unsigned int	target
+)	const
+{
+	float bright=-1.0f;
+	return(bright);
 }
 
 float

@@ -152,9 +152,13 @@ void
 VerifyMusicDir()
 {
 	char musicDir[2048];
-	sprintf(musicDir,"%s/.dvj/music",LGL_GetHomeDir());
+	strcpy(musicDir,GetMusicRootPath());
 #ifndef	LGL_WIN32
-	while(LGL_DirectoryExists(musicDir)==false)
+	while
+	(
+		LGL_DirectoryExists(musicDir)==false ||
+		LGL_FileExists(GetMusicRootConfigFilePath())==false
+	)
 	{
 		LGL_InputBuffer outputBuffer;
 		char dir[2048];
@@ -194,9 +198,7 @@ VerifyMusicDir()
 				if(dirExists)
 				{
 					outputBuffer.ReleaseFocus();
-					char cmd[1024];
-					sprintf(cmd,"ln -s \"%s\" \"%s\"",outputBuffer.GetString(),musicDir);
-					system(cmd);
+					SetMusicRootPath(outputBuffer.GetString());
 				}
 				LGL_SwapBuffers();
 				break;
@@ -786,6 +788,11 @@ int main(int argc, char** argv)
 	);
 
 	LGL_MouseVisible(false);
+	LGL_SetFPSMax(GetFPSMax());
+	LGL_VideoEncoder::SetBitrateMaxMBps
+	(
+		GetCachedVideoAveBitrateMBps()
+	);
 
 	VerifyMusicDir();
 
