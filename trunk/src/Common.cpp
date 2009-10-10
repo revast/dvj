@@ -412,6 +412,7 @@ Turntable_DrawDirTree
 	const char*	path,
 	const char**	nameArray,
 	bool*		isDirBits,
+	bool*		loadableBits,
 	bool*		alreadyPlayedBits,
 	int		fileNum,
 	int		fileSelectInt,
@@ -454,7 +455,13 @@ Turntable_DrawDirTree
 		float R=1.0f;
 		float G=1.0f;
 		float B=1.0f;
-		if(isDirBits[b])
+		if(loadableBits[b]==false)
+		{
+			R=1.0f;
+			G=0.0f;
+			B=0.0f;
+		}
+		else if(isDirBits[b])
 		{
 			R=0.0f;
 			G=0.0f;
@@ -631,6 +638,50 @@ turntable_DrawBPMLines
 	}
 }
 
+void
+DrawWarpPointLineOrRect
+(
+	float		soundPositionSamples,
+	float		pitchBend,
+	float		sampleRadiusMultiplier,
+	float		warpPointSecondsStart,
+	float		warpPointSecondsTrigger,
+	float		pointLeft,
+	float		pointWidth,
+	float		pointBottom,
+	float		pointTop,
+	float		warmR,
+	float		warmG,
+	float		warmB,
+	LGL_Image*	noiseImage256x64
+)
+{
+	//Draw warp line (or rect)!
+	float centerSample=soundPositionSamples;
+	float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
+	float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
+	float warpSample=44100*warpPointSecondsTrigger;
+
+	float screenCenter=pointLeft + pointWidth*((warpSample-leftSample)/(rightSample-leftSample));
+	float screenRadius=0.0025f;
+	float screenLeft=screenCenter-screenRadius;
+	float screenRight=screenCenter+screenRadius;
+	if(warpPointSecondsStart!=-1.0f)
+	{
+		screenRight = LGL_Clamp(0.0f,screenCenter,1.0f);
+		screenLeft = LGL_Clamp(0.0f,pointLeft + pointWidth*((warpPointSecondsStart*44100.0f-leftSample)/(rightSample-leftSample)),1.0f);
+	}
+	noiseImage256x64->DrawToScreen
+	(
+		screenLeft,
+		screenRight,
+		pointBottom,
+		pointTop,
+		0,
+		warmR,warmG,warmB,0.0f
+	);
+}
+
 const long pointResolutionMax=(1920*2)+1;
 float arrayV[pointResolutionMax*2];
 float arrayC[pointResolutionMax*4];
@@ -692,8 +743,12 @@ Turntable_DrawWaveform
 	float*		entireWaveArrayFreqFactor,
 	float		cachedLengthSeconds,
 	LGL_Image*	noiseImage256x64,
+	LGL_Image*	loopImage,
 	int		freqSensitiveMode,
+	float		warpPointSecondsStart,
 	float		warpPointSecondsTrigger,
+	int		loopExponent,
+	float		loopSeconds,
 	bool		waveformRecordHold,
 	const char*	soundName,
 	float		videoSecondsBufferedLeft,
@@ -919,6 +974,30 @@ Turntable_DrawWaveform
 		float vertLeft = wavLeft-0.05f;
 		float vertRight= wavRight+0.05f;
 
+		if
+		(
+			warpPointSecondsTrigger>0.0f &&
+			warpPointSecondsStart!=-1.0f
+		)
+		{
+			DrawWarpPointLineOrRect
+			(
+				soundPositionSamples,
+				pitchBend,
+				sampleRadiusMultiplier,
+				warpPointSecondsStart,
+				warpPointSecondsTrigger,
+				pointLeft,
+				pointWidth,
+				pointBottom,
+				pointTop,
+				warmR*0.5f,
+				warmG*0.5f,
+				warmB*0.5f,
+				noiseImage256x64
+			);
+		}
+
 		//Experimental frequency-sensitive renderer
 		for(int z=-pointResolution;z<pointResolution*2;z++)
 		{
@@ -1132,27 +1211,28 @@ Turntable_DrawWaveform
 				warmR,warmG,warmB,1.0f
 			);
 		}
-		
-		if(warpPointSecondsTrigger>0.0f)
-		{
-			//Draw warp line!
-			float centerSample=soundPositionSamples;
-			float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
-			float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
-			float warpSample=44100*warpPointSecondsTrigger;
 
-			float screenCenter=pointLeft + pointWidth*((warpSample-leftSample)/(rightSample-leftSample));
-			float screenRadius=0.0025f;
-			float screenLeft=screenCenter-screenRadius;
-			float screenRight=screenCenter+screenRadius;
-			noiseImage256x64->DrawToScreen
+		if
+		(
+			warpPointSecondsTrigger>0.0f &&
+			warpPointSecondsStart==-1.0f
+		)
+		{
+			DrawWarpPointLineOrRect
 			(
-				screenLeft,
-				screenRight,
+				soundPositionSamples,
+				pitchBend,
+				sampleRadiusMultiplier,
+				warpPointSecondsStart,
+				warpPointSecondsTrigger,
+				pointLeft,
+				pointWidth,
 				pointBottom,
 				pointTop,
-				0,
-				warmR,warmG,warmB,0.0f
+				warmR*2.0f,
+				warmG*2.0f,
+				warmB*2.0f,
+				noiseImage256x64
 			);
 		}
 
@@ -1732,7 +1812,7 @@ Turntable_DrawWaveform
 			LGL_GetFont().DrawString
 			(
 				//viewPortLeft+.125f*viewPortWidth,
-				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
+				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.06f-0.0095f,
 				viewPortBottom+.80f*viewPortHeight,
 				0.05f*viewPortHeight,
 				1,1,1,1,
@@ -1776,12 +1856,12 @@ Turntable_DrawWaveform
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			false,.5f,
-			"Pitchbend:"
+			"Pitch:"
 		);
 		LGL_GetFont().DrawString
 		(
 			//viewPortLeft+.125f*viewPortWidth,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f-0.0095f,
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.06f,
 			viewPortBottom+.70f*viewPortHeight,
 			0.05f*viewPortHeight,
 			1,1,1,1,
@@ -1790,6 +1870,47 @@ Turntable_DrawWaveform
 			temp,
 			tempNudge
 		);
+
+		float lb=warpPointSecondsStart>=0.0f ? 1.0f : 0.25f;
+
+		loopImage->DrawToScreen
+		(
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.115f,
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.124f,
+			viewPortBottom+.80f*viewPortHeight+0.005f*viewPortHeight,
+			viewPortBottom+.80f*viewPortHeight+0.06f*viewPortHeight,
+			0,
+			lb,lb,lb,1.0f
+		);
+
+		if(bpmAdjusted>0)
+		{
+			LGL_GetFont().DrawString
+			(
+				//viewPortLeft+.02f*viewPortWidth,
+				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.1325f,
+				viewPortBottom+.80f*viewPortHeight,
+				0.05f*viewPortHeight,
+				1,1,1,1,
+				false,.5f,
+				loopExponent>=0 ? "%i" : "1/%i",
+				loopExponent>=0 ? (int)(powf(2,loopExponent)) : (int)(powf(2,-loopExponent))
+			);
+		}
+		else
+		{
+			LGL_GetFont().DrawString
+			(
+				//viewPortLeft+.02f*viewPortWidth,
+				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.1325f,
+				viewPortBottom+.80f*viewPortHeight,
+				0.05f*viewPortHeight,
+				1,1,1,1,
+				false,.5f,
+				loopSeconds < 10.0 ? "%.3f" : "%.2f",
+				loopSeconds
+			);
+		}
 		
 		/*
 		LGL_GetFont().DrawString

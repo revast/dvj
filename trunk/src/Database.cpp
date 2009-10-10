@@ -133,6 +133,7 @@ DatabaseEntryObj
 
 	BPM=bpm;
 	IsDir=LGL_DirectoryExists(pathFromMusicRoot);
+	Loadable=IsDir || LGL_FileExists(pathFromMusicRoot);
 	AlreadyPlayed=false;
 }
 
@@ -277,7 +278,7 @@ MatchesFilter
 DatabaseObj::
 DatabaseObj() : EntryDotDot("..")
 {
-	sprintf(MusicRoot,"%s/.dvj/music",LGL_GetHomeDir());
+	sprintf(MusicRoot,GetMusicRootPath());
 
 	Refresh();
 }

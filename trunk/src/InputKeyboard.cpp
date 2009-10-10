@@ -723,8 +723,8 @@ WaveformSavePointShift
 	{
 		percent+=LGL_SecondsSinceLastFrame()*SPEED*
 		(
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftLeftKey()) ? 1 : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftRightKey()) ? -1 : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftLeftKey()) ? -1 : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftRightKey()) ? 1 : 0)
 		);
 	}
 
@@ -745,8 +745,8 @@ WaveformSavePointShiftAll
 	{
 		percent+=LGL_SecondsSinceLastFrame()*SPEED*
 		(
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllLeftKey()) ? 1 : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllRightKey()) ? -1 : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllLeftKey()) ? -1 : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllRightKey()) ? 1 : 0)
 		);
 	}
 
@@ -809,44 +809,116 @@ WaveformSavePointJumpAtMeasure
 	}
 }
 
-bool
-InputKeyboardObj::
-WaveformLoopBegin
-(
-	unsigned int	target
-)	const
-{
-	return(false);
-}
-
-bool
-InputKeyboardObj::
-WaveformLoopEnd
-(
-	unsigned int	target
-)	const
-{
-	return(false);
-}
-
-bool
-InputKeyboardObj::
-WaveformLoopDisable
-(
-	unsigned int	target
-)	const
-{
-	return(false);
-}
-
 int
 InputKeyboardObj::
-WaveformLoopMeasures
+WaveformLoopMeasuresExponent
 (
 	unsigned int	target
 )	const
 {
-	return(-1);
+	return(WAVEFORM_LOOP_MEASURES_EXPONENT_NULL);
+}
+
+bool
+InputKeyboardObj::
+WaveformLoopMeasuresHalf
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresHalfKey()));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformLoopMeasuresDouble
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresDoubleKey()));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformLoopSecondsLess
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey()));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformLoopSecondsMore
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey()));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformLoopToggle
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(GetInputKeyboardWaveformLoopToggleKey()));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformLoopThenRecallActive
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyDown(GetInputKeyboardWaveformLoopThenRecallKey()));
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 bool
@@ -865,6 +937,16 @@ WaveformVideoSelect
 	}
 
 	return(false);
+}
+
+float
+InputKeyboardObj::
+WaveformVideoBrightness
+(
+	unsigned int	target
+)	const
+{
+	return(-1.0f);
 }
 
 float
@@ -912,7 +994,12 @@ WaveformSyncBPM
 	unsigned int	target
 )	const
 {
-	return(LGL_KeyDown(GetInputKeyboardWaveformSyncBPMKey()));
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyDown(GetInputKeyboardWaveformSyncBPMKey()));
+	}
+	
+	return(false);
 }
 
 float

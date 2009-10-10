@@ -173,6 +173,7 @@ typedef struct
 	float			DivergeSpeed;
 	double			WarpPointSecondsTrigger;
 	double			WarpPointSecondsDestination;
+	bool			WarpPointLoop;
 
 	SRC_STATE*		SampleRateConverterL;
 	SRC_STATE*		SampleRateConverterR;
@@ -195,13 +196,17 @@ typedef struct
 	int			DisplayNow;
 	int			DisplayResolutionX[LGL_DISPLAY_MAX];
 	int			DisplayResolutionY[LGL_DISPLAY_MAX];
+	int			DisplayRefreshRate[LGL_DISPLAY_MAX];
 	int			WindowResolutionX;
 	int			WindowResolutionY;
 	bool			WindowFullscreen;
+	bool			VSync;
 
+#ifdef	SDL_2
 	SDL_WindowID		WindowID;
 	SDL_GLContext		GLContext;
 	//SDL_Surface*		GLVideoSurface;
+#endif	//SDL_2
 
 	float			DisplayViewPortLeft[LGL_DISPLAY_MAX];
 	float			DisplayViewPortRight[LGL_DISPLAY_MAX];
@@ -364,6 +369,7 @@ typedef struct
 	//Time
 	
 	int			FPS;
+	int			FPSMax;
 	int			FPSCounter;
 	LGL_Timer		FPSTimer;
 	float			FPSGraph[60];
@@ -558,6 +564,7 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].DivergeSpeed=1.0f;
 	LGL.SoundChannel[a].WarpPointSecondsTrigger=-1.0f;
 	LGL.SoundChannel[a].WarpPointSecondsDestination=-1.0f;
+	LGL.SoundChannel[a].WarpPointLoop=false;
 	LGL.SoundChannel[a].VolumeFrontLeftDesired=1.0f;
 	LGL.SoundChannel[a].VolumeFrontRightDesired=1.0f;
 	LGL.SoundChannel[a].VolumeBackLeftDesired=1.0f;
@@ -1138,7 +1145,11 @@ LGL_Init
 	}
 
 #ifndef	LGL_NO_GRAPHICS
+#ifdef	SDL_2
 	LGL.DisplayCount=SDL_GetNumVideoDisplays();
+#else	//SDL_2
+	LGL.DisplayCount=1;
+#endif	//SDL_2
 	LGL.DisplayNow=0;
 
 printf("%i screens!\n",LGL.DisplayCount);
@@ -1151,6 +1162,7 @@ printf("%i screens!\n",LGL.DisplayCount);
 
 		LGL.DisplayResolutionX[a] = mode.w;
 		LGL.DisplayResolutionY[a] = mode.h;
+		LGL.DisplayRefreshRate[a] = mode.refresh_rate ? mode.refresh_rate : 60;
 
 printf("\tScreen[%i]: %i x %i\n",a,
 	LGL.DisplayResolutionX[a],
@@ -1231,6 +1243,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	//Time
 
 	LGL.FPS=0;
+	LGL.FPSMax=120;
 	LGL.FPSTimer.Reset();
 	for(int a=0;a<60;a++)
 	{
@@ -1467,6 +1480,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	//Initialize Video
 
 #ifndef	LGL_NO_GRAPHICS
+#ifdef	SDL_2
 	SDL_SelectVideoDisplay(0);
 
 	int windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
@@ -1526,10 +1540,51 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		LGL.GLVideoSurface->flags |= surface_flags;
 		*/
 	}
+#else	//SDL_2
+	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
+	if
+	(
+		SDL_SetVideoMode
+		(
+			LGL.VideoResolutionX,
+			LGL.VideoResolutionY,
+			32,			//Color depth
+			Flags
+		) == NULL
+	)
+	{
+		if(Flags==SDL_OPENGL)
+		{
+			printf
+			(
+				"LGL_Init(): SDL_SetVideoMode \
+				(%i,%i,SDL_OPENGL) failed... %s\n",
+				LGL.VideoResolutionX,
+				LGL.VideoResolutionY,
+				SDL_GetError()
+			);
+		}
+		if(Flags==(SDL_OPENGL|SDL_FULLSCREEN))
+		{
+			printf
+			(
+				"LGL_Init(): SDL_SetVideoMode \
+				(%i,%i,SDL_OPENGL|SDL_FULLSCREEN) \
+				failed... %s\n",
+				LGL.VideoResolutionX,
+				LGL.VideoResolutionY,
+				SDL_GetError()
+			);
+		}
+			
+		return(false);
+	}
+#endif	//SDL_2
 
 	//GL Settings
 
-	SDL_GL_SetSwapInterval((LGL.WindowFullscreen && LGL.DisplayCount>1) ? 0 : 1);//1);	//VSYNC
+	LGL.VSync = (LGL.WindowFullscreen && LGL.DisplayCount>1) ? false : true;
+	SDL_GL_SetSwapInterval(LGL_VSync());	//VSYNC
 
 	glDrawBuffer(GL_BACK);
 	glReadBuffer(GL_FRONT);
@@ -1640,14 +1695,14 @@ printf("\tScreen[%i]: %i x %i\n",a,
 
 	//LGL_Assert(inAudioChannels==0 || inAudioChannels==2 || inAudioChannels==4);
 
-	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec");
+	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec",true);
 	LGL.AVOpenCloseSemaphore=new LGL_Semaphore("AV Codec Open/Close");
 
 	//LGL.AudioSpec=AudioObtained;
 	//delete AudioObtained;
 
 	//Joysticks
-	
+
 	//SDL_JoystickEventState(SDL_ENABLE);
 	for (int a=0;a<SDL_NumJoysticks();a++)
 	{
@@ -2051,6 +2106,15 @@ int
 LGL_FPS()
 {
 	return(LGL.FPS);
+}
+
+void
+LGL_SetFPSMax
+(
+	int	fpsMax
+)
+{
+	LGL.FPSMax=LGL_Clamp(1,fpsMax,120);
 }
 
 const
@@ -3107,7 +3171,13 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 	LGL_DelaySeconds(1.0f/60.0f-LGL_SecondsSinceThisFrame());
 #else
 	//SDL_GL_SwapBuffers();
-	LGL_DelayMS(1);
+	if
+	(
+		LGL.FPSMax < LGL_DisplayRefreshRate()
+	)
+	{
+		LGL_DelaySeconds(1.0f/LGL.FPSMax-LGL_SecondsSinceThisFrame());
+	}
 	SDL_GL_SwapWindow(LGL.WindowID);
 #endif	//LGL_NO_GRAPHICS
 
@@ -3266,13 +3336,31 @@ LGL_DisplayCount()
 int
 LGL_DisplayResolutionX(int which)
 {
+	if(which<0 || which>=LGL_DisplayCount())
+	{
+		which=LGL_GetActiveDisplay();
+	}
 	return(LGL.DisplayResolutionX[which]);
 }
 
 int
 LGL_DisplayResolutionY(int which)
 {
+	if(which<0 || which>=LGL_DisplayCount())
+	{
+		which=LGL_GetActiveDisplay();
+	}
 	return(LGL.DisplayResolutionY[which]);
+}
+
+int
+LGL_DisplayRefreshRate(int which)
+{
+	if(which<0 || which>=LGL_DisplayCount())
+	{
+		which=LGL_GetActiveDisplay();
+	}
+	return(LGL.DisplayRefreshRate[which]);
 }
 
 float
@@ -3319,6 +3407,12 @@ LGL_SetActiveDisplay(int display)
 		bottom,
 		top
 	);
+}
+
+bool
+LGL_VSync()
+{
+	return(LGL.VSync);
 }
 
 inline
@@ -7903,12 +7997,10 @@ GetImage()
 		}
 
 		//Is our image already up to date?
+		if(Image->GetTimestamp()==buffer->GetTimestamp())
 		{
-			if(Image->GetTimestamp()==buffer->GetTimestamp())
-			{
-				TimestampDisplayed=timestamp;
-				return(Image);
-			}
+			TimestampDisplayed=timestamp;
+			return(Image);
 		}
 	}
 
@@ -8281,6 +8373,7 @@ MaybeDecodeImage()
 	}
 
 	AVPacket Packet;
+	av_init_packet(&Packet);
 	bool frameRead=false;
 	for(;;)
 	{
@@ -8355,7 +8448,6 @@ MaybeDecodeImage()
 					frameRead=true;
 				}
 			}
-
 			// Free the packet that was allocated by av_read_frame
 			{
 				LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
@@ -8690,7 +8782,7 @@ GetRecycledFrameBuffer()
 	}
 }
 
-
+float LGL_VideoEncoder::BitrateMaxMBps=3.2;
 
 LGL_VideoEncoder::
 LGL_VideoEncoder
@@ -8741,6 +8833,7 @@ LGL_VideoEncoder
 
 	{
 		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 
 		av_init_packet(&DstPacket);
 		av_init_packet(&DstMp3Packet);
@@ -8748,7 +8841,6 @@ LGL_VideoEncoder
 		//Open file
 		AVFormatContext* fc=NULL;
 		{
-			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 			if(av_open_input_file(&fc, src, NULL, 0, NULL)!=0)
 			{
 				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open '%s'\n",src);
@@ -8798,7 +8890,7 @@ LGL_VideoEncoder
 		// Get a pointer to the codec context for the video stream
 		SrcCodecContext=fc->streams[SrcVideoStreamIndex]->codec;
 		strcpy(SrcCodecName,SrcCodecContext->codec_name);
-		SrcAudioCodecContext=fc->streams[SrcAudioStreamIndex]->codec;
+		AVCodecContext* srcAudioCodecContext=fc->streams[SrcAudioStreamIndex]->codec;
 		SrcFormatContext=fc;	//Only set this once fc is fully initialized
 
 		// Find the decoder for the video stream
@@ -8812,11 +8904,10 @@ LGL_VideoEncoder
 		}
 
 		// Find the decoder for the audio stream
-		SrcAudioCodec=avcodec_find_decoder(SrcAudioCodecContext->codec_id);
+		SrcAudioCodec=avcodec_find_decoder(srcAudioCodecContext->codec_id);
 		if(SrcAudioCodec==NULL)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio codec for '%s'. Codec = '%s'\n",src,SrcAudioCodecContext->codec_name);
-			SrcAudioCodecContext=NULL;
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio codec for '%s'. Codec = '%s'\n",src,srcAudioCodecContext->codec_name);
 			return;
 		}
 
@@ -8829,7 +8920,6 @@ LGL_VideoEncoder
 
 		// Open codec
 		{
-			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 			if(avcodec_open(SrcCodecContext, SrcCodec)<0)
 			{
 				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open codec for '%s'\n",src);
@@ -8840,12 +8930,15 @@ LGL_VideoEncoder
 		
 		// Open audio codec
 		{
-			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
-			if(avcodec_open(SrcAudioCodecContext, SrcAudioCodec)<0)
+			if(avcodec_open(srcAudioCodecContext, SrcAudioCodec)<0)
 			{
 				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open audio codec for '%s'\n",src);
 				SrcAudioCodecContext=NULL;
 				return;
+			}
+			else
+			{
+				SrcAudioCodecContext=srcAudioCodecContext;
 			}
 		}
 
@@ -8897,6 +8990,7 @@ LGL_VideoEncoder
 
 	{
 		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 
 		// find the video encoder
 		DstCodec = avcodec_find_encoder(CODEC_ID_MJPEG);
@@ -8934,10 +9028,8 @@ LGL_VideoEncoder
 		//DstCodecContext->pix_fmt=PIX_FMT_YUVJ422P;
 		DstCodecContext->codec_id=CODEC_ID_LJPEG;
 		DstCodecContext->codec_type=CODEC_TYPE_VIDEO;
-		//const int bitrate = 8*1024*1024*8;	//Provides "quite good" quality for 1280x720. Completely unscientific.
-		const int bitrate = 1024*1024*128;	//This value is beyond the highest quality.
-		DstCodecContext->bit_rate=bitrate;	//This line dictates the output's quality.
-		DstCodecContext->bit_rate_tolerance=bitrate/8;	//Allow for some variance
+		DstCodecContext->bit_rate=BitrateMaxMBps*1024*1024*8;
+		DstCodecContext->bit_rate_tolerance=DstCodecContext->bit_rate/8;	//Allow for some variance
 		DstCodecContext->sample_aspect_ratio=DstStream->sample_aspect_ratio;
 		DstCodecContext->width = SrcBufferWidth;
 		DstCodecContext->height = SrcBufferHeight;
@@ -8947,7 +9039,6 @@ LGL_VideoEncoder
 		DstCodecContext->pix_fmt = PIX_FMT_YUVJ422P;
 
 		{
-			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 			if(avcodec_open(DstCodecContext, DstCodec) < 0)
 			{
 				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open MJPEG codec for '%s'\n",src);
@@ -9023,7 +9114,6 @@ LGL_VideoEncoder
 
 		int openResult=-1;
 		{
-			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 			openResult = avcodec_open(DstMp3CodecContext, DstMp3Codec);
 		}
 		if(openResult < 0)
@@ -9204,11 +9294,14 @@ Encode
 	for(int a=0;a<frames;a++)
 	{
 		//Decode a src frame
-		LGL.AVCodecSemaphore->Lock("videoEncoderThread","Calling av_read_frame() (meh)");
 		{
+			LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 			result = av_read_frame(SrcFormatContext, &SrcPacket);
+			if(SrcPacket.pos==-1)
+			{
+				SrcPacketPosMax+=SrcPacket.size;
+			}
 		}
-		LGL.AVCodecSemaphore->Unlock();
 		if(result<0)
 		{
 			//We're done!
@@ -9238,8 +9331,8 @@ Encode
 		)
 		{
 			int frameFinished=0;
-			LGL.AVCodecSemaphore->Lock("videoEncoderThread","Calling avcodec_decode_video() (meh)");
 			{
+				LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 				avcodec_decode_video
 				(
 					SrcCodecContext,
@@ -9249,15 +9342,14 @@ Encode
 					SrcPacket.size
 				);
 			}
-			LGL.AVCodecSemaphore->Unlock();
 
 			// Did we get a video frame?
 			if(frameFinished)
 			{
 				// Convert the image from src format to dst
-				LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling sws_scale() (meh)");
 				{
 					//Is this sws_scale line actually necessary...?
+					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 					sws_scale
 					(
 						SwsConvertContext,
@@ -9270,7 +9362,6 @@ Encode
 					);
 					DstPacket.size = avcodec_encode_video(DstCodecContext, DstBuffer, SrcBufferWidth*SrcBufferHeight*4, DstFrameYUV);
 				}
-				LGL.AVCodecSemaphore->Unlock();
 
 				DstPacket.dts = SrcPacket.dts;
 				DstPacket.pts = SrcPacket.pts;//DstCodecContext->coded_frame->pts;
@@ -9278,11 +9369,10 @@ Encode
 				DstPacket.stream_index = 0;
 				DstPacket.data=DstBuffer;
 				DstPacket.duration=SrcPacket.duration;
-				LGL.AVCodecSemaphore->Lock("videoEncoderThread","Calling av_write_frame() (meh)");
 				{
+					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 					result = av_write_frame(DstFormatContext, &DstPacket);
 				}
-				LGL.AVCodecSemaphore->Unlock();
 				SrcFrameNow++;
 			}
 		}
@@ -9296,8 +9386,8 @@ Encode
 		{
 #ifndef	NOT_YET
 			// Convert the audio from src format to dst
-			LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling avcodec_decode_audio2() (meh)");
 			{
+				LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 				int outbufsize = LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE;
 				result = avcodec_decode_audio2
 				(
@@ -9327,12 +9417,11 @@ Encode
 					DstMp3BufferSamplesIndex+=samples*2;
 				}
 			}
-			LGL.AVCodecSemaphore->Unlock();
 
 			while(DstMp3BufferSamplesIndex>=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels)
 			{
-				LGL.AVCodecSemaphore->Lock("lgl_video_thread","Calling avcodec_decode_audio2() (meh)");
 				{
+					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 					DstMp3Packet.size = avcodec_encode_audio
 					(
 						DstMp3CodecContext,
@@ -9355,15 +9444,13 @@ Encode
 					DstMp3Packet.duration=0;
 					result = av_write_frame(DstMp3FormatContext, &DstMp3Packet);
 				}
-				LGL.AVCodecSemaphore->Unlock();
 			}
 #endif	//NOT_YET
 		}
-		LGL.AVCodecSemaphore->Lock("LGL_VideoEncoder::Encode()","Calling av_free_packet() (meh)");
 		{
+			LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 			av_free_packet(&SrcPacket);
 		}
-		LGL.AVCodecSemaphore->Unlock();
 	}
 }
 
@@ -9381,7 +9468,6 @@ GetPercentFinished()
 	}
 
 	SrcPacketPosMax=LGL_Max(SrcPacket.pos,SrcPacketPosMax);
-
 	double bytePos = SrcPacketPosMax;
 	double byteLen = SrcFileBytes;
 	return(LGL_Clamp(0,bytePos/byteLen,1));
@@ -9404,6 +9490,23 @@ LGL_VideoEncoder::
 GetCodecName()
 {
 	return(SrcCodecName);
+}
+
+float
+LGL_VideoEncoder::
+GetBitrateMaxMBps()
+{
+	return(BitrateMaxMBps);
+}
+
+void
+LGL_VideoEncoder::
+SetBitrateMaxMBps
+(
+	float max
+)
+{
+	BitrateMaxMBps=LGL_Clamp(0.1f,max,100.0f);
 }
 
 //LGL_Font
@@ -13057,105 +13160,106 @@ Play
 		}
 	}
 
-	int Available=-1;
+	int available=-1;
 	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
 	{
 		if(LGL.SoundChannel[a].Occupied==false)
 		{
-			Available=a;
+			available=a;
 			break;
 		}
 	}
-	if(Available!=-1)
+	if(available!=-1)
 	{
-		LGL.SoundChannel[Available].Paused=false;
-		LGL.SoundChannel[Available].PositionSamplesStart=startSeconds*Hz;
-		LGL.SoundChannel[Available].PositionSamplesPrev=startSeconds*Hz;
-		LGL.SoundChannel[Available].PositionSamplesNow=startSeconds*Hz;
-		LGL.SoundChannel[Available].FuturePositionSamplesPrev=-1;
-		LGL.SoundChannel[Available].FuturePositionSamplesNow=-1;
-		LGL.SoundChannel[Available].PositionSamplesNowLastReported=0;
-		LGL.SoundChannel[Available].PositionSamplesEnd=startSeconds*Hz+
+		LGL.SoundChannel[available].Paused=false;
+		LGL.SoundChannel[available].PositionSamplesStart=startSeconds*Hz;
+		LGL.SoundChannel[available].PositionSamplesPrev=startSeconds*Hz;
+		LGL.SoundChannel[available].PositionSamplesNow=startSeconds*Hz;
+		LGL.SoundChannel[available].FuturePositionSamplesPrev=-1;
+		LGL.SoundChannel[available].FuturePositionSamplesNow=-1;
+		LGL.SoundChannel[available].PositionSamplesNowLastReported=0;
+		LGL.SoundChannel[available].PositionSamplesEnd=startSeconds*Hz+
 			lengthSeconds*Hz;
-		LGL.SoundChannel[Available].PositionSamplesDeltaLastTime.Reset();
-		LGL.SoundChannel[Available].DivergeSamples=0;
-		LGL.SoundChannel[Available].DivergeState=0;
-		LGL.SoundChannel[Available].DivergeSpeed=1.0f;
-		LGL.SoundChannel[Available].WarpPointSecondsTrigger=-1.0f;
-		LGL.SoundChannel[Available].WarpPointSecondsDestination=-1.0f;
-		LGL.SoundChannel[Available].SampleRateConverterBufferValidSamples=0;
-		LGL.SoundChannel[Available].SampleRateConverterBufferCurrentSamplesIndex=0;
-		LGL.SoundChannel[Available].SampleRateConverterBufferStartSamples=0;
-		if(LGL.SoundChannel[Available].SampleRateConverterL)
+		LGL.SoundChannel[available].PositionSamplesDeltaLastTime.Reset();
+		LGL.SoundChannel[available].DivergeSamples=0;
+		LGL.SoundChannel[available].DivergeState=0;
+		LGL.SoundChannel[available].DivergeSpeed=1.0f;
+		LGL.SoundChannel[available].WarpPointSecondsTrigger=-1.0f;
+		LGL.SoundChannel[available].WarpPointSecondsDestination=-1.0f;
+		LGL.SoundChannel[available].WarpPointLoop=false;
+		LGL.SoundChannel[available].SampleRateConverterBufferValidSamples=0;
+		LGL.SoundChannel[available].SampleRateConverterBufferCurrentSamplesIndex=0;
+		LGL.SoundChannel[available].SampleRateConverterBufferStartSamples=0;
+		if(LGL.SoundChannel[available].SampleRateConverterL)
 		{
-			src_reset(LGL.SoundChannel[Available].SampleRateConverterL);
+			src_reset(LGL.SoundChannel[available].SampleRateConverterL);
 		}
 		else
 		{
 			int error=0;
-			LGL.SoundChannel[Available].SampleRateConverterL = src_new(SRC_SINC_FASTEST,1,&error);
-			assert(LGL.SoundChannel[Available].SampleRateConverterL);
+			LGL.SoundChannel[available].SampleRateConverterL = src_new(SRC_SINC_FASTEST,1,&error);
+			assert(LGL.SoundChannel[available].SampleRateConverterL);
 		}
-		if(LGL.SoundChannel[Available].SampleRateConverterR)
+		if(LGL.SoundChannel[available].SampleRateConverterR)
 		{
-			src_reset(LGL.SoundChannel[Available].SampleRateConverterR);
+			src_reset(LGL.SoundChannel[available].SampleRateConverterR);
 		}
 		else
 		{
 			int error=0;
-			LGL.SoundChannel[Available].SampleRateConverterR = src_new(SRC_SINC_FASTEST,1,&error);
-			assert(LGL.SoundChannel[Available].SampleRateConverterR);
+			LGL.SoundChannel[available].SampleRateConverterR = src_new(SRC_SINC_FASTEST,1,&error);
+			assert(LGL.SoundChannel[available].SampleRateConverterR);
 		}
-		LGL.SoundChannel[Available].VolumeFrontLeftDesired=volume;
-		LGL.SoundChannel[Available].VolumeFrontRightDesired=volume;
-		LGL.SoundChannel[Available].VolumeBackLeftDesired=volume;
-		LGL.SoundChannel[Available].VolumeBackRightDesired=volume;
-		LGL.SoundChannel[Available].VolumeFrontLeft=volume;
-		LGL.SoundChannel[Available].VolumeFrontRight=volume;
-		LGL.SoundChannel[Available].VolumeBackLeft=volume;
-		LGL.SoundChannel[Available].VolumeBackRight=volume;
-		LGL.SoundChannel[Available].Channels=Channels;
-		LGL.SoundChannel[Available].Hz=Hz;
-		LGL.SoundChannel[Available].ToMono=false;
-		LGL.SoundChannel[Available].SpeedNow=speed;
-		LGL.SoundChannel[Available].SpeedDesired=speed;
-		LGL.SoundChannel[Available].SpeedInterpolationFactor=1;
-		LGL.SoundChannel[Available].SpeedVolumeFactor=1;
-		LGL.SoundChannel[Available].Glitch=false;
-		LGL.SoundChannel[Available].FutureGlitchSettingsAvailable=false;
-		LGL.SoundChannel[Available].GlitchVolume=0;
-		LGL.SoundChannel[Available].GlitchSpeedNow=1;
-		LGL.SoundChannel[Available].GlitchSpeedDesired=1;
-		LGL.SoundChannel[Available].GlitchSpeedInterpolationFactor=1;
-		LGL.SoundChannel[Available].GlitchDuo=0;
-		LGL.SoundChannel[Available].GlitchLuminScratch=false;
-		LGL.SoundChannel[Available].GlitchLuminScratchPositionDesired=-10000;
-		LGL.SoundChannel[Available].FutureGlitchSamplesNow=-10000;
-		LGL.SoundChannel[Available].GlitchSamplesNow=0;
-		LGL.SoundChannel[Available].GlitchLast=0;
-		LGL.SoundChannel[Available].GlitchBegin=0;
-		LGL.SoundChannel[Available].GlitchLength=0;
-		LGL.SoundChannel[Available].Loop=looping;
-		LGL.SoundChannel[Available].StickyEndpoints=false;
-		LGL.SoundChannel[Available].LengthSamples=lengthSeconds*Hz;
-		LGL.SoundChannel[Available].BufferLength=BufferLength;
-		LGL.SoundChannel[Available].Buffer=Buffer;
-		LGL.SoundChannel[Available].BufferSemaphore=&BufferSemaphore;
-		LGL.SoundChannel[Available].LGLSound=this;
-		if(LGL.SoundChannel[Available].LGLAudioDSPFront!=NULL)
+		LGL.SoundChannel[available].VolumeFrontLeftDesired=volume;
+		LGL.SoundChannel[available].VolumeFrontRightDesired=volume;
+		LGL.SoundChannel[available].VolumeBackLeftDesired=volume;
+		LGL.SoundChannel[available].VolumeBackRightDesired=volume;
+		LGL.SoundChannel[available].VolumeFrontLeft=volume;
+		LGL.SoundChannel[available].VolumeFrontRight=volume;
+		LGL.SoundChannel[available].VolumeBackLeft=volume;
+		LGL.SoundChannel[available].VolumeBackRight=volume;
+		LGL.SoundChannel[available].Channels=Channels;
+		LGL.SoundChannel[available].Hz=Hz;
+		LGL.SoundChannel[available].ToMono=false;
+		LGL.SoundChannel[available].SpeedNow=speed;
+		LGL.SoundChannel[available].SpeedDesired=speed;
+		LGL.SoundChannel[available].SpeedInterpolationFactor=1;
+		LGL.SoundChannel[available].SpeedVolumeFactor=1;
+		LGL.SoundChannel[available].Glitch=false;
+		LGL.SoundChannel[available].FutureGlitchSettingsAvailable=false;
+		LGL.SoundChannel[available].GlitchVolume=0;
+		LGL.SoundChannel[available].GlitchSpeedNow=1;
+		LGL.SoundChannel[available].GlitchSpeedDesired=1;
+		LGL.SoundChannel[available].GlitchSpeedInterpolationFactor=1;
+		LGL.SoundChannel[available].GlitchDuo=0;
+		LGL.SoundChannel[available].GlitchLuminScratch=false;
+		LGL.SoundChannel[available].GlitchLuminScratchPositionDesired=-10000;
+		LGL.SoundChannel[available].FutureGlitchSamplesNow=-10000;
+		LGL.SoundChannel[available].GlitchSamplesNow=0;
+		LGL.SoundChannel[available].GlitchLast=0;
+		LGL.SoundChannel[available].GlitchBegin=0;
+		LGL.SoundChannel[available].GlitchLength=0;
+		LGL.SoundChannel[available].Loop=looping;
+		LGL.SoundChannel[available].StickyEndpoints=false;
+		LGL.SoundChannel[available].LengthSamples=lengthSeconds*Hz;
+		LGL.SoundChannel[available].BufferLength=BufferLength;
+		LGL.SoundChannel[available].Buffer=Buffer;
+		LGL.SoundChannel[available].BufferSemaphore=&BufferSemaphore;
+		LGL.SoundChannel[available].LGLSound=this;
+		if(LGL.SoundChannel[available].LGLAudioDSPFront!=NULL)
 		{
-			delete LGL.SoundChannel[Available].LGLAudioDSPFront;
-			LGL.SoundChannel[Available].LGLAudioDSPFront=NULL;
+			delete LGL.SoundChannel[available].LGLAudioDSPFront;
+			LGL.SoundChannel[available].LGLAudioDSPFront=NULL;
 		}
-		LGL.SoundChannel[Available].ClearMe=false;
-		LGL.SoundChannel[Available].Occupied=true;
+		LGL.SoundChannel[available].ClearMe=false;
+		LGL.SoundChannel[available].Occupied=true;
 	}
 	else
 	{
 		printf("LGL_Sound.Play(): Unable to play '%s'. No free channels.\n",Path);
 	}
 
-	return(Available);
+	return(available);
 }
 	
 void
@@ -13749,13 +13853,15 @@ SetDivergeRecallBegin
 	float	speed
 )
 {
-if(channel<0)
-{
-	printf("LGL_Sound::SetDivergeRecallBegin(): WARNING! channel < 0\n");
-	return(false);
-}
+	if(channel<0)
+	{
+		printf("LGL_Sound::SetDivergeRecallBegin(): WARNING! channel < 0\n");
+		return(false);
+	}
+
 	LGL.SoundChannel[channel].DivergeSpeed=speed;
 	LGL.SoundChannel[channel].DivergeState=1;
+	LGL.SoundChannel[channel].DivergeSamples=LGL.SoundChannel[channel].PositionSamplesNow;
 
 	return(true);
 }
@@ -13767,11 +13873,12 @@ SetDivergeRecallEnd
 	int	channel
 )
 {
-if(channel<0)
-{
-	printf("LGL_Sound::SetDivergeRecallEnd(): WARNING! channel < 0\n");
-	return(false);
-}
+	if(channel<0)
+	{
+		printf("LGL_Sound::SetDivergeRecallEnd(): WARNING! channel < 0\n");
+		return(false);
+	}
+
 	LGL.SoundChannel[channel].DivergeState=-1;
 
 	return(true);
@@ -13806,6 +13913,7 @@ if(channel<0)
 }
 	LGL.SoundChannel[channel].WarpPointSecondsTrigger=-1.0f;
 	LGL.SoundChannel[channel].WarpPointSecondsDestination=-1.0f;
+	LGL.SoundChannel[channel].WarpPointLoop=false;
 
 	return(true);
 }
@@ -13816,7 +13924,8 @@ SetWarpPoint
 (
 	int	channel,
 	double	triggerSeconds,
-	double	dstSeconds
+	double	dstSeconds,
+	bool	loop
 )
 {
 if(channel<0)
@@ -13826,6 +13935,7 @@ if(channel<0)
 }
 	LGL.SoundChannel[channel].WarpPointSecondsTrigger=triggerSeconds;
 	LGL.SoundChannel[channel].WarpPointSecondsDestination=dstSeconds;
+	LGL.SoundChannel[channel].WarpPointLoop=loop;
 	
 	return(true);
 }
@@ -14463,7 +14573,6 @@ LoadToMemory()
 
 			// Free the data in the packet that was allocated by av_read_frame (but not the packet object itself)
 			{
-				LGL.AVCodecSemaphore->Unlock();
 				av_free_packet(&packet);
 			}
 		}
@@ -15096,6 +15205,7 @@ LGL_ProcessInput()
 				event.key.keysym.sym=0;
 			}
 
+printf("Keydown: %i (%i)\n",event.key.keysym.sym,LGL_KEY_BACKSLASH);
 			LGL.KeyDown[event.key.keysym.sym]=true;
 			LGL.KeyStroke[event.key.keysym.sym]=true;
 			if
@@ -16762,7 +16872,7 @@ LGL_KeyRelease
 	int	key
 )
 {
-	if(lgl_KeySanityCheck(key)) return(false);
+	if(lgl_KeySanityCheck(key)==false) return(false);
 	return(LGL.KeyRelease[key]);
 }
 
@@ -22572,24 +22682,29 @@ bool
 LGL_FileExists
 (
 	const
-	char*	file
+	char*	path
 )
 {
 #ifndef	LGL_WIN32
-	FILE* f=fopen64(file,"r");
-	if(f==NULL)
+	struct stat buf;
+	int ret=stat(path,&buf);
+
+	if
+	(
+		ret==0 &&
+		S_ISDIR(buf.st_mode)==false
+	)
 	{
-		return(false);
+		return(true);
 	}
 	else
 	{
-		fclose(f);
-		return(true);
+		return(false);
 	}
 #else	//LGL_WIN32
 	WIN32_FIND_DATA	findData;
 	HANDLE		handle;
-	handle=FindFirstFile(file, &findData);
+	handle=FindFirstFile(path, &findData);
 	FindClose(handle);
 	return(handle!=INVALID_HANDLE_VALUE);
 #endif	//LGL_WIN32
@@ -25318,7 +25433,9 @@ Unlock()
 {
 	if(Promiscuous) return(true);
 
-	return(SDL_SemPost(Sem));
+	LGL_Assertf(Value()==0,("Value = %i",Value()));
+	bool ret=SDL_SemPost(Sem);
+	return(ret);
 }
 
 bool
@@ -25396,6 +25513,10 @@ Init
 			timeoutSeconds!=0,
 			timeoutSeconds
 		);
+	}
+	if(LockObtained==false)
+	{
+		printf("Lock not obtained!!\n");
 	}
 }
 
@@ -25803,6 +25924,8 @@ lgl_AudioOutCallbackGenerator
 			{
 				//Recall!
 				sc->PositionSamplesNow=sc->DivergeSamples;
+				sc->SampleRateConverterBufferStartSamples=sc->DivergeSamples;
+				sc->SampleRateConverterBufferValidSamples=0;
 				sc->DivergeState=0;
 			}
 			else if(sc->DivergeState==1)
@@ -25827,8 +25950,11 @@ lgl_AudioOutCallbackGenerator
 						sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
 						sc->SampleRateConverterBufferValidSamples=0;
 					}
-					sc->WarpPointSecondsTrigger=-1.0f;
-					sc->WarpPointSecondsDestination=-1.0f;
+					if(sc->WarpPointLoop==false)
+					{
+						sc->WarpPointSecondsTrigger=-1.0f;
+						sc->WarpPointSecondsDestination=-1.0f;
+					}
 				}
 			}
 
@@ -26624,7 +26750,6 @@ LGL_ShutDown()
 	}
 
 	//Delete tmp files
-
 	char path[2048];
 	sprintf(path,"%s/.dvj/video/tmp",LGL_GetHomeDir());
 	if(LGL_DirectoryExists(path))

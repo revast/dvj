@@ -99,11 +99,15 @@ virtual	float	WaveformSavePointShiftAll	(unsigned int target)	const;	//Shift all
 virtual	bool	WaveformSavePointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
 virtual	bool	WaveformSavePointJumpNow	(unsigned int target)	const;	//Jump to current save point
 virtual	bool	WaveformSavePointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
-virtual	bool	WaveformLoopBegin		(unsigned int target)	const;	//Mark start loop point as beginning of current measure
-virtual	bool	WaveformLoopEnd			(unsigned int target)	const;	//Mark end loop point as end of current measure
-virtual	bool	WaveformLoopDisable		(unsigned int target)	const;	//Exit loop mode
-virtual	int	WaveformLoopMeasures		(unsigned int target)	const;	//Loop end point = Loop start point + N measures
+virtual	int	WaveformLoopMeasuresExponent	(unsigned int target)	const;	//Loop 2^n measures
+virtual	bool	WaveformLoopMeasuresHalf	(unsigned int target)	const;	//Loop half as many measures
+virtual	bool	WaveformLoopMeasuresDouble	(unsigned int target)	const;	//Loop twice as many measures
+virtual	bool	WaveformLoopSecondsLess		(unsigned int target)	const;	//Loop less seconds (When no BPM is available)
+virtual	bool	WaveformLoopSecondsMore		(unsigned int target)	const;	//Loop more seconds (When no BPM is available)
+virtual	bool	WaveformLoopToggle		(unsigned int target)	const;	//Enter/Exit loop mode
+virtual	bool	WaveformLoopThenRecallActive	(unsigned int target)	const;	//Loops, but when done, just to where we would have otherwise been, preserving flow
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
+virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual	int	WaveformVideoFreqSenseMode	(unsigned int target)	const;	//Set Frequency-sensitive video mixer mode
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable

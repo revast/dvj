@@ -1000,7 +1000,7 @@ DrawVideos
 	float	r,
 	float	b,
 	float	t,
-	bool	fullBrightness
+	float	overrideBrightness
 )
 {
 	//float lOrig=l;
@@ -1059,7 +1059,7 @@ DrawVideos
 				float multFreq = ((a==0) ? FreqEQLo[videoNow] : FreqEQHi[videoNow]);
 				float myFreqFactor=FreqFreqFactor[videoNow];
 				float bright = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
-				if(fullBrightness==false) bright*=VideoBrightness[videoNow];
+				if(overrideBrightness==false) bright*=VideoBrightness[videoNow];
 
 				LGL_Image* image = vid->GetImage();//EIGHT_WAY ? !preview : preview);
 				{
@@ -1089,7 +1089,7 @@ DrawVideos
 	}
 	else if(Videos[videoNow])
 	{
-		float bright = fullBrightness ? 1.0f : VideoBrightness[videoNow];
+		float bright = (overrideBrightness==-1.0f) ? VideoBrightness[videoNow] : overrideBrightness;
 		LGL_Image* image=Videos[videoNow]->GetImage();//EIGHT_WAY ? !preview : preview);
 		if
 		(

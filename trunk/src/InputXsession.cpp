@@ -877,48 +877,81 @@ WaveformSavePointJumpAtMeasure
 	return(jump);
 }
 
-bool
-InputXsessionObj::
-WaveformLoopBegin
-(
-	unsigned int	target
-)	const
-{
-	bool begin=false;
-	return(begin);
-}
-
-bool
-InputXsessionObj::
-WaveformLoopEnd
-(
-	unsigned int	target
-)	const
-{
-	bool end=false;
-	return(end);
-}
-
-bool
-InputXsessionObj::
-WaveformLoopDisable
-(
-	unsigned int	target
-)	const
-{
-	bool disable=false;
-	return(disable);
-}
-
 int
 InputXsessionObj::
-WaveformLoopMeasures
+WaveformLoopMeasuresExponent
 (
 	unsigned int	target
 )	const
 {
-	int measures=-1;
-	return(measures);
+	int exponent=WAVEFORM_LOOP_MEASURES_EXPONENT_NULL;
+	return(exponent);
+}
+
+bool
+InputXsessionObj::
+WaveformLoopMeasuresHalf
+(
+	unsigned int	target
+)	const
+{
+	bool half=false;
+	return(half);
+}
+
+bool
+InputXsessionObj::
+WaveformLoopMeasuresDouble
+(
+	unsigned int	target
+)	const
+{
+	bool twoX=false;
+	return(twoX);
+}
+
+bool
+InputXsessionObj::
+WaveformLoopSecondsLess
+(
+	unsigned int	target
+)	const
+{
+	bool less=false;
+	return(less);
+}
+
+bool
+InputXsessionObj::
+WaveformLoopSecondsMore
+(
+	unsigned int	target
+)	const
+{
+	bool more=false;
+	return(more);
+}
+
+bool
+InputXsessionObj::
+WaveformLoopToggle
+(
+	unsigned int	target
+)	const
+{
+	bool toggle=false;
+	return(toggle);
+}
+
+bool
+InputXsessionObj::
+WaveformLoopThenRecallActive
+(
+	unsigned int	target
+)	const
+{
+	bool active=false;
+	return(active);
 }
 
 bool
@@ -930,6 +963,17 @@ WaveformVideoSelect
 {
 	bool select=false;
 	return(select);
+}
+
+float
+InputXsessionObj::
+WaveformVideoBrightness
+(
+	unsigned int	target
+)	const
+{
+	float bright=-1.0f;
+	return(bright);
 }
 
 float

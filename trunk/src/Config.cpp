@@ -40,6 +40,9 @@ void
 LoadDVJRC();
 
 void
+LoadMusicRootPath();
+
+void
 LoadKeyboardInput();
 
 void
@@ -48,6 +51,7 @@ PrepareKeyMap();
 ConfigFile* dvjrcConfigFile=NULL;
 ConfigFile* inputKeyboardConfigFile=NULL;
 char dotDvj[2048];
+char musicRootPath[2048];
 
 void
 ConfigInit()
@@ -57,6 +61,7 @@ ConfigInit()
 	CreateDotJackdrc();
 	CreateDotDVJTree();
 	LoadDVJRC();
+	LoadMusicRootPath();
 	LoadKeyboardInput();
 }
 
@@ -72,14 +77,20 @@ CreateDefaultDVJRC
 		fprintf(fd,"# dvjrc\n");
 		fprintf(fd,"#\n");
 		fprintf(fd,"\n");
-		fprintf(fd,"#projectorQuadrentResX=0\n");
-		fprintf(fd,"#projectorQuadrentResY=0\n");
-		fprintf(fd,"\n");
 		fprintf(fd,"purgeInactiveMemory=false\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"loadScreenPath=~/.dvj/data/image/loadscreen.png\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"#projectorQuadrentResX=0\n");
+		fprintf(fd,"#projectorQuadrentResY=0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"fpsMax=120\n");
+		fprintf(fd,"\n");
 		fprintf(fd,"videoBufferFrames=20\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"#3.2 MBps is highest quality for 1920x480@30fps.\n");
+		fprintf(fd,"Generated files may be larger.\n");
+		fprintf(fd,"cachedVideoAveBitrateMBps=3.2\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"colorCoolR=0.0\n");
 		fprintf(fd,"colorCoolG=0.0\n");
@@ -103,7 +114,7 @@ void
 LoadDVJRC()
 {
 	char dvjrc[2048];
-	sprintf(dvjrc,"%s/dvjrc",dotDvj);
+	sprintf(dvjrc,"%s/config.txt",dotDvj);
 
 	if(LGL_FileExists(dvjrc)==false)
 	{
@@ -111,6 +122,38 @@ LoadDVJRC()
 	}
 
 	dvjrcConfigFile = new ConfigFile(dvjrc);
+}
+
+void
+LoadMusicRootPath()
+{
+	sprintf(musicRootPath,"%s/Music/iTunes/iTunes Music",LGL_GetHomeDir());
+	if(LGL_DirectoryExists(musicRootPath)==false)
+	{
+		sprintf(musicRootPath,"%s/Music",LGL_GetHomeDir());
+	}
+	if(LGL_DirectoryExists(musicRootPath)==false)
+	{
+		sprintf(musicRootPath,"%s",LGL_GetHomeDir());
+	}
+
+	if(FILE* fd=fopen(GetMusicRootConfigFilePath(),"r"))
+	{
+		char line[2048];
+		fgets(line,2048,fd);
+		if(line[0]!='\0')
+		{
+			if(line[strlen(line)-1]=='\n')
+			{
+				line[strlen(line)-1]='\0';
+			}
+			if(LGL_DirectoryExists(line))
+			{
+				strcpy(musicRootPath,line);
+			}
+		}
+		fclose(fd);
+	}
 }
 
 void
@@ -153,10 +196,9 @@ CreateDotDVJTree()
 	{
 		LGL_DirectoryCreate(dotDvj);
 	}
-	LGL_DirectoryCreate(dotDvj);
 
 	char dvjrc[2048];
-	sprintf(dvjrc,"%s/dvjrc",dotDvj);
+	sprintf(dvjrc,"%s/config.txt",dotDvj);
 
 	if(LGL_FileExists(dvjrc)==false)
 	{
@@ -259,6 +301,53 @@ CreateDotDVJTree()
 	{
 		LGL_DirectoryCreate(dvjDataImage);
 	}
+
+#ifdef	LGL_OSX
+	char dvj[2048];
+	sprintf(dvj,"%s/dvj/",LGL_GetHomeDir());
+	if(LGL_DirectoryExists(dvj)==false)
+	{
+		char cmd[2048];
+		sprintf(cmd,"ln -s '%s' '%s'",dotDvj,dvj);
+		system(cmd);
+	}
+#endif	//LGL_OSX
+
+}
+
+const char*
+GetMusicRootPath()
+{
+	return(musicRootPath);
+}
+
+char musicRootPathConfigPath[2048];
+
+const char*
+GetMusicRootConfigFilePath()
+{
+	sprintf(musicRootPathConfigPath,"%s/musicRootPath.txt",dotDvj);
+	return(musicRootPathConfigPath);
+}
+
+void
+SetMusicRootPath
+(
+	const char*	path
+)
+{
+	if(LGL_DirectoryExists(path)==false)
+	{
+		return;
+	}
+
+	if(FILE* fd=fopen(GetMusicRootConfigFilePath(),"w"))
+	{
+		fprintf(fd,"%s\n",path);
+		fclose(fd);
+	}
+
+	strcpy(musicRootPath,path);
 }
 
 bool
@@ -292,6 +381,20 @@ GetLoadScreenPath
 	}
 
 	strcpy(loadScreenPath,defaultLoadScreenPath);
+}
+
+float
+GetCachedVideoAveBitrateMBps()
+{
+	return
+	(
+		LGL_Clamp
+		(
+			0.1f,
+			dvjrcConfigFile->read<float>("cachedVideoAveBitrateMBps",3.2f),
+			100.0f
+		)
+	);
 }
 
 void
@@ -340,6 +443,13 @@ GetProjectorQuadrentResY()
 		resY=LGL_DisplayResolutionY(0)/2;
 	}
 	return(resY);
+}
+
+int
+GetFPSMax()
+{
+	int fpsMax=LGL_Clamp(1,dvjrcConfigFile->read<int>("fpsMax",120),120);
+	return(fpsMax);
 }
 
 int
@@ -570,6 +680,10 @@ typedef enum
 	WAVEFORM_SAVE_POINT_SHIFT_ALL_RIGHT,
 	WAVEFORM_SAVE_POINT_JUMP_NOW,
 	WAVEFORM_SAVE_POINT_JUMP_AT_MEASURE,
+	WAVEFORM_LOOP_MEASURES_HALF,
+	WAVEFORM_LOOP_MEASURES_DOUBLE,
+	WAVEFORM_LOOP_TOGGLE,
+	WAVEFORM_LOOP_THEN_RECALL,
 	WAVEFORM_VIDEO_SELECT,
 	WAVEFORM_VIDEO_FREQ_SENSE_MODE,
 	WAVEFORM_SYNC_BPM,
@@ -728,6 +842,14 @@ PrepareKeyMap()
 		("waveformSavePointJumpNow",		"LGL_KEY_B");
 	dvjKeyMap[WAVEFORM_SAVE_POINT_JUMP_AT_MEASURE].Set
 		("waveformSavePointJumpAtMeasure",	"LGL_KEY_T");
+	dvjKeyMap[WAVEFORM_LOOP_MEASURES_HALF].Set
+		("waveformLoopMeasuresHalf",		"LGL_KEY_J");
+	dvjKeyMap[WAVEFORM_LOOP_MEASURES_DOUBLE].Set
+		("waveformLoopMeasuresDouble",		"LGL_KEY_K");
+	dvjKeyMap[WAVEFORM_LOOP_TOGGLE].Set
+		("waveformLoopToggle",			"LGL_KEY_L");
+	dvjKeyMap[WAVEFORM_LOOP_THEN_RECALL].Set
+		("waveformLoopThenRecall",		"LGL_KEY_O");
 	dvjKeyMap[WAVEFORM_VIDEO_SELECT].Set
 		("waveformVideoSelect",			"LGL_KEY_SPACE");
 	dvjKeyMap[WAVEFORM_VIDEO_FREQ_SENSE_MODE].Set
@@ -894,6 +1016,14 @@ int GetInputKeyboardWaveformSavePointJumpNowKey()
 	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_JUMP_NOW].ValueInt); }
 int GetInputKeyboardWaveformSavePointJumpAtMeasureKey()
 	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_JUMP_AT_MEASURE].ValueInt); }
+int GetInputKeyboardWaveformLoopMeasuresHalfKey()
+	{ return(dvjKeyMap[WAVEFORM_LOOP_MEASURES_HALF].ValueInt); }
+int GetInputKeyboardWaveformLoopMeasuresDoubleKey()
+	{ return(dvjKeyMap[WAVEFORM_LOOP_MEASURES_DOUBLE].ValueInt); }
+int GetInputKeyboardWaveformLoopToggleKey()
+	{ return(dvjKeyMap[WAVEFORM_LOOP_TOGGLE].ValueInt); }
+int GetInputKeyboardWaveformLoopThenRecallKey()
+	{ return(dvjKeyMap[WAVEFORM_LOOP_THEN_RECALL].ValueInt); }
 int GetInputKeyboardWaveformVideoSelectKey()
 	{ return(dvjKeyMap[WAVEFORM_VIDEO_SELECT].ValueInt); }
 int GetInputKeyboardWaveformVideoFreqSenseModeKey()

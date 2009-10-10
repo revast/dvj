@@ -27,6 +27,15 @@
 void
 ConfigInit();
 
+const char*
+GetMusicRootPath();
+
+const char*
+GetMusicRootConfigFilePath();
+
+void
+SetMusicRootPath(const char* path);
+
 bool
 GetPurgeInactiveMemory();
 
@@ -35,6 +44,15 @@ GetLoadScreenPath
 (
 	char*	loadScreenPath
 );
+
+int
+GetProjectorQuadrentResX();
+
+int
+GetProjectorQuadrentResY();
+
+float
+GetCachedVideoAveBitrateMBps();
 
 void
 GetColorCool
@@ -53,10 +71,7 @@ GetColorWarm
 );
 
 int
-GetProjectorQuadrentResX();
-
-int
-GetProjectorQuadrentResY();
+GetFPSMax();
 
 int
 GetVideoBufferFrames();
@@ -116,6 +131,10 @@ int	GetInputKeyboardWaveformSavePointShiftAllLeftKey();
 int	GetInputKeyboardWaveformSavePointShiftAllRightKey();
 int	GetInputKeyboardWaveformSavePointJumpNowKey();
 int	GetInputKeyboardWaveformSavePointJumpAtMeasureKey();
+int	GetInputKeyboardWaveformLoopMeasuresHalfKey();
+int	GetInputKeyboardWaveformLoopMeasuresDoubleKey();
+int	GetInputKeyboardWaveformLoopToggleKey();
+int	GetInputKeyboardWaveformLoopThenRecallKey();
 int	GetInputKeyboardWaveformVideoSelectKey();
 int	GetInputKeyboardWaveformVideoFreqSenseModeKey();
 int	GetInputKeyboardWaveformSyncBPMKey();

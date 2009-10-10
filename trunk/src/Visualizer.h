@@ -122,7 +122,7 @@ private:
 	float			FreqEQHi[2];
 
 public:
-	void			DrawVideos(bool preview, int which, float l, float r, float b, float t, bool fullBrightness=false);
+	void			DrawVideos(bool preview, int which, float l, float r, float b, float t, float overrideBrightness=-1.0f);
 
 private:
 	char			VideoRandomPath[1024];

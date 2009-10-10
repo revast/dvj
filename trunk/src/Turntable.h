@@ -62,6 +62,7 @@ public:
 	bool				GetFocus() const;
 	void				SetTurntableNumber(int num);
 	void				SetVisualizer(VisualizerObj* viz);
+	float				GetVideoBrightness();
 
 	void				SetMixerVolumeFront(float scalar);
 	void				SetMixerVolumeBack(float scalar);
@@ -214,10 +215,13 @@ private:
 	float				MixerVolumeFront;
 	float				MixerVolumeBack;
 	float				MixerEQ[3];
-	bool				LoopActive();
+	bool				Looping();
 	double				LoopStartSeconds;
-	int				LoopLengthMeasures;
-	bool				LoopAtEndOfMeasure;
+	double				LoopEndSeconds;
+	int				LoopLengthMeasuresExponent;
+	double				LoopLengthNoBPMSeconds;
+	bool				LoopActive;
+	bool				LoopThenRecallActive;
 	int				SavePointIndex;
 	double				SavePointSeconds[18];
 	bool				MetaDataSavedThisFrame;
@@ -250,11 +254,14 @@ static	VisualizerObj*			Visualizer;
 	float				VideoOffsetSeconds;
 	float				VideoAdvanceRate;
 	int				VideoFrequencySensitiveMode;
+	float				VideoBrightness;
 
 public:
 
 	SDL_Thread*			VideoEncoderThread;
 	float				VideoEncoderPercent;
+	float				VideoEncoderEtaSeconds;
+	bool				VideoEncoderAudioOnly;
 	char				VideoEncoderPathSrc[2048];
 	int				VideoEncoderTerminateSignal;
 	float				VideoEncoderUnsupportedCodecTime;
@@ -282,6 +289,7 @@ private:
 	float				NoiseFactor;
 	float				NoiseFactorVideo;
 static	LGL_Image*			NoiseImage[NOISE_IMAGE_COUNT_256_64];
+static	LGL_Image*			LoopImage;
 
 	bool				LowRez;
 

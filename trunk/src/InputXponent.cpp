@@ -1580,106 +1580,176 @@ WaveformSavePointJumpNow
 	return(select);
 }
 
-bool
-InputXponentObj::
-WaveformLoopBegin
-(
-	unsigned int	target
-)	const
-{
-	bool begin=false;
-
-	if(LGL_GetXponent())
-	{
-		if((target & TARGET_BOTTOM))
-		{
-			begin|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN);
-		}
-		else if((target & TARGET_TOP))
-		{
-			begin|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_IN);
-		}
-	}
-
-	return(begin);
-}
-
-bool
-InputXponentObj::
-WaveformLoopEnd
-(
-	unsigned int	target
-)	const
-{
-	bool end=false;
-
-	if(LGL_GetXponent())
-	{
-		if((target & TARGET_BOTTOM))
-		{
-			end|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT);
-		}
-		else if((target & TARGET_TOP))
-		{
-			end|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT);
-		}
-	}
-
-	return(end);
-}
-
-bool
-InputXponentObj::
-WaveformLoopDisable
-(
-	unsigned int	target
-)	const
-{
-	bool disable=false;
-
-	if(LGL_GetXponent())
-	{
-		if((target & TARGET_BOTTOM))
-		{
-			disable|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_CYCLE);
-		}
-		else if((target & TARGET_TOP))
-		{
-			disable|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_CYCLE);
-		}
-	}
-
-	return(disable);
-}
-
 int
 InputXponentObj::
-WaveformLoopMeasures
+WaveformLoopMeasuresExponent
 (
 	unsigned int	target
 )	const
 {
-	int measures=-1;
+	int exponent=WAVEFORM_LOOP_MEASURES_EXPONENT_NULL;
 
 	if(LGL_GetXponent())
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_1)) measures=1;
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_2)) measures=2;
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_4)) measures=4;
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_8)) measures=8;
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_1)) exponent=0;
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_2)) exponent=1;
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_4)) exponent=2;
 		}
 		else if((target & TARGET_TOP))
 		{
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_1)) measures=1;
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_2)) measures=2;
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_4)) measures=4;
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_8)) measures=8;
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_1)) exponent=0;
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_2)) exponent=1;
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_4)) exponent=2;
 		}
 	}
 
-	return(measures);
+	return(exponent);
+}
+
+bool
+InputXponentObj::
+WaveformLoopMeasuresHalf
+(
+	unsigned int	target
+)	const
+{
+	bool half=false;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			half|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN);
+		}
+		else if((target & TARGET_TOP))
+		{
+			half|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_IN);
+		}
+	}
+
+	return(half);
+}
+
+bool
+InputXponentObj::
+WaveformLoopMeasuresDouble
+(
+	unsigned int	target
+)	const
+{
+	bool twoX=false;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			twoX|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT);
+		}
+		else if((target & TARGET_TOP))
+		{
+			twoX|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT);
+		}
+	}
+
+	return(twoX);
+}
+
+bool
+InputXponentObj::
+WaveformLoopSecondsLess
+(
+	unsigned int	target
+)	const
+{
+	bool less=false;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			less|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN);
+		}
+		else if((target & TARGET_TOP))
+		{
+			less|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_IN);
+		}
+	}
+
+	return(less);
+}
+
+bool
+InputXponentObj::
+WaveformLoopSecondsMore
+(
+	unsigned int	target
+)	const
+{
+	bool more=false;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			more|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT);
+		}
+		else if((target & TARGET_TOP))
+		{
+			more|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT);
+		}
+	}
+
+	return(more);
+}
+
+bool
+InputXponentObj::
+WaveformLoopToggle
+(
+	unsigned int	target
+)	const
+{
+	bool toggle=false;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			toggle|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_CYCLE);
+		}
+		else if((target & TARGET_TOP))
+		{
+			toggle|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_CYCLE);
+		}
+	}
+
+	return(toggle);
+}
+
+bool
+InputXponentObj::
+WaveformLoopThenRecallActive
+(
+	unsigned int	target
+)	const
+{
+	bool active=false;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			active|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_8);
+		}
+		else if((target & TARGET_TOP))
+		{
+			active|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_8);
+		}
+	}
+
+	return(active);
 }
 
 bool
@@ -1712,6 +1782,51 @@ WaveformVideoSelect
 
 float
 InputXponentObj::
+WaveformVideoBrightness
+(
+	unsigned int	target
+)	const
+{
+	float bright=-1.0f;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			//FIXME: Left / Right is asymmmetric, for Zebbler, for now... Shoudln't be, though..
+			if
+			(
+				LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_RIGHT_MOD_4) ||
+				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_4) ||
+				LGL_GetXponent()->GetButtonRelease(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_4)
+			)
+			{
+				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_RIGHT_MOD_4);
+				bright = ((knob == -1.0f) ? 1.0f : knob) *
+					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_4) ? 0 : 1);
+			}
+		}
+		else if((target & TARGET_TOP))
+		{
+			if
+			(
+				LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_LEFT_MOD_1) ||
+				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_1) ||
+				LGL_GetXponent()->GetButtonRelease(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_1)
+			)
+			{
+				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_MOD_1);
+				bright = ((knob == -1.0f) ? 1.0f : knob) *
+					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_1) ? 0 : 1);
+			}
+		}
+	}
+
+	return(bright);
+}
+
+float
+InputXponentObj::
 WaveformVideoAdvanceRate
 (
 	unsigned int	target
@@ -1719,23 +1834,25 @@ WaveformVideoAdvanceRate
 {
 	float rate=-1.0f;
 
+	/*
 	if(LGL_GetXponent())
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_RIGHT_MOD_1))
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_RIGHT_MOD_2))
 			{
 				rate=powf(2.0f,3.0f*LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_RIGHT_MOD_1));
 			}
 		}
 		else if((target & TARGET_TOP))
 		{
-			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_LEFT_MOD_1))
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_LEFT_MOD_2))
 			{
 				rate=powf(2.0f,3.0f*LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_MOD_1));
 			}
 		}
 	}
+	*/
 
 	return(rate);
 }
