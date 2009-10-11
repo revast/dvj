@@ -24,6 +24,7 @@
 #include "Visualizer.h"
 #include <string.h>
 
+bool NOISE_IMAGE_INITIALIZED=false;
 LGL_Image* VisualizerObj::NoiseImage[NOISE_IMAGE_COUNT_128_128];
 
 VisualizerObj::
@@ -115,7 +116,7 @@ VisualizerObj()
 	random_shuffle(VideoRandomQueue.rbegin(),VideoRandomQueue.rend());
 	VideoRandomGetCount=0;
 
-	if(NoiseImage[0]==NULL)
+	if(NOISE_IMAGE_INITIALIZED==false)
 	{
 		for(int a=0;a<NOISE_IMAGE_COUNT_256_64;a++)
 		{
@@ -129,6 +130,7 @@ VisualizerObj()
 			LGL_Assertf(LGL_FileExists(path),("Noise file '%s' doesn't exist\n",path));
 			NoiseImage[a] = new LGL_Image(path);
 		}
+		NOISE_IMAGE_INITIALIZED=true;
 	}
 }
 
