@@ -1236,7 +1236,6 @@ private:
 	long			GetNextTimestampToDecodePredictNext();
 	long			GetNextTimestampToDecodeForwards();
 	long			GetNextTimestampToDecodeBackwards();
-	void			RecycleFrameBuffer(lgl_FrameBuffer* frameBuffer);
 	lgl_FrameBuffer*	GetRecycledFrameBuffer();
 };
 

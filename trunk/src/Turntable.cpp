@@ -35,7 +35,7 @@ const int lm = 8;	//Low => Mid transition
 const int mh = 40;	//Mid => High transition
 int ENTIRE_WAVE_ARRAY_COUNT;
 
-VisualizerObj* TurntableObj::Visualizer;
+VisualizerObj* TurntableObj::Visualizer=NULL;
 LGL_Image* TurntableObj::NoiseImage[NOISE_IMAGE_COUNT_256_64];
 LGL_Image* TurntableObj::LoopImage=NULL;
 
@@ -406,8 +406,8 @@ videoEncoderThread
 
 		if
 		(
-			LGL_FileExists(encoderDst) &&
-			LGL_FileExists(encoderAudioDst)
+			LGL_FileExists(encoderDst) //&&
+			//LGL_FileExists(encoderAudioDst)
 		)
 		{
 			tt->VideoEncoderPercent=2.0f;
@@ -533,8 +533,9 @@ TurntableObj
 	WhiteFactor=1.0f;
 	NoiseFactor=1.0f;
 	NoiseFactorVideo=0.0f;
-	if(NoiseImage[0]==NULL)
+	if(LoopImage==NULL)
 	{
+		LoopImage = new LGL_Image("data/image/loop.png");
 		for(int a=0;a<NOISE_IMAGE_COUNT_256_64;a++)
 		{
 			char path[1024];
@@ -547,10 +548,6 @@ TurntableObj
 			assert(LGL_FileExists(path));
 			NoiseImage[a] = new LGL_Image(path);
 		}
-	}
-	if(LoopImage==NULL)
-	{
-		LoopImage = new LGL_Image("data/image/loop.png");
 	}
 
 	LowRez=false;
