@@ -94,7 +94,7 @@ cd ..
 curl http://jackaudio.org/downloads/jack-audio-connection-kit-0.116.2.tar.gz >jack-audio-connection-kit-0.116.2.tar.gz
 tar -zxf jack-audio-connection-kit-0.116.2.tar.gz
 cd jack-audio-connection-key-0.116.2
-./configure
+./configure --enable-optimize
 sudo make install
 cd ..
 
