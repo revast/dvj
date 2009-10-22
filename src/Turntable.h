@@ -264,6 +264,7 @@ public:
 	bool				VideoEncoderAudioOnly;
 	char				VideoEncoderPathSrc[2048];
 	int				VideoEncoderTerminateSignal;
+	int				VideoEncoderBeginSignal;
 	float				VideoEncoderUnsupportedCodecTime;
 	char				VideoEncoderUnsupportedCodecName[64];
 

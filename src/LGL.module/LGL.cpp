@@ -87,7 +87,6 @@
 #define LGL_EQ_SAMPLES_FFT	(512)
 #define LGL_SAMPLESIZE		(256)
 unsigned int LGL_SAMPLESIZE_SDL;
-const int LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE = (AVCODEC_MAX_AUDIO_FRAME_SIZE*2);
 
 void lgl_AudioOutCallback(void* userdata, Uint8* stream, int len8);
 
@@ -1137,7 +1136,8 @@ LGL_Init
 			"LGL_Init(): SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK) failed... %s\n",
 			SDL_GetError()
 		);
-		return(false);
+		assert(false);
+		exit(0);
 	}
 	else
 	{
@@ -1243,7 +1243,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	//Time
 
 	LGL.FPS=0;
-	LGL.FPSMax=120;
+	LGL.FPSMax=60;
 	LGL.FPSTimer.Reset();
 	for(int a=0;a<60;a++)
 	{
@@ -1690,6 +1690,14 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	avcodec_register_all();
 	av_log_set_level(AV_LOG_WARNING);	//QUIET, ERROR, WARNING, DEBUG
 
+/*
+char* Path = "/Users/id/mp3/dvj/Beeple - Simple Extraction.mpg.mjpeg.avi";
+AVFormatContext* fc=NULL;
+printf("All good (2A) (%s)!\n",Path);
+av_open_input_file(&fc, Path, NULL, 0, NULL);
+printf("All good (2B) (%s)!\n",Path);
+*/
+
 	//bool audioIn=inAudioChannels < 0;
 	inAudioChannels=abs(inAudioChannels);
 
@@ -2108,13 +2116,19 @@ LGL_FPS()
 	return(LGL.FPS);
 }
 
+int
+LGL_GetFPSMax()
+{
+	return(LGL.FPSMax);
+}
+
 void
 LGL_SetFPSMax
 (
 	int	fpsMax
 )
 {
-	LGL.FPSMax=LGL_Clamp(1,fpsMax,120);
+	LGL.FPSMax=LGL_Clamp(1,fpsMax,60);
 }
 
 const
@@ -5250,7 +5264,7 @@ LGL_Image
 	}
 
 	ReferenceCount=0;
-	Timestamp=-1;
+	FrameNumber=-1;
 	VideoPath[0]='\0';
 }
 
@@ -5380,7 +5394,7 @@ LGL_Image
 	}
 
 	ReferenceCount=0;
-	Timestamp=-1;
+	FrameNumber=-1;
 	VideoPath[0]='\0';
 }
 
@@ -5457,7 +5471,7 @@ LGL_Image
 	FrameBufferUpdate();
 
 	ReferenceCount=0;
-	Timestamp=-1;
+	FrameNumber=-1;
 	VideoPath[0]='\0';
 }
 
@@ -7169,19 +7183,19 @@ DecrementReferenceCount()
 
 long
 LGL_Image::
-GetTimestamp()
+GetFrameNumber()
 {
-	return(Timestamp);
+	return(FrameNumber);
 }
 
 void
 LGL_Image::
-SetTimestamp
+SetFrameNumber
 (
-	long	timestamp
+	long	frameNumber
 )
 {
-	Timestamp=timestamp;
+	FrameNumber=frameNumber;
 }
 
 const char*
@@ -7676,7 +7690,7 @@ SetAnimation
 
 bool lgl_FrameBufferSortPredicate(const lgl_FrameBuffer* d1, const lgl_FrameBuffer* d2)
 {
-	  return(d1->GetTimestamp() < d2->GetTimestamp());
+	  return(d1->GetFrameNumber() < d2->GetFrameNumber());
 }
 
 lgl_FrameBuffer::
@@ -7684,7 +7698,7 @@ lgl_FrameBuffer()
 {
 	Buffer = NULL;
 	BufferBytes=0;
-	Timestamp=-1;
+	FrameNumber=-1;
 }
 
 lgl_FrameBuffer::
@@ -7693,7 +7707,7 @@ lgl_FrameBuffer::
 	free(Buffer);
 	Buffer=NULL;
 	BufferBytes=0;
-	Timestamp=-1;
+	FrameNumber=-1;
 }
 
 unsigned char*
@@ -7703,7 +7717,7 @@ SwapInNewBuffer
 	char*		videoPath,
 	unsigned char*	buffer,
 	unsigned int&	bufferBytes,
-	long		timestamp
+	long		frameNumber
 )
 {
 	strcpy(VideoPath,videoPath);
@@ -7712,7 +7726,7 @@ SwapInNewBuffer
 	Buffer=buffer;
 	BufferBytes=bufferBytes;
 	bufferBytes=bufferBytesOld;
-	Timestamp=timestamp;
+	FrameNumber=frameNumber;
 	return(bufferOld);
 }
 
@@ -7732,9 +7746,9 @@ GetBuffer()	const
 
 long
 lgl_FrameBuffer::
-GetTimestamp()	const
+GetFrameNumber()	const
 {
-	return(Timestamp);
+	return(FrameNumber);
 }
 
 
@@ -7754,11 +7768,9 @@ lgl_video_decoder_thread
 		{
 			break;
 		}
-
 		dec->MaybeLoadVideo();
 		dec->MaybeDecodeImage();
 		dec->MaybeRecycleBuffers();
-
 		LGL_DelayMS(1);
 	}
 
@@ -7796,6 +7808,7 @@ Init()
 	PathNext[0]='\0';
 
 	FPS=0.0f;
+	FPSTimestamp=0.0f;
 	FPSDisplayed=0;
 	FPSMissed=0;
 	FPSDisplayedHitCounter=0;
@@ -7803,7 +7816,8 @@ Init()
 	LengthSeconds=0;
 	TimeSeconds=0;
 	TimeSecondsPrev=0;
-	TimestampNext=-1;
+	FrameNumberNext=-1;
+	FrameNumberDisplayed=-1;
 
 	SetFrameBufferAddRadius(30);
 
@@ -7845,7 +7859,7 @@ SetVideo
 	{
 		if(Image)
 		{
-			Image->SetTimestamp(-1);
+			Image->SetFrameNumber(-1);
 		}
 	}
 	strcpy(PathNext,path);
@@ -7929,7 +7943,7 @@ GetImage()
 	}
 	if(strcmp(Path,"NULL")==0)
 	{
-		Image->SetTimestamp(-1);
+		Image->SetFrameNumber(-1);
 		return(Image);
 	}
 
@@ -7940,10 +7954,10 @@ GetImage()
 	}
 	if(strcmp(Image->GetVideoPath(),path)!=0)
 	{
-		Image->SetTimestamp(-1);
+		Image->SetFrameNumber(-1);
 	}
 
-	long timestamp = SecondsToTimestamp(TimeSeconds);
+	long frameNumber = SecondsToFrameNumber(TimeSeconds);
 	lgl_FrameBuffer* buffer=NULL;
 
 	{
@@ -7956,14 +7970,14 @@ GetImage()
 		}
 
 		//Find the nearest framebuffer
-		if(timestamp<FrameBufferReady[0]->GetTimestamp())
+		if(frameNumber<FrameBufferReady[0]->GetFrameNumber())
 		{
-			FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+			FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 			buffer=FrameBufferReady[0];
 		}
-		else if(timestamp>FrameBufferReady[FrameBufferReady.size()-1]->GetTimestamp())
+		else if(frameNumber>FrameBufferReady[FrameBufferReady.size()-1]->GetFrameNumber())
 		{
-			FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+			FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 			buffer=FrameBufferReady[FrameBufferReady.size()-1];
 		}
 		else
@@ -7971,22 +7985,22 @@ GetImage()
 			long nearestDistance=99999999;
 			for(unsigned int a=0;a<FrameBufferReady.size();a++)
 			{
-				if((long)fabsf(timestamp-FrameBufferReady[a]->GetTimestamp())<nearestDistance)
+				if((long)fabsf(frameNumber-FrameBufferReady[a]->GetFrameNumber())<nearestDistance)
 				{
 					buffer=FrameBufferReady[a];
-					nearestDistance=(long)fabsf(timestamp-FrameBufferReady[a]->GetTimestamp());
+					nearestDistance=(long)fabsf(frameNumber-FrameBufferReady[a]->GetFrameNumber());
 				}
 			}
 			
 			if(buffer)
 			{
-				if(timestamp==buffer->GetTimestamp())
+				if(frameNumber==buffer->GetFrameNumber())
 				{
-					FPSDisplayedHitCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+					FPSDisplayedHitCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 				}
 				else
 				{
-					FPSDisplayedMissCounter+=(timestamp!=TimestampDisplayed) ? 1 : 0;
+					FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 				}
 			}
 		}
@@ -7997,16 +8011,16 @@ GetImage()
 		}
 
 		//Is our image already up to date?
-		if(Image->GetTimestamp()==buffer->GetTimestamp())
+		if(Image->GetFrameNumber()==buffer->GetFrameNumber())
 		{
-			TimestampDisplayed=timestamp;
+			FrameNumberDisplayed=frameNumber;
 			return(Image);
 		}
 	}
 
 	//Update Image
 	char name[1024];
-	sprintf(name,"%s|%li\n",PathShort,timestamp);
+	sprintf(name,"%s|%li\n",PathShort,frameNumber);
 	Image->UpdateTexture
 	(
 		BufferWidth,
@@ -8016,9 +8030,9 @@ GetImage()
 		true,
 		name
 	);
-	Image->SetTimestamp(timestamp);
+	Image->SetFrameNumber(frameNumber);
 	Image->SetVideoPath(path);
-	TimestampDisplayed=timestamp;
+	FrameNumberDisplayed=frameNumber;
 
 	if(FPSDisplayedTimer.SecondsSinceLastReset()>=1.0f)
 	{
@@ -8043,13 +8057,13 @@ GetSecondsBufferedLeft()
 		return(0.0f);
 	}
 
-	long timestampNow = SecondsToTimestamp(TimeSeconds);
-	long timestampLength = SecondsToTimestamp(LengthSeconds);
-	if(timestampNow>timestampLength-1) timestampNow=timestampLength-1;
+	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
+	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberNow>frameNumberLength-1) frameNumberNow=frameNumberLength-1;
 	int currentIndex=-1;
 	for(unsigned int a=0;a<FrameBufferReady.size();a++)
 	{
-		if(FrameBufferReady[a]->GetTimestamp()==timestampNow)
+		if(FrameBufferReady[a]->GetFrameNumber()==frameNumberNow)
 		{
 			currentIndex=a;
 			break;
@@ -8074,7 +8088,6 @@ GetSecondsBufferedLeft()
 
 		if(wrap && a==currentIndex)
 		{
-			printf("\t\t\t\tB-1: %i\n\n\n",(int)FrameBufferReady.size());
 			break;
 		}
 
@@ -8086,11 +8099,11 @@ GetSecondsBufferedLeft()
 
 		if
 		(
-			FrameBufferReady[a]->GetTimestamp()-FrameBufferReady[next]->GetTimestamp() == 1 ||
+			FrameBufferReady[a]->GetFrameNumber()-FrameBufferReady[next]->GetFrameNumber() == 1 ||
 			(
 				next==(int)FrameBufferReady.size()-1 &&
-				fabsf(FrameBufferReady[next]->GetTimestamp() - SecondsToTimestamp(LengthSeconds))<=1.0f &&
-				FrameBufferReady[a]->GetTimestamp() == 0
+				fabsf(FrameBufferReady[next]->GetFrameNumber() - SecondsToFrameNumber(LengthSeconds))<=1.0f &&
+				FrameBufferReady[a]->GetFrameNumber() == 0
 			)
 		)
 		{
@@ -8116,13 +8129,13 @@ GetSecondsBufferedRight()
 		return(0.0f);
 	}
 
-	long timestampNow = SecondsToTimestamp(TimeSeconds);
-	long timestampLength = SecondsToTimestamp(LengthSeconds);
-	if(timestampNow>timestampLength-1) timestampNow=timestampLength-1;
+	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
+	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberNow>frameNumberLength-1) frameNumberNow=frameNumberLength-1;
 	int currentIndex=-1;
 	for(unsigned int a=0;a<FrameBufferReady.size();a++)
 	{
-		if(FrameBufferReady[a]->GetTimestamp()==timestampNow)
+		if(FrameBufferReady[a]->GetFrameNumber()==frameNumberNow)
 		{
 			currentIndex=a;
 			break;
@@ -8157,11 +8170,11 @@ GetSecondsBufferedRight()
 
 		if
 		(
-			FrameBufferReady[next]->GetTimestamp()-FrameBufferReady[a]->GetTimestamp() == 1 ||
+			FrameBufferReady[next]->GetFrameNumber()-FrameBufferReady[a]->GetFrameNumber() == 1 ||
 			(
 				next==0 &&
-				fabsf(FrameBufferReady[a]->GetTimestamp() - SecondsToTimestamp(LengthSeconds))<=1.0f &&
-				FrameBufferReady[next]->GetTimestamp() == 0
+				fabsf(FrameBufferReady[a]->GetFrameNumber() - SecondsToFrameNumber(LengthSeconds))<=1.0f &&
+				FrameBufferReady[next]->GetFrameNumber() == 0
 			)
 		)
 		{
@@ -8173,27 +8186,6 @@ GetSecondsBufferedRight()
 		}
 	}
 
-/*
-	if(timestampNow>timestampLength*0.9f)
-	{
-		for(unsigned long a=0;a<FrameBufferReady.size();a++)
-		{
-			if(FrameBufferReady[a]->GetTimestamp()!=(long)a)
-			{
-				printf("%li != %li\n",
-					FrameBufferReady[a]->GetTimestamp(),
-					(long)a
-				);
-				break;
-			}
-			if(FrameBufferReady[a]->GetTimestamp()<timestampLength*0.1f)
-			{
-				seconds+=1.0f/FPS;
-			}
-		}
-	}
-*/
-	
 	return(seconds);
 }
 
@@ -8269,12 +8261,14 @@ MaybeLoadVideo()
 		}
 	}
 
+
 	//Find streams
 	if(av_find_stream_info(fc)<0)
 	{
 		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find streams for '%s'\n",Path);
 		return;
 	}
+
 
 	// Find the first video stream
 	for(unsigned int i=0; i<fc->nb_streams; i++)
@@ -8323,7 +8317,10 @@ MaybeLoadVideo()
 	}
 
 	LengthSeconds=FormatContext->duration/(float)(AV_TIME_BASE);
-	FPS=CodecContext->time_base.den/(float)CodecContext->time_base.num;
+	FPS=
+		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(float)
+		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den;
+	FPSTimestamp=CodecContext->time_base.den/(float)CodecContext->time_base.num;
 	//FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
 	//FPS=FormatContext->streams[VideoStreamIndex]->time_base.den/(float)FormatContext->streams[VideoStreamIndex]->time_base.num;
 
@@ -8378,16 +8375,18 @@ MaybeDecodeImage()
 		return;
 	}
 
-	//Find timestamp of image to add
-	long timestampTarget=GetNextTimestampToDecode();
-	if(timestampTarget==-1)
+	//Find frameNumber of image to add
+	long frameNumberTarget=GetNextFrameNumberToDecode();
+	if(frameNumberTarget==-1)
 	{
 		return;
 	}
+
 	//Seek to the appropriate frame...
-	if(TimestampNext!=timestampTarget)
+	if(FrameNumberNext!=frameNumberTarget)
 	{
 		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		long timestampTarget=FrameNumberToTimestamp(frameNumberTarget);
 		av_seek_frame
 		(
 			FormatContext,
@@ -8395,7 +8394,7 @@ MaybeDecodeImage()
 			timestampTarget,
 			AVSEEK_FLAG_ANY
 		);
-		TimestampNext=timestampTarget+1;
+		FrameNumberNext=frameNumberTarget+1;
 	}
 
 	AVPacket Packet;
@@ -8417,13 +8416,12 @@ MaybeDecodeImage()
 				int frameFinished=0;
 				{
 					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
-					avcodec_decode_video
+					avcodec_decode_video2
 					(
 						CodecContext,
 						FrameNative,
 						&frameFinished, 
-						Packet.data,
-						Packet.size
+						&Packet
 					);
 				}
 
@@ -8482,7 +8480,7 @@ MaybeDecodeImage()
 		}
 		else
 		{
-			LengthSeconds=LGL_Max(0,TimestampToSeconds(timestampTarget));
+			LengthSeconds=LGL_Max(0,FrameNumberToSeconds(frameNumberTarget));
 			break;
 		}
 
@@ -8503,7 +8501,7 @@ MaybeDecodeImage()
 			Path,
 			BufferRGB,
 			BufferBytes,	//Changes...
-			timestampTarget
+			frameNumberTarget
 		);
 		BufferRGB=swappedOutBuffer;
 
@@ -8533,17 +8531,17 @@ MaybeRecycleBuffers()
 
 	LGL_ScopeLock frameBufferReadyLock(FrameBufferReadySemaphore);
 
-	long timestampNow = SecondsToTimestamp(TimeSeconds);
-	long timestampLength = SecondsToTimestamp(LengthSeconds);
+	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
+	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
 
-	long timestampPrev = SecondsToTimestamp(TimeSecondsPrev);
-	long timestampTarget = timestampNow + (timestampNow-timestampPrev);
+	long frameNumberPrev = SecondsToFrameNumber(TimeSecondsPrev);
+	long frameNumberTarget = frameNumberNow + (frameNumberNow-frameNumberPrev);
 
 	//Handle wrap-around
-	long timestampPredict=timestampTarget;
-	while(timestampPredict>timestampLength)
+	long frameNumberPredict=frameNumberTarget;
+	while(frameNumberPredict>frameNumberLength)
 	{
-		timestampPredict-=timestampLength;
+		frameNumberPredict-=frameNumberLength;
 	}
 
 	for(unsigned int a=0;a<FrameBufferReady.size();a++)
@@ -8552,10 +8550,10 @@ MaybeRecycleBuffers()
 		(
 			strcmp(FrameBufferReady[a]->GetVideoPath(),path)!=0 ||
 			(
-				fabsf(timestampNow-FrameBufferReady[a]->GetTimestamp())				> FrameBufferSubtractRadius &&
-				fabsf(timestampPredict-FrameBufferReady[a]->GetTimestamp())			> FrameBufferSubtractRadius &&
-				fabsf((timestampNow-timestampLength)-FrameBufferReady[a]->GetTimestamp())	> FrameBufferSubtractRadius &&
-				fabsf((timestampNow+timestampLength)-FrameBufferReady[a]->GetTimestamp())	> FrameBufferSubtractRadius
+				fabsf(frameNumberNow-FrameBufferReady[a]->GetFrameNumber())				> FrameBufferSubtractRadius &&
+				fabsf(frameNumberPredict-FrameBufferReady[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
+				fabsf((frameNumberNow-frameNumberLength)-FrameBufferReady[a]->GetFrameNumber())	> FrameBufferSubtractRadius &&
+				fabsf((frameNumberNow+frameNumberLength)-FrameBufferReady[a]->GetFrameNumber())	> FrameBufferSubtractRadius
 			)
 		)
 		{
@@ -8580,7 +8578,7 @@ float
 LGL_VideoDecoder::
 TimestampToSeconds(long timestamp)
 {
-	return(timestamp/FPS);
+	return(timestamp/FPSTimestamp);
 }
 
 long
@@ -8590,18 +8588,54 @@ SecondsToTimestamp
 	float	seconds
 )
 {
+	return(seconds*FPSTimestamp);
+}
+
+float
+LGL_VideoDecoder::
+FrameNumberToSeconds(long frameNumber)
+{
+	return(frameNumber/FPS);
+}
+
+long
+LGL_VideoDecoder::
+SecondsToFrameNumber
+(
+	float	seconds
+)
+{
 	return(seconds*FPS);
 }
 
 long
 LGL_VideoDecoder::
-GetNextTimestampToDecode()
+FrameNumberToTimestamp
+(
+	long	frameNumber
+)
+{
+	return
+	(
+		SecondsToTimestamp
+		(
+			FrameNumberToSeconds
+			(
+				frameNumber
+			)
+		)
+	);
+}
+
+long
+LGL_VideoDecoder::
+GetNextFrameNumberToDecode()
 {
 	LGL_ScopeLock lock(FrameBufferReadySemaphore);
 
 	long ret=-1;
 
-	ret = GetNextTimestampToDecodePredictNext();
+	ret = GetNextFrameNumberToDecodePredictNext();
 	if(ret!=-1)
 	{
 		return(ret);
@@ -8609,12 +8643,12 @@ GetNextTimestampToDecode()
 
 	if(TimeSeconds>=TimeSecondsPrev)
 	{
-		ret = GetNextTimestampToDecodeForwards();
+		ret = GetNextFrameNumberToDecodeForwards();
 		if(ret!=-1)
 		{
 			return(ret);
 		}
-		ret = GetNextTimestampToDecodeBackwards();
+		ret = GetNextFrameNumberToDecodeBackwards();
 		if(ret!=-1)
 		{
 			return(ret);
@@ -8622,12 +8656,12 @@ GetNextTimestampToDecode()
 	}
 	else
 	{
-		ret = GetNextTimestampToDecodeBackwards();
+		ret = GetNextFrameNumberToDecodeBackwards();
 		if(ret!=-1)
 		{
 			return(ret);
 		}
-		ret = GetNextTimestampToDecodeForwards();
+		ret = GetNextFrameNumberToDecodeForwards();
 		if(ret!=-1)
 		{
 			return(ret);
@@ -8639,38 +8673,38 @@ GetNextTimestampToDecode()
 
 long
 LGL_VideoDecoder::
-GetNextTimestampToDecodePredictNext()
+GetNextFrameNumberToDecodePredictNext()
 {
-	long timestampNow = SecondsToTimestamp(TimeSeconds);
-	long timestampLength = SecondsToTimestamp(LengthSeconds);
+	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
+	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
 
-	long timestampPrev = SecondsToTimestamp(TimeSecondsPrev);
-	long timestampTarget = timestampNow + (timestampNow-timestampPrev);
+	long frameNumberPrev = SecondsToFrameNumber(TimeSecondsPrev);
+	long frameNumberTarget = frameNumberNow + (frameNumberNow-frameNumberPrev);
 
 	//Handle wrap-around
-	long timestampFind=timestampTarget;
-	while(timestampFind>timestampLength)
+	long frameNumberFind=frameNumberTarget;
+	while(frameNumberFind>frameNumberLength)
 	{
-		timestampFind-=timestampLength;
+		frameNumberFind-=frameNumberLength;
 	}
 
-	if(timestampFind<0) timestampFind=0;
-	if(timestampFind>timestampLength) timestampFind=timestampLength;
+	if(frameNumberFind<0) frameNumberFind=0;
+	if(frameNumberFind>frameNumberLength) frameNumberFind=frameNumberLength;
 
 	bool found=false;
 	for(unsigned int b=0;b<FrameBufferReady.size();b++)
 	{
-		long timestampImage=FrameBufferReady[b]->GetTimestamp();
-		if(timestampFind<timestampImage)
+		long frameNumberImage=FrameBufferReady[b]->GetFrameNumber();
+		if(frameNumberFind<frameNumberImage)
 		{
-			return(timestampFind);
+			return(frameNumberFind);
 		}
-		else if(timestampFind==timestampImage)
+		else if(frameNumberFind==frameNumberImage)
 		{
 			found=true;
 			break;
 		}
-		else //timestampFind>timestampImage
+		else //frameNumberFind>frameNumberImage
 		{
 			continue;
 		}
@@ -8678,7 +8712,7 @@ GetNextTimestampToDecodePredictNext()
 
 	if(found==false)
 	{
-		return(timestampFind);
+		return(frameNumberFind);
 	}
 
 	return(-1);
@@ -8686,20 +8720,20 @@ GetNextTimestampToDecodePredictNext()
 
 long
 LGL_VideoDecoder::
-GetNextTimestampToDecodeForwards()
+GetNextFrameNumberToDecodeForwards()
 {
-	long timestampNow = SecondsToTimestamp(TimeSeconds);
-	long timestampLength = SecondsToTimestamp(LengthSeconds);
+	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
+	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
 
 	int frameBufferIndex=0;
-	long timestampFinal = timestampNow+FrameBufferAddRadius;
-	for(long a=timestampNow;a<timestampFinal;a++)
+	long frameNumberFinal = frameNumberNow+FrameBufferAddRadius;
+	for(long a=frameNumberNow;a<frameNumberFinal;a++)
 	{
 		//Handle wrap-around
-		long timestampFind=a;
-		while(timestampFind>=timestampLength)
+		long frameNumberFind=a;
+		while(frameNumberFind>=frameNumberLength)
 		{
-			timestampFind-=timestampLength;
+			frameNumberFind-=frameNumberLength;
 			frameBufferIndex=0;
 		}
 
@@ -8707,17 +8741,17 @@ GetNextTimestampToDecodeForwards()
 		for(unsigned int b=frameBufferIndex;b<FrameBufferReady.size();b++)
 		{
 			frameBufferIndex++;
-			long timestampImage=FrameBufferReady[b]->GetTimestamp();
-			if(timestampFind<timestampImage)
+			long frameNumberImage=FrameBufferReady[b]->GetFrameNumber();
+			if(frameNumberFind<frameNumberImage)
 			{
-				return(timestampFind);
+				return(frameNumberFind);
 			}
-			else if(timestampFind==timestampImage)
+			else if(frameNumberFind==frameNumberImage)
 			{
 				found=true;
 				break;
 			}
-			else //timestampFind>timestampImage
+			else //frameNumberFind>frameNumberImage
 			{
 				continue;
 			}
@@ -8725,7 +8759,7 @@ GetNextTimestampToDecodeForwards()
 
 		if(found==false)
 		{
-			return(timestampFind);
+			return(frameNumberFind);
 		}
 	}
 
@@ -8734,21 +8768,21 @@ GetNextTimestampToDecodeForwards()
 
 long
 LGL_VideoDecoder::
-GetNextTimestampToDecodeBackwards()
+GetNextFrameNumberToDecodeBackwards()
 {
-	long timestampNow = SecondsToTimestamp(TimeSeconds);
-	long timestampLength = SecondsToTimestamp(LengthSeconds);
-	if(timestampNow>timestampLength) timestampNow=timestampLength;
+	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
+	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberNow>frameNumberLength) frameNumberNow=frameNumberLength;
 	
 	int frameBufferIndex=FrameBufferReady.size()-1;
-	long timestampFinal = timestampNow-FrameBufferAddRadius;
-	for(long a=timestampNow-1;a>timestampFinal;a--)
+	long frameNumberFinal = frameNumberNow-FrameBufferAddRadius;
+	for(long a=frameNumberNow-1;a>frameNumberFinal;a--)
 	{
 		//Handle wrap-around
-		long timestampFind=a;
-		while(timestampFind<0)
+		long frameNumberFind=a;
+		while(frameNumberFind<0)
 		{
-			timestampFind+=timestampLength;
+			frameNumberFind+=frameNumberLength;
 			frameBufferIndex=FrameBufferReady.size()-1;
 		}
 
@@ -8756,21 +8790,21 @@ GetNextTimestampToDecodeBackwards()
 		for(int b=frameBufferIndex;b>=0;b--)
 		{
 			frameBufferIndex--;
-			long timestampImage=FrameBufferReady[b]->GetTimestamp();
+			long frameNumberImage=FrameBufferReady[b]->GetFrameNumber();
 			if
 			(
-				timestampFind>timestampImage &&
-				timestampFind-timestampImage < timestampLength/2
+				frameNumberFind>frameNumberImage &&
+				frameNumberFind-frameNumberImage < frameNumberLength/2
 			)
 			{
-				return(timestampFind);
+				return(frameNumberFind);
 			}
-			else if(timestampFind==timestampImage)
+			else if(frameNumberFind==frameNumberImage)
 			{
 				found=true;
 				break;
 			}
-			else //timestampFind<timestampImage
+			else //frameNumberFind<frameNumberImage
 			{
 				continue;
 			}
@@ -8778,7 +8812,7 @@ GetNextTimestampToDecodeBackwards()
 
 		if(found==false)
 		{
-			return(timestampFind);
+			return(frameNumberFind);
 		}
 	}
 
@@ -8841,6 +8875,7 @@ LGL_VideoEncoder
 	DstFrameYUV=NULL;
 	DstBuffer=NULL;
 
+	DstMp3FD=NULL;
 	DstMp3OutputFormat=NULL;
 	DstMp3FormatContext=NULL;
 	DstMp3CodecContext=NULL;
@@ -8849,6 +8884,7 @@ LGL_VideoEncoder
 	DstMp3Buffer=NULL;
 	DstMp3BufferSamples=NULL;
 	DstMp3BufferSamplesIndex=0;
+	DstMp3BufferSamplesTotalBytes=0;
 	DstMp3Buffer2=NULL;
 
 	{
@@ -8925,6 +8961,7 @@ LGL_VideoEncoder
 			UnsupportedCodec=true;
 			return;
 		}
+printf("SrcCodec: '%s'\n",SrcCodec->name);
 
 		// Find the decoder for the audio stream
 		if(srcAudioCodecContext)
@@ -8939,10 +8976,12 @@ LGL_VideoEncoder
 
 		// Inform the codec that we can handle truncated bitstreams -- i.e.,
 		// bitstreams where frame boundaries can fall in the middle of packets
+		/*
 		if(SrcCodec->capabilities & CODEC_CAP_TRUNCATED)
 		{
 			SrcCodecContext->flags|=CODEC_FLAG_TRUNCATED;
 		}
+		*/
 
 		// Open codec
 		{
@@ -8988,27 +9027,6 @@ LGL_VideoEncoder
 			SrcBufferHeight
 		);
 
-		SwsConvertContext = sws_getContext
-		(
-			//src
-			SrcBufferWidth,
-			SrcBufferHeight, 
-			SrcCodecContext->pix_fmt, 
-			//dst
-			SrcBufferWidth,
-			SrcBufferHeight,
-			PIX_FMT_YUVJ422P,
-			SWS_FAST_BILINEAR,
-			NULL,
-			NULL,
-			NULL
-		);
-		if(SwsConvertContext==NULL)
-		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): NULL SwsConvertContext for '%s'\n",src);
-			return;
-		}
-
 		SrcFrameNow=0;
 		SrcSecondsNow=0;
 	}
@@ -9020,10 +9038,25 @@ LGL_VideoEncoder
 		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 
 		// find the video encoder
+/*
+	Candidates:
+        CODEC_ID_MJPEG		[OK]
+        CODEC_ID_MJPEGB		[NO]
+        CODEC_ID_LJPEG
+        CODEC_ID_RAWVIDEO
+        CODEC_ID_DVVIDEO
+        CODEC_ID_HUFFYUV
+        CODEC_ID_FFVHUFF	[RGB, FPS?]
+        CODEC_ID_ASV1
+        CODEC_ID_ASV2		[CRASH_RGB]
+        CODEC_ID_VCR1
+        CODEC_ID_DNXHD
+        CODEC_ID_JPEG2000	[NO]
+*/
 		DstCodec = avcodec_find_encoder(CODEC_ID_MJPEG);
 		if(DstCodec==NULL)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find MJPEG codec for '%s'\n",src);
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find encoder codec for '%s'\n",src);
 			return;
 		}
 
@@ -9032,7 +9065,7 @@ LGL_VideoEncoder
 		// Set AVI format
 		DstOutputFormat = guess_format("avi", NULL, NULL);
 		DstOutputFormat->audio_codec = CODEC_ID_NONE;
-		DstOutputFormat->video_codec = CODEC_ID_MJPEG;
+		DstOutputFormat->video_codec = DstCodec->id;
 
 		// FormatContext
 		DstFormatContext = (AVFormatContext*)av_mallocz(sizeof(AVFormatContext));
@@ -9052,8 +9085,7 @@ LGL_VideoEncoder
 
 		DstCodecContext = DstStream->codec;
 		avcodec_get_context_defaults(DstCodecContext);
-		//DstCodecContext->pix_fmt=PIX_FMT_YUVJ422P;
-		DstCodecContext->codec_id=CODEC_ID_LJPEG;
+		DstCodecContext->codec_id=DstCodec->id;
 		DstCodecContext->codec_type=CODEC_TYPE_VIDEO;
 		DstCodecContext->bit_rate=BitrateMaxMBps*1024*1024*8;
 		DstCodecContext->bit_rate_tolerance=DstCodecContext->bit_rate/8;	//Allow for some variance
@@ -9063,8 +9095,11 @@ LGL_VideoEncoder
 		//The next line appears goofy and incorrect, but is necessary to ensure a proper framerate.
 		//The SrcCodecContext's time_base can be incorrect, for reasons not entirely clear. ffmpeg can be like that.
 		DstCodecContext->time_base = DstStream->time_base;//SrcCodecContext->time_base;
+		//DstCodecContext->pix_fmt = PIX_FMT_RGB32;
 		DstCodecContext->pix_fmt = PIX_FMT_YUVJ422P;
+		DstCodecContext->strict_std_compliance=-1;
 
+printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext->pix_fmt);
 		{
 			if(avcodec_open(DstCodecContext, DstCodec) < 0)
 			{
@@ -9084,6 +9119,29 @@ LGL_VideoEncoder
 			return;
 		}
 
+		SwsConvertContext = sws_getContext
+		(
+			//src
+			SrcBufferWidth,
+			SrcBufferHeight, 
+			SrcCodecContext->pix_fmt, 
+			//dst
+			DstCodecContext->width,
+			DstCodecContext->height,
+			DstCodecContext->pix_fmt,
+			SWS_BILINEAR,//SWS_FAST_BILINEAR,
+			NULL,
+			NULL,
+			NULL
+		);
+		if(SwsConvertContext==NULL)
+		{
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): NULL SwsConvertContext for '%s'\n",src);
+			printf("\tSrc Width/Height: %ix%i\n",SrcCodecContext->width,SrcCodecContext->height);
+			printf("\tSrc Format: %i\n",SrcCodecContext->pix_fmt);
+			return;
+		}
+
 		SrcFileBytes=LGL_FileLengthBytes(src);
 
 		av_write_header(DstFormatContext);
@@ -9091,7 +9149,7 @@ LGL_VideoEncoder
 		avpicture_alloc
 		(
 			(AVPicture*)DstFrameYUV,
-			PIX_FMT_YUVJ422P,
+			DstCodecContext->pix_fmt,
 			SrcBufferWidth,
 			SrcBufferHeight
 		);
@@ -9101,7 +9159,7 @@ LGL_VideoEncoder
 		//Mp3 output
 		if(SrcAudioStreamIndex!=-1)
 		{
-			CodecID acodec = CODEC_ID_VORBIS;
+			CodecID acodec = CODEC_ID_FLAC;
 
 			// find the audio encoder
 			DstMp3Codec = avcodec_find_encoder(acodec);
@@ -9111,32 +9169,42 @@ LGL_VideoEncoder
 				return;
 			}
 
-			// Set mp3 format
-			DstMp3OutputFormat = guess_format("ogg", NULL, NULL);
+			// Set format
+			DstMp3OutputFormat = guess_format("flac", NULL, NULL);
+			if(DstMp3OutputFormat==NULL)
+			{
+				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio encoding format for '%s'\n",src);
+				return;
+			}
 			DstMp3OutputFormat->audio_codec = acodec;	//FIXME: mp3?? vorbis?? Pick one and name appropriately!
 			DstMp3OutputFormat->video_codec = CODEC_ID_NONE;
 
 			// FormatContext
-			DstMp3FormatContext = (AVFormatContext*)av_mallocz(sizeof(AVFormatContext));
+			DstMp3FormatContext = avformat_alloc_context();
 			DstMp3FormatContext->oformat = DstMp3OutputFormat;
 			sprintf(DstMp3FormatContext->filename, "%s",DstMp3Path);
 
 			// audio stream
 			DstMp3Stream = av_new_stream(DstMp3FormatContext,0);
 			DstMp3Stream->r_frame_rate=SrcFormatContext->streams[SrcAudioStreamIndex]->r_frame_rate;
-			DstMp3Stream->quality=1.0f;
+			DstMp3Stream->quality=FF_QP2LAMBDA * 100;
 			DstMp3FormatContext->streams[0] = DstMp3Stream;
 			DstMp3FormatContext->nb_streams = 1;
 
 			DstMp3CodecContext = DstMp3Stream->codec;
-			avcodec_get_context_defaults(DstMp3CodecContext);
+			avcodec_get_context_defaults2(DstMp3CodecContext,CODEC_TYPE_AUDIO);
 			DstMp3CodecContext->codec_id=acodec;
 			DstMp3CodecContext->codec_type=CODEC_TYPE_AUDIO;
-			DstMp3CodecContext->bit_rate=256*1000;	//This doesn't seem to matter much
+			if(DstOutputFormat->flags & AVFMT_GLOBALHEADER)
+			{
+				DstMp3CodecContext->flags |= CODEC_FLAG_GLOBAL_HEADER;
+			}
+			DstMp3CodecContext->bit_rate=256*1024;	//This doesn't seem to matter much
 			DstMp3CodecContext->bit_rate_tolerance=DstMp3CodecContext->bit_rate/4;
-			DstMp3CodecContext->global_quality=20000;	//This is so fucking arbitrary.
+			DstMp3CodecContext->global_quality=DstMp3Stream->quality;
 			DstMp3CodecContext->flags |= CODEC_FLAG_QSCALE;
 			DstMp3CodecContext->sample_rate=SrcAudioCodecContext->sample_rate;
+			DstMp3CodecContext->time_base = (AVRational){1,DstMp3CodecContext->sample_rate};
 			DstMp3CodecContext->channels=2;//SrcAudioCodecContext->channels;
 
 			int openResult=-1;
@@ -9150,7 +9218,7 @@ LGL_VideoEncoder
 			}
 			else
 			{
-				dump_format(DstMp3FormatContext,0,DstMp3FormatContext->filename,1);
+				//dump_format(DstMp3FormatContext,0,DstMp3FormatContext->filename,1);
 				
 				result = url_fopen(&(DstMp3FormatContext->pb), DstMp3FormatContext->filename, URL_WRONLY);
 				if(result<0)
@@ -9329,47 +9397,37 @@ Encode
 				SrcPacketPosMax+=SrcPacket.size;
 			}
 		}
+
+		int srcPacketSizeOrig=SrcPacket.size;
+		uint8_t* srcPacketDataOrig=SrcPacket.data;
+
+		bool eof=false;
 		if(result<0)
 		{
-			//We're done!
-			if(EncodeVideo)
-			{
-				av_write_trailer(DstFormatContext);
-				url_fclose(DstFormatContext->pb);	//FIXME: Memleak
-			}
-			DstFormatContext->pb=NULL;
-
-#ifndef	NOT_YET
-			if(EncodeAudio)
-			{
-				av_write_trailer(DstMp3FormatContext);
-				url_fclose(DstMp3FormatContext->pb);	//FIXME: Memleak
-			}
-			if(DstMp3FormatContext)
-			{
-				DstMp3FormatContext->pb=NULL;
-			}
-#endif	//NOT_YET
-			break;
+			eof=true;
+			SrcPacket.size=0;
+			SrcPacket.data=NULL;
 		}
 
 		// Is this a packet from the video stream?
 		if
 		(
-			SrcPacket.stream_index==SrcVideoStreamIndex &&
-			EncodeVideo
+			EncodeVideo &&
+			(
+				SrcPacket.stream_index==SrcVideoStreamIndex ||
+				eof
+			)
 		)
 		{
 			int frameFinished=0;
 			{
 				LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
-				avcodec_decode_video
+				avcodec_decode_video2
 				(
 					SrcCodecContext,
 					SrcFrame,
 					&frameFinished, 
-					SrcPacket.data,
-					SrcPacket.size
+					&SrcPacket
 				);
 			}
 
@@ -9408,79 +9466,158 @@ Encode
 		}
 		
 		// Is this a packet from the audio stream?
-		else if
+		if
 		(
-			SrcPacket.stream_index==SrcAudioStreamIndex &&
-			EncodeAudio
+			EncodeAudio &&
+			(
+				SrcPacket.stream_index==SrcAudioStreamIndex ||
+				eof
+			)
 		)
 		{
-#ifndef	NOT_YET
 			// Convert the audio from src format to dst
 			{
 				LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 				int outbufsize = LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE;
-				result = avcodec_decode_audio2
-				(
-					SrcAudioCodecContext,
-					DstMp3Buffer,
-					&outbufsize,
-					SrcPacket.data,
-					SrcPacket.size
-				);
-				if(SrcAudioCodecContext->channels==2)
+	
+				while(SrcPacket.size>0)
 				{
-					memcpy(&(DstMp3BufferSamples[DstMp3BufferSamplesIndex]),DstMp3Buffer,outbufsize);
-					DstMp3BufferSamplesIndex+=outbufsize/2;
-				}
-				else
-				{
-					int16_t* outbuf16 = (int16_t*)DstMp3Buffer;
-					int16_t* buf16 = (int16_t*)(&(DstMp3BufferSamples[DstMp3BufferSamplesIndex])); 
-					int samples=outbufsize/2;
-
-					for(int a=0;a<samples;a++)
-					{
-						buf16[2*a+0]=outbuf16[a];
-						buf16[2*a+1]=outbuf16[a];
-					}
-
-					DstMp3BufferSamplesIndex+=samples*2;
-				}
-			}
-
-			while(DstMp3BufferSamplesIndex>=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels)
-			{
-				{
-					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
-					DstMp3Packet.size = avcodec_encode_audio
+					//FIXME: We don't flush this decoder sufficiently.
+					result = avcodec_decode_audio3
 					(
-						DstMp3CodecContext,
-						(uint8_t*)DstMp3Buffer2,
-						LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE,
-						DstMp3BufferSamples
+						SrcAudioCodecContext,
+						DstMp3Buffer,
+						&outbufsize,
+						&SrcPacket
 					);
+					if(result<0)
+					{
+						printf("avcodec_decode_audio3(): Error!\n");
+						break;
+					}
+					SrcPacket.size-=result;
+					SrcPacket.data+=result;
+					if(SrcAudioCodecContext->channels==2)
+					{
+						memcpy(&(DstMp3BufferSamples[DstMp3BufferSamplesIndex]),DstMp3Buffer,outbufsize);
+						DstMp3BufferSamplesIndex+=outbufsize/2;
+						DstMp3BufferSamplesTotalBytes+=outbufsize/2;
+					}
+					else
+					{
+						int16_t* outbuf16 = (int16_t*)DstMp3Buffer;
+						int16_t* buf16 = (int16_t*)(&(DstMp3BufferSamples[DstMp3BufferSamplesIndex])); 
+						int samples=outbufsize/2;
 
-					int remainderIndex=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels;
-					int remainderSize=DstMp3BufferSamplesIndex-remainderIndex;
-					memcpy(DstMp3Buffer,&(DstMp3BufferSamples[remainderIndex]),remainderSize*2);
-					memcpy(DstMp3BufferSamples,DstMp3Buffer,remainderSize*2);
-					DstMp3BufferSamplesIndex=remainderSize;
+						for(int a=0;a<samples;a++)
+						{
+							buf16[2*a+0]=outbuf16[a];
+							buf16[2*a+1]=outbuf16[a];
+						}
 
-					DstMp3Packet.pts = av_rescale_q(DstMp3CodecContext->coded_frame->pts,DstMp3CodecContext->time_base,DstMp3Stream->time_base);
-					DstMp3Packet.dts = DstMp3Packet.pts;
-					DstMp3Packet.flags |= PKT_FLAG_KEY;
-					DstMp3Packet.stream_index = 0;
-					DstMp3Packet.data=(uint8_t*)DstMp3Buffer2;
-					DstMp3Packet.duration=0;
-					result = av_write_frame(DstMp3FormatContext, &DstMp3Packet);
+						DstMp3BufferSamplesIndex+=samples*2;
+						DstMp3BufferSamplesTotalBytes+=outbufsize;
+					}
 				}
 			}
-#endif	//NOT_YET
+
+			FlushAudioBuffer();
 		}
+
+		SrcPacket.size=srcPacketSizeOrig;
+		SrcPacket.data=srcPacketDataOrig;
 		{
 			LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 			av_free_packet(&SrcPacket);
 		}
+
+		if(eof)
+		{
+			//We're done!
+			if(EncodeVideo)
+			{
+				av_write_trailer(DstFormatContext);
+				url_fclose(DstFormatContext->pb);	//FIXME: Memleak
+			}
+			DstFormatContext->pb=NULL;
+
+			if(EncodeAudio)
+			{
+				FlushAudioBuffer(true);
+
+				//Write silence to match video duration, if necessary
+				float lengthSeconds=SrcFormatContext->duration/(float)(AV_TIME_BASE);
+				long bufferLengthProper=lengthSeconds*SrcAudioCodecContext->sample_rate*2;
+				bzero(DstMp3BufferSamples,LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
+				while(DstMp3BufferSamplesTotalBytes<bufferLengthProper)
+				{
+					DstMp3BufferSamplesIndex=LGL_Min
+					(
+						bufferLengthProper-DstMp3BufferSamplesTotalBytes,
+						DstMp3CodecContext->frame_size*DstMp3CodecContext->channels
+					);
+					DstMp3BufferSamplesTotalBytes+=DstMp3BufferSamplesIndex;
+					FlushAudioBuffer(true);
+				}
+
+				av_write_trailer(DstMp3FormatContext);
+				url_fclose(DstMp3FormatContext->pb);	//FIXME: Memleak
+			}
+			if(DstMp3FormatContext)
+			{
+				DstMp3FormatContext->pb=NULL;
+			}
+			break;
+		}
+	}
+}
+
+void
+LGL_VideoEncoder::
+FlushAudioBuffer(bool force)
+{
+	if
+	(
+		force &&
+		DstMp3BufferSamplesIndex!=0
+	)
+	{
+		//Add silence
+		bzero
+		(
+			DstMp3BufferSamples+DstMp3BufferSamplesIndex,
+			DstMp3CodecContext->frame_size*DstMp3CodecContext->channels -
+			DstMp3BufferSamplesIndex
+		);
+		DstMp3BufferSamplesIndex=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels;
+	}
+
+	while(DstMp3BufferSamplesIndex>=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels)
+	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		DstMp3Packet.size = avcodec_encode_audio
+		(
+			DstMp3CodecContext,
+			(uint8_t*)DstMp3Buffer2,
+			LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE,
+			DstMp3BufferSamples
+		);
+
+		int remainderIndex=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels;
+		int remainderSize=DstMp3BufferSamplesIndex-remainderIndex;
+		memcpy(DstMp3Buffer,&(DstMp3BufferSamples[remainderIndex]),remainderSize*2);
+		memcpy(DstMp3BufferSamples,DstMp3Buffer,remainderSize*2);
+		DstMp3BufferSamplesIndex=remainderSize;
+
+		//DstMp3Packet.pts = av_rescale_q(DstMp3CodecContext->coded_frame->pts,DstMp3CodecContext->time_base,DstMp3Stream->time_base);
+		//DstMp3Packet.dts = DstMp3Packet.pts;
+		//DstPacket.dts = SrcPacket.dts;
+		//DstPacket.pts = SrcPacket.pts;//DstCodecContext->coded_frame->pts;
+		DstMp3Packet.flags |= PKT_FLAG_KEY;
+		DstMp3Packet.stream_index = 0;
+		DstMp3Packet.data=(uint8_t*)DstMp3Buffer2;
+		//DstMp3Packet.duration=0;
+		av_write_frame(DstMp3FormatContext, &DstMp3Packet);
 	}
 }
 
@@ -12930,6 +13067,8 @@ LGL_Sound
 	Channels=channels;
 	Hz=44100;
 
+	LoadSecondsUntilLoaded=9999.0f;
+
 	BadFile=false;
 
 	PercentLoaded=0.0f;
@@ -14488,6 +14627,7 @@ LoadToMemory()
 		Hz=44100;
 		float lengthSeconds=formatContext->duration/(float)(AV_TIME_BASE);
 		BufferLength=lengthSeconds*Hz*2*2;
+		if(BufferLength>BufferLengthTotal) BufferLength=BufferLengthTotal;
 		bzero(Buffer,BufferLength);
 	}
 	else
@@ -14502,6 +14642,8 @@ LoadToMemory()
 		int cyclesNow=0;
 		int cyclesMax=8;
 		int delayMS=1;
+
+		//Don't be tempted to make this a member variable... Alignment issues!
 		int16_t* outbuf=new int16_t[LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE];
 
 		for(;;)
@@ -14512,6 +14654,7 @@ LoadToMemory()
 			}
 		
 			AVPacket packet;
+			av_init_packet(&packet);
 
 			int result=0;
 			{
@@ -14519,7 +14662,27 @@ LoadToMemory()
 				result = av_read_frame(formatContext, &packet);
 			}
 
-			if(result>=0)
+			int packetOrigSize=packet.size;
+			uint8_t* packetOrigData=packet.data;
+
+			bool eof=false;
+			if(result<0)
+			{
+				eof=true;
+				packet.size=0;
+				packet.data=NULL;
+			}
+
+			bool freePacket=result>=0;
+
+			while
+			(
+				(
+					result>=0 &&
+					packet.size>0
+				) ||
+				eof
+			)
 			{
 				totalFileBytesUsed+=packet.size;
 				// Is this a packet from the audio stream?
@@ -14529,14 +14692,26 @@ LoadToMemory()
 					int outbufsize = LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE;
 					{
 						LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
-						avcodec_decode_audio2	//FIXME: This undercounts totalFileBytesUsed...
+						int ret = avcodec_decode_audio3	//FIXME: This undercounts totalFileBytesUsed...
 						(
 							codecContext,
 							(int16_t*)outbuf,
 							&outbufsize,
-							packet.data,
-							packet.size
+							&packet
 						);
+						if(outbufsize==0)
+						{
+							eof=false;
+						}
+
+						if(ret<0)
+						{
+							printf("avcodec_decode_audio3(): Error!\n");
+							result=-1;
+							break;
+						}
+						packet.size-=ret;
+						packet.data+=ret;
 					}
 
 					PercentLoaded = totalFileBytesUsed/(float)totalFileBytes;
@@ -14584,6 +14759,7 @@ LoadToMemory()
 					else
 					{
 						//Too big!
+						result=-1;
 						break;
 					}
 
@@ -14612,15 +14788,22 @@ LoadToMemory()
 				}
 				else
 				{
+					//Thread priority only applies to CPU... Don't hog the HDD!
 					LGL_DelayMS(5);
+					break;
 				}
 
-				// Free the data in the packet that was allocated by av_read_frame (but not the packet object itself)
-				{
-					av_free_packet(&packet);
-				}
 			}
-			else
+
+			if(freePacket)
+			{
+				// Free the data in the packet that was allocated by av_read_frame (but not the packet object itself)
+				packet.size=packetOrigSize;
+				packet.data=packetOrigData;
+				av_free_packet(&packet);
+			}
+
+			if(result<0)
 			{
 				break;
 			}
@@ -14710,25 +14893,31 @@ float
 LGL_Sound::
 GetSecondsUntilLoaded()
 {
-	return(1.0f);
-	if(BadFile)
+	float pct=GetPercentLoaded();
+	if
+	(
+		BadFile ||
+		pct<0.0001f ||
+		LoadTimerDeltaTimer.SecondsSinceLastReset()<1.0f
+	)
 	{
-		return (60.0f*88.0f);
+		return(LoadSecondsUntilLoaded);
 	}
+	LoadTimerDeltaTimer.Reset();
 	//if(LGL.AudioAvailable==false) return(0);
 #ifdef	LGL_WIN32
 	return(20);
 #endif	//LGL_WIN32
 	float r=LoadTimer.SecondsSinceLastReset();
-	float t=r/GetPercentLoaded()-r;
+	float t=r/pct-r;
 	if(r<1)
 	{
 		return(t);
 	}
 	else
 	{
-		if(t<LoadTimerMin) LoadTimerMin=t;
-		return(LoadTimerMin);
+		LoadSecondsUntilLoaded=t;
+		return(LoadSecondsUntilLoaded);
 	}
 }
 
@@ -26013,7 +26202,7 @@ lgl_AudioOutCallbackGenerator
 
 			int BPS=sc->Channels*2;	//Bytes Per Sample
 			int BPS_half=BPS/2;
-			bool GoForIt=true;
+			bool goForIt=true;
 			if
 			(
 				PosNowPrev*BPS>=sc->BufferLength ||
@@ -26028,7 +26217,7 @@ lgl_AudioOutCallbackGenerator
 			)
 			{
 				//Loop or stop
-				GoForIt=false;
+				goForIt=false;
 				if(sc->Loop)
 				{
 					if
@@ -26049,6 +26238,7 @@ lgl_AudioOutCallbackGenerator
 						sc->PositionSamplesNow=sc->BufferLength/BPS-1;
 						sc->PositionSamplesPrev=sc->BufferLength/BPS-1;
 						sc->PositionSamplesNowLastReported=sc->PositionSamplesNow;
+						sc->FuturePositionSamplesNow=sc->BufferLength/BPS-1;
 						sc->SpeedNow=0.0f;
 						sc->SpeedDesired=0.0f;
 					}
@@ -26068,15 +26258,16 @@ lgl_AudioOutCallbackGenerator
 					sc->Occupied=false;
 					sc->PositionSamplesNow=0;
 					sc->PositionSamplesPrev=0;
+					sc->FuturePositionSamplesNow=0;
 					sc->Buffer=NULL;
-					GoForIt=false;
+					goForIt=false;
 				}
 			}
 			if(sc->Buffer==NULL)
 			{
-				GoForIt=false;
+				goForIt=false;
 			}
-			if(GoForIt)
+			if(goForIt)
 			{
 				//Add the interpolated samples
 				Sint16* myBuffer=(Sint16*)sc->Buffer;
@@ -26237,10 +26428,11 @@ lgl_AudioOutCallbackGenerator
 				double myFL = (Lnp*(1.0-closenessPercentInvNow) + Lnn*closenessPercentInvNow);
 				double myFR = (Rnp*(1.0-closenessPercentInvNow) + Rnn*closenessPercentInvNow);
 
+				long sampleNow=(long)sc->PositionSamplesNow;
+
 				//Attempt to use libsamplerate
 				if(fabsf(sc->SpeedNow)<2.0f)
 				{
-					long sampleNow=(long)sc->PositionSamplesNow;
 					if
 					(
 						sc->SpeedNow==0.0f ||
@@ -26304,8 +26496,8 @@ lgl_AudioOutCallbackGenerator
 						}
 					}
 
-					double neoFL;
-					double neoFR;
+					double neoFL=0.0f;
+					double neoFR=0.0f;
 
 					if
 					(
@@ -26322,7 +26514,11 @@ lgl_AudioOutCallbackGenerator
 							neoFR = sc->SampleRateConverterBufferR[index];
 						}
 					}
-					else if(sc->SpeedNow==0.0f)
+					else if
+					(
+						sc->SpeedNow==0.0f &&
+						sc->SampleRateConverterBufferValidSamples>0
+					)
 					{
 						int index=LGL_Max(0,sc->SampleRateConverterBufferCurrentSamplesIndex-1);
 						neoFL = sc->SampleRateConverterBufferL[index];
@@ -26342,9 +26538,44 @@ lgl_AudioOutCallbackGenerator
 				}
 				else
 				{
+					if(SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES==1)
+					{
+						for(int c=0;c<2;c++)
+						{
+							SRC_DATA srcData;
+							float srcBufIn[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
+							float srcBufOut[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
+							long indexStart=sampleNow-SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES_EDGE;
+							if(sc->SampleRateConverterBufferStartSamples!=-1)
+							{
+								indexStart=(c==0) ?
+									(sc->SampleRateConverterBufferStartSamples+sc->SampleRateConverterBufferConsumedSamples) :
+									sc->SampleRateConverterBufferStartSamples;
+							}
+							for(int b=0;b<SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;b++)
+							{
+								long index=indexStart+b;
+								if(index<0) index=0;
+								if(index*BPS>=(long)sc->BufferLength) index=0;
+								srcBufIn[b]=myBuffer[index*BPS_half+c]/32767.0f;
+							}
+
+							srcData.data_in=srcBufIn;
+							srcData.data_out=srcBufOut;
+							srcData.input_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;
+							srcData.output_frames=SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES;
+							srcData.src_ratio=(1.0f/LGL_Max(0.01f,fabsf(sc->SpeedNow)))*(LGL.AudioSpec->freq/(float)sc->Hz);
+							srcData.end_of_input=0;
+
+							src_set_ratio((c==0)?sc->SampleRateConverterL:sc->SampleRateConverterR,srcData.src_ratio);
+							src_process((c==0)?sc->SampleRateConverterL:sc->SampleRateConverterR,&srcData);
+						}
+					}
+
 					if(sc->SampleRateConverterBufferStartSamples!=-1)
 					{
 						sc->SampleRateConverterBufferStartSamples=-1;
+						sc->SampleRateConverterBufferValidSamples=0;
 						//The below calls would be nice, but are way too expensive to execute in the audio thread...
 						//src_reset(sc->SampleRateConverterL);
 						//src_reset(sc->SampleRateConverterR);
@@ -26460,7 +26691,6 @@ lgl_AudioOutCallbackGenerator
 						)
 					)
 					{
-						//FIXME: The next two lines don't quite seem right...
 						sc->PositionSamplesNow=-1;
 						sc->PositionSamplesPrev=-1;
 						sc->PositionSamplesNow+=
