@@ -84,6 +84,8 @@ extern "C"
 	#include <libswscale/swscale.h>
 }
 
+const int LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE = (AVCODEC_MAX_AUDIO_FRAME_SIZE*2);
+
 #ifdef	SDL_2
 enum
 {
@@ -481,6 +483,7 @@ double		LGL_SecondsSinceThisFrame();
 double		LGL_SecondsSinceExecution();
 unsigned long	LGL_FramesSinceExecution();
 int		LGL_FPS();
+int		LGL_GetFPSMax();
 void		LGL_SetFPSMax(int fpsMax);
 const
 char*		LGL_TimeOfDay();
@@ -1006,8 +1009,8 @@ const	char*		GetPathShort() const;
 	void		IncrementReferenceCount();
 	void		DecrementReferenceCount();
 
-	long		GetTimestamp();
-	void		SetTimestamp(long timestamp);
+	long		GetFrameNumber();
+	void		SetFrameNumber(long framenumber);
 
 	const char*	GetVideoPath();
 	void		SetVideoPath(const char* videoPath);
@@ -1042,7 +1045,7 @@ const	char*		GetPathShort() const;
 	int		HeightInt;
 
 	int		ReferenceCount;
-	long		Timestamp;
+	long		FrameNumber;
 	char		VideoPath[2048];
 };
 
@@ -1135,18 +1138,18 @@ public:
 					char*		videoPath,
 					unsigned char*	buffer,
 					unsigned int&	bufferBytes,
-					long		timestamp
+					long		frameNumber
 				);
 	const char*		GetVideoPath() const;
 	unsigned char*		GetBuffer() const;
-	long			GetTimestamp() const;
+	long			GetFrameNumber() const;
 
 private:
 
 	char			VideoPath[2048];
 	unsigned char*		Buffer;
 	unsigned int		BufferBytes;
-	long			Timestamp;
+	long			FrameNumber;
 
 };
 
@@ -1188,6 +1191,7 @@ private:
 	char			PathNext[2048];
 	
 	float			FPS;
+	float			FPSTimestamp;
 	int			FPSDisplayed;
 	int			FPSMissed;
 	int			FPSDisplayedHitCounter;
@@ -1197,8 +1201,8 @@ private:
 	float			LengthSeconds;
 	float			TimeSeconds;
 	float			TimeSecondsPrev;
-	long			TimestampNext;
-	long			TimestampDisplayed;
+	long			FrameNumberNext;
+	long			FrameNumberDisplayed;
 
 	std::vector<lgl_FrameBuffer*>
 				FrameBufferReady;
@@ -1232,10 +1236,13 @@ private:
 
 	float			TimestampToSeconds(long timestamp);
 	long			SecondsToTimestamp(float seconds);
-	long			GetNextTimestampToDecode();
-	long			GetNextTimestampToDecodePredictNext();
-	long			GetNextTimestampToDecodeForwards();
-	long			GetNextTimestampToDecodeBackwards();
+	float			FrameNumberToSeconds(long frameNumber);
+	long			SecondsToFrameNumber(float seconds);
+	long			FrameNumberToTimestamp(long FrameNumber);
+	long			GetNextFrameNumberToDecode();
+	long			GetNextFrameNumberToDecodePredictNext();
+	long			GetNextFrameNumberToDecodeForwards();
+	long			GetNextFrameNumberToDecodeBackwards();
 	lgl_FrameBuffer*	GetRecycledFrameBuffer();
 };
 
@@ -1259,6 +1266,7 @@ public:
 	bool			GetEncodeAudio();
 	bool			GetEncodeVideo();
 	void			Encode(int frames);
+	void			FlushAudioBuffer(bool force=false);
 	float			GetPercentFinished();
 	bool			IsFinished();
 	const char*		GetCodecName();
@@ -1322,6 +1330,7 @@ static	float			BitrateMaxMBps;
 	int16_t*		DstMp3Buffer;
 	int16_t*		DstMp3BufferSamples;
 	int			DstMp3BufferSamplesIndex;
+	long			DstMp3BufferSamplesTotalBytes;
 	int16_t*		DstMp3Buffer2;
 	AVPacket		DstMp3Packet;
 };
@@ -2014,7 +2023,8 @@ private:
 	int		Hz;
 
 	LGL_Timer	LoadTimer;
-	float		LoadTimerMin;
+	LGL_Timer	LoadTimerDeltaTimer;
+	float		LoadSecondsUntilLoaded;
 
 	int		ReferenceCount;
 

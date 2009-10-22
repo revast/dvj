@@ -1795,6 +1795,8 @@ Turntable_DrawWaveform
 	);
 	*/
 
+	float eqLeftEdge=0.0f;
+	float eqRightEdge=0.0f;
 	if(freqSensitiveMode!=2)
 	{
 		if(bpmAdjusted>0)
@@ -2240,6 +2242,11 @@ Turntable_DrawWaveform
 				thickness
 			);
 
+			if(i==1)
+			{
+				eqLeftEdge=lft+i*wth;
+			}
+
 			//Right
 			LGL_DrawLineToScreen
 			(
@@ -2248,6 +2255,11 @@ Turntable_DrawWaveform
 				r,g,b,1,
 				thickness
 			);
+
+			if(i==11)
+			{
+				eqRightEdge=lft+i*wth+spc;
+			}
 
 			//Bottom
 			LGL_DrawLineToScreen
@@ -2353,9 +2365,9 @@ Turntable_DrawWaveform
 	
 		//Horiz
 		float spc=viewPortWidth*0.025f;
-		float wth=viewPortWidth*0.17f;
 		//float lft=viewPortLeft+0.525f*viewPortWidth+f*(wth+spc);
-		float lft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.025;
+		float lft=eqLeftEdge;//0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.025;
+		float wth=eqRightEdge-lft;//viewPortWidth*0.17f;
 		float bot=viewPortBottom+(0.5f-0.075f/2.0f)*viewPortHeight+spc*(f-1);
 		float top=viewPortBottom+(0.5f+0.075f/2.0f)*viewPortHeight+spc*(f-1);
 

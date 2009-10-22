@@ -531,7 +531,7 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	if(VisualizerFullScreen)
 	{
 		if(LogEverything==false && LogVisuals==false) LGL_DrawLogPause();
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		//Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
 		if(LogEverything==false && LogVisuals==false) LGL_DrawLogPause(false);
 	}
 

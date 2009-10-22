@@ -152,6 +152,8 @@ findVideoPath
 	findCachedPath(foundPath,srcPath,"mjpeg.avi");
 }
 
+const char* audioExtension = "flac";
+
 void
 findAudioPath
 (
@@ -159,7 +161,7 @@ findAudioPath
 	const char*	srcPath
 )
 {
-	findCachedPath(foundPath,srcPath,"ogg");
+	findCachedPath(foundPath,srcPath,audioExtension);
 }
 
 int
@@ -222,15 +224,16 @@ videoEncoderThread
 		);
 
 		char encoderAudioDstTmp[2048];
-		sprintf(encoderAudioDstTmp,"%s/dvj-deleteme-ogg-encode-%i.ogg",videoTmpPath,rand);
+		sprintf(encoderAudioDstTmp,"%s/dvj-deleteme-%s-encode-%i.%s",videoTmpPath,audioExtension,rand,audioExtension);
 
 		char encoderAudioDst[2048];
 		sprintf
 		(
 			encoderAudioDst,
-			"%s/%s.ogg",
+			"%s/%s.%s",
 			videoPath,
-			&(strrchr(encoderSrc,'/')[1])
+			&(strrchr(encoderSrc,'/')[1]),
+			audioExtension
 		);
 
 		if(strstr(encoderSrc,".mjpeg.avi"))
@@ -277,8 +280,18 @@ videoEncoderThread
 			encoder->SetBitrateMaxMBps(0.1f);
 			encoder->SetEncodeAudio(LGL_FileExists(encoderAudioDst)==false);
 			encoder->SetEncodeVideo(LGL_FileExists(encoderDst)==false);
-			if(encoder->IsValid())
+			if
+			(
+				encoder->IsValid() &&
+				(
+					encoder->GetEncodeAudio() ||
+					encoder->GetEncodeVideo()
+				)
+			)
 			{
+printf("Encoding!\n");
+if(encoder->GetEncodeAudio()) printf("Encoding Audio! (%s)\n",encoderAudioDst);
+if(encoder->GetEncodeVideo()) printf("Encoding Video! (%s)\n",encoderDst);
 				tt->VideoEncoderAudioOnly = encoder->GetEncodeVideo()==false && encoder->GetEncodeAudio()==true;
 				LGL_Timer timer;
 				LGL_Timer timerUpdateEta;
@@ -288,6 +301,12 @@ videoEncoderThread
 					if(tt->VideoEncoderTerminateSignal==1)
 					{
 						break;
+					}
+					if(tt->VideoEncoderBeginSignal==0)
+					{
+						LGL_DelayMS(100);
+						timer.Reset();
+						continue;
 					}
 					char videoEncoderPathSrc[2048];
 					strcpy(videoEncoderPathSrc,tt->VideoEncoderPathSrc);
@@ -357,9 +376,10 @@ videoEncoderThread
 							sprintf
 							(
 								targetPath,
-								"%s/%s.ogg",
+								"%s/%s.%s",
 								dotDvjPath,
-								&(strrchr(encoderSrc,'/')[1])
+								&(strrchr(encoderSrc,'/')[1]),
+								audioExtension
 							);
 							LGL_FileDelete(targetPath);	//For stale symlinks...
 
@@ -575,6 +595,7 @@ TurntableObj
 	VideoEncoderPathSrc[0]='\0';
 	VideoEncoderThread=NULL;
 	VideoEncoderTerminateSignal=0;
+	VideoEncoderBeginSignal=0;
 	VideoEncoderUnsupportedCodecTime=0.0f;
 	VideoEncoderUnsupportedCodecName[0]='\0';
 }
@@ -970,28 +991,6 @@ NextFrame
 				sprintf(videoTracksPath,"%s/dvj",SoundSrcDir);
 				char filenameCached[2048];
 				findAudioPath(filenameCached,SoundSrcPath);
-				/*
-				sprintf
-				(
-					filenameCached,
-					"%s/%s.ogg",
-					videoTracksPath,
-					&(strrchr(filename,'/')[1])
-				);
-				if
-				(
-					strstr(SoundName,".mjpeg.avi") &&
-					strstr(filenameCached,".mjpeg.avi") &&
-					LGL_FileExists(filenameCached)==false
-				)
-				{
-					sprintf
-					(
-						strstr(filenameCached,".mjpeg.avi"),
-						".ogg"
-					);
-				}
-				*/
 
 				if
 				(
@@ -1167,6 +1166,15 @@ NextFrame
 			recordHold=false;
 		}
 
+		if
+		(
+			VideoEncoderBeginSignal==0 ||
+			Sound->IsLoaded()
+		)
+		{
+			VideoEncoderBeginSignal=1;
+		}
+
 		//Scratch / Queue
 		{
 			if(rewindFFFactor!=0.0f)
@@ -1189,7 +1197,8 @@ NextFrame
 				(
 					(long)Sound->GetPositionSamples(Channel) == 0 &&
 					RewindFF==false &&
-					rewindFFFactor<0.0f
+					rewindFFFactor<0.0f &&
+					Sound->IsLoaded()
 				)
 				{
 					Sound->SetPositionSamples(Channel,Sound->GetLengthSamples()-1);
@@ -1919,12 +1928,12 @@ NextFrame
 			VideoEncoderUnsupportedCodecTime=0.0f;
 			if(VideoFront)
 			{
-				VideoFront->GetImage()->SetTimestamp(-1);
+				VideoFront->GetImage()->SetFrameNumber(-1);
 				VideoFront->SetVideo(NULL);
 			}
 			if(VideoBack)
 			{
-				VideoBack->GetImage()->SetTimestamp(-1);
+				VideoBack->GetImage()->SetFrameNumber(-1);
 				VideoBack->SetVideo(NULL);
 			}
 			Mode=0;
@@ -2033,7 +2042,6 @@ NextFrame
 			if
 			(
 				false &&
-				Sound!=NULL &&
 				Sound->IsLoaded()
 			)
 			{
@@ -2316,6 +2324,7 @@ NextFrame
 			VideoEncoderAudioOnly=false;
 
 			VideoEncoderTerminateSignal=0;
+			VideoEncoderBeginSignal=0;
 			strcpy(VideoEncoderPathSrc,SoundSrcPath);
 			VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
 
@@ -2349,7 +2358,7 @@ NextFrame
 			Channel=Sound->Play(1,false,0);
 			if(Sound->IsLoaded())
 			{
-				Sound->SetPositionSeconds(Channel,0);
+				Sound->SetPositionSeconds(Channel,SmoothWaveformScrollingSample*Sound->GetHz());
 				FinalSpeed=0.0f;
 				Sound->SetSpeed
 				(
@@ -2361,6 +2370,7 @@ NextFrame
 			else
 			{
 				Sound->SetPositionSeconds(Channel,Sound->GetLengthSeconds()-1);
+				SmoothWaveformScrollingSample=Sound->GetPositionSamples(Channel);
 			}
 			Sound->SetSpeedInterpolationFactor
 			(
@@ -2372,16 +2382,18 @@ NextFrame
 		if
 		(
 			CachedLengthSeconds!=0.0f &&
-			Sound->GetLengthSeconds()>CachedLengthSeconds
+			Sound->GetLengthSeconds()>CachedLengthSeconds &&
+			Sound->IsLoaded()
 		)
 		{
-			//
+			CachedLengthSeconds=Sound->GetLengthSeconds();
+			SaveCachedMetadata();
 		}
 
 		//Smooth waveform scrolling
 
 		float speed=Sound->GetSpeed(Channel);
-		double proposedDelta = (LGL_AudioAvailable()?1:0)*speed*Sound->GetHz()*(LGL_SecondsSinceLastFrame());//1.0f/60.0f);
+		double proposedDelta = (LGL_AudioAvailable()?1:0)*speed*Sound->GetHz()*(1.0f/LGL_GetFPSMax());
 		double currentSample=Sound->GetPositionSamples(Channel);
 		double diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
 		double diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
@@ -2751,7 +2763,64 @@ DrawFrame
 				VideoEncoderUnsupportedCodecName
 			);
 		}
-		if
+		if(VideoEncoderBeginSignal==0)
+		{
+			LGL_GetFont().DrawString
+			(
+				centerX,bottom+0.90f*height,.015f,
+				1,1,1,1,
+				true,.5f,
+				"Loading Audio..."
+			);
+			int seconds=(int)Sound->GetSecondsUntilLoaded();
+			if(seconds>=0 && seconds<9999.0f)
+			{
+				int minutes=0;
+				while(seconds>=60)
+				{
+					minutes++;
+					seconds-=60;
+				}
+				LGL_GetFont().DrawString
+				(
+					centerX,bottom+0.5f*height-0.5f*0.125f*height,0.125f*height,
+					1,1,1,1,
+					true,.5f,
+					"%i:%.2i",
+					minutes,
+					seconds
+				);
+			}
+
+			float percent=Sound->GetPercentLoadedSmooth();
+			float pct=LGL_Clamp(0.0f,percent,1.0f);
+			LGL_DrawRectToScreen
+			(
+				left,left+pct*width*0.5f,
+				bottom,bottom+0.15f*height,
+				(1.0f-pct)*coolR+(0.0f+pct)*warmR,
+				(1.0f-pct)*coolG+(0.0f+pct)*warmG,
+				(1.0f-pct)*coolB+(0.0f+pct)*warmB,
+				1.0f
+			);
+			LGL_DrawRectToScreen
+			(
+				right,right-pct*width*0.5f,
+				bottom,bottom+0.15f*height,
+				(1.0f-pct)*coolR+(0.0f+pct)*warmR,
+				(1.0f-pct)*coolG+(0.0f+pct)*warmG,
+				(1.0f-pct)*coolB+(0.0f+pct)*warmB,
+				1.0f
+			);
+			LGL_GetFont().DrawString
+			(
+				centerX+0.025f*width,bottom+0.025f*height,0.09f*height,
+				1,1,1,1,
+				true,0.5f,
+				"%.0f%%",LGL_Clamp(0.0f,percent,0.99f)*100.0f
+			);
+		}
+		else if
 		(
 			VideoEncoderPercent!=-1.0f ||
 			VideoEncoderAudioOnly
@@ -2790,7 +2859,7 @@ DrawFrame
 			LGL_DrawRectToScreen
 			(
 				left,left+pct*width*0.5f,
-				bottom,bottom+0.1f*height,
+				bottom,bottom+0.15f*height,
 				(1.0f-pct)*coolR+(0.0f+pct)*warmR,
 				(1.0f-pct)*coolG+(0.0f+pct)*warmG,
 				(1.0f-pct)*coolB+(0.0f+pct)*warmB,
@@ -2799,7 +2868,7 @@ DrawFrame
 			LGL_DrawRectToScreen
 			(
 				right,right-pct*width*0.5f,
-				bottom,bottom+0.1f*height,
+				bottom,bottom+0.15f*height,
 				(1.0f-pct)*coolR+(0.0f+pct)*warmR,
 				(1.0f-pct)*coolG+(0.0f+pct)*warmG,
 				(1.0f-pct)*coolB+(0.0f+pct)*warmB,
@@ -2807,7 +2876,7 @@ DrawFrame
 			);
 			LGL_GetFont().DrawString
 			(
-				centerX+0.025f*width,bottom+0.02f*height,0.06f*height,
+				centerX+0.025f*width,bottom+0.025f*height,0.09f*height,
 				1,1,1,1,
 				true,0.5f,
 				"%.0f%%",LGL_Clamp(0.0f,VideoEncoderPercent,0.99f)*100.0f

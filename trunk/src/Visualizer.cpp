@@ -1068,7 +1068,7 @@ DrawVideos
 					if
 					(
 						image &&
-						image->GetTimestamp()!=-1
+						image->GetFrameNumber()!=-1
 					)
 					{
 						while(bright>0.0f)
@@ -1096,7 +1096,7 @@ DrawVideos
 		if
 		(
 			image!=NULL &&
-			image->GetTimestamp()!=-1
+			image->GetFrameNumber()!=-1
 		)
 		{
 			image->DrawToScreen

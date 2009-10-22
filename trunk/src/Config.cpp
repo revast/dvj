@@ -84,7 +84,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"#projectorQuadrentResX=0\n");
 		fprintf(fd,"#projectorQuadrentResY=0\n");
 		fprintf(fd,"\n");
-		fprintf(fd,"fpsMax=120\n");
+		fprintf(fd,"fpsMax=60\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"videoBufferFrames=20\n");
 		fprintf(fd,"\n");
@@ -392,7 +392,7 @@ GetCachedVideoAveBitrateMBps()
 		(
 			0.1f,
 			dvjrcConfigFile->read<float>("cachedVideoAveBitrateMBps",3.2f),
-			100.0f
+			10.0f
 		)
 	);
 }
@@ -448,7 +448,7 @@ GetProjectorQuadrentResY()
 int
 GetFPSMax()
 {
-	int fpsMax=LGL_Clamp(1,dvjrcConfigFile->read<int>("fpsMax",120),120);
+	int fpsMax=LGL_Clamp(1,dvjrcConfigFile->read<int>("fpsMax",60),60);
 	return(fpsMax);
 }
 
