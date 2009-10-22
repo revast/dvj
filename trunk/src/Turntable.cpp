@@ -4293,6 +4293,8 @@ Recall()
 	//Change our speed instantly.
 	Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier,true);
 	Sound->SetDivergeRecallEnd(Channel);
+
+	SmoothWaveformScrollingSample=Sound->GetPositionSamples(Channel);
 	
 	ClearRecallOrigin();
 }
