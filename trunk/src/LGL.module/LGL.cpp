@@ -1583,7 +1583,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 
 	//GL Settings
 
-	LGL.VSync = (LGL.WindowFullscreen && LGL.DisplayCount>1) ? false : true;
+	LGL.VSync = true;//(LGL.WindowFullscreen && LGL.DisplayCount>1) ? false : true;
 	SDL_GL_SetSwapInterval(LGL_VSync());	//VSYNC
 
 	glDrawBuffer(GL_BACK);
@@ -26097,7 +26097,7 @@ lgl_AudioOutCallbackGenerator
 		memcpy(tempStreamRecR,tempStreamSilenceFloat,size);
 
 		float vuNext=0.0f;
-		double timeAdvancementMultiplier = sc->Hz/LGL.AudioSpec->freq;
+		double timeAdvancementMultiplier = sc->Hz/(double)LGL.AudioSpec->freq;
 		
 		if(sc->FuturePositionSamplesNow>=0)
 		{
