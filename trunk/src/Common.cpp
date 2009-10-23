@@ -642,7 +642,6 @@ void
 DrawWarpPointLineOrRect
 (
 	float		soundPositionSamples,
-	float		pitchBend,
 	float		sampleRadiusMultiplier,
 	float		warpPointSecondsStart,
 	float		warpPointSecondsTrigger,
@@ -658,8 +657,8 @@ DrawWarpPointLineOrRect
 {
 	//Draw warp line (or rect)!
 	float centerSample=soundPositionSamples;
-	float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
-	float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
+	float leftSample=centerSample-(64*512*sampleRadiusMultiplier);
+	float rightSample=centerSample+(64*512*sampleRadiusMultiplier);
 	float warpSample=44100*warpPointSecondsTrigger;
 
 	float screenCenter=pointLeft + pointWidth*((warpSample-leftSample)/(rightSample-leftSample));
@@ -983,7 +982,6 @@ Turntable_DrawWaveform
 			DrawWarpPointLineOrRect
 			(
 				soundPositionSamples,
-				pitchBend,
 				sampleRadiusMultiplier,
 				warpPointSecondsStart,
 				warpPointSecondsTrigger,
@@ -1221,7 +1219,6 @@ Turntable_DrawWaveform
 			DrawWarpPointLineOrRect
 			(
 				soundPositionSamples,
-				pitchBend,
 				sampleRadiusMultiplier,
 				warpPointSecondsStart,
 				warpPointSecondsTrigger,
