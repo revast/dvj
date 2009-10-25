@@ -512,7 +512,7 @@ TurntableObj
 	VolumeMultiplierNow=1.0f;
 	VolumeInvertBinary=false;
 	LoopStartSeconds=-1.0;
-	LoopLengthMeasuresExponent=0;
+	LoopLengthMeasuresExponent=-3;
 	LoopLengthNoBPMSeconds=1.0;
 	LoopActive=false;
 	LoopThenRecallActive=false;
@@ -1038,7 +1038,6 @@ NextFrame
 						SecondsNow=0.0f;
 						VolumeInvertBinary=false;
 						LoopStartSeconds=-1.0;
-						LoopLengthMeasuresExponent=0;
 						LoopLengthNoBPMSeconds=1.0;
 						LoopActive=false;
 						LoopThenRecallActive=false;
@@ -1565,6 +1564,7 @@ NextFrame
 			loopThenRecallActiveLastFrame==false
 		)
 		{
+			LoopActive=false;
 			SetRecallOrigin();
 		}
 
@@ -1592,6 +1592,18 @@ NextFrame
 			candidate=Input.WaveformLoopMeasuresExponent(target);
 			if(candidate!=WAVEFORM_LOOP_MEASURES_EXPONENT_NULL)
 			{
+				if
+				(
+					LoopActive &&
+					LoopLengthMeasuresExponent==candidate
+				)
+				{
+					LoopActive=false;
+				}
+				else
+				{
+					LoopActive=true;
+				}
 				LoopLengthMeasuresExponent=LGL_Clamp(exponentMin,candidate,exponentMax);
 				loopChanged=true;
 			}
@@ -2689,7 +2701,7 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 		}
 	}
 
-	WhiteFactor = LGL_Max(0.0f,WhiteFactor-4.0f*LGL_SecondsSinceLastFrame());
+	WhiteFactor = LGL_Max(0.0f,WhiteFactor-4.0f*LGL_Min(LGL_SecondsSinceLastFrame(),1.0f/60.0f));
 	if(noiseIncreasing==false)
 	{
 		NoiseFactor = LGL_Max(0.0f,NoiseFactor-2.0f*LGL_Min(LGL_SecondsSinceLastFrame(),1.0f/60.0f));
@@ -4665,11 +4677,14 @@ GetBeginningOfCurrentMeasureSeconds
 		return(-1.0);
 	}
 	
-	double firstBeat = GetBPMFirstBeatSeconds();
 	double deltaMeasure = measureMultiplier*4*(60.0/(double)GetBPM());
 	
-	double candidate = firstBeat;
-	if(GetBPMFirstBeatSeconds() <= Sound->GetPositionSeconds(Channel))
+	double candidate = GetBPMFirstBeatSeconds();
+	if(candidate==SecondsNow)
+	{
+		//Huzzah!
+	}
+	else if(candidate < SecondsNow)
 	{
 		while(candidate+deltaMeasure<SecondsNow)
 		{
@@ -4678,8 +4693,9 @@ GetBeginningOfCurrentMeasureSeconds
 	}
 	else
 	{
-		while(candidate>SecondsNow)
+		while(candidate-0.01f>SecondsNow)
 		{
+			printf("%f vs %f\n",candidate,SecondsNow);
 			candidate-=deltaMeasure;
 		}
 	}

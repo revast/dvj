@@ -1596,12 +1596,14 @@ WaveformLoopMeasuresExponent
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_1)) exponent=0;
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_2)) exponent=1;
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_4)) exponent=2;
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_8)) exponent=3;
 		}
 		else if((target & TARGET_TOP))
 		{
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_1)) exponent=0;
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_2)) exponent=1;
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_4)) exponent=2;
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_8)) exponent=3;
 		}
 	}
 
@@ -1713,18 +1715,6 @@ WaveformLoopToggle
 {
 	bool toggle=false;
 
-	if(LGL_GetXponent())
-	{
-		if((target & TARGET_BOTTOM))
-		{
-			toggle|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_CYCLE);
-		}
-		else if((target & TARGET_TOP))
-		{
-			toggle|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_CYCLE);
-		}
-	}
-
 	return(toggle);
 }
 
@@ -1741,11 +1731,11 @@ WaveformLoopThenRecallActive
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			active|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_8);
+			active|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_CYCLE);
 		}
 		else if((target & TARGET_TOP))
 		{
-			active|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_8);
+			active|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_CYCLE);
 		}
 	}
 

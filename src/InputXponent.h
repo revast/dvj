@@ -97,7 +97,7 @@ virtual	float	WaveformSavePointShiftAll	(unsigned int target)	const;	//Shift all
 virtual	bool	WaveformSavePointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
 virtual	bool	WaveformSavePointJumpNow	(unsigned int target)	const;	//Jump to current save point
 virtual	bool	WaveformSavePointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
-virtual	int	WaveformLoopMeasuresExponent	(unsigned int target)	const;	//Loop 2^n measures
+virtual	int	WaveformLoopMeasuresExponent	(unsigned int target)	const;	//Loop 2^n measures. If disabled, enable. Else, disable if equal.
 virtual	bool	WaveformLoopMeasuresHalf	(unsigned int target)	const;	//Loop half as many measures
 virtual	bool	WaveformLoopMeasuresDouble	(unsigned int target)	const;	//Loop twice as many measures
 virtual	bool	WaveformLoopSecondsLess		(unsigned int target)	const;	//Loop less seconds (When no BPM is available)
