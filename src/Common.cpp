@@ -2276,13 +2276,15 @@ Turntable_DrawWaveform
 				thickness
 			);
 
+			float savePointSetScalar = mySavePointSet[i] ? 1.0f : 0.0f;
+
 			LGL_DrawRectToScreen
 			(
 				lft+i*wth,lft+i*wth+spc,
 				bot,top,
-				mySavePointSet[i]?glow*coolR:0.0f,
-				mySavePointSet[i]?glow*coolG:0.0f,
-				mySavePointSet[i]?glow*coolB:0.0f,
+				mySavePointSet[i]*coolR,
+				mySavePointSet[i]*coolG,
+				mySavePointSet[i]*coolB,
 				1
 			);
 			noiseImage256x64->DrawToScreen
@@ -2334,7 +2336,10 @@ Turntable_DrawWaveform
 					lft+i*wth+.6f*spc,
 					bot+0.25f*0.05f*viewPortHeight,//+0.0275f*viewPortHeight,
 					0.05f*viewPortHeight,
-					1,1,1,1,
+					0.25f+0.75f*savePointSetScalar,
+					0.25f+0.75f*savePointSetScalar,
+					0.25f+0.75f*savePointSetScalar,
+					1,
 					true,
 					0.75f,
 					str
