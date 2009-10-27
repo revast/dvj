@@ -4695,7 +4695,6 @@ GetBeginningOfCurrentMeasureSeconds
 	{
 		while(candidate-0.01f>SecondsNow)
 		{
-			printf("%f vs %f\n",candidate,SecondsNow);
 			candidate-=deltaMeasure;
 		}
 	}
