@@ -104,8 +104,10 @@ private:
 	float				ViewPortStatusHeight;
 
 	bool				Recording;
+	bool				RecordingDetermined;
 	float				RecordingSecondsSinceExecution;
-	FILE*				RecordingTrackListFile;
+	char				RecordingTrackListPath[2048];
+	FILE*				RecordingTrackListFD;
 	float				RecordingFailedTimer;
 
 	int				VideoAdvancedLastFrame;

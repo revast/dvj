@@ -40,6 +40,13 @@ VisualizerObj()
 	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
 	float top=1.0f;
 
+	if(LGL_DisplayCount()>1)
+	{
+		float projAspect = LGL_DisplayResolutionX(1)/(float)LGL_DisplayResolutionY(1);
+		right = projAspect * (top-bottom);
+		printf("r=%.2f\n",right);
+	}
+
 	SetViewPortVisuals(left,right,bottom,top);
 
 	FullScreen=false;

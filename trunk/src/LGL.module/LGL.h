@@ -1321,7 +1321,6 @@ static	float			BitrateMaxMBps;
 	AVPacket		DstPacket;
 
 	char			DstMp3Path[2048];
-	FILE*			DstMp3FD;
 	AVOutputFormat*		DstMp3OutputFormat;
 	AVFormatContext*	DstMp3FormatContext;
 	AVCodecContext*		DstMp3CodecContext;
@@ -1333,6 +1332,53 @@ static	float			BitrateMaxMBps;
 	long			DstMp3BufferSamplesTotalBytes;
 	int16_t*		DstMp3Buffer2;
 	AVPacket		DstMp3Packet;
+};
+
+class LGL_AudioEncoder
+{
+
+public:
+
+				LGL_AudioEncoder
+				(
+					const char*	dstPath
+				);
+				~LGL_AudioEncoder();
+
+	bool			IsValid();
+	void			Encode
+				(
+					const char*	data,
+					long		bytes
+				);
+	void			Finalize();
+
+	void			ThreadFunc();
+
+private:
+
+	void			FlushBuffer(bool force=false);
+
+	char			DstMp3Path[2048];
+	AVOutputFormat*		DstMp3OutputFormat;
+	AVFormatContext*	DstMp3FormatContext;
+	AVCodecContext*		DstMp3CodecContext;
+	AVCodec*		DstMp3Codec;
+	AVStream*		DstMp3Stream;
+	int16_t*		DstMp3Buffer;
+	int16_t*		DstMp3BufferSamples;
+	int			DstMp3BufferSamplesIndex;
+	int16_t*		DstMp3Buffer2;
+	AVPacket		DstMp3Packet;
+	long			CircularBufferBytes;
+	char*			CircularBuffer;
+	long			CircularBufferHead;
+	long			CircularBufferTail;
+
+	bool			Valid;
+
+	SDL_Thread*		Thread;
+	bool			DestructHint;
 };
 
 class LGL_Font
@@ -2068,7 +2114,8 @@ float		LGL_FreqMono(float freq);
 float		LGL_FreqBufferL(int index, int width=0);	//index [0,512)
 float		LGL_FreqBufferR(int index, int width=0);
 float		LGL_FreqBufferMono(int index, int width=0);
-bool		LGL_RecordDVJToFileStart();
+int		LGL_GetRecordDVJToFile();
+void		LGL_RecordDVJToFileStart(const char* path);
 const char*	LGL_RecordDVJToFilePath();
 const char*	LGL_RecordDVJToFilePathShort();
 void		LGL_SetRecordDVJToFileVolume(float volume);

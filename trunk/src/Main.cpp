@@ -302,39 +302,6 @@ void NextFrame()
 
 	mouseMotionEver|=LGL_MouseMotion();
 
-	if
-	(
-		LGL_KeyStroke(GetInputKeyboardRecordingStartKey()) &&
-		Mixer->GetRecording()==false
-	)
-	{
-		//Start recording!
-		if(LGL_RecordDVJToFileStart())
-		{
-			Mixer->SetRecording();
-
-			char drawLogPath[2048];
-			sprintf(drawLogPath,"%s/drawlog.txt",recordPath);
-
-			if(LGL_FileExists(drawLogPath))
-			{
-				LGL_FileDelete(drawLogPath);
-			}
-			LGL_DrawLogStart(drawLogPath);
-
-			LGL_DrawLogWrite
-			(
-				"!dvj::Record.mp3|%s/%s.mp3\n",
-				recordPath,
-				LGL_DateAndTimeOfDayOfExecution()
-			);
-		}
-		else
-		{
-			Mixer->SetRecordingFailed();
-		}
-	}
-
 	//Globals
 
 	if(ExitPrompt==false)
