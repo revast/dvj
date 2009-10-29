@@ -38,6 +38,7 @@ int ENTIRE_WAVE_ARRAY_COUNT;
 VisualizerObj* TurntableObj::Visualizer=NULL;
 LGL_Image* TurntableObj::NoiseImage[NOISE_IMAGE_COUNT_256_64];
 LGL_Image* TurntableObj::LoopImage=NULL;
+bool TurntableObj::FileEverOpened=false;
 
 void
 findCachedPath
@@ -713,12 +714,6 @@ NextFrame
 	}
 #endif	//LGL_OSX
 
-	for(unsigned int a=0;a<TrackListFileUpdates.size();a++)
-	{
-		delete TrackListFileUpdates[a];
-		TrackListFileUpdates[a]=NULL;
-	}
-	TrackListFileUpdates.clear();
 	MetaDataSavedThisFrame=false;
 
 	bool volumeFull=false;
@@ -2302,6 +2297,35 @@ NextFrame
 				//16.0/44100.0
 				20.0/44100.0
 			);
+
+			if(FileEverOpened==false)
+			{
+				FileEverOpened=true;
+
+				//Start recording!
+				char path[2048];
+				sprintf(path,GetDVJSessionFlacPath());
+				LGL_RecordDVJToFileStart(path);
+				{
+					/*
+					char drawLogPath[2048];
+					sprintf(drawLogPath,"%s/drawlog.txt",recordPath);
+
+					if(LGL_FileExists(drawLogPath))
+					{
+						LGL_FileDelete(drawLogPath);
+					}
+					LGL_DrawLogStart(drawLogPath);
+
+					LGL_DrawLogWrite
+					(
+						"!dvj::Record.mp3|%s/%s.mp3\n",
+						recordPath,
+						LGL_DateAndTimeOfDayOfExecution()
+					);
+					*/
+				}
+			}
 			/*
 			if(LGL_AudioChannels()==2)
 			{
@@ -3003,10 +3027,10 @@ DrawFrame
 		char drawDirPath[2048];
 		if(strstr(DatabaseFilter.Dir,LGL_GetHomeDir()))
 		{
-#ifdef	LGL_OSX
-			sprintf(drawDirPath,"%s",&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())+1]));
+#ifdef	LGL_OSX_BAKA
+			sprintf(drawDirPath,"%s/",&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())+1]));
 #else
-			sprintf(drawDirPath,"~%s",&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())]));
+			sprintf(drawDirPath,"~%s/",&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())]));
 #endif
 		}
 		else
@@ -3638,7 +3662,14 @@ std::vector<char*>
 TurntableObj::
 GetTrackListFileUpdates()
 {
-	return(TrackListFileUpdates);
+	std::vector<char*> ret=TrackListFileUpdates;
+	for(unsigned int a=0;a<TrackListFileUpdates.size();a++)
+	{
+		delete TrackListFileUpdates[a];
+		TrackListFileUpdates[a]=NULL;
+	}
+	TrackListFileUpdates.clear();
+	return(ret);
 }
 
 LGL_VideoDecoder*

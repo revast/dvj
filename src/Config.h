@@ -45,6 +45,12 @@ GetLoadScreenPath
 	char*	loadScreenPath
 );
 
+const char*
+GetDVJSessionFlacPath();
+
+const char*
+GetDVJSessionTracklistPath();
+
 int
 GetProjectorQuadrentResX();
 

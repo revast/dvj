@@ -302,6 +302,7 @@ static	LGL_Image*			LoopImage;
 	float				CachedVolumePeak;
 
 	LGL_Timer			Mode0BackspaceTimer;
+static	bool				FileEverOpened;
 
 public:
 

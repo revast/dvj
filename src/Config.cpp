@@ -52,11 +52,15 @@ ConfigFile* dvjrcConfigFile=NULL;
 ConfigFile* inputKeyboardConfigFile=NULL;
 char dotDvj[2048];
 char musicRootPath[2048];
+char dvjSessionFlacPath[2048];
+char dvjSessionTracklistPath[2048];
 
 void
 ConfigInit()
 {
 	sprintf(dotDvj,"%s/.dvj",LGL_GetHomeDir());
+	dvjSessionFlacPath[0]='\0';
+	dvjSessionTracklistPath[0]='\0';
 
 	CreateDotJackdrc();
 	CreateDotDVJTree();
@@ -80,6 +84,9 @@ CreateDefaultDVJRC
 		fprintf(fd,"purgeInactiveMemory=false\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"loadScreenPath=~/.dvj/data/image/loadscreen.png\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"dvjSessionFlacPath=~/Desktop/dvj_session.flac\n");
+		fprintf(fd,"dvjSessionTracklistPath=~/Desktop/dvj_session_tracklist.txt\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#projectorQuadrentResX=0\n");
 		fprintf(fd,"#projectorQuadrentResY=0\n");
@@ -383,6 +390,44 @@ GetLoadScreenPath
 	strcpy(loadScreenPath,defaultLoadScreenPath);
 }
 
+const char*
+GetDVJSessionFlacPath()
+{
+	if(dvjSessionFlacPath[0]=='\0')
+	{
+		const char* defaultDVJSessionFlacPath = "";//~/Desktop/dvj_session.flac";
+		std::string pathStr = dvjrcConfigFile->read<std::string>("dvjSessionFlacPath",defaultDVJSessionFlacPath);
+		strcpy(dvjSessionFlacPath,pathStr.c_str());
+		if(dvjSessionFlacPath[0]=='~')
+		{
+			char tmp[2048];
+			sprintf(tmp,"%s/%s",LGL_GetHomeDir(),&(dvjSessionFlacPath[2]));
+			strcpy(dvjSessionFlacPath,tmp);
+		}
+	}
+
+	return(dvjSessionFlacPath);
+}
+
+const char*
+GetDVJSessionTracklistPath()
+{
+	if(dvjSessionTracklistPath[0]=='\0')
+	{
+		const char* defaultDVJSessionTracklistPath = "";//~/Desktop/dvj_session_tracklist.txt";
+		std::string pathStr = dvjrcConfigFile->read<std::string>("dvjSessionTracklistPath",defaultDVJSessionTracklistPath);
+		strcpy(dvjSessionTracklistPath,pathStr.c_str());
+		if(dvjSessionTracklistPath[0]=='~')
+		{
+			char tmp[2048];
+			sprintf(tmp,"%s/%s",LGL_GetHomeDir(),&(dvjSessionTracklistPath[2]));
+			strcpy(dvjSessionTracklistPath,tmp);
+		}
+	}
+
+	return(dvjSessionTracklistPath);
+}
+
 float
 GetCachedVideoAveBitrateMBps()
 {
@@ -429,7 +474,7 @@ GetProjectorQuadrentResX()
 	int resX=dvjrcConfigFile->read<int>("projectorQuadrentResX",0);
 	if(resX<=0)
 	{
-		resX=LGL_DisplayResolutionX(0);
+		resX=LGL_DisplayResolutionX(0)/2;
 	}
 	return(resX);
 }

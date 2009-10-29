@@ -82,6 +82,7 @@
 #define	LGL_PRIORITY_MAIN		(0.9f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
+#define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
 #define	LGL_PRIORITY_DISKWRITER		(-0.1f)
 
 #define LGL_EQ_SAMPLES_FFT	(512)
@@ -261,10 +262,6 @@ typedef struct
 	float			AudioPeakMono;
 	float			FreqBufferL[512];
 	float			FreqBufferR[512];
-	bool			RecordActive;
-	char			RecordFilePath[1024];
-	char			RecordFilePathShort[1024];
-	FILE*			RecordFileDescriptor;
 	unsigned long		RecordSamplesWritten;
 	Uint8			RecordBuffer[LGL_SAMPLESIZE*4*2];
 	float			RecordVolume;
@@ -274,6 +271,8 @@ typedef struct
 	LGL_Semaphore*		AVCodecSemaphore;
 	LGL_Semaphore*		AVOpenCloseSemaphore;
 	bool			AudioMasterToHeadphones;
+	char			AudioEncoderPath[2048];
+	LGL_AudioEncoder*	AudioEncoder;
 
 	//AudioIn
 
@@ -1275,15 +1274,16 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	);
 
 	//Audio
-	
+
+	LGL.AudioEncoderPath[0]='\0';
+	LGL.AudioEncoder=NULL;
+
 	LGL.AudioSpec->freq=44100;
 	LGL.AudioSpec->format=AUDIO_S16;
 	LGL.AudioSpec->channels=inAudioChannels;
 	LGL.AudioSpec->samples=LGL_SAMPLESIZE_SDL;
 	LGL.AudioSpec->callback=lgl_AudioOutCallback;
 	LGL.AudioSpec->userdata=malloc(LGL.AudioSpec->samples);
-	LGL.RecordActive=false;
-	LGL.RecordFileDescriptor=NULL;
 	LGL.RecordVolume=1.0f;
 	LGL.RecordSamplesWritten=0;
 	LGL.AudioMasterToHeadphones=false;
@@ -1450,28 +1450,6 @@ printf("\tScreen[%i]: %i x %i\n",a,
 			}
 		}
 		LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
-	}
-
-	sprintf(LGL.RecordFilePath,"%s/.dvj/record/%s.mp3",LGL_GetHomeDir(),LGL_DateAndTimeOfDayOfExecution());
-	sprintf(LGL.RecordFilePathShort,"~/.dvj/record/%s.mp3",LGL_DateAndTimeOfDayOfExecution());
-
-	if(LGL.AudioAvailable)
-	{
-		const char* diskWriterPath = "./diskWriter";
-#ifdef	LGL_LINUX
-		diskWriterPath = "./diskWriter.lin";
-#endif	//LGL_LINUX
-#ifdef	LGL_OSX
-		diskWriterPath = "./diskWriter.osx";
-#endif	//LGL_OSX
-		if(LGL_FileExists(diskWriterPath))
-		{
-			char command[1024];
-			sprintf(command,"%s \"%s\" --lame --freq %i",diskWriterPath,LGL.RecordFilePath,LGL.AudioSpec->freq);
-			LGL_ThreadSetPriority(LGL_PRIORITY_DISKWRITER,"DiskWriter");
-			LGL.RecordFileDescriptor=popen(command,"w");
-			LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
-		}
 	}
 
 	SDL_WM_SetCaption(inWindowTitle,inWindowTitle);
@@ -8875,7 +8853,6 @@ LGL_VideoEncoder
 	DstFrameYUV=NULL;
 	DstBuffer=NULL;
 
-	DstMp3FD=NULL;
 	DstMp3OutputFormat=NULL;
 	DstMp3FormatContext=NULL;
 	DstMp3CodecContext=NULL;
@@ -9574,7 +9551,10 @@ Encode
 
 void
 LGL_VideoEncoder::
-FlushAudioBuffer(bool force)
+FlushAudioBuffer
+(
+	bool	force
+)
 {
 	if
 	(
@@ -9674,6 +9654,346 @@ SetBitrateMaxMBps
 )
 {
 	BitrateMaxMBps=LGL_Clamp(0.1f,max,100.0f);
+}
+
+//LGL_AudioEncoder
+
+int
+lgl_AudioEncoderThread
+(
+	void* object
+)
+{
+	//LGL_ThreadSetCPUAffinity(0);
+	LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_ENCODE,"AudioEncode");
+	LGL_AudioEncoder* encoder=(LGL_AudioEncoder*)object;
+	encoder->ThreadFunc();
+	return(0);
+}
+
+LGL_AudioEncoder::
+LGL_AudioEncoder
+(
+	const char*	dstPath
+)
+{
+	sprintf(DstMp3Path,dstPath);
+
+	DstMp3OutputFormat=NULL;
+	DstMp3FormatContext=NULL;
+	DstMp3CodecContext=NULL;
+	DstMp3Codec=NULL;
+	DstMp3Stream=NULL;
+	DstMp3Buffer=NULL;
+	DstMp3BufferSamples=NULL;
+	DstMp3BufferSamplesIndex=0;
+	DstMp3Buffer2=NULL;
+
+	CircularBufferBytes=LGL_Max(5*1024*1024,LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE);
+	CircularBuffer=NULL;
+	CircularBufferHead=0;
+	CircularBufferTail=0;
+
+	Valid=false;
+	Thread=NULL;
+	DestructHint=false;
+
+	if(FILE* fd=fopen(DstMp3Path,"w"))
+	{
+		fclose(fd);
+		fd=NULL;
+		LGL_FileDelete(DstMp3Path);
+	}
+	else
+	{
+		return;
+	}
+
+	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+
+		CodecID acodec = CODEC_ID_FLAC;
+
+		// find the audio encoder
+		DstMp3Codec = avcodec_find_encoder(acodec);
+		if(DstMp3Codec==NULL)
+		{
+			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't find audio encoding codec\n");
+			return;
+		}
+
+		// Set format
+		DstMp3OutputFormat = guess_format("flac", NULL, NULL);
+		if(DstMp3OutputFormat==NULL)
+		{
+			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't find audio encoding format\n");
+			return;
+		}
+		DstMp3OutputFormat->audio_codec = acodec;	//FIXME: mp3?? vorbis?? Pick one and name appropriately!
+		DstMp3OutputFormat->video_codec = CODEC_ID_NONE;
+
+		// FormatContext
+		DstMp3FormatContext = avformat_alloc_context();
+		DstMp3FormatContext->oformat = DstMp3OutputFormat;
+		sprintf(DstMp3FormatContext->filename, "%s",DstMp3Path);
+
+		// audio stream
+		DstMp3Stream = av_new_stream(DstMp3FormatContext,0);
+		DstMp3Stream->quality=FF_QP2LAMBDA * 100;
+		DstMp3FormatContext->streams[0] = DstMp3Stream;
+		DstMp3FormatContext->nb_streams = 1;
+
+		DstMp3CodecContext = DstMp3Stream->codec;
+		avcodec_get_context_defaults2(DstMp3CodecContext,CODEC_TYPE_AUDIO);
+		DstMp3CodecContext->codec_id=acodec;
+		DstMp3CodecContext->codec_type=CODEC_TYPE_AUDIO;
+		DstMp3CodecContext->flags |= CODEC_FLAG_GLOBAL_HEADER;
+		DstMp3CodecContext->bit_rate=256*1024;	//This doesn't seem to matter much
+		DstMp3CodecContext->bit_rate_tolerance=DstMp3CodecContext->bit_rate/4;
+		DstMp3CodecContext->global_quality=DstMp3Stream->quality;
+		DstMp3CodecContext->flags |= CODEC_FLAG_QSCALE;
+		DstMp3CodecContext->sample_rate=LGL.AudioSpec->freq;
+		DstMp3CodecContext->time_base = (AVRational){1,DstMp3CodecContext->sample_rate};
+		DstMp3CodecContext->channels=2;
+
+		int openResult=-1;
+		{
+			openResult = avcodec_open(DstMp3CodecContext, DstMp3Codec);
+		}
+		if(openResult < 0)
+		{
+			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't open audio encoder codec\n");
+			return;
+		}
+		else
+		{
+			//dump_format(DstMp3FormatContext,0,DstMp3FormatContext->filename,1);
+			
+			int result = url_fopen(&(DstMp3FormatContext->pb), DstMp3FormatContext->filename, URL_WRONLY);
+			if(result<0)
+			{
+				printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't url_fopen() audio output file '%s' (%i)\n",DstMp3FormatContext->filename,result);
+				return;
+			}
+
+			av_write_header(DstMp3FormatContext);
+
+			DstMp3Buffer = (int16_t*)av_mallocz(CircularBufferBytes);
+			DstMp3BufferSamples = (int16_t*)av_mallocz(CircularBufferBytes*2);
+			DstMp3Buffer2 = (int16_t*)av_mallocz(CircularBufferBytes);
+
+			av_init_packet(&DstMp3Packet);
+		}
+	}
+
+	CircularBuffer = new char[CircularBufferBytes];
+
+	Valid=true;
+	Thread=LGL_ThreadCreate(lgl_AudioEncoderThread,this);
+}
+
+LGL_AudioEncoder::
+~LGL_AudioEncoder()
+{
+	DestructHint=true;
+	LGL_ThreadWait(Thread);
+
+	Finalize();
+
+	if(CircularBuffer)
+	{
+		delete CircularBuffer;
+		CircularBuffer=NULL;
+	}
+
+	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+
+		if(DstMp3Buffer)
+		{
+			av_freep(&DstMp3Buffer);
+		}
+		if(DstMp3BufferSamples)
+		{
+			av_freep(&DstMp3BufferSamples);
+		}
+		if(DstMp3Buffer2)
+		{
+			av_freep(&DstMp3Buffer2);
+		}
+	}
+}
+
+bool
+LGL_AudioEncoder::
+IsValid()
+{
+	return(Valid);
+}
+
+void
+LGL_AudioEncoder::
+Encode
+(
+	const char*	data,
+	long		bytes
+)
+{
+	if(Valid==false)
+	{
+		return;
+	}
+
+	while(bytes>0)
+	{
+		long copyLen = bytes;
+		if(CircularBufferHead + copyLen > CircularBufferBytes)
+		{
+			copyLen=CircularBufferBytes-CircularBufferHead;
+		}
+
+		memcpy(&(CircularBuffer[CircularBufferHead]),data,copyLen);
+
+		if(CircularBufferHead + copyLen == CircularBufferBytes)
+		{
+			CircularBufferHead=0;
+		}
+		else
+		{
+			if
+			(
+				CircularBufferHead < CircularBufferTail &&
+				CircularBufferHead+copyLen > CircularBufferTail
+			)
+			{
+				printf("LGL_AudioEncoder::Encode(): Buffer Overflow!\n");
+			}
+			CircularBufferHead+=copyLen;
+		}
+		data+=copyLen;
+		bytes-=copyLen;
+	}
+}
+
+void
+LGL_AudioEncoder::
+Finalize()
+{
+	if(Valid==false)
+	{
+		return;
+	}
+
+	FlushBuffer(true);
+	for(int a=0;a<5;a++)
+	{
+		DstMp3BufferSamples[0]=0;
+		DstMp3BufferSamples[1]=0;
+		DstMp3BufferSamplesIndex=2;
+		FlushBuffer(true);
+	}
+
+	av_write_trailer(DstMp3FormatContext);
+	url_fclose(DstMp3FormatContext->pb);	//FIXME: Memleak
+
+	if(DstMp3FormatContext)
+	{
+		DstMp3FormatContext->pb=NULL;
+	}
+}
+
+void
+LGL_AudioEncoder::
+ThreadFunc()
+{
+	for(;;)
+	{
+		FlushBuffer();
+		LGL_DelayMS(5);
+		if(DestructHint)
+		{
+			return;
+		}
+	}
+}
+
+void
+LGL_AudioEncoder::
+FlushBuffer
+(
+	bool	force
+)
+{
+	//Circular buffer to fixed buffer
+	long circularBufferHead=CircularBufferHead;
+	while(CircularBufferTail!=circularBufferHead)
+	{
+		long circularBufferTarget=circularBufferHead;
+		if
+		(
+			circularBufferTarget==CircularBufferTail &&
+			force==false
+		)
+		{
+			return;
+		}
+		else if(circularBufferTarget<CircularBufferTail)
+		{
+			//Just flush 'till the end of the circular buffer
+			circularBufferTarget=CircularBufferBytes;
+		}
+		
+		memcpy(&(DstMp3BufferSamples[DstMp3BufferSamplesIndex]),&(CircularBuffer[CircularBufferTail]),circularBufferTarget-CircularBufferTail);
+		
+		DstMp3BufferSamplesIndex+=(circularBufferTarget-CircularBufferTail)/2;
+		CircularBufferTail+=(circularBufferTarget-CircularBufferTail);
+		if(CircularBufferTail==CircularBufferBytes)
+		{
+			CircularBufferTail=0;
+		}
+	}
+
+	if
+	(
+		force &&
+		DstMp3BufferSamplesIndex!=0
+	)
+	{
+		//Add silence
+		bzero
+		(
+			DstMp3BufferSamples+DstMp3BufferSamplesIndex,
+			DstMp3CodecContext->frame_size*DstMp3CodecContext->channels -
+			DstMp3BufferSamplesIndex
+		);
+		DstMp3BufferSamplesIndex=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels;
+	}
+
+	while(DstMp3BufferSamplesIndex>=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels)
+	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		DstMp3Packet.size = avcodec_encode_audio
+		(
+			DstMp3CodecContext,
+			(uint8_t*)DstMp3Buffer2,
+			LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE,
+			DstMp3BufferSamples
+		);
+
+		int remainderIndex=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels;
+		int remainderSize=DstMp3BufferSamplesIndex-remainderIndex;
+		memcpy(DstMp3Buffer,&(DstMp3BufferSamples[remainderIndex]),remainderSize*2);
+		memcpy(DstMp3BufferSamples,DstMp3Buffer,remainderSize*2);
+		DstMp3BufferSamplesIndex=remainderSize;
+
+		DstMp3Packet.flags |= PKT_FLAG_KEY;
+		DstMp3Packet.stream_index = 0;
+		DstMp3Packet.dts = 1 ;
+		DstMp3Packet.pts = 1 ;
+		DstMp3Packet.data=(uint8_t*)DstMp3Buffer2;
+		av_write_frame(DstMp3FormatContext, &DstMp3Packet);
+	}
 }
 
 //LGL_Font
@@ -15268,38 +15588,55 @@ LGL_FreqBufferMono
 	return(.5*(LGL_FreqBufferL(index,width)+LGL_FreqBufferR(index,width)));
 }
 
-bool
-LGL_RecordDVJToFileStart()
+int
+LGL_GetRecordDVJToFile()
 {
-	if(LGL.RecordFileDescriptor)
+	if(LGL.AudioEncoder)
 	{
-		if(LGL_FileExists(LGL.RecordFilePath)==false)
+		if(LGL.AudioEncoder->IsValid())
 		{
-			pclose(LGL.RecordFileDescriptor);
-			LGL.RecordFileDescriptor=NULL;
-			return(false);
+			return(1);
 		}
 		else
 		{
-			LGL.RecordActive=true;
-			printf("\nLGL_RecordDVJToFileStart(): Recording audio to path:\n\t%s\n\n",LGL.RecordFilePath);
-			return(true);
+			return(-1);
 		}
 	}
+	else
+	{
+		return(0);
+	}
+}
 
-	return(false);
+void
+LGL_RecordDVJToFileStart
+(
+	const char*	path
+)
+{	
+	if(LGL.AudioEncoder==NULL)
+	{
+		//Actually start recording
+		sprintf(LGL.AudioEncoderPath,path);
+		LGL.AudioEncoder = new LGL_AudioEncoder(LGL.AudioEncoderPath);
+	}
 }
 
 const char*
 LGL_RecordDVJToFilePath()
 {
-	return(LGL.RecordFilePath);
+	return(LGL.AudioEncoderPath);
 }
 
 const char*
 LGL_RecordDVJToFilePathShort()
 {
-	return(LGL.RecordFilePathShort);
+	if(char* slash = strrchr(LGL.AudioEncoderPath,'/'))
+	{
+		return(&(slash[1]));
+	}
+
+	return(LGL_RecordDVJToFilePath());
 }
 
 void
@@ -24385,7 +24722,7 @@ LGL_DrawLogStart
 		}
 
 		char intro[1024];
-		sprintf(intro,"LGL_DrawLogStart|%f\n",(LGL.RecordActive==false)?0.0f:(LGL.RecordSamplesWritten/(double)LGL.AudioSpec->freq));
+		sprintf(intro,"LGL_DrawLogStart|%f\n",(LGL.AudioEncoder==NULL)?0.0f:(LGL.RecordSamplesWritten/(double)LGL.AudioSpec->freq));
 		fwrite(intro,strlen(intro),1,LGL.DrawLogFD);
 		
 		sprintf(intro,"LGL_MouseCoords|%f|%f\n",LGL_MouseX(),LGL_MouseY());
@@ -26879,11 +27216,10 @@ lgl_AudioOutCallbackGenerator
 			//sc->LGLSound->UnlockBufferForReading(101);
 		}
 	}
-	if(LGL.RecordActive)
+	if(LGL.AudioEncoder)
 	{
-		assert(LGL.RecordFileDescriptor);
-		fwrite(LGL.RecordBuffer,LGL_SAMPLESIZE*2*2,1,LGL.RecordFileDescriptor);
-		LGL.RecordSamplesWritten+=LGL_SAMPLESIZE;
+		LGL.AudioEncoder->Encode((const char*)(LGL.RecordBuffer),len8/(renderChannels/2));
+		LGL.RecordSamplesWritten+=len8/(2*renderChannels);
 	}
 	LGL.AudioBufferPos=LGL.AudioBufferPos+LGL_SAMPLESIZE;
 }
@@ -26969,6 +27305,8 @@ LGL_ShutDown()
 		delete LGL.Font;
 		LGL.Font=NULL;
 	}
+
+	delete LGL.AudioEncoder;
 
 	if(LGL.AudioUsingJack)
 	{

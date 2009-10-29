@@ -23,6 +23,8 @@
 
 #include "Mixer.h"
 
+#include "Config.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -58,8 +60,10 @@ MixerObj()
 	Visualizer=NULL;
 
 	Recording=false;
+	RecordingDetermined=false;
 	RecordingSecondsSinceExecution=0.0f;
-	RecordingTrackListFile=NULL;
+	strcpy(RecordingTrackListPath,GetDVJSessionTracklistPath());
+	RecordingTrackListFD=NULL;
 	RecordingFailedTimer=0.0f;
 
 	VideoAdvancedLastFrame=0;
@@ -78,10 +82,10 @@ MixerObj::
 		delete Turntable[a];
 	}
 
-	if(RecordingTrackListFile!=NULL)
+	if(RecordingTrackListFD!=NULL)
 	{
-		fclose(RecordingTrackListFile);
-		RecordingTrackListFile=NULL;
+		fclose(RecordingTrackListFD);
+		RecordingTrackListFD=NULL;
 	}
 }
 
@@ -93,6 +97,21 @@ NextFrame
 )
 {
 	float candidate;
+
+	if(RecordingDetermined==false)
+	{
+		int result = LGL_GetRecordDVJToFile();
+		if(result==1)
+		{
+			RecordingDetermined=true;
+			SetRecording(true);
+		}
+		else if(result==-1)
+		{
+			RecordingDetermined=true;
+			SetRecordingFailed();
+		}
+	}
 
 	//Process Input
 
@@ -541,42 +560,41 @@ NextFrame
 			}
 		}
 
-		if
-		(
-			RecordingTrackListFile!=NULL &&
-			Turntable[Which]->GetTrackListFileUpdates().empty()==false
-		)
+		if(RecordingTrackListFD!=NULL)
 		{
-			int seconds=(int)
+			std::vector<char*> updates=Turntable[Which]->GetTrackListFileUpdates();
+			if(updates.empty()==false)
+			{
+				int seconds=(int)
+					(
+						LGL_SecondsSinceExecution()-
+						RecordingSecondsSinceExecution
+					);
+
+				int minutes=0;
+				while(seconds>=60)
+				{
+					seconds-=60;
+					minutes++;
+				}
+				int hours=0;
+				while(minutes>=60)
+				{
+					minutes-=60;
+					hours++;
+				}
+				char timestamp[1024];
+				sprintf
 				(
-					LGL_SecondsSinceExecution()-
-					RecordingSecondsSinceExecution
+					timestamp,
+					"%.2i:%.2i.%.2i",
+					hours,minutes,seconds
 				);
 
-			int minutes=0;
-			while(seconds>=60)
-			{
-				seconds-=60;
-				minutes++;
-			}
-			int hours=0;
-			while(minutes>=60)
-			{
-				minutes-=60;
-				hours++;
-			}
-			char timestamp[1024];
-			sprintf
-			(
-				timestamp,
-				"%.2i:%.2i.%.2i",
-				hours,minutes,seconds
-			);
-
-			std::vector<char*> updates=Turntable[Which]->GetTrackListFileUpdates();
-			for(unsigned int a=0;a<updates.size();a++)
-			{
-				fprintf(RecordingTrackListFile,"%s - Turntable[%i] - %s\n",timestamp,Which,updates[a]);
+				for(unsigned int a=0;a<updates.size();a++)
+				{
+					fprintf(RecordingTrackListFD,"%s - Turntable[%i] - %s\n",timestamp,Which,updates[a]);
+				}
 			}
 		}
 	}
@@ -984,27 +1002,33 @@ SetRecording
 		if(Recording)
 		{
 			RecordingSecondsSinceExecution=LGL_SecondsSinceExecution();
-			char file[1024];
-			sprintf(file,"%s/.dvj/record/%s.tracklist",LGL_GetHomeDir(),LGL_DateAndTimeOfDayOfExecution());
-			RecordingTrackListFile=fopen(file,"w");
-			LGL_Assert(RecordingTrackListFile);
-			chmod
-			(       
-				 file,
-				 S_IRUSR |       //o+r
-				 S_IWUSR |       //o+w
-				 S_IRGRP |       //g+r
-				 S_IWGRP |       //g+w
-				 S_IROTH |       //o+r
-				 S_IWOTH         //o+w
-			);
+			char file[2048];
+			sprintf(file,RecordingTrackListPath);
+			RecordingTrackListFD=fopen(file,"w");
+			if(RecordingTrackListFD)
+			{
+				chmod
+				(       
+					 file,
+					 S_IRUSR |       //o+r
+					 S_IWUSR |       //o+w
+					 S_IRGRP |       //g+r
+					 S_IWGRP |       //g+w
+					 S_IROTH |       //o+r
+					 S_IWOTH         //o+w
+				);
+			}
+			else
+			{
+				//
+			}
 		}
 		else
 		{
-			if(RecordingTrackListFile!=NULL)
+			if(RecordingTrackListFD!=NULL)
 			{
-				fclose(RecordingTrackListFile);
-				RecordingTrackListFile=NULL;
+				fclose(RecordingTrackListFD);
+				RecordingTrackListFD=NULL;
 			}
 		}
 	}
@@ -1021,7 +1045,10 @@ void
 MixerObj::
 SetRecordingFailed()
 {
-	RecordingFailedTimer=3.0f;
+	if(GetDVJSessionFlacPath()[0]!='\0')
+	{
+		RecordingFailedTimer=3.0f;
+	}
 }
 
 void
