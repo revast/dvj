@@ -1339,6 +1339,66 @@ WaveformSavePointNext
 	return(false);
 }
 
+int
+InputXponentObj::
+WaveformSavePointPick
+(
+	unsigned int	target
+)	const
+{
+	if(LGL_GetXponent())
+	{
+		if(target & TARGET_BOTTOM)
+		{
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_POINT_1))
+			{
+				return(1);
+			}
+			else if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_POINT_2))
+			{
+				return(2);
+			}
+			else if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_POINT_3))
+			{
+				return(3);
+			}
+			else if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_POINT_4))
+			{
+				return(4);
+			}
+			else if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_POINT_5))
+			{
+				return(5);
+			}
+		}
+		else if(target & TARGET_TOP)
+		{
+			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_POINT_1))
+			{
+				return(1);
+			}
+			else if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_POINT_2))
+			{
+				return(2);
+			}
+			else if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_POINT_3))
+			{
+				return(3);
+			}
+			else if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_POINT_4))
+			{
+				return(4);
+			}
+			else if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_POINT_5))
+			{
+				return(5);
+			}
+		}
+	}
+
+	return(-9999);
+}
+
 bool
 InputXponentObj::
 WaveformSavePointSet

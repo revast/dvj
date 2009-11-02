@@ -800,6 +800,17 @@ WaveformSavePointNext
 	return(next);
 }
 
+int
+InputXsessionObj::
+WaveformSavePointPick
+(
+	unsigned int	target
+)	const
+{
+	int pick=-9999;
+	return(pick);
+}
+
 bool
 InputXsessionObj::
 WaveformSavePointSet

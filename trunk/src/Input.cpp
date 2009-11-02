@@ -812,6 +812,28 @@ WaveformSavePointNext
 	return(next);
 }
 
+int
+InputObj::
+WaveformSavePointPick
+(
+	unsigned int	target
+)	const
+{
+	int pick=-9999;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		int candidate=Children[a]->WaveformSavePointPick(target);
+		if(candidate!=-9999)
+		{
+			pick=candidate;
+			printf("[%i]CHOSEN!! (%i)\n",a,pick);
+		}
+	}
+
+	return(pick);
+}
+
 bool
 InputObj::
 WaveformSavePointSet

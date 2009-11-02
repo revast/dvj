@@ -505,6 +505,17 @@ WaveformSavePointNext
 	return(next);
 }
 
+int
+InputMouseObj::
+WaveformSavePointPick
+(
+	unsigned int	target
+)	const
+{
+	int pick=-9999;
+	return(pick);
+}
+
 bool
 InputMouseObj::
 WaveformSavePointSet

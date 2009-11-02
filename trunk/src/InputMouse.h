@@ -92,6 +92,7 @@ virtual	float	WaveformStutterPitch		(unsigned int target)	const;	//Pitch of the 
 virtual	float	WaveformStutterSpeed		(unsigned int target)	const;	//Speed / Length of the stutter
 virtual	bool	WaveformSavePointPrev		(unsigned int target)	const;	//Highlight previous save point
 virtual	bool	WaveformSavePointNext		(unsigned int target)	const;	//Highlight next save point
+virtual	int	WaveformSavePointPick		(unsigned int target)	const;	//Highlight a chosen save point
 virtual	bool	WaveformSavePointSet		(unsigned int target)	const;	//Lock a save point
 virtual	float	WaveformSavePointUnsetPercent	(unsigned int target)	const;	//Clear a save point
 virtual	float	WaveformSavePointShift		(unsigned int target)	const;	//Shift current save point X seconds

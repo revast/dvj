@@ -495,6 +495,17 @@ WaveformSavePointNext
 	return(next);
 }
 
+int
+InputNullObj::
+WaveformSavePointPick
+(
+	unsigned int	target
+)	const
+{
+	int pick=-9999;
+	return(pick);
+}
+
 bool
 InputNullObj::
 WaveformSavePointSet

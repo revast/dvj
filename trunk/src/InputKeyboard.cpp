@@ -671,6 +671,16 @@ WaveformSavePointNext
 	return(false);
 }
 
+int
+InputKeyboardObj::
+WaveformSavePointPick
+(
+	unsigned int	target
+)	const
+{
+	return(-9999);
+}
+
 bool
 InputKeyboardObj::
 WaveformSavePointSet
