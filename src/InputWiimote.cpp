@@ -650,6 +650,17 @@ WaveformSavePointNext
 	return(next);
 }
 
+int
+InputWiimoteObj::
+WaveformSavePointPick
+(
+	unsigned int	target
+)	const
+{
+	int pick=-9999;
+	return(pick);
+}
+
 bool
 InputWiimoteObj::
 WaveformSavePointSet

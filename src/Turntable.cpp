@@ -943,17 +943,17 @@ NextFrame
 			DatabaseFilteredEntries.empty()==false
 		)
 		{
-			char target[2048];
-			target[0]='\0';
+			char targetPath[2048];
+			targetPath[0]='\0';
 			bool targetIsDir;
 
-			strcpy(target,DatabaseFilteredEntries[FileSelectInt]->PathFull);
+			strcpy(targetPath,DatabaseFilteredEntries[FileSelectInt]->PathFull);
 			targetIsDir=DatabaseFilteredEntries[FileSelectInt]->IsDir;
 			bool loadable=DatabaseFilteredEntries[FileSelectInt]->Loadable;
-			if(strcmp(target,"..")==0)
+			if(strcmp(targetPath,"..")==0)
 			{
-				strcpy(target,DatabaseFilter.Dir);
-				if(char* slash = strrchr(target,'/'))
+				strcpy(targetPath,DatabaseFilter.Dir);
+				if(char* slash = strrchr(targetPath,'/'))
 				{
 					slash[0]='\0';
 				}
@@ -962,7 +962,7 @@ NextFrame
 			if
 			(
 				targetIsDir==false &&
-				target[0]!='\0'
+				targetPath[0]!='\0'
 			)
 			{
 				char filename[2048];
@@ -970,7 +970,7 @@ NextFrame
 				(
 					 filename,
 					 "%s",
-					 target
+					 targetPath
 				);
 				strcpy(SoundSrcPath,filename);
 				strcpy(SoundSrcDir,SoundSrcPath);
@@ -1066,12 +1066,12 @@ NextFrame
 			else if
 			(
 				targetIsDir &&
-				target[0]!='\0'
+				targetPath[0]!='\0'
 			)
 			{
 				FilterTextMostRecent[0]='\0';
 				FilterText.SetString("");
-				DatabaseFilter.SetDir(target);
+				DatabaseFilter.SetDir(targetPath);
 				DatabaseFilter.SetPattern(FilterText.GetString());
 				DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
 
@@ -1281,6 +1281,11 @@ NextFrame
 				{
 					SavePointIndex=0;
 				}
+			}
+			int savepointCandidate=Input.WaveformSavePointPick(target);
+			if(savepointCandidate!=-9999)
+			{
+				SavePointIndex=LGL_Clamp(0,savepointCandidate+2,11);
 			}
 			if
 			(
