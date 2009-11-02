@@ -166,7 +166,7 @@ typedef struct
 	Uint8*			Buffer;
 	LGL_Semaphore*		BufferSemaphore;
 	LGL_Sound*		LGLSound;
-	LGL_AudioDSP*		LGLAudioDSPFront;
+	LGL_AudioDSP*		LGLAudioDSP[2];
 
 	double			DivergeSamples;
 	int			DivergeState;
@@ -175,10 +175,8 @@ typedef struct
 	double			WarpPointSecondsDestination;
 	bool			WarpPointLoop;
 
-	SRC_STATE*		SampleRateConverterL;
-	SRC_STATE*		SampleRateConverterR;
-	float			SampleRateConverterBufferL[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
-	float			SampleRateConverterBufferR[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
+	SRC_STATE*		SampleRateConverter[4];
+	float			SampleRateConverterBuffer[4][SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
 	float			SampleRateConverterBufferSpeed;
 	long			SampleRateConverterBufferStartSamples;
 	int			SampleRateConverterBufferValidSamples;
@@ -263,7 +261,7 @@ typedef struct
 	float			FreqBufferL[512];
 	float			FreqBufferR[512];
 	unsigned long		RecordSamplesWritten;
-	Uint8			RecordBuffer[LGL_SAMPLESIZE*4*2];
+	Uint8			RecordBuffer[LGL_SAMPLESIZE*4*4];
 	float			RecordVolume;
 	std::vector<LGL_AudioStream*>
 				AudioStreamList;
@@ -599,10 +597,13 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].Buffer=NULL;
 	LGL.SoundChannel[a].BufferSemaphore=NULL;
 	LGL.SoundChannel[a].LGLSound=NULL;
-	if(LGL.SoundChannel[a].LGLAudioDSPFront!=NULL)
+	for(int b=0;b<2;b++)
 	{
-		delete LGL.SoundChannel[a].LGLAudioDSPFront;
-		LGL.SoundChannel[a].LGLAudioDSPFront=NULL;
+		if(LGL.SoundChannel[a].LGLAudioDSP[b]!=NULL)
+		{
+			delete LGL.SoundChannel[a].LGLAudioDSP[b];
+			LGL.SoundChannel[a].LGLAudioDSP[b]=NULL;
+		}
 	}
 	LGL.SoundChannel[a].Occupied=false;
 }
@@ -1304,8 +1305,10 @@ printf("\tScreen[%i]: %i x %i\n",a,
 
 	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
 	{
-		LGL.SoundChannel[a].SampleRateConverterL = NULL;
-		LGL.SoundChannel[a].SampleRateConverterR = NULL;
+		for(int b=0;b<4;b++)
+		{
+			LGL.SoundChannel[a].SampleRateConverter[b] = NULL;
+		}
 	}
 	LGL.SoundChannel[a].SampleRateConverterBufferStartSamples=-1;
 	LGL.SoundChannel[a].SampleRateConverterBufferValidSamples=-1;
@@ -9469,7 +9472,7 @@ Encode
 					);
 					if(result<0)
 					{
-						printf("avcodec_decode_audio3(): Error!\n");
+						//printf("avcodec_decode_audio3(): Error!\n");
 						break;
 					}
 					SrcPacket.size-=result;
@@ -9674,7 +9677,8 @@ lgl_AudioEncoderThread
 LGL_AudioEncoder::
 LGL_AudioEncoder
 (
-	const char*	dstPath
+	const char*	dstPath,
+	bool		surroundMode
 )
 {
 	sprintf(DstMp3Path,dstPath);
@@ -9755,7 +9759,7 @@ LGL_AudioEncoder
 		DstMp3CodecContext->flags |= CODEC_FLAG_QSCALE;
 		DstMp3CodecContext->sample_rate=LGL.AudioSpec->freq;
 		DstMp3CodecContext->time_base = (AVRational){1,DstMp3CodecContext->sample_rate};
-		DstMp3CodecContext->channels=2;
+		DstMp3CodecContext->channels=surroundMode ? 4 : 2;
 
 		int openResult=-1;
 		{
@@ -9886,6 +9890,7 @@ Finalize()
 	}
 
 	FlushBuffer(true);
+	/*
 	for(int a=0;a<5;a++)
 	{
 		DstMp3BufferSamples[0]=0;
@@ -9893,6 +9898,7 @@ Finalize()
 		DstMp3BufferSamplesIndex=2;
 		FlushBuffer(true);
 	}
+	*/
 
 	av_write_trailer(DstMp3FormatContext);
 	url_fclose(DstMp3FormatContext->pb);	//FIXME: Memleak
@@ -9900,6 +9906,20 @@ Finalize()
 	if(DstMp3FormatContext)
 	{
 		DstMp3FormatContext->pb=NULL;
+	}
+}
+
+int
+LGL_AudioEncoder::
+GetChannelCount()
+{
+	if(DstMp3CodecContext==NULL)
+	{
+		return(0);
+	}
+	else
+	{
+		return(DstMp3CodecContext->channels);
 	}
 }
 
@@ -9956,6 +9976,7 @@ FlushBuffer
 
 	if
 	(
+		0 &&
 		force &&
 		DstMp3BufferSamplesIndex!=0
 	)
@@ -9963,9 +9984,9 @@ FlushBuffer
 		//Add silence
 		bzero
 		(
-			DstMp3BufferSamples+DstMp3BufferSamplesIndex,
+			&(DstMp3BufferSamples[DstMp3BufferSamplesIndex]),
 			DstMp3CodecContext->frame_size*DstMp3CodecContext->channels -
-			DstMp3BufferSamplesIndex
+			DstMp3BufferSamplesIndex*2
 		);
 		DstMp3BufferSamplesIndex=DstMp3CodecContext->frame_size*DstMp3CodecContext->channels;
 	}
@@ -9989,10 +10010,10 @@ FlushBuffer
 
 		DstMp3Packet.flags |= PKT_FLAG_KEY;
 		DstMp3Packet.stream_index = 0;
-		DstMp3Packet.dts = 1 ;
-		DstMp3Packet.pts = 1 ;
 		DstMp3Packet.data=(uint8_t*)DstMp3Buffer2;
 		av_write_frame(DstMp3FormatContext, &DstMp3Packet);
+		DstMp3Packet.dts++;
+		DstMp3Packet.pts++;
 	}
 }
 
@@ -13679,25 +13700,18 @@ Play
 		LGL.SoundChannel[available].SampleRateConverterBufferValidSamples=0;
 		LGL.SoundChannel[available].SampleRateConverterBufferCurrentSamplesIndex=0;
 		LGL.SoundChannel[available].SampleRateConverterBufferStartSamples=0;
-		if(LGL.SoundChannel[available].SampleRateConverterL)
+		for(int a=0;a<4;a++)
 		{
-			src_reset(LGL.SoundChannel[available].SampleRateConverterL);
-		}
-		else
-		{
-			int error=0;
-			LGL.SoundChannel[available].SampleRateConverterL = src_new(SRC_SINC_FASTEST,1,&error);
-			assert(LGL.SoundChannel[available].SampleRateConverterL);
-		}
-		if(LGL.SoundChannel[available].SampleRateConverterR)
-		{
-			src_reset(LGL.SoundChannel[available].SampleRateConverterR);
-		}
-		else
-		{
-			int error=0;
-			LGL.SoundChannel[available].SampleRateConverterR = src_new(SRC_SINC_FASTEST,1,&error);
-			assert(LGL.SoundChannel[available].SampleRateConverterR);
+			if(LGL.SoundChannel[available].SampleRateConverter[a])
+			{
+				src_reset(LGL.SoundChannel[available].SampleRateConverter[a]);
+			}
+			else
+			{
+				int error=0;
+				LGL.SoundChannel[available].SampleRateConverter[a] = src_new(SRC_SINC_FASTEST,1,&error);
+				assert(LGL.SoundChannel[available].SampleRateConverter[a]);
+			}
 		}
 		LGL.SoundChannel[available].VolumeFrontLeftDesired=volume;
 		LGL.SoundChannel[available].VolumeFrontRightDesired=volume;
@@ -13735,10 +13749,13 @@ Play
 		LGL.SoundChannel[available].Buffer=Buffer;
 		LGL.SoundChannel[available].BufferSemaphore=&BufferSemaphore;
 		LGL.SoundChannel[available].LGLSound=this;
-		if(LGL.SoundChannel[available].LGLAudioDSPFront!=NULL)
+		for(int a=0;a<2;a++)
 		{
-			delete LGL.SoundChannel[available].LGLAudioDSPFront;
-			LGL.SoundChannel[available].LGLAudioDSPFront=NULL;
+			if(LGL.SoundChannel[available].LGLAudioDSP[a]!=NULL)
+			{
+				delete LGL.SoundChannel[available].LGLAudioDSP[a];
+				LGL.SoundChannel[available].LGLAudioDSP[a]=NULL;
+			}
 		}
 		LGL.SoundChannel[available].ClearMe=false;
 		LGL.SoundChannel[available].Occupied=true;
@@ -14192,14 +14209,16 @@ if(channel<0)
 		return;
 	}
 
-	LGL_AudioDSP* dsp;
-	dsp=LGL.SoundChannel[channel].LGLAudioDSPFront;
-	if(dsp==NULL)
+	for(int a=0;a<Channels/2;a++)
 	{
-		dsp=new LGL_AudioDSP;
+		LGL_AudioDSP* dsp=LGL.SoundChannel[channel].LGLAudioDSP[a];
+		if(dsp==NULL)
+		{
+			dsp=new LGL_AudioDSP;
+		}
+		dsp->SetFreqResponse(freqResponseArrayOf513);
+		LGL.SoundChannel[channel].LGLAudioDSP[a]=dsp;
 	}
-	dsp->SetFreqResponse(freqResponseArrayOf513);
-	LGL.SoundChannel[channel].LGLAudioDSPFront=dsp;
 }
 
 float
@@ -14636,7 +14655,7 @@ LGL_Sound::
 GetLengthSeconds()
 {
 	//if(LGL.AudioAvailable==false) return(0);
-	return(BufferLength/(4.0f*Hz));
+	return(BufferLength/(2.0f*Channels*Hz));
 }
 
 long
@@ -14858,7 +14877,6 @@ LoadToMemory()
 	AVCodec*		codec=NULL;
 
 	int			audioStreamIndex=-1;
-	int			channels=0;
 
 	{
 		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
@@ -14914,14 +14932,15 @@ LoadToMemory()
 				return;
 			}
 
-			channels=codecContext->channels;
+			Channels=codecContext->channels;
 			if
 			(
-				channels!=1 &&
-				channels!=2
+				Channels!=1 &&
+				Channels!=2 &&
+				Channels!=4
 			)
 			{
-				printf("LGL_Sound::LoadToMemory(): Invalid channel found for '%s': %i\n",Path,channels);
+				printf("LGL_Sound::LoadToMemory(): Invalid channel count found for '%s': %i\n",Path,Channels);
 				BadFile=true;
 				return;
 			}
@@ -15026,8 +15045,9 @@ LoadToMemory()
 
 						if(ret<0)
 						{
-							printf("avcodec_decode_audio3(): Error!\n");
-							result=-1;
+							//printf("avcodec_decode_audio3(): Error!\n");
+							//result=-1;
+							//BadFile=true;
 							break;
 						}
 						packet.size-=ret;
@@ -15041,7 +15061,7 @@ LoadToMemory()
 						//There's enough room at the end of Buffer
 
 						//Copy Extra Bits To Buffer
-						if(channels==1)
+						if(Channels==1)
 						{
 							int16_t* outbuf16 = (int16_t*)outbuf; 
 							int16_t* buf16 = (int16_t*)Buffer;
@@ -15054,11 +15074,18 @@ LoadToMemory()
 							}
 							BufferLength+=samples*2*2;
 						}
-						else
+						else if
+						(
+							Channels==2 ||
+							Channels==4
+						)
 						{
-							//channels==2
 							memcpy(Buffer+BufferLength,(char*)outbuf,outbufsize);
 							BufferLength+=outbufsize;
+						}
+						else
+						{
+							assert(false);
 						}
 
 						for(int b=0;b<LGL_SOUND_CHANNEL_NUMBER;b++)
@@ -15611,14 +15638,19 @@ LGL_GetRecordDVJToFile()
 void
 LGL_RecordDVJToFileStart
 (
-	const char*	path
+	const char*	path,
+	bool		surroundMode
 )
 {	
 	if(LGL.AudioEncoder==NULL)
 	{
 		//Actually start recording
 		sprintf(LGL.AudioEncoderPath,path);
-		LGL.AudioEncoder = new LGL_AudioEncoder(LGL.AudioEncoderPath);
+		LGL.AudioEncoder = new LGL_AudioEncoder
+		(
+			LGL.AudioEncoderPath,
+			surroundMode
+		);
 	}
 }
 
@@ -26190,8 +26222,10 @@ float tempStreamFL[4*2*LGL_SAMPLESIZE];
 float tempStreamFR[4*2*LGL_SAMPLESIZE];
 float tempStreamBL[4*2*LGL_SAMPLESIZE];
 float tempStreamBR[4*2*LGL_SAMPLESIZE];
-float tempStreamRecL[4*2*LGL_SAMPLESIZE];
-float tempStreamRecR[4*2*LGL_SAMPLESIZE];
+float tempStreamRecFL[4*2*LGL_SAMPLESIZE];
+float tempStreamRecFR[4*2*LGL_SAMPLESIZE];
+float tempStreamRecBL[4*2*LGL_SAMPLESIZE];
+float tempStreamRecBR[4*2*LGL_SAMPLESIZE];
 float tempStreamSilenceFloat[4*2*LGL_SAMPLESIZE];
 bool tempStreamSilenceReady=false;
 
@@ -26320,8 +26354,9 @@ lgl_AudioOutCallbackGenerator
 
 	if(tempStream16Silence==NULL)
 	{
-		tempStream16Silence=new Sint16[len16];
-		for(int l=0;l<len16;l++)
+		int size=LGL_Max(len16*2,LGL_SAMPLESIZE*4*2);
+		tempStream16Silence=new Sint16[size];
+		for(int l=0;l<size;l++)
 		{
 			tempStream16Silence[l]=LGL.AudioSpec->silence;
 		}
@@ -26370,11 +26405,15 @@ lgl_AudioOutCallbackGenerator
 	double fr;
 	double bl;
 	double br;
-	double lRecord;
-	double rRecord;
+	double flRecord;
+	double frRecord;
+	double blRecord;
+	double brRecord;
 
 	Sint16* stream16rec=(Sint16*)LGL.RecordBuffer;
-	memcpy(stream16rec,tempStream16Silence,len8);
+	memcpy(stream16rec,tempStream16Silence,LGL_SAMPLESIZE*4*4);//len8);
+
+	int encodeChannels=LGL.AudioEncoder ? LGL.AudioEncoder->GetChannelCount() : 0;
 
 	for(int b=0;b<LGL_SOUND_CHANNEL_NUMBER;b++)
 	{
@@ -26430,12 +26469,14 @@ lgl_AudioOutCallbackGenerator
 		memcpy(tempStreamFR,tempStreamSilenceFloat,size);
 		memcpy(tempStreamBL,tempStreamSilenceFloat,size);
 		memcpy(tempStreamBR,tempStreamSilenceFloat,size);
-		memcpy(tempStreamRecL,tempStreamSilenceFloat,size);
-		memcpy(tempStreamRecR,tempStreamSilenceFloat,size);
+		memcpy(tempStreamRecFL,tempStreamSilenceFloat,size);
+		memcpy(tempStreamRecFR,tempStreamSilenceFloat,size);
+		memcpy(tempStreamRecBL,tempStreamSilenceFloat,size);
+		memcpy(tempStreamRecBR,tempStreamSilenceFloat,size);
 
 		float vuNext=0.0f;
 		double timeAdvancementMultiplier = sc->Hz/(double)LGL.AudioSpec->freq;
-		
+
 		if(sc->FuturePositionSamplesNow>=0)
 		{
 			sc->PositionSamplesNow=sc->FuturePositionSamplesNow;
@@ -26483,8 +26524,10 @@ lgl_AudioOutCallbackGenerator
 			fr=LGL.AudioSpec->silence;
 			bl=LGL.AudioSpec->silence;
 			br=LGL.AudioSpec->silence;
-			lRecord=LGL.AudioSpec->silence;
-			rRecord=LGL.AudioSpec->silence;
+			flRecord=LGL.AudioSpec->silence;
+			frRecord=LGL.AudioSpec->silence;
+			blRecord=LGL.AudioSpec->silence;
+			brRecord=LGL.AudioSpec->silence;
 
 			if(sc->DivergeState==0)
 			{
@@ -26609,11 +26652,35 @@ lgl_AudioOutCallbackGenerator
 				//Add the interpolated samples
 				Sint16* myBuffer=(Sint16*)sc->Buffer;
 
-				Sint16 Lnp=SWAP16(myBuffer[PosNowPrev*BPS_half+0]);
-				Sint16 Rnp=SWAP16(myBuffer[PosNowPrev*BPS_half+1]);
+				Sint16 flnp=SWAP16(myBuffer[PosNowPrev*BPS_half+0]);
+				Sint16 frnp=SWAP16(myBuffer[PosNowPrev*BPS_half+1]);
+				Sint16 flnn=SWAP16(myBuffer[PosNowNext*BPS_half+0]);
+				Sint16 frnn=SWAP16(myBuffer[PosNowNext*BPS_half+1]);
+				
+				Sint16 blnp=flnp;
+				Sint16 brnp=frnp;
+				Sint16 blnn=flnn;
+				Sint16 brnn=frnn;
 
-				Sint16 Lnn=SWAP16(myBuffer[PosNowNext*BPS_half+0]);
-				Sint16 Rnn=SWAP16(myBuffer[PosNowNext*BPS_half+1]);
+				if(sc->Channels==4)
+				{
+					blnp=SWAP16(myBuffer[PosNowPrev*BPS_half+2]);
+					brnp=SWAP16(myBuffer[PosNowPrev*BPS_half+3]);
+					blnn=SWAP16(myBuffer[PosNowNext*BPS_half+2]);
+					brnn=SWAP16(myBuffer[PosNowNext*BPS_half+3]);
+					if(encodeChannels==2)
+					{
+						flnp=flnp/2+blnp/2;
+						frnp=frnp/2+brnp/2;
+						flnn=flnp/2+blnn/2;
+						frnn=frnp/2+brnn/2;
+
+						blnp=flnp;
+						brnp=frnp;
+						blnn=flnn;
+						brnn=frnn;
+					}
+				}
 
 				sc->SpeedNow=
 					(1.0f-sc->SpeedInterpolationFactor)*sc->SpeedNow+
@@ -26625,27 +26692,44 @@ lgl_AudioOutCallbackGenerator
 				
 				if(sc->Glitch)
 				{
-					double GlitchSamplesNowPrev=floor(sc->GlitchSamplesNow);
 					double GlitchSamplesNowNext=ceil(sc->GlitchSamplesNow);
-					double GlitchiNow=sc->GlitchSamplesNow-GlitchSamplesNowPrev;
 
-					double gLnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+0)]));
-					double gRnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+1)]));
+					double gFLnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+0)]));
+					double gFRnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+1)]));
+					double gBLnn=gFLnn;
+					double gBRnn=gBRnn;
 
-					double myFL = (gLnn*(1.0-GlitchiNow) + gLnn*GlitchiNow);
-					double myFR = (gRnn*(1.0-GlitchiNow) + gRnn*GlitchiNow);
+					if(sc->Channels==4)
+					{
+						gBLnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+2)]));
+						gBRnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+3)]));
+						if(encodeChannels==2)
+						{
+							gFLnn=gFLnn/2 + gBLnn/2;
+							gFRnn=gFLnn/2 + gBRnn/2;
 
+							gBLnn=gFLnn;
+							gBRnn=gFRnn;
+						}
+					}
+
+					double myFL=gFLnn;
+					double myFR=gFRnn;
+
+					//ToMono is hereby DEPRECATED
 					if(sc->ToMono)
 					{
 						myFL=(myFL+myFR)/2.0f;
 						myFR=myFL;
 					}
 
-					double myBL=myFL;
-					double myBR=myFR;
+					double myBL=gBLnn;
+					double myBR=gBRnn;
 
-					lRecord+=myFL;
-					rRecord+=myFR;
+					flRecord+=myFL;
+					frRecord+=myFR;
+					blRecord+=myBL;
+					brRecord+=myBR;
 
 					fl+=myFL;
 					fr+=myFR;
@@ -26762,8 +26846,10 @@ lgl_AudioOutCallbackGenerator
 					(1.0f - terp) * tmpFact;
 
 				//Default to linear interpolation
-				double myFL = (Lnp*(1.0-closenessPercentInvNow) + Lnn*closenessPercentInvNow);
-				double myFR = (Rnp*(1.0-closenessPercentInvNow) + Rnn*closenessPercentInvNow);
+				double myFL = (flnp*(1.0-closenessPercentInvNow) + flnn*closenessPercentInvNow);
+				double myFR = (frnp*(1.0-closenessPercentInvNow) + frnn*closenessPercentInvNow);
+				double myBL = (blnp*(1.0-closenessPercentInvNow) + blnn*closenessPercentInvNow);
+				double myBR = (brnp*(1.0-closenessPercentInvNow) + brnn*closenessPercentInvNow);
 
 				long sampleNow=(long)sc->PositionSamplesNow;
 
@@ -26787,7 +26873,7 @@ lgl_AudioOutCallbackGenerator
 						sc->SampleRateConverterBufferValidSamples=0;
 						while(sc->SampleRateConverterBufferValidSamples==0)
 						{
-							for(int c=0;c<2;c++)
+							for(int c=0;c<sc->Channels;c++)
 							{
 								SRC_DATA srcData;
 								float srcBufIn[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
@@ -26814,14 +26900,12 @@ lgl_AudioOutCallbackGenerator
 								srcData.src_ratio=(1.0f/LGL_Max(0.01f,fabsf(sc->SpeedNow)))*(LGL.AudioSpec->freq/(float)sc->Hz);
 								srcData.end_of_input=0;
 
-								src_set_ratio((c==0)?sc->SampleRateConverterL:sc->SampleRateConverterR,srcData.src_ratio);
-								src_process((c==0)?sc->SampleRateConverterL:sc->SampleRateConverterR,&srcData);
+								src_set_ratio(sc->SampleRateConverter[c],srcData.src_ratio);
+								src_process(sc->SampleRateConverter[c],&srcData);
 
 								for(int b=0;b<srcData.output_frames_gen;b++)
 								{
-									float* buf=(c==0) ?
-										sc->SampleRateConverterBufferL :
-										sc->SampleRateConverterBufferR;
+									float* buf=sc->SampleRateConverterBuffer[c];
 									buf[b]=srcBufOut[b]*32767.0f;
 								}
 								sc->SampleRateConverterBufferSpeed=sc->SpeedNow;
@@ -26835,6 +26919,8 @@ lgl_AudioOutCallbackGenerator
 
 					double neoFL=0.0f;
 					double neoFR=0.0f;
+					double neoBL=0.0f;
+					double neoBR=0.0f;
 
 					if
 					(
@@ -26847,8 +26933,10 @@ lgl_AudioOutCallbackGenerator
 						assert(index>=0 && index<SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES);
 						if(index<sc->SampleRateConverterBufferValidSamples)
 						{
-							neoFL = sc->SampleRateConverterBufferL[index];
-							neoFR = sc->SampleRateConverterBufferR[index];
+							neoFL = sc->SampleRateConverterBuffer[0][index];
+							neoFR = sc->SampleRateConverterBuffer[1][index];
+							neoBL = sc->SampleRateConverterBuffer[2%sc->Channels][index];
+							neoBR = sc->SampleRateConverterBuffer[3%sc->Channels][index];
 						}
 					}
 					else if
@@ -26858,8 +26946,19 @@ lgl_AudioOutCallbackGenerator
 					)
 					{
 						int index=LGL_Max(0,sc->SampleRateConverterBufferCurrentSamplesIndex-1);
-						neoFL = sc->SampleRateConverterBufferL[index];
-						neoFR = sc->SampleRateConverterBufferR[index];
+						neoFL = sc->SampleRateConverterBuffer[0][index];
+						neoFR = sc->SampleRateConverterBuffer[1][index];
+						neoBL = sc->SampleRateConverterBuffer[2%sc->Channels][index];
+						neoBR = sc->SampleRateConverterBuffer[3%sc->Channels][index];
+					}
+
+					if(encodeChannels==2)
+					{
+						neoFL=neoFL/2 + neoBL/2;
+						neoFR=neoFR/2 + neoBR/2;
+
+						neoBL=neoFL;
+						neoBR=neoFR;
 					}
 
 					//Interpolate to linear resampling
@@ -26872,12 +26971,16 @@ lgl_AudioOutCallbackGenerator
 						(0.0f+sampleRateLinearFactor)*myFL;
 					myFR =	(1.0f-sampleRateLinearFactor)*neoFR +
 						(0.0f+sampleRateLinearFactor)*myFR;
+					myBL =	(1.0f-sampleRateLinearFactor)*neoBL +
+						(0.0f+sampleRateLinearFactor)*myBL;
+					myBR =	(1.0f-sampleRateLinearFactor)*neoBR +
+						(0.0f+sampleRateLinearFactor)*myBR;
 				}
 				else
 				{
 					if(SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES==1)
 					{
-						for(int c=0;c<2;c++)
+						for(int c=0;c<sc->Channels;c++)
 						{
 							SRC_DATA srcData;
 							float srcBufIn[SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
@@ -26904,8 +27007,8 @@ lgl_AudioOutCallbackGenerator
 							srcData.src_ratio=(1.0f/LGL_Max(0.01f,fabsf(sc->SpeedNow)))*(LGL.AudioSpec->freq/(float)sc->Hz);
 							srcData.end_of_input=0;
 
-							src_set_ratio((c==0)?sc->SampleRateConverterL:sc->SampleRateConverterR,srcData.src_ratio);
-							src_process((c==0)?sc->SampleRateConverterL:sc->SampleRateConverterR,&srcData);
+							src_set_ratio(sc->SampleRateConverter[c],srcData.src_ratio);
+							src_process(sc->SampleRateConverter[c],&srcData);
 						}
 					}
 
@@ -26919,8 +27022,10 @@ lgl_AudioOutCallbackGenerator
 					}
 				}
 
-				double myLStereo=myFL;
-				double myRStereo=myFR;
+				double myFLStereo=myFL;
+				double myFRStereo=myFR;
+				double myBLStereo=myBL;
+				double myBRStereo=myBR;
 
 				if
 				(
@@ -26937,8 +27042,8 @@ lgl_AudioOutCallbackGenerator
 					myFR=myFL;
 				}
 
-				double myBL=myFL;
-				double myBR=myFR;
+				//double myBL=myFL;
+				//double myBR=myFR;
 
 				double localSpeedVolFactor = sc->SpeedVolumeFactor;
 
@@ -26959,8 +27064,10 @@ lgl_AudioOutCallbackGenerator
 					localSpeedVolFactor=0;
 				}
 
-				lRecord+=myLStereo;
-				rRecord+=myRStereo;
+				flRecord+=myFLStereo;
+				frRecord+=myFRStereo;
+				blRecord+=myBLStereo;
+				brRecord+=myBRStereo;
 
 				/*
 				if(sc->VolumeFrontLeftDesired==0.0f)
@@ -27085,24 +27192,38 @@ lgl_AudioOutCallbackGenerator
 
 			//
 
-			if(lRecord<-32767) lRecord=-32767;
-			if(rRecord<-32767) rRecord=-32767;
+			if(flRecord<-32767) flRecord=-32767;
+			if(frRecord<-32767) frRecord=-32767;
+			if(flRecord>32767) flRecord=32767;
+			if(frRecord>32767) frRecord=32767;
 
-			if(lRecord>32767) lRecord=32767;
-			if(rRecord>32767) rRecord=32767;
+			if(blRecord<-32767) blRecord=-32767;
+			if(brRecord<-32767) brRecord=-32767;
+			if(blRecord>32767) blRecord=32767;
+			if(brRecord>32767) brRecord=32767;
 
 			vuNext=LGL_Max
 			(
 				vuNext,
 				LGL_Max
 				(
-					fabsf(lRecord/32767.0f),
-					fabsf(rRecord/32767.0f)
+					LGL_Max
+					(
+						fabsf(flRecord/32767.0f),
+						fabsf(frRecord/32767.0f)
+					),
+					LGL_Max
+					(
+						fabsf(blRecord/32767.0f),
+						fabsf(brRecord/32767.0f)
+					)
 				)
 			);
 
-			tempStreamRecL[a/4+0]+=(Sint16)(QUIET_FACTOR*lRecord);		//Should we SWAP16 here??? I'm not sure.
-			tempStreamRecR[a/4+0]+=SWAP16((Sint16)(QUIET_FACTOR*rRecord));	//So we'll split the difference, to see.
+			tempStreamRecFL[a/4+0]+=(Sint16)(QUIET_FACTOR*flRecord);		//Should we SWAP16 here??? I'm not sure.
+			tempStreamRecFR[a/4+0]+=SWAP16((Sint16)(QUIET_FACTOR*frRecord));	//So we'll split the difference, to see.
+			tempStreamRecBL[a/4+0]+=(Sint16)(QUIET_FACTOR*blRecord);		//Should we SWAP16 here??? I'm not sure.
+			tempStreamRecBR[a/4+0]+=SWAP16((Sint16)(QUIET_FACTOR*brRecord));	//So we'll split the difference, to see.
 
 			//SAMPLE ADDING LOOP: OMEGA
 		}
@@ -27111,28 +27232,38 @@ lgl_AudioOutCallbackGenerator
 		//DSP!! Woo hoo!!
 		float tempStreamDSPInStereo[LGL_SAMPLESIZE*2];
 		float tempStreamDSPOutStereo[LGL_SAMPLESIZE*2];
-		if(sc->LGLAudioDSPFront)
+		for(int a=0;a<sc->Channels/2;a++)
 		{
-			//Stereo
-			for(unsigned int s=0;s<LGL_SAMPLESIZE*2;s+=2)
+			if(sc->LGLAudioDSP[a])
 			{
-				tempStreamDSPInStereo[s]=tempStreamFL[s/2];
-				tempStreamDSPInStereo[s+1]=tempStreamFR[s/2];
+				//Stereo
+				float* streamL = (a!=0) ? tempStreamBL : tempStreamFL;
+				float* streamR = (a!=0) ? tempStreamBR : tempStreamFR;
+				float* recL = (a!=0) ? tempStreamRecBL : tempStreamRecFL;
+				float* recR = (a!=0) ? tempStreamRecBR : tempStreamRecFR;
+				for(unsigned int s=0;s<LGL_SAMPLESIZE*2;s+=2)
+				{
+					tempStreamDSPInStereo[s]=streamL[s/2];
+					tempStreamDSPInStereo[s+1]=streamR[s/2];
+				}
+				sc->LGLAudioDSP[a]->ProcessStereo
+				(
+					tempStreamDSPInStereo,
+					tempStreamDSPOutStereo,
+					LGL_SAMPLESIZE
+				);
+				for(unsigned int s=0;s<LGL_SAMPLESIZE*2;s+=2)
+				{
+					streamL[s/2]=LGL_Clamp(-32767.0f,tempStreamDSPOutStereo[s],32767.0f);
+					streamR[s/2]=LGL_Clamp(-32767.0f,tempStreamDSPOutStereo[s+1],32767.0f);
+					recL[s/2]=streamL[s];
+					recR[s/2]=streamR[s];
+				}
 			}
-			sc->LGLAudioDSPFront->ProcessStereo
-			(
-				tempStreamDSPInStereo,
-				tempStreamDSPOutStereo,
-				LGL_SAMPLESIZE
-			);
-			for(unsigned int s=0;s<LGL_SAMPLESIZE*2;s+=2)
-			{
-				tempStreamFL[s/2]=LGL_Clamp(-32767.0f,tempStreamDSPOutStereo[s],32767.0f);
-				tempStreamFR[s/2]=LGL_Clamp(-32767.0f,tempStreamDSPOutStereo[s+1],32767.0f);
-				tempStreamRecL[s/2]=tempStreamFL[s];
-				tempStreamRecR[s/2]=tempStreamFR[s];
-			}
+		}
 
+		if(sc->Channels==2)
+		{
 			memcpy(tempStreamBL,tempStreamFL,4*2*LGL_SAMPLESIZE*sizeof(float));
 			memcpy(tempStreamBR,tempStreamFR,4*2*LGL_SAMPLESIZE*sizeof(float));
 		}
@@ -27144,8 +27275,10 @@ lgl_AudioOutCallbackGenerator
 			tempStreamBL[a]=(Sint16)LGL_Clamp(-32767,tempStreamBL[a]*volumeArrayBL[a],32767);
 			tempStreamBR[a]=(Sint16)LGL_Clamp(-32767,tempStreamBR[a]*volumeArrayBR[a],32767);
 		}
-		memcpy(tempStreamRecL,tempStreamFL,4*2*LGL_SAMPLESIZE*sizeof(float));
-		memcpy(tempStreamRecR,tempStreamFR,4*2*LGL_SAMPLESIZE*sizeof(float));
+		memcpy(tempStreamRecFL,tempStreamFL,4*2*LGL_SAMPLESIZE*sizeof(float));
+		memcpy(tempStreamRecFR,tempStreamFR,4*2*LGL_SAMPLESIZE*sizeof(float));
+		memcpy(tempStreamRecBL,tempStreamBL,4*2*LGL_SAMPLESIZE*sizeof(float));
+		memcpy(tempStreamRecBR,tempStreamBR,4*2*LGL_SAMPLESIZE*sizeof(float));
 
 		int lgSize=0;
 		while(pow(2,lgSize)!=LGL_SAMPLESIZE)
@@ -27160,8 +27293,46 @@ lgl_AudioOutCallbackGenerator
 			{
 				stream16[l+0]=(Sint16)LGL_Clamp(-32767,stream16[l+0]+tempStreamFL[lHalf],32767);	//SWAP16()?
 				stream16[l+1]=(Sint16)LGL_Clamp(-32767,stream16[l+1]+tempStreamFR[lHalf],32767);
-				stream16rec[l+0]=(Sint16)LGL_Clamp(-32767,stream16rec[l+0]+tempStreamRecL[lHalf]*LGL.RecordVolume,32767);
-				stream16rec[l+1]=(Sint16)LGL_Clamp(-32767,stream16rec[l+1]+tempStreamRecR[lHalf]*LGL.RecordVolume,32767);
+				if(encodeChannels==2)
+				{
+					stream16rec[l+0]=(Sint16)LGL_Clamp(-32767,stream16rec[l+0]+tempStreamRecFL[lHalf]*LGL.RecordVolume,32767);
+					stream16rec[l+1]=(Sint16)LGL_Clamp(-32767,stream16rec[l+1]+tempStreamRecFR[lHalf]*LGL.RecordVolume,32767);
+				}
+				else if(encodeChannels==4)
+				{
+					int index=(l*(encodeChannels/2));
+					stream16rec[index]=(Sint16)
+						LGL_Clamp
+						(
+							-32767,
+							stream16rec[index]+tempStreamRecFL[lHalf]*LGL.RecordVolume,
+							32767
+						);
+					index++;
+					stream16rec[index]=(Sint16)
+						LGL_Clamp
+						(
+							-32767,
+							stream16rec[index]+tempStreamRecFR[lHalf]*LGL.RecordVolume,
+							32767
+						);
+					index++;
+					stream16rec[index]=(Sint16)
+						LGL_Clamp
+						(
+							-32767,
+							stream16rec[index]+tempStreamRecBL[lHalf]*LGL.RecordVolume,
+							32767
+						);
+					index++;
+					stream16rec[index]=(Sint16)
+						LGL_Clamp
+						(
+							-32767,
+							stream16rec[index]+tempStreamRecBR[lHalf]*LGL.RecordVolume,
+							32767
+						);
+				}
 				
 				if(LGL.AudioBufferPos+lHalf<1024)
 				{
@@ -27192,8 +27363,13 @@ lgl_AudioOutCallbackGenerator
 				}
 
 				//And the recording channels (front).
-				stream16rec[2*l+0]=(Sint16)LGL_Clamp(-32767,stream16rec[2*l+0]+tempStreamRecL[l]*LGL.RecordVolume,32767);
-				stream16rec[2*l+1]=(Sint16)LGL_Clamp(-32767,stream16rec[2*l+1]+tempStreamRecR[l]*LGL.RecordVolume,32767);
+				stream16rec[encodeChannels*l+0]=(Sint16)LGL_Clamp(-32767,stream16rec[encodeChannels*l+0]+tempStreamRecFL[l]*LGL.RecordVolume,32767);
+				stream16rec[encodeChannels*l+1]=(Sint16)LGL_Clamp(-32767,stream16rec[encodeChannels*l+1]+tempStreamRecFR[l]*LGL.RecordVolume,32767);
+				if(encodeChannels==4)
+				{
+					stream16rec[encodeChannels*l+2]=(Sint16)LGL_Clamp(-32767,stream16rec[encodeChannels*l+2]+tempStreamRecBL[l]*LGL.RecordVolume,32767);
+					stream16rec[encodeChannels*l+3]=(Sint16)LGL_Clamp(-32767,stream16rec[encodeChannels*l+3]+tempStreamRecBR[l]*LGL.RecordVolume,32767);
+				}
 
 				if(LGL.AudioBufferPos+l<1024)
 				{
@@ -27218,7 +27394,7 @@ lgl_AudioOutCallbackGenerator
 	}
 	if(LGL.AudioEncoder)
 	{
-		LGL.AudioEncoder->Encode((const char*)(LGL.RecordBuffer),len8/(renderChannels/2));
+		LGL.AudioEncoder->Encode((const char*)(LGL.RecordBuffer),(encodeChannels/2)*len8/(renderChannels/2));
 		LGL.RecordSamplesWritten+=len8/(2*renderChannels);
 	}
 	LGL.AudioBufferPos=LGL.AudioBufferPos+LGL_SAMPLESIZE;

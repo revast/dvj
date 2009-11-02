@@ -39,6 +39,7 @@ VisualizerObj* TurntableObj::Visualizer=NULL;
 LGL_Image* TurntableObj::NoiseImage[NOISE_IMAGE_COUNT_256_64];
 LGL_Image* TurntableObj::LoopImage=NULL;
 bool TurntableObj::FileEverOpened=false;
+bool TurntableObj::SurroundMode=false;
 
 void
 findCachedPath
@@ -2305,7 +2306,12 @@ NextFrame
 				//Start recording!
 				char path[2048];
 				sprintf(path,GetDVJSessionFlacPath());
-				LGL_RecordDVJToFileStart(path);
+				SurroundMode=Sound->GetChannelCount()==4;
+				if(SurroundMode)
+				{
+					LGL_AudioMasterToHeadphones(false);
+				}
+				LGL_RecordDVJToFileStart(path,SurroundMode);
 				{
 					/*
 					char drawLogPath[2048];
@@ -4400,6 +4406,13 @@ SwapVideos()
 	LGL_VideoDecoder* temp=VideoFront;
 	VideoFront=VideoBack;
 	VideoBack=temp;
+}
+
+bool
+TurntableObj::
+GetSurroundMode()
+{
+	return(SurroundMode);
 }
 
 void

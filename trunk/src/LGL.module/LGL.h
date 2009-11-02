@@ -1341,7 +1341,8 @@ public:
 
 				LGL_AudioEncoder
 				(
-					const char*	dstPath
+					const char*	dstPath,
+					bool		surroundMode=false
 				);
 				~LGL_AudioEncoder();
 
@@ -1352,6 +1353,7 @@ public:
 					long		bytes
 				);
 	void			Finalize();
+	int			GetChannelCount();
 
 	void			ThreadFunc();
 
@@ -2115,7 +2117,7 @@ float		LGL_FreqBufferL(int index, int width=0);	//index [0,512)
 float		LGL_FreqBufferR(int index, int width=0);
 float		LGL_FreqBufferMono(int index, int width=0);
 int		LGL_GetRecordDVJToFile();
-void		LGL_RecordDVJToFileStart(const char* path);
+void		LGL_RecordDVJToFileStart(const char* path, bool surroundMode=false);
 const char*	LGL_RecordDVJToFilePath();
 const char*	LGL_RecordDVJToFilePathShort();
 void		LGL_SetRecordDVJToFileVolume(float volume);
