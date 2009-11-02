@@ -827,7 +827,6 @@ WaveformSavePointPick
 		if(candidate!=-9999)
 		{
 			pick=candidate;
-			printf("[%i]CHOSEN!! (%i)\n",a,pick);
 		}
 	}
 
