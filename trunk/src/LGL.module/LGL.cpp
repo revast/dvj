@@ -9185,7 +9185,7 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 			DstMp3CodecContext->flags |= CODEC_FLAG_QSCALE;
 			DstMp3CodecContext->sample_rate=SrcAudioCodecContext->sample_rate;
 			DstMp3CodecContext->time_base = (AVRational){1,DstMp3CodecContext->sample_rate};
-			DstMp3CodecContext->channels=2;//SrcAudioCodecContext->channels;
+			DstMp3CodecContext->channels=SrcAudioCodecContext->channels;
 
 			int openResult=-1;
 			{
@@ -9477,7 +9477,7 @@ Encode
 					}
 					SrcPacket.size-=result;
 					SrcPacket.data+=result;
-					if(SrcAudioCodecContext->channels==2)
+					if(SrcAudioCodecContext->channels>=2)
 					{
 						memcpy(&(DstMp3BufferSamples[DstMp3BufferSamplesIndex]),DstMp3Buffer,outbufsize);
 						DstMp3BufferSamplesIndex+=outbufsize/2;
