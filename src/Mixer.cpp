@@ -169,14 +169,17 @@ NextFrame
 		FullSwitch[a]=false;
 	}
 
-	int masterToHeadphones=Input.MasterToHeadphones();
-	if(masterToHeadphones==0)
+	if(TurntableObj::GetSurroundMode()==false)
 	{
-		LGL_AudioMasterToHeadphones(false);
-	}
-	else if(masterToHeadphones==1)
-	{
-		LGL_AudioMasterToHeadphones(true);
+		int masterToHeadphones=Input.MasterToHeadphones();
+		if(masterToHeadphones==0)
+		{
+			LGL_AudioMasterToHeadphones(false);
+		}
+		else if(masterToHeadphones==1)
+		{
+			LGL_AudioMasterToHeadphones(true);
+		}
 	}
 
 	candidate=Input.XfaderSpeakers();
@@ -205,7 +208,14 @@ NextFrame
 		}
 	}
 
-	candidate=Input.XfaderHeadphones();
+	if(TurntableObj::GetSurroundMode()==false)
+	{
+		candidate=Input.XfaderHeadphones();
+	}
+	else
+	{
+		candidate=Input.XfaderSpeakers();
+	}
 	if(candidate!=-1.0f)
 	{
 		CrossFadeSliderRight=candidate;

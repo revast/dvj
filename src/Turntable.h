@@ -303,9 +303,11 @@ static	LGL_Image*			LoopImage;
 
 	LGL_Timer			Mode0BackspaceTimer;
 static	bool				FileEverOpened;
+static	bool				SurroundMode;
 
 public:
 
+static	bool				GetSurroundMode();
 	void				SwapVideos();
 	void				SelectNewVideo(bool forceAmbient=false);
 	bool				BPMAvailable();
