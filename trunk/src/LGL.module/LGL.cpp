@@ -1153,7 +1153,8 @@ LGL_Init
 	LGL.DisplayNow=0;
 
 printf("%i screens!\n",LGL.DisplayCount);
-	
+
+#ifdef	SDL_2
 	for(int a=0;a<LGL.DisplayCount;a++)
 	{
 		SDL_SelectVideoDisplay(a);
@@ -1229,6 +1230,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		LGL.DisplayViewPortBottom[a]=(LGL.WindowResolutionY-LGL.DisplayResolutionY[a])/(float)LGL.WindowResolutionY;
 		LGL.DisplayViewPortTop[a]=1.0f;
 	}
+#endif	//SDL_2
 
 	if(LGL.WindowFullscreen==false)
 	{
@@ -1523,12 +1525,17 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	}
 #else	//SDL_2
 	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
+	unsigned int Flags=SDL_OPENGL;
+	if(LGL.WindowFullscreen==true)
+	{
+		Flags=Flags|SDL_FULLSCREEN;
+	}
 	if
 	(
 		SDL_SetVideoMode
 		(
-			LGL.VideoResolutionX,
-			LGL.VideoResolutionY,
+			LGL.WindowResolutionX,
+			LGL.WindowResolutionY,
 			32,			//Color depth
 			Flags
 		) == NULL
@@ -1540,8 +1547,8 @@ printf("\tScreen[%i]: %i x %i\n",a,
 			(
 				"LGL_Init(): SDL_SetVideoMode \
 				(%i,%i,SDL_OPENGL) failed... %s\n",
-				LGL.VideoResolutionX,
-				LGL.VideoResolutionY,
+				LGL.WindowResolutionX,
+				LGL.WindowResolutionY,
 				SDL_GetError()
 			);
 		}
@@ -1552,8 +1559,8 @@ printf("\tScreen[%i]: %i x %i\n",a,
 				"LGL_Init(): SDL_SetVideoMode \
 				(%i,%i,SDL_OPENGL|SDL_FULLSCREEN) \
 				failed... %s\n",
-				LGL.VideoResolutionX,
-				LGL.VideoResolutionY,
+				LGL.WindowResolutionX,
+				LGL.WindowResolutionY,
 				SDL_GetError()
 			);
 		}
@@ -1565,7 +1572,9 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	//GL Settings
 
 	LGL.VSync = true;//(LGL.WindowFullscreen && LGL.DisplayCount>1) ? false : true;
+#ifdef	SDL_2
 	SDL_GL_SetSwapInterval(LGL_VSync());	//VSYNC
+#endif
 
 	glDrawBuffer(GL_BACK);
 	glReadBuffer(GL_FRONT);
@@ -3173,7 +3182,11 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 	{
 		LGL_DelaySeconds(1.0f/LGL.FPSMax-LGL_SecondsSinceThisFrame());
 	}
+#ifdef	SDL_2
 	SDL_GL_SwapWindow(LGL.WindowID);
+#else	//SDL_2
+	SDL_GL_SwapBuffers();
+#endif	//SDL_2
 #endif	//LGL_NO_GRAPHICS
 
 	lgl_font_gl_buffer_ptr = &(lgl_font_gl_buffer[0]);
@@ -5294,7 +5307,7 @@ LGL_Image
 				IMG_GetError()
 			);
 			char wd[2048];
-			getwd(wd);
+			getcwd(wd,2048);
 			printf("Working Directory: %s\n",wd);
 			exit(0);
 		}
@@ -7002,7 +7015,7 @@ FileLoad
 			IMG_GetError()
 		);
 		char wd[2048];
-		getwd(wd);
+		getcwd(wd,2048);
 		printf("Working Directory: %s\n",wd);
 		exit(0);
 	}
@@ -8829,7 +8842,7 @@ LGL_VideoEncoder
 {
 	strcpy(SrcPath,src);
 	strcpy(DstPath,dstVideo);
-	sprintf(DstMp3Path,dstAudio);
+	strcpy(DstMp3Path,dstAudio);
 
 	Valid=false;
 	UnsupportedCodec=false;
@@ -9681,7 +9694,7 @@ LGL_AudioEncoder
 	bool		surroundMode
 )
 {
-	sprintf(DstMp3Path,dstPath);
+	strcpy(DstMp3Path,dstPath);
 
 	DstMp3OutputFormat=NULL;
 	DstMp3FormatContext=NULL;
@@ -15645,7 +15658,7 @@ LGL_RecordDVJToFileStart
 	if(LGL.AudioEncoder==NULL)
 	{
 		//Actually start recording
-		sprintf(LGL.AudioEncoderPath,path);
+		strcpy(LGL.AudioEncoderPath,path);
 		LGL.AudioEncoder = new LGL_AudioEncoder
 		(
 			LGL.AudioEncoderPath,
@@ -15797,7 +15810,7 @@ LGL_ProcessInput()
 		}
 		
 		//Keyboard
-		
+#ifdef	SDL_2
 		if(event.type==SDL_KEYDOWN)
 		{
 			if(event.key.keysym.sym > 256)
@@ -15818,10 +15831,8 @@ LGL_ProcessInput()
 				event.key.keysym.unicode>0
 			)
 			{
-printf("AAAAAAAA\n");
 				if(isalpha((char)event.key.keysym.unicode))
 				{
-printf("BBBBBBBBBB\n");
 					if(SDL_GetModState() & KMOD_SHIFT)
 					{
 						LGL.KeyStream[StreamCounter]=toupper((char)event.key.keysym.unicode);
@@ -15856,6 +15867,44 @@ printf("BBBBBBBBBB\n");
 			StreamCounter++;
 			LGL.KeyStream[StreamCounter]='\0';
 		}
+#else	//SDL_2
+		if(event.type==SDL_KEYDOWN)
+		{
+			LGL.KeyDown[event.key.keysym.sym]=true;
+			LGL.KeyStroke[event.key.keysym.sym]=true;
+			if
+			(
+				StreamCounter<255 &&
+				event.key.keysym.unicode<0x80 &&
+				event.key.keysym.unicode>0
+			)
+			{
+				if(isalpha((char)event.key.keysym.unicode))
+				{
+					if(SDL_GetModState() & KMOD_SHIFT)
+					{
+						LGL.KeyStream[StreamCounter]=toupper((char)event.key.keysym.unicode);
+					}
+					else
+					{
+						LGL.KeyStream[StreamCounter]=tolower((char)event.key.keysym.unicode);
+					}
+				}
+				else
+				{
+					LGL.KeyStream[StreamCounter]=(char)event.key.keysym.unicode;
+				}
+				
+				StreamCounter++;
+				LGL.KeyStream[StreamCounter]='\0';
+			}
+		}
+		if(event.type==SDL_KEYUP)
+		{
+			LGL.KeyDown[event.key.keysym.sym]=false;
+			LGL.KeyRelease[event.key.keysym.sym]=true;
+		}
+#endif	//SDL_2
 
 		//Mouse
 
@@ -17591,7 +17640,9 @@ LGL_MouseVisible
 	bool	visible
 )
 {
+#ifdef	SDL_2
 	SDL_SelectMouse(0);
+#endif	//SDL_2
 	if(visible)
 	{
 		SDL_ShowCursor(1);
