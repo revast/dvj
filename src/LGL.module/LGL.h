@@ -52,7 +52,9 @@
 
 #include <SDL.h>
 #include <SDL_main.h>
+#ifdef	LGL_OSX
 #define	SDL_2
+#endif	//LGL_OSX
 #ifdef	SDL_2
 #include <SDL_scancode.h>
 #include <SDL_compat.h>
@@ -349,6 +351,7 @@ enum
 	LGL_KEY_RALT		= SDLK_RALT,
 	LGL_KEY_LALT		= SDLK_LALT,
 	LGL_KEY_MODE		= SDLK_MODE,
+	LGL_KEY_APPLICATION	= LGL_KEY_UNKNOWN,
 	LGL_KEY_HELP		= SDLK_HELP,
 	LGL_KEY_PRINTSCREEN	= SDLK_PRINT,
 	LGL_KEY_SYSREQ		= SDLK_SYSREQ,
