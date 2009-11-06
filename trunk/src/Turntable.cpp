@@ -2310,7 +2310,7 @@ NextFrame
 
 				//Start recording!
 				char path[2048];
-				sprintf(path,GetDVJSessionFlacPath());
+				strcpy(path,GetDVJSessionFlacPath());
 				SurroundMode=Sound->GetChannelCount()==4;
 				if(SurroundMode)
 				{

@@ -278,7 +278,7 @@ MatchesFilter
 DatabaseObj::
 DatabaseObj() : EntryDotDot("..")
 {
-	sprintf(MusicRoot,GetMusicRootPath());
+	strcpy(MusicRoot,GetMusicRootPath());
 
 	Refresh();
 }

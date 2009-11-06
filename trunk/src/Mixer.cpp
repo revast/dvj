@@ -1013,7 +1013,7 @@ SetRecording
 		{
 			RecordingSecondsSinceExecution=LGL_SecondsSinceExecution();
 			char file[2048];
-			sprintf(file,RecordingTrackListPath);
+			strcpy(file,RecordingTrackListPath);
 			RecordingTrackListFD=fopen(file,"w");
 			if(RecordingTrackListFD)
 			{
