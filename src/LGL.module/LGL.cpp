@@ -1178,6 +1178,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	}
 
 	SDL_SelectVideoDisplay(0);
+#endif	//SDL_2
 
 	if
 	(
@@ -1230,7 +1231,6 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		LGL.DisplayViewPortBottom[a]=(LGL.WindowResolutionY-LGL.DisplayResolutionY[a])/(float)LGL.WindowResolutionY;
 		LGL.DisplayViewPortTop[a]=1.0f;
 	}
-#endif	//SDL_2
 
 	if(LGL.WindowFullscreen==false)
 	{
@@ -18425,7 +18425,7 @@ bool
 LGL_Wiimote::
 INTERNAL_Connect()
 {
-#ifdef	LGL_LINUX_WIIMOTE
+#ifdef	LGL_LINUX_WIIMOTE_OFF
 	bdaddr_t bdany;
 	for(int a=0;a<6;a++) bdany.b[a]=0;	//Want to use BDADDR_ANY, but that results in a compiler warning... Hmm...
 
