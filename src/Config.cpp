@@ -96,7 +96,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"videoBufferFrames=20\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#3.2 MBps is highest quality for 1920x480@30fps.\n");
-		fprintf(fd,"Generated files may be larger.\n");
+		fprintf(fd,"#Generated files may be larger.\n");
 		fprintf(fd,"cachedVideoAveBitrateMBps=3.2\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"colorCoolR=0.0\n");
