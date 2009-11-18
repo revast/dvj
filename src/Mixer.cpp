@@ -275,37 +275,44 @@ NextFrame
 		//Sync BPM
 		Turntable[syncTT]->SetBPMAdjusted(Turntable[target]->GetBPMAdjusted());
 
-		//Nudge toward sync
-		float bpmScalar = Turntable[target]->GetBPMAdjusted()/Turntable[syncTT]->GetBPMAdjusted();
-		float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f/bpmScalar);
-		float percentOfMeasureTarget = Turntable[target]->GetPercentOfCurrentMeasure();
 		if
 		(
-			percentOfMeasureSelf >= 0 &&
-			percentOfMeasureTarget >= 0
+			Turntable[0]->GetPaused()==false &&
+			Turntable[1]->GetPaused()==false
 		)
 		{
-			float candidate1 = percentOfMeasureTarget - percentOfMeasureSelf;
-			float candidate2 = percentOfMeasureTarget - percentOfMeasureSelf + 1.0f;
-			float candidate3 = percentOfMeasureTarget - percentOfMeasureSelf - 1.0f;
-			float shortestDirection = (fabsf(candidate1) < fabsf(candidate2)) ? candidate1 : candidate2;
-			if(fabsf(candidate3) < fabsf(shortestDirection)) shortestDirection=candidate3;
-			if(fabsf(shortestDirection)>0.005f)
+			//Nudge toward sync
+			float bpmScalar = Turntable[target]->GetBPMAdjusted()/Turntable[syncTT]->GetBPMAdjusted();
+			float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f/bpmScalar);
+			float percentOfMeasureTarget = Turntable[target]->GetPercentOfCurrentMeasure();
+			if
+			(
+				percentOfMeasureSelf >= 0 &&
+				percentOfMeasureTarget >= 0
+			)
 			{
-				float nudgeAmount = LGL_Sign(shortestDirection)*0.32f;
-				if(fabsf(2*shortestDirection)<1.0f/8.0f)
+				float candidate1 = percentOfMeasureTarget - percentOfMeasureSelf;
+				float candidate2 = percentOfMeasureTarget - percentOfMeasureSelf + 1.0f;
+				float candidate3 = percentOfMeasureTarget - percentOfMeasureSelf - 1.0f;
+				float shortestDirection = (fabsf(candidate1) < fabsf(candidate2)) ? candidate1 : candidate2;
+				if(fabsf(candidate3) < fabsf(shortestDirection)) shortestDirection=candidate3;
+				if(fabsf(shortestDirection)>0.005f)
 				{
-					float factor = fabsf(2*shortestDirection)*8.0f;
-					nudgeAmount = LGL_Sign(shortestDirection)*
-					(
-						powf(factor,2.0f-factor)*0.32f
-					);
+					float nudgeAmount = LGL_Sign(shortestDirection)*0.32f;
+					if(fabsf(2*shortestDirection)<1.0f/8.0f)
+					{
+						float factor = fabsf(2*shortestDirection)*8.0f;
+						nudgeAmount = LGL_Sign(shortestDirection)*
+						(
+							powf(factor,2.0f-factor)*0.32f
+						);
+					}
+					Turntable[syncTT]->SetMixerNudge(nudgeAmount);
 				}
-				Turntable[syncTT]->SetMixerNudge(nudgeAmount);
-			}
-			else
-			{
-				Turntable[syncTT]->SetMixerNudge(0.0f);
+				else
+				{
+					Turntable[syncTT]->SetMixerNudge(0.0f);
+				}
 			}
 		}
 	}
