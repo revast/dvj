@@ -78,12 +78,19 @@
 #include <mach/thread_act.h>
 #endif	//LGL_OSX
 
+#ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
 #define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
-#define	LGL_PRIORITY_DISKWRITER		(-0.1f)
+#else
+#define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
+#define	LGL_PRIORITY_MAIN		(0.9f-1.0f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(0.8f-1.0f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(0.7f-1.0f)
+#define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f-1.0f)
+#endif
 
 #define LGL_EQ_SAMPLES_FFT	(512)
 #define LGL_SAMPLESIZE		(256)
@@ -15822,33 +15829,36 @@ LGL_ProcessInput()
 				event.key.keysym.sym=0;
 			}
 
-			LGL.KeyDown[event.key.keysym.sym]=true;
-			LGL.KeyStroke[event.key.keysym.sym]=true;
-			if
-			(
-				StreamCounter<255 &&
-				event.key.keysym.unicode<0x80 &&
-				event.key.keysym.unicode>0
-			)
+			if(event.key.keysym.sym != 0)
 			{
-				if(isalpha((char)event.key.keysym.unicode))
+				LGL.KeyDown[event.key.keysym.sym]=true;
+				LGL.KeyStroke[event.key.keysym.sym]=true;
+				if
+				(
+					StreamCounter<255 &&
+					event.key.keysym.unicode<0x80 &&
+					event.key.keysym.unicode>0
+				)
 				{
-					if(SDL_GetModState() & KMOD_SHIFT)
+					if(isalpha((char)event.key.keysym.unicode))
 					{
-						LGL.KeyStream[StreamCounter]=toupper((char)event.key.keysym.unicode);
+						if(SDL_GetModState() & KMOD_SHIFT)
+						{
+							LGL.KeyStream[StreamCounter]=toupper((char)event.key.keysym.unicode);
+						}
+						else
+						{
+							LGL.KeyStream[StreamCounter]=tolower((char)event.key.keysym.unicode);
+						}
 					}
 					else
 					{
-						LGL.KeyStream[StreamCounter]=tolower((char)event.key.keysym.unicode);
+						LGL.KeyStream[StreamCounter]=(char)event.key.keysym.unicode;
 					}
+					
+					StreamCounter++;
+					LGL.KeyStream[StreamCounter]='\0';
 				}
-				else
-				{
-					LGL.KeyStream[StreamCounter]=(char)event.key.keysym.unicode;
-				}
-				
-				StreamCounter++;
-				LGL.KeyStream[StreamCounter]='\0';
 			}
 		}
 		if(event.type==SDL_KEYUP)

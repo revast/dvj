@@ -47,14 +47,12 @@
 #ifndef	LGL_OSX
 #include <GL/gl.h>
 #include <GL/glext.h>
-#define	GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
+//#define	GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
 #endif	//LGL_OSX
 
 #include <SDL.h>
 #include <SDL_main.h>
-#ifdef	LGL_OSX
 #define	SDL_2
-#endif	//LGL_OSX
 #ifdef	SDL_2
 #include <SDL_scancode.h>
 #include <SDL_compat.h>
