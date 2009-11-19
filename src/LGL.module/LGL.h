@@ -1170,7 +1170,7 @@ public:
 	void			SetTime(float seconds);
 	float			GetTime();
 	float			GetLengthSeconds();
-	int			GetFPS();
+	float			GetFPS();
 	int			GetFPSDisplayed();
 	int			GetFPSMissed();
 	LGL_Image*		GetImage();
@@ -1241,7 +1241,7 @@ private:
 	long			SecondsToFrameNumber(float seconds);
 	long			FrameNumberToTimestamp(long FrameNumber);
 	long			GetNextFrameNumberToDecode();
-	long			GetNextFrameNumberToDecodePredictNext();
+	long			GetNextFrameNumberToDecodePredictNext(bool mustNotBeDecoded=true);
 	long			GetNextFrameNumberToDecodeForwards();
 	long			GetNextFrameNumberToDecodeBackwards();
 	lgl_FrameBuffer*	GetRecycledFrameBuffer();
