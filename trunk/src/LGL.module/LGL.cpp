@@ -7945,7 +7945,6 @@ GetImage()
 	if(strcmp(Path,"NULL")==0)
 	{
 		Image->SetFrameNumber(-1);
-printf("GetImage(): A\n");
 		return(Image);
 	}
 
@@ -7968,7 +7967,6 @@ printf("GetImage(): A\n");
 		//Early out if nothing decoded...
 		if(FrameBufferReady.size()==0)
 		{
-printf("GetImage(): B\n");
 			return(Image);
 		}
 
@@ -7977,13 +7975,11 @@ printf("GetImage(): B\n");
 		{
 			FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 			buffer=FrameBufferReady[0];
-printf("Nearest A: %li\n",buffer->GetFrameNumber());
 		}
 		else if(frameNumber>FrameBufferReady[FrameBufferReady.size()-1]->GetFrameNumber())
 		{
 			FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 			buffer=FrameBufferReady[FrameBufferReady.size()-1];
-printf("Nearest B: %li\n",buffer->GetFrameNumber());
 		}
 		else
 		{
@@ -8007,20 +8003,17 @@ printf("Nearest B: %li\n",buffer->GetFrameNumber());
 				{
 					FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 				}
-printf("Nearest C: %li\n",buffer->GetFrameNumber());
 			}
 		}
 
 		if(buffer==NULL)
 		{
-printf("GetImage(): C\n");
 			return(Image);
 		}
 
 		//Is our image already up to date?
 		if(Image->GetFrameNumber()==buffer->GetFrameNumber())
 		{
-printf("GetImage(): D (%li vs %li)\n",Image->GetFrameNumber(),frameNumber);
 			FrameNumberDisplayed=Image->GetFrameNumber();
 			return(Image);
 		}
@@ -8051,7 +8044,6 @@ printf("GetImage(): D (%li vs %li)\n",Image->GetFrameNumber(),frameNumber);
 		FPSDisplayedTimer.Reset();
 	}
 
-printf("GetImage(): E\n");
 	return(Image);
 }
 
@@ -8517,7 +8509,6 @@ MaybeDecodeImage()
 		//Add framebuffer to FrameBufferReady, and sort.
 		{
 			LGL_ScopeLock lock(FrameBufferReadySemaphore);
-printf("Frame Decoded: %li (%li)\n",frameBuffer->GetFrameNumber(),frameNumberTarget);
 			FrameBufferReady.push_back(frameBuffer);
 			std::sort
 			(
@@ -8567,7 +8558,6 @@ MaybeRecycleBuffers()
 			)
 		)
 		{
-printf("Recycle: %li (%li)\n",FrameBufferReady[a]->GetFrameNumber(),GetNextFrameNumberToDecodePredictNext());
 			FrameBufferRecycled.push_back(FrameBufferReady[a]);
 			FrameBufferReady.erase
 			(

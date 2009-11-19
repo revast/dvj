@@ -387,8 +387,8 @@ processScript()
 			}
 			else if(strcasecmp(fi[1],"480p")==0)
 			{
-				//ResX=852;
-				ResX=1920;
+				ResX=852;
+				//ResX=1920;
 				ResY=480;
 			}
 			else
@@ -980,11 +980,9 @@ printf("[%i]\n",frame);
 				LGL_Image* image=vid->GetImage();
 
 				long frameNum = (long)(vid->GetTime()*vid->GetFPS());
-if(a==0) printf("Draw(): %li\n",frameNum);
 				while(image->GetFrameNumber() != frameNum)
 				{
-					printf("NOT: %li vs %li (%f, %f)\n",image->GetFrameNumber(), frameNum,vid->GetTime(),vid->GetLengthSeconds());
-					LGL_DelayMS(100);
+					LGL_DelayMS(1);
 					image=vid->GetImage();
 				}
 				assert(image);
@@ -1028,7 +1026,6 @@ if(a==0) printf("Draw(): %li\n",frameNum);
 										vidLo = new LGL_VideoDecoder(vidPath);
 									}
 									vidLo->SetFrameBufferAddRadius(2);
-printf("Jump A(): %li\n",(long)(vidLoTimeProxy*vidLo->GetFPS()));
 									vidLoTimeProxy=LGL_RandFloat(0.0f,vidLo->GetLengthSeconds());
 									advance=false;
 								}
@@ -1036,7 +1033,6 @@ printf("Jump A(): %li\n",(long)(vidLoTimeProxy*vidLo->GetFPS()));
 							else
 							{
 								vidLoTimeProxy=LGL_RandFloat(0.0f,vidLo->GetLengthSeconds());
-printf("Jump B(): %li\n",(long)(vidLoTimeProxy*vidLo->GetFPS()));
 								advance=false;
 							}
 						}
