@@ -159,6 +159,9 @@ RtMidiOut :: RtMidiOut( const std::string clientName ) : RtMidi()
 
 #if defined(__MACOSX_CORE__)
 
+//2009.11.18 - interim_descriptor: via http://ccrma-mail.stanford.edu/pipermail/256/2009-October/000095.html
+#include <CoreServices/CoreServices.h>
+
 // The CoreMIDI API is based on the use of a callback function for
 // MIDI input.  We convert the system specific time stamps to delta
 // time values.
