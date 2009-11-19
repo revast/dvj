@@ -92,8 +92,8 @@ LGL_Sound*	snd=NULL;
 char		sndPathListen[2048];
 char		sndPathEncode[2048];
 
-LGL_Video*	vidLo=NULL;
-LGL_Video*	vidHi=NULL;
+LGL_VideoDecoder*	vidLo=NULL;
+LGL_VideoDecoder*	vidHi=NULL;
 char		vidLoPath[2048];
 char		vidHiPath[2048];
 float		vidLoBrightScalar=1.0f;
@@ -228,14 +228,13 @@ return;
 	if(LGL_FileExists(vidPathDirResName)==false)
 	{
 		bool scale=true;
-		LGL_Video testVid(vidPathOrig);
-		LGL_Image* testImg = testVid.LockImage();
+		LGL_VideoDecoder testVid(vidPathOrig);
+		LGL_Image* testImg = testVid.GetImage();
 		bool printed=false;
 		LGL_Timer timer;
 		while(testImg==NULL)
 		{
-			testVid.UnlockImage(testImg);
-			testImg=testVid.LockImage();
+			testImg=testVid.GetImage();
 			LGL_DelayMS(20);
 			if(timer.SecondsSinceLastReset()>1.0f && printed==false)
 			{
@@ -247,7 +246,6 @@ return;
 		{
 			scale=false;
 		}
-		testVid.UnlockImage(testImg);
 
 		char cmd[2048];
 		if(scale)
@@ -467,7 +465,8 @@ processScript()
 			{
 				delete vidLo;
 			}
-			vidLo = new LGL_Video(vidPath);
+			vidLo = new LGL_VideoDecoder(vidPath);
+			vidLo->SetFrameBufferAddRadius(0);
 			vidLo->SetTime(LGL_RandFloat(0.0f,vidLo->GetLengthSeconds()));
 		}
 		else if(strcasecmp(fi[0],"vidHiPath")==0)
@@ -498,7 +497,8 @@ processScript()
 			{
 				delete vidHi;
 			}
-			vidHi = new LGL_Video(vidPath);
+			vidHi = new LGL_VideoDecoder(vidPath);
+			vidHi->SetFrameBufferAddRadius(0);
 			vidHi->SetTime(LGL_RandFloat(0.0f,vidHi->GetLengthSeconds()));
 		}
 		else if(strcasecmp(fi[0],"vidLoRndOnBlack")==0)
@@ -662,30 +662,28 @@ main
 	);
 
 #if 0
-	LGL_Video* baka=new LGL_Video("test/test1.avi");
+	LGL_VideoDecoder* baka=new LGL_VideoDecoder("test/test1.avi");
+	baka->SetFrameBufferAddRadius(0);
 	baka->SetTime(5.0f);
 	for(;;)
 	{
-		LGL_Image* img = baka->LockImage();
+		LGL_Image* img = baka->GetImage();
 		bool imgNULL = img==NULL;
-		baka->UnlockImage(img);
 		if
 		(
-			baka->ImageUpToDate() &&
 			imgNULL==false
 		)
 		{
 			break;
 		}
 		printf("UTD, NULL: %s, %s\n",
-			baka->ImageUpToDate()?"OK" :"NO",
+			"OK"
 			(imgNULL==false) ? "OK" : "NULL"
 		);
 		LGL_DelayMS(50);
 	}
-	LGL_Image* img = baka->LockImage();
+	LGL_Image* img = baka->GetImage();
 	img->DrawToScreen();
-	baka->UnlockImage(img);
 	LGL_SwapBuffers();
 	for(;;)
 	{
@@ -706,12 +704,10 @@ for(int a=0;a<40;a++) printf("\n");
 	baka->SetTime(5.0f);
 	for(;;)
 	{
-		LGL_Image* img = baka->LockImage();
+		LGL_Image* img = baka->GetImage();
 		bool imgNULL = img==NULL;
-		baka->UnlockImage(img);
 		if
 		(
-			baka->ImageUpToDate() &&
 			imgNULL==false
 		)
 		{
@@ -720,9 +716,8 @@ for(int a=0;a<40;a++) printf("\n");
 		LGL_DelayMS(50);
 	}
 printf("Drawing!\n");
-	img = baka->LockImage();
+	img = baka->GetImage();
 	img->DrawToScreen();
-	baka->UnlockImage(img);
 
 	baka->ImageFront->DrawToScreen(0.1,0.2,0.1,0.2);
 	baka->ImageBack->DrawToScreen(0.8,0.9,0.1,0.2);
@@ -915,7 +910,7 @@ printf("[%i]\n",frame);
 		{
 			bool advance=true;
 
-			LGL_Video* vid=(a==0) ? vidLo : vidHi;
+			LGL_VideoDecoder* vid=(a==0) ? vidLo : vidHi;
 			if(vid==NULL) continue;
 
 			if(vidLoBrightBaseDelta!=0.0f)
@@ -955,26 +950,13 @@ printf("[%i]\n",frame);
 			float factor=brightness;
 			if(factor>0.0f)
 			{
-				while(vid->ImageUpToDate()==false)
-				{
-					LGL_Image* lck=vid->LockImage();
-					vid->UnlockImage(lck);
-					vid->SetTime(vid->GetTime());
-					LGL_DelayMS(5);
-				}
-				LGL_Image* image=NULL;
-				
-				//Must lock image twice to get the exact frame we're after
-				image=vid->LockImage();
-				vid->UnlockImage(image);
+				LGL_Image* image=vid->GetImage();
 
-				image=vid->LockImage();
 				while(image==NULL)
 				{
-					vid->UnlockImage(image);	//Still gotta unlock it, even though it's NULL...
 					LGL_DelayMS(5);
 					vid->SetTime(vid->GetTime());
-					image=vid->LockImage();
+					image=vid->GetImage();
 				}
 				assert(image);
 				if(strstr(image->GetPath(),vid->GetPathShort())==NULL)
@@ -986,20 +968,19 @@ printf("[%i]\n",frame);
 
 					char bakaPath[2048];
 					strcpy(bakaPath,vid->GetPath());
-					vid->UnlockImage(image);
 					float bakaTime=vid->GetTime();
 					delete vid;
-					vid=new LGL_Video(bakaPath);
+					vid=new LGL_VideoDecoder(bakaPath);
+					vid->SetFrameBufferAddRadius(0);
 					if(a==0) vidLo=vid;
 					if(a==1) vidHi=vid;
 					vid->SetTime(bakaTime);
-					image=vid->LockImage();
+					image=vid->GetImage();
 					while(image==NULL)
 					{
-						vid->UnlockImage(image);	//Still gotta unlock it, even though it's NULL...
 						LGL_DelayMS(5);
 						vid->SetTime(vid->GetTime());
-						image=vid->LockImage();
+						image=vid->GetImage();
 					}
 				}
 				while(factor>0.0f)
@@ -1014,7 +995,6 @@ printf("[%i]\n",frame);
 					);
 					factor-=1.0f;
 				}
-				vid->UnlockImage(image);
 			}
 			else
 			{
@@ -1035,7 +1015,8 @@ printf("[%i]\n",frame);
 								if(strstr(vidPath,oldPath)==NULL)
 								{
 									delete vidLo;
-									vidLo=new LGL_Video(vidPath);
+									vidLo=new LGL_VideoDecoder(vidPath);
+									vidLo->SetFrameBufferAddRadius(0);
 									vidLo->SetTime(LGL_RandFloat(0.0f,vidLo->GetLengthSeconds()));
 									advance=false;
 								}
@@ -1059,7 +1040,8 @@ printf("[%i]\n",frame);
 								if(strstr(vidPath,oldPath)==NULL)
 								{
 									delete vidHi;
-									vidHi=new LGL_Video(vidPath);
+									vidHi=new LGL_VideoDecoder(vidPath);
+									vidHi->SetFrameBufferAddRadius(0);
 									vidHi->SetTime(LGL_RandFloat(0.0f,vidHi->GetLengthSeconds()));
 									advance=false;
 								}
@@ -1084,7 +1066,7 @@ printf("[%i]\n",frame);
 					int frameAfter = (int)floorf(vidLoPlaybackRateCounter);
 					if(frameBefore!=frameAfter)
 					{
-						while(vidLo->SetTime(neoTime)==false)
+						while(vidLo->GetTime()*vidLo->GetFPS()==neoTime*vidLo->GetFPS())
 						{
 							neoTime+=0.01f;
 						}
@@ -1103,7 +1085,7 @@ printf("[%i]\n",frame);
 					int frameAfter = (int)floorf(vidHiPlaybackRateCounter);
 					if(frameBefore!=frameAfter)
 					{
-						while(vidHi->SetTime(neoTime)==false)
+						while(vidHi->GetTime()*vidHi->GetFPS()==neoTime*vidHi->GetFPS())
 						{
 							neoTime+=0.01f;
 						}
@@ -1125,7 +1107,7 @@ printf("[%i]\n",frame);
 		{
 			for(int a=0;a<2;a++)
 			{
-				LGL_Video* vid=(a==0) ? vidLo : vidHi;
+				LGL_VideoDecoder* vid=(a==0) ? vidLo : vidHi;
 				LGL_GetFont().DrawString
 				(
 					0.05f,(a==0)?0.91f:0.95,0.02f,
