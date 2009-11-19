@@ -110,6 +110,8 @@ float		vidLoPlaybackRate=1.0f;
 float		vidHiPlaybackRate=2.0f;
 float		vidLoPlaybackRateCounter=0.0f;
 float		vidHiPlaybackRateCounter=0.0f;
+float		vidLoTimeProxy=0.0f;
+float		vidHiTimeProxy=0.0f;
 float		vidLoPlaybackRateLerpAlphaTime=-1.0f;
 float		vidLoPlaybackRateLerpAlphaRate=-1.0f;
 float		vidLoPlaybackRateLerpOmegaTime=-1.0f;
@@ -192,6 +194,7 @@ getVideoPathForRes
 )
 {
 return;
+/*
 	if(ResY!=480)
 	{
 		return;
@@ -277,6 +280,7 @@ return;
 
 	assert(LGL_FileExists(vidPathDirResName));
 	strcpy(vidPath,vidPathDirResName);
+*/
 }
 
 bool
@@ -463,11 +467,15 @@ processScript()
 
 			if(vidLo)
 			{
-				delete vidLo;
+				vidLo->SetVideo(vidPath);;
 			}
-			vidLo = new LGL_VideoDecoder(vidPath);
-			vidLo->SetFrameBufferAddRadius(0);
-			vidLo->SetTime(LGL_RandFloat(0.0f,vidLo->GetLengthSeconds()));
+			else
+			{
+				vidLo = new LGL_VideoDecoder(vidPath);
+				vidLoTimeProxy=LGL_RandFloat(0.0f,vidLo->GetLengthSeconds()-1);
+			}
+			vidLo->SetFrameBufferAddRadius(2);
+			vidLoTimeProxy=LGL_RandFloat(0.0f,vidLo->GetLengthSeconds());
 		}
 		else if(strcasecmp(fi[0],"vidHiPath")==0)
 		{
@@ -495,11 +503,15 @@ processScript()
 
 			if(vidHi)
 			{
-				delete vidHi;
+				vidHi->SetVideo(vidPath);;
 			}
-			vidHi = new LGL_VideoDecoder(vidPath);
-			vidHi->SetFrameBufferAddRadius(0);
-			vidHi->SetTime(LGL_RandFloat(0.0f,vidHi->GetLengthSeconds()));
+			else
+			{
+				vidHi = new LGL_VideoDecoder(vidPath);
+				vidHiTimeProxy=LGL_RandFloat(0.0f,vidHi->GetLengthSeconds()-1);
+			}
+			vidHi->SetFrameBufferAddRadius(2);
+			vidHiTimeProxy=LGL_RandFloat(0.0f,vidHi->GetLengthSeconds());
 		}
 		else if(strcasecmp(fi[0],"vidLoRndOnBlack")==0)
 		{
@@ -597,7 +609,7 @@ processScript()
 				exit(-1);
 			}
 
-			vidLo->SetTime(atof(fi[1]));
+			vidLoTimeProxy=atof(fi[1]);
 		}
 		else if(strcasecmp(fi[0],"vidHiTime")==0)
 		{
@@ -609,7 +621,7 @@ processScript()
 				exit(-1);
 			}
 
-			vidHi->SetTime(atof(fi[1]));
+			vidHiTimeProxy=atof(fi[1]);
 		}
 		else if(strcasecmp(fi[0],"drawVideoPath")==0)
 		{
@@ -913,6 +925,20 @@ printf("[%i]\n",frame);
 			LGL_VideoDecoder* vid=(a==0) ? vidLo : vidHi;
 			if(vid==NULL) continue;
 
+			float timeProxy = (a==0) ? vidLoTimeProxy : vidHiTimeProxy;
+			if(timeProxy>vid->GetLengthSeconds()-1)
+			{
+				if(a==0)
+				{
+					vidLoTimeProxy=LGL_RandFloat(0.0f,vidLo->GetLengthSeconds()-1);
+				}
+				else if(a==1)
+				{
+					vidHiTimeProxy=LGL_RandFloat(0.0f,vidHi->GetLengthSeconds()-1);
+				}
+				timeProxy = (a==0) ? vidLoTimeProxy : vidHiTimeProxy;
+			}
+
 			if(vidLoBrightBaseDelta!=0.0f)
 			{
 				vidLoBrightBase+=vidLoBrightBaseDelta;
@@ -950,39 +976,18 @@ printf("[%i]\n",frame);
 			float factor=brightness;
 			if(factor>0.0f)
 			{
+				vid->SetTime(timeProxy);
 				LGL_Image* image=vid->GetImage();
 
-				while(image==NULL)
+				long frameNum = (long)(vid->GetTime()*vid->GetFPS());
+if(a==0) printf("Draw(): %li\n",frameNum);
+				while(image->GetFrameNumber() != frameNum)
 				{
-					LGL_DelayMS(5);
-					vid->SetTime(vid->GetTime());
+					printf("NOT: %li vs %li (%f, %f)\n",image->GetFrameNumber(), frameNum,vid->GetTime(),vid->GetLengthSeconds());
+					LGL_DelayMS(100);
 					image=vid->GetImage();
 				}
 				assert(image);
-				if(strstr(image->GetPath(),vid->GetPathShort())==NULL)
-				{
-					printf("BAD IMAGE!!!!!!!!!!!!!111111111111111111111\n");
-					printf("%s vs\n%s\n",
-						image->GetPath(),vid->GetPathShort()
-					);
-
-					char bakaPath[2048];
-					strcpy(bakaPath,vid->GetPath());
-					float bakaTime=vid->GetTime();
-					delete vid;
-					vid=new LGL_VideoDecoder(bakaPath);
-					vid->SetFrameBufferAddRadius(0);
-					if(a==0) vidLo=vid;
-					if(a==1) vidHi=vid;
-					vid->SetTime(bakaTime);
-					image=vid->GetImage();
-					while(image==NULL)
-					{
-						LGL_DelayMS(5);
-						vid->SetTime(vid->GetTime());
-						image=vid->GetImage();
-					}
-				}
 				while(factor>0.0f)
 				{
 					float bright=LGL_Min(1.0f,factor);
@@ -1014,12 +1019,25 @@ printf("[%i]\n",frame);
 								strcpy(oldPath,vidLo->GetPathShort());
 								if(strstr(vidPath,oldPath)==NULL)
 								{
-									delete vidLo;
-									vidLo=new LGL_VideoDecoder(vidPath);
-									vidLo->SetFrameBufferAddRadius(0);
-									vidLo->SetTime(LGL_RandFloat(0.0f,vidLo->GetLengthSeconds()));
+									if(vidLo)
+									{
+										vidLo->SetVideo(vidPath);;
+									}
+									else
+									{
+										vidLo = new LGL_VideoDecoder(vidPath);
+									}
+									vidLo->SetFrameBufferAddRadius(2);
+printf("Jump A(): %li\n",(long)(vidLoTimeProxy*vidLo->GetFPS()));
+									vidLoTimeProxy=LGL_RandFloat(0.0f,vidLo->GetLengthSeconds());
 									advance=false;
 								}
+							}
+							else
+							{
+								vidLoTimeProxy=LGL_RandFloat(0.0f,vidLo->GetLengthSeconds());
+printf("Jump B(): %li\n",(long)(vidLoTimeProxy*vidLo->GetFPS()));
+								advance=false;
 							}
 						}
 					}
@@ -1039,12 +1057,23 @@ printf("[%i]\n",frame);
 								strcpy(oldPath,vidHi->GetPathShort());
 								if(strstr(vidPath,oldPath)==NULL)
 								{
-									delete vidHi;
-									vidHi=new LGL_VideoDecoder(vidPath);
-									vidHi->SetFrameBufferAddRadius(0);
-									vidHi->SetTime(LGL_RandFloat(0.0f,vidHi->GetLengthSeconds()));
+									if(vidHi)
+									{
+										vidHi->SetVideo(vidPath);;
+									}
+									else
+									{
+										vidHi = new LGL_VideoDecoder(vidPath);
+									}
+									vidHi->SetFrameBufferAddRadius(2);
+									vidHiTimeProxy=LGL_RandFloat(0.0f,vidHi->GetLengthSeconds());
 									advance=false;
 								}
+							}
+							else
+							{
+								vidHiTimeProxy=LGL_RandFloat(0.0f,vidHi->GetLengthSeconds());
+								advance=false;
 							}
 						}
 					}
@@ -1056,7 +1085,7 @@ printf("[%i]\n",frame);
 				if(a==0)
 				{
 					float deltaTime = vidLoPlaybackRate/60.0f;
-					float neoTime = vidLo->GetTime()+deltaTime;
+					float neoTime = vidLoTimeProxy+deltaTime;
 					if(neoTime>vidLo->GetLengthSeconds())
 					{
 						neoTime-=vidLo->GetLengthSeconds();
@@ -1066,16 +1095,17 @@ printf("[%i]\n",frame);
 					int frameAfter = (int)floorf(vidLoPlaybackRateCounter);
 					if(frameBefore!=frameAfter)
 					{
-						while(vidLo->GetTime()*vidLo->GetFPS()==neoTime*vidLo->GetFPS())
+						while((int)floorf(vidLo->GetTime()*vidLo->GetFPS())==(int)floorf(neoTime*vidLo->GetFPS()))
 						{
 							neoTime+=0.01f;
 						}
+						vidLoTimeProxy=neoTime;
 					}
 				}
 				else if(a==1)
 				{
 					float deltaTime = vidHiPlaybackRate/60.0f;
-					float neoTime = vidHi->GetTime()+deltaTime;
+					float neoTime = vidHiTimeProxy+deltaTime;
 					if(neoTime>vidHi->GetLengthSeconds())
 					{
 						neoTime-=vidHi->GetLengthSeconds();
@@ -1085,10 +1115,11 @@ printf("[%i]\n",frame);
 					int frameAfter = (int)floorf(vidHiPlaybackRateCounter);
 					if(frameBefore!=frameAfter)
 					{
-						while(vidHi->GetTime()*vidHi->GetFPS()==neoTime*vidHi->GetFPS())
+						while((int)(vidHi->GetTime()*vidHi->GetFPS())==(int)(neoTime*vidHi->GetFPS()))
 						{
 							neoTime+=0.01f;
 						}
+						vidHiTimeProxy=neoTime;
 					}
 				}
 			}

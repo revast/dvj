@@ -7905,11 +7905,11 @@ GetLengthSeconds()
 	return(LengthSeconds);
 }
 
-int
+float
 LGL_VideoDecoder::
 GetFPS()
 {
-	return((int)ceilf(FPS));
+	return(FPS);
 }
 
 int
@@ -7945,6 +7945,7 @@ GetImage()
 	if(strcmp(Path,"NULL")==0)
 	{
 		Image->SetFrameNumber(-1);
+printf("GetImage(): A\n");
 		return(Image);
 	}
 
@@ -7967,6 +7968,7 @@ GetImage()
 		//Early out if nothing decoded...
 		if(FrameBufferReady.size()==0)
 		{
+printf("GetImage(): B\n");
 			return(Image);
 		}
 
@@ -7975,11 +7977,13 @@ GetImage()
 		{
 			FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 			buffer=FrameBufferReady[0];
+printf("Nearest A: %li\n",buffer->GetFrameNumber());
 		}
 		else if(frameNumber>FrameBufferReady[FrameBufferReady.size()-1]->GetFrameNumber())
 		{
 			FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 			buffer=FrameBufferReady[FrameBufferReady.size()-1];
+printf("Nearest B: %li\n",buffer->GetFrameNumber());
 		}
 		else
 		{
@@ -8003,18 +8007,21 @@ GetImage()
 				{
 					FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
 				}
+printf("Nearest C: %li\n",buffer->GetFrameNumber());
 			}
 		}
 
 		if(buffer==NULL)
 		{
+printf("GetImage(): C\n");
 			return(Image);
 		}
 
 		//Is our image already up to date?
 		if(Image->GetFrameNumber()==buffer->GetFrameNumber())
 		{
-			FrameNumberDisplayed=frameNumber;
+printf("GetImage(): D (%li vs %li)\n",Image->GetFrameNumber(),frameNumber);
+			FrameNumberDisplayed=Image->GetFrameNumber();
 			return(Image);
 		}
 	}
@@ -8031,9 +8038,9 @@ GetImage()
 		true,
 		name
 	);
-	Image->SetFrameNumber(frameNumber);
+	Image->SetFrameNumber(buffer->GetFrameNumber());
 	Image->SetVideoPath(path);
-	FrameNumberDisplayed=frameNumber;
+	FrameNumberDisplayed=buffer->GetFrameNumber();
 
 	if(FPSDisplayedTimer.SecondsSinceLastReset()>=1.0f)
 	{
@@ -8044,6 +8051,7 @@ GetImage()
 		FPSDisplayedTimer.Reset();
 	}
 
+printf("GetImage(): E\n");
 	return(Image);
 }
 
@@ -8509,6 +8517,7 @@ MaybeDecodeImage()
 		//Add framebuffer to FrameBufferReady, and sort.
 		{
 			LGL_ScopeLock lock(FrameBufferReadySemaphore);
+printf("Frame Decoded: %li (%li)\n",frameBuffer->GetFrameNumber(),frameNumberTarget);
 			FrameBufferReady.push_back(frameBuffer);
 			std::sort
 			(
@@ -8544,20 +8553,21 @@ MaybeRecycleBuffers()
 	{
 		frameNumberPredict-=frameNumberLength;
 	}
-
 	for(unsigned int a=0;a<FrameBufferReady.size();a++)
 	{
 		if
 		(
 			strcmp(FrameBufferReady[a]->GetVideoPath(),path)!=0 ||
 			(
-				fabsf(frameNumberNow-FrameBufferReady[a]->GetFrameNumber())				> FrameBufferSubtractRadius &&
+				fabsf(frameNumberNow-FrameBufferReady[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
 				fabsf(frameNumberPredict-FrameBufferReady[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
 				fabsf((frameNumberNow-frameNumberLength)-FrameBufferReady[a]->GetFrameNumber())	> FrameBufferSubtractRadius &&
-				fabsf((frameNumberNow+frameNumberLength)-FrameBufferReady[a]->GetFrameNumber())	> FrameBufferSubtractRadius
+				fabsf((frameNumberNow+frameNumberLength)-FrameBufferReady[a]->GetFrameNumber())	> FrameBufferSubtractRadius &&
+				GetNextFrameNumberToDecodePredictNext(false) != FrameBufferReady[a]->GetFrameNumber()
 			)
 		)
 		{
+printf("Recycle: %li (%li)\n",FrameBufferReady[a]->GetFrameNumber(),GetNextFrameNumberToDecodePredictNext());
 			FrameBufferRecycled.push_back(FrameBufferReady[a]);
 			FrameBufferReady.erase
 			(
@@ -8674,7 +8684,7 @@ GetNextFrameNumberToDecode()
 
 long
 LGL_VideoDecoder::
-GetNextFrameNumberToDecodePredictNext()
+GetNextFrameNumberToDecodePredictNext(bool mustNotBeDecoded)
 {
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
@@ -8711,7 +8721,11 @@ GetNextFrameNumberToDecodePredictNext()
 		}
 	}
 
-	if(found==false)
+	if
+	(
+		found==false ||
+		mustNotBeDecoded==false
+	)
 	{
 		return(frameNumberFind);
 	}
