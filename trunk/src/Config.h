@@ -51,6 +51,9 @@ GetDVJSessionFlacPath();
 const char*
 GetDVJSessionTracklistPath();
 
+const char*
+GetDVJSessionDrawLogPath();
+
 int
 GetProjectorQuadrentResX();
 

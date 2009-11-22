@@ -2317,6 +2317,7 @@ NextFrame
 					LGL_AudioMasterToHeadphones(false);
 				}
 				LGL_RecordDVJToFileStart(path,SurroundMode);
+				LGL_DrawLogStart(GetDVJSessionDrawLogPath());
 				{
 					/*
 					char drawLogPath[2048];
