@@ -5562,14 +5562,15 @@ DrawToScreen
 			sprintf
 			(
 				neo,
-				"LGL_Image::DrawToScreen|%s|%i|%f|%f|%f|%f|%f|%f|%f|%f|%f|%f|%f|%f|%f\n",
+				"LGL_Image::DrawToScreen|%s|%i|%f|%f|%f|%f|%f|%f|%f|%f|%f|%f|%f|%f|%f|%li\n",
 				Path,
 				LinearInterpolation?1:0,
 				left,right,
 				bottom,top,
 				rotation,
 				r,g,b,a,
-				leftsubimage, rightsubimage, bottomsubimage, topsubimage
+				leftsubimage, rightsubimage, bottomsubimage, topsubimage,
+				FrameNumber
 			);
 		}
 		LGL.DrawLog.push_back(neo);
@@ -15676,11 +15677,9 @@ LGL_RecordDVJToFileStart
 			surroundMode
 		);
 
-		/*
 		char* neo=new char[1024];
 		sprintf(neo,"!dvj::Record.mp3|%s\n",LGL.AudioEncoderPath);
 		LGL.DrawLog.push_back(neo);
-		*/
 	}
 }
 
@@ -23790,6 +23789,30 @@ LGL_FileLengthBytes
 	close(fd);
 	return(-ret);
 */
+}
+
+bool
+LGL_FirstFileMoreRecentlyModified
+(
+	const char*	firstFile,
+	const char*	secondFile
+)
+{
+	struct stat64 stbuf1;
+	if(stat64(firstFile, &stbuf1) < 0)
+	{
+		printf("Can't stat() %s\n",firstFile);
+		return(false);
+	}
+
+	struct stat64 stbuf2;
+	if(stat64(secondFile, &stbuf2) < 0)
+	{
+		printf("Can't stat() %s\n",secondFile);
+		return(false);
+	}
+
+	return(stbuf1.st_mtime > stbuf2.st_mtime);
 }
 
 //Begin RSA Code

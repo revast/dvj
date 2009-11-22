@@ -2940,6 +2940,7 @@ bool		LGL_FileDelete(const char* file);
 bool		LGL_DirectoryDelete(const char* dir);
 bool		LGL_FileDirMove(const char* oldLocation, const char* newLocation);
 double		LGL_FileLengthBytes(const char* file);
+bool		LGL_FirstFileMoreRecentlyModified(const char* firstFile, const char* secondFile);
 char*		LGL_MD5sum(const char* file, char* output);	//output must be at least char[32]
 bool		LGL_FileExtension(const char* filename, const char* extension);
 void		LGL_SimplifyPath(char* simplePath, const char* complexPath);
