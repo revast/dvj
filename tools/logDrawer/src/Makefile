@@ -95,7 +95,7 @@ CC_LIN			= g++
 #MODEFLAGS_LIN		= -g -pg
 MODEFLAGS_LIN		= -g
 DEFINES_LIN		= -DLGL_LINUX -D__LINUX_ALSASEQ__
-CFLAGS_LIN		= -Wall -I$(OBJDIR_LIN) `sdl-config --cflags` $(MODEFLAGS_LIN) -I$(ROOT_SRC_DIR) -fsingle-precision-constant $(DEFINES_LIN)
+CFLAGS_LIN		= -Wall -I$(OBJDIR_LIN) `sdl-config --cflags` -I/usr/include/SDL $(MODEFLAGS_LIN) -I$(ROOT_SRC_DIR) -fsingle-precision-constant $(DEFINES_LIN)
 CPPFLAGS_LIN		= -include PrecompiledHeaders.h $(CFLAGS_LIN)
 AVCODECLIBRARIES_LIN	= -lavformat -lavcodec -lswscale -lavutil
 LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cflags --libs jack` -lSDL_image -lSDL_net -lGL -lfftw3f -lm $(AVCODECLIBRARIES_LIN) -lsamplerate -lcwiid -lasound
@@ -259,6 +259,7 @@ $(OBJDIR_LIN)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
 $(OBJDIR_OSX)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
 	@echo "	$(CC_OSX) PrecompiledHeaders.gch"
 	@$(CC_OSX) $(CFLAGS_OSX) -x c++-header -c PrecompiledHeaders.pch -o $(OBJDIR_OSX)PrecompiledHeaders.h.gch
+	@rm -f ../PrecompiledHeaders.pch
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
 $(OBJDIR_W32)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
