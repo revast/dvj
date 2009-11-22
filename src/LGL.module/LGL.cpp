@@ -25917,6 +25917,11 @@ LGL_ThreadSetPriority
 	const char*	threadName
 )
 {
+#ifndef	LGL_OSX
+	//Linux version currently runs better without priorities... FIXME
+	return;
+#endif
+
 	priority = LGL_Clamp(-1.0f,priority,1.0f);
 
 #ifdef	LGL_OSX
