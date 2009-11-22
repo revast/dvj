@@ -25,6 +25,42 @@ char targetVideoHiPath[1024];
 char targetVideoOutPath[1024];
 char targetVideoOutPathTmp[1024];
 
+void
+DrawStatus(float pct)
+{
+	LGL_DrawRectToScreen
+	(
+		0,pct,
+		0,0.05f,
+		.4f*pct,.2f*pct,0.5f+0.5f*pct,1.0f
+	);
+	LGL_GetFont().DrawString
+	(
+		0.49f,0.015f,0.02f,
+		1,1,1,1,
+		false,
+		.75f,
+		"%.1f%%",
+		pct*100.0f
+	);
+
+	if(pct>0.001f)
+	{
+		float pctPerSecond = pct/LGL_SecondsSinceExecution();
+		float secondsLeft = ((1.0f-pct)*(1.0f/pctPerSecond));
+		float minutesLeft = floorf(secondsLeft/60.0f);
+		secondsLeft = secondsLeft - minutesLeft*60.0f;
+		LGL_GetFont().DrawString
+		(
+			0.49f,0.065f,0.02f,
+			1,1,1,1,
+			false,
+			.75f,
+			"%.0f:%.2i",minutesLeft,(int)secondsLeft
+		);
+	}
+}
+
 LGL_Sound*
 LoadRecordSound
 (
@@ -96,6 +132,8 @@ LGL_VideoDecoder*	vidLo=NULL;
 LGL_VideoDecoder*	vidHi=NULL;
 char		vidLoPath[2048];
 char		vidHiPath[2048];
+LGL_DirTree*	dirTreeLo=NULL;
+LGL_DirTree*	dirTreeHi=NULL;
 float		vidLoBrightScalar=1.0f;
 float		vidHiBrightScalar=1.0f;
 float		vidLoBrightConst=-1.0f;
@@ -286,7 +324,8 @@ return;
 bool
 getRandomVideoPath
 (
-	char*	vidPath
+	char*		vidPath,
+	LGL_DirTree*	dirTree
 )
 {
 	if(LGL_DirectoryExists(vidPath)==false)
@@ -296,7 +335,6 @@ getRandomVideoPath
 		exit(-1);
 	}
 
-	LGL_DirTree* dirTree = new LGL_DirTree(vidPath);
 	bool moreThanOne=(dirTree->GetFileCount()>1);
 	
 	//Ensure all res-files exist
@@ -309,7 +347,6 @@ getRandomVideoPath
 
 	int index=LGL_RandInt(0,dirTree->GetFileCount()-1);
 	sprintf(vidPath,"%s/%s",dirTree->GetPath(),dirTree->GetFileName(index));
-	delete dirTree;
 
 	getVideoPathForRes(vidPath);
 
@@ -450,7 +487,9 @@ processScript()
 			if(LGL_DirectoryExists(fi[1]))
 			{
 				strcpy(vidLoPath,vidPath);
-				getRandomVideoPath(vidPath);
+				delete dirTreeLo;
+				dirTreeLo = new LGL_DirTree(vidPath);
+				getRandomVideoPath(vidPath,dirTreeLo);
 			}
 			else if(LGL_FileExists(fi[1]))
 			{
@@ -486,7 +525,9 @@ processScript()
 			if(LGL_DirectoryExists(fi[1]))
 			{
 				strcpy(vidHiPath,vidPath);
-				getRandomVideoPath(vidPath);
+				delete dirTreeHi;
+				dirTreeHi = new LGL_DirTree(vidPath);
+				getRandomVideoPath(vidPath,dirTreeHi);
 			}
 			else if(LGL_FileExists(fi[1]))
 			{
@@ -796,7 +837,7 @@ printf("Drawing!\n");
 	const char* cmdInput;
 	if(strstr(sndPathListen,".ogg"))
 	{
-		cmdInput="mencoder - -nosound -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip -ovc lavc -lavcopts vcodec=%s:vbitrate=%i:autoaspect=1:threads=1 -vf scale=%i:%i,harddup -noskip -of avi -o \"%s\" 1>/dev/null 2>/dev/null";
+		cmdInput="/home/emf/install-dev/mplayer/mencoder - -nosound -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip -ovc lavc -lavcopts vcodec=%s:vhq:vbitrate=%i:autoaspect=1:threads=1 -vf scale=%i:%i,harddup -noskip -of avi -o \"%s\"";// 1>/dev/null 2>/dev/null";
 		sprintf
 		(
 			cmd,
@@ -804,7 +845,7 @@ printf("Drawing!\n");
 			ResX,
 			ResY,
 			vidEncodeCodec,
-			15000,	//bitrateHQ,
+			16000,	//bitrateHQ,
 			ResX,
 			ResY,
 			targetVideoOutPathTmp
@@ -812,7 +853,7 @@ printf("Drawing!\n");
 	}
 	else
 	{
-		cmdInput="mencoder - -audiofile \"%s\" -oac copy -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip -ovc lavc -lavcopts vcodec=%s:vbitrate=%i:autoaspect=1:threads=1 -vf scale=%i:%i,harddup -noskip -of avi -o \"%s\" 1>/dev/null 2>/dev/null";
+		cmdInput="/home/emf/install-dev/mplayer/mencoder - -audiofile \"%s\" -oac copy -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip -ovc lavc -lavcopts vcodec=%s:vhq:vbitrate=%i:autoaspect=1:threads=1 -vf scale=%i:%i,harddup -noskip -of avi -o \"%s\"";// 1>/dev/null 2>/dev/null";
 		sprintf
 		(
 			cmd,
@@ -821,7 +862,7 @@ printf("Drawing!\n");
 			ResX,
 			ResY,
 			vidEncodeCodec,
-			15000,	//bitrateHQ,
+			16000,	//bitrateHQ,
 			ResX,
 			ResY,
 			targetVideoOutPathTmp
@@ -1010,7 +1051,8 @@ printf("[%i]\n",frame);
 						{
 							char vidPath[2048];
 							strcpy(vidPath,vidLoPath);
-							bool moreThanOneVidInDir=getRandomVideoPath(vidPath);
+							if(dirTreeLo==NULL) dirTreeLo = new LGL_DirTree(vidPath);
+							bool moreThanOneVidInDir=getRandomVideoPath(vidPath,dirTreeLo);
 							if(moreThanOneVidInDir)
 							{
 								char oldPath[2048];
@@ -1046,7 +1088,8 @@ printf("[%i]\n",frame);
 						{
 							char vidPath[2048];
 							strcpy(vidPath,vidHiPath);
-							bool moreThanOneVidInDir=getRandomVideoPath(vidPath);
+							if(dirTreeHi==NULL) dirTreeHi = new LGL_DirTree(vidPath);
+							bool moreThanOneVidInDir=getRandomVideoPath(vidPath,dirTreeHi);
 							if(moreThanOneVidInDir)
 							{
 								char oldPath[2048];
@@ -1189,37 +1232,7 @@ printf("[%i]\n",frame);
 
 		//Status
 		float pct = frame/(60.0f*snd->GetLengthSeconds());
-		LGL_DrawRectToScreen
-		(
-			0,pct,
-			0,0.05f,
-			.4f*pct,.2f*pct,0.5f+0.5f*pct,1.0f
-		);
-		LGL_GetFont().DrawString
-		(
-			0.49f,0.015f,0.02f,
-			1,1,1,1,
-			false,
-			.75f,
-			"%.1f%%",
-			pct*100.0f
-		);
-
-		if(pct>0.001f)
-		{
-			float pctPerSecond = pct/LGL_SecondsSinceExecution();
-			float secondsLeft = ((1.0f-pct)*(1.0f/pctPerSecond));
-			float minutesLeft = floorf(secondsLeft/60.0f);
-			secondsLeft = secondsLeft - minutesLeft*60.0f;
-			LGL_GetFont().DrawString
-			(
-				0.49f,0.065f,0.02f,
-				1,1,1,1,
-				false,
-				.75f,
-				"%.0f:%.2i",minutesLeft,(int)secondsLeft
-			);
-		}
+		DrawStatus(pct);
 
 		//Swap
 		LGL_SwapBuffers();
