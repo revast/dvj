@@ -73,10 +73,34 @@ LoadWaveArrayData
 	}
 }
 
+void
+printUsage()
+{
+	printf("\n");
+	printf("logDrawer arguments:\n");
+	printf("\n");
+	printf("\t--allFormats\n");
+	printf("\t--codec mpeg4 (default) h264 NULL\n");
+	printf("\t--bitrate 4000 (default)\n");
+	printf("\t--visualsOnly\n");
+	printf("\t--noPointers\n");
+	printf("\t--noText\n");
+	printf("\t--fullscreen (1920x1200)\n");
+	printf("\t--1080p (1920x1080)\n");
+	printf("\t--projector (1600x1200)\n");
+	printf("\t--720p (1280x720)\n");
+	printf("\t--480p (640x480)\n");
+	printf("\t--240p (320x240)\n");
+	printf("\t--resolution 1024 768\n");
+	printf("\n");
+}
+
 int main(int argc, char** argv)
 {
-	int ResX=1024;
-	int ResY=768;
+	ConfigInit();
+
+	int ResX=1280;
+	int ResY=720;
 	bool visualsOnly=false;
 	bool noPointers=false;
 	bool noText=false;
@@ -90,7 +114,13 @@ int main(int argc, char** argv)
 
 	int videoSkipFrames = 0;	//Sync Video + Audio. Without this, Video lags noticably.
 
-	LGL_Video* vid = NULL;
+	LGL_VideoDecoder* vid = NULL;
+
+	if(argc<2)
+	{
+		printUsage();
+		exit(0);
+	}
 
 	for(int a=0;a<argc;a++)
 	{
@@ -170,23 +200,7 @@ int main(int argc, char** argv)
 		}
 		if(strcasecmp(argv[a],"--help")==0)
 		{
-			printf("\n");
-			printf("logDrawer arguments:\n");
-			printf("\n");
-			printf("\t--allFormats\n");
-			printf("\t--codec mpeg4 (default) h264 NULL\n");
-			printf("\t--bitrate 4000 (default)\n");
-			printf("\t--visualsOnly\n");
-			printf("\t--noPointers\n");
-			printf("\t--noText\n");
-			printf("\t--fullscreen (1920x1200)\n");
-			printf("\t--1080p (1920x1080)\n");
-			printf("\t--projector (1600x1200)\n");
-			printf("\t--720p (1280x720)\n");
-			printf("\t--480p (640x480)\n");
-			printf("\t--240p (320x240)\n");
-			printf("\t--resolution 1024 768\n");
-			printf("\n");
+			printUsage();
 			exit(0);
 		}
 	}
@@ -202,15 +216,26 @@ int main(int argc, char** argv)
 
 	//gunzip first!
 
-	if(LGL_FileExists("data/record/drawlog.txt.gz"))
+	const char* logPath = GetDVJSessionDrawLogPath();
+	char logPathGz[2048];
+	sprintf(logPathGz,"%s.gz",logPath);
+
+	if(LGL_FileExists(logPathGz))
 	{
-		system("gunzip -c data/record/drawlog.txt.gz > data/record/drawlog.txt");
+		char cmd[2048];
+		sprintf(cmd,"gunzip -c %s > %s",logPathGz,logPath);
+		system(cmd);
+	}
+	else
+	{
+		printf("logDrawer: Error! Cannot fopen() '%s' (GZ)!\n",logPathGz);
+		exit(-1);
 	}
 
-	FILE* fd=fopen64("data/record/drawlog.txt","r");
+	FILE* fd=fopen64(logPath,"r");
 	if(fd==NULL)
 	{
-		printf("logDrawer: Error! Cannot fopen() data/record/drawlog.txt!\n");
+		printf("logDrawer: Error! Cannot fopen() '%s' (TXT)!\n",logPath);
 		exit(-1);
 	}
 
@@ -233,12 +258,13 @@ int main(int argc, char** argv)
 		sprintf
 		(
 			path,
-			"data/noise/256x64/%02i.png",
+			"data/image/noise/256x64/%02i.png",
 			a
 		);
 		assert(LGL_FileExists(path));
 		NoiseImage[a] = new LGL_Image(path);
 	}
+	LGL_Image* LoopImage = new LGL_Image("data/image/loop.png");
 
 	for(;;)
 	{
@@ -332,7 +358,7 @@ exit(0);
 
 	if(visualsOnly)
 	{
-		LGL_ViewPortScreen(0.0f,0.5f,0.5f,1.0f);
+		LGL_ViewPortDisplay(0.0f,0.5f,0.5f,1.0f);
 	}
 
 	char videoFile[2048];
@@ -362,15 +388,15 @@ exit(0);
 	LGL_Image* fbImage=NULL;
 
 	std::vector<LGL_Image*> imageList;
-	std::vector<LGL_Video*> videoList;
+	std::vector<LGL_VideoDecoder*> videoList;
 	LGL_Sound* soundList[10];
 	for(int a=0;a<10;a++)
 	{
 		soundList[a]=NULL;
 	}
 	LGL_DirTree dirTrees[2];
-	dirTrees[0].SetPath("data/music");
-	dirTrees[1].SetPath("data/music");
+	dirTrees[0].SetPath(GetMusicRootPath());
+	dirTrees[1].SetPath(GetMusicRootPath());
 
 	bool firstWiimoteActive=false;
 
@@ -477,7 +503,12 @@ exit(0);
 		}
 		else if(strcasecmp(fi[0],"LGL_Image::DrawToScreen")==0)
 		{
-			assert(fi.Size()==16);
+			const unsigned int expectedSize=17;
+			if(fi.Size()!=expectedSize)
+			{
+				printf("Line[%i]: LGL_Image::DrawToScreen(): Size %i != expected size (%i)!\n",lineNum,fi.Size(),expectedSize);
+				assert(fi.Size()==expectedSize);
+			}
 			LGL_Image* image=NULL;
 			for(unsigned int a=0;a<imageList.size();a++)
 			{
@@ -487,7 +518,6 @@ exit(0);
 					break;
 				}
 			}
-			bool imageLocked=false;
 			if(image==NULL)
 			{
 				if(fi[1][0]=='!')
@@ -518,11 +548,16 @@ exit(0);
 							break;
 						}
 					}
-					
+
 					if(vid==NULL)
 					{
+						if(LGL_FileExists(imageName)==false)
+						{
+							printf("Line[%i]: ERROR: Video '%s' doesn't exist!\n",lineNum,imageName);
+							assert(LGL_FileExists(imageName));
+						}
 						printf("New Video: %s\n",imageName);
-						vid = new LGL_Video(imageName);
+						vid = new LGL_VideoDecoder(imageName);
 						videoList.push_back(vid);
 					}
 					/*
@@ -532,17 +567,26 @@ exit(0);
 						vid->SetVideo(imageName);
 					}
 					*/
-					vid->SetPrimaryDecoder();
-					vid->SetTime(atof(imageTimeSeconds));
-					for(int a=0;a<200;a++)
+					float imageTime = (vid->GetFPS()==0) ? 0 : (atol(fi[16])/vid->GetFPS());//atof(imageTimeSeconds);
+					vid->SetTime(imageTime);
+					for(int a=0;a<1000;a++)
 					{
-						if(vid->ImageUpToDate())
+						image=vid->GetImage();
+						if(image->GetFrameNumber()==(long)(imageTime*vid->GetFPS()))
 						{
 							break;
 						}
+						else
+						{
+							LGL_DelayMS(1);
+						}
+
+						if(a==500)
+						{
+							printf("Warning: Inexact video frame: %li (wanted %li)\n",(long)(imageTime*vid->GetFPS()),image->GetFrameNumber());
+							break;
+						}
 					}
-					image=vid->LockImage();
-					imageLocked=true;
 				}
 				else
 				{
@@ -570,11 +614,6 @@ exit(0);
 						atof(fi[12]),atof(fi[13]),atof(fi[14]),atof(fi[15])	//lrbt subimage
 					);
 				}
-			}
-
-			if(imageLocked && vid)
-			{
-				vid->UnlockImage(image);
 			}
 		}
 		else if(strcasecmp(fi[0],"fbu")==0)
@@ -839,12 +878,12 @@ exit(0);
 				//}
 			}
 		}
-		else if(strcasecmp(fi[0],"LGL_ViewPortScreen")==0)
+		else if(strcasecmp(fi[0],"LGL_ViewPortDisplay")==0)
 		{
 			assert(fi.Size()==5);
 			if(visualsOnly==false && 0)
 			{
-				LGL_ViewPortScreen
+				LGL_ViewPortDisplay
 				(
 					atof(fi[1]),
 					atof(fi[2]),
@@ -996,7 +1035,7 @@ exit(0);
 		}
 		else if(strcasecmp(fi[0],"dtt")==0)
 		{
-			assert(fi.Size()==38);
+			assert(fi.Size()==44);
 			
 			int which = atoi(fi[1]);
 			assert(which >=0 && which < 10);
@@ -1061,9 +1100,16 @@ exit(0);
 				entireWaveArrayFreqFactor,	//42: FreqFactor
 				soundList[which]->GetLengthSeconds(),			//43: CachedLengthSeconds
 				NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44: NoiseImage
-				atoi(fi[35]),			//45: VideoFrequencySensitiveMode
-				atof(fi[36]),			//46: SoundWarpPointSecondsTrigger
-				fi[37][0] == 'T'		//47: WaveformRecordHold
+				LoopImage,			//45: LoopImage
+				atoi(fi[35]),			//46: VideoFrequencySensitiveMode
+				atof(fi[36]),			//47: LoopStartSeconds
+				atof(fi[37]),			//48: SoundWarpPointSecondsTrigger
+				atof(fi[38]),			//49: LoopLengthMeasuresExponent
+				atof(fi[39]),			//50: LoopLengthNoBPMSeconds
+				fi[40][0] == 'T',		//51: WaveformRecordHold
+				fi[41],				//52: SoundName
+				atof(fi[42]),			//53: videoSecondsBufferedLeft
+				atof(fi[43])			//54: videoSecondsBufferedLeft
 			);
 		}
 		else if(strcasecmp(fi[0],"MixF")==0)
@@ -1174,7 +1220,7 @@ printf("soundList[%i] = new LGL_Sound('%s')\n",which,fi[1]);
 
 				if(vid==NULL)
 				{
-					vid = new LGL_Video(fi[1]);
+					vid = new LGL_VideoDecoder(fi[1]);
 				}
 				else
 				{
@@ -1198,7 +1244,7 @@ printf("soundList[%i] = new LGL_Sound('%s')\n",which,fi[1]);
 					videoList[a]=NULL;
 					videoList.erase
 					(
-						(std::vector<LGL_Video*>::iterator)(&(videoList[a]))
+						(std::vector<LGL_VideoDecoder*>::iterator)(&(videoList[a]))
 					);
 					break;
 				}
@@ -1212,7 +1258,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 		}
 		else if(strcasecmp(fi[0],"DirTreeDraw")==0)
 		{
-			assert(fi.Size()==20);
+			assert(fi.Size()==22);
 
 			float glow = atof(fi[1]);
 			const char* filterText=fi[2];
@@ -1227,15 +1273,20 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 			{
 				isDirBits[a]=atoi(fi[9]) & (1<<a);
 			}
+			bool loadableBits[5];
+			for(int a=0;a<5;a++)
+			{
+				loadableBits[a]=atoi(fi[10]) & (1<<a);
+			}
 			bool alreadyPlayedBits[5];
 			for(int a=0;a<5;a++)
 			{
-				alreadyPlayedBits[a]=atoi(fi[10]) & (1<<a);
+				alreadyPlayedBits[a]=atoi(fi[11]) & (1<<a);
 			}
 			float bpm[5];
 			for(int a=0;a<5;a++)
 			{
-				bpm[a]=atof(fi[16+a]);
+				bpm[a]=atof(fi[17+a]);
 			}
 
 			Turntable_DrawDirTree
@@ -1245,13 +1296,14 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 				filterDir,		//03
 				nameArray,		//04-08
 				isDirBits,		//09
-				alreadyPlayedBits,	//10
-				atoi(fi[11]),		//11
+				loadableBits,		//10
+				alreadyPlayedBits,	//11
 				atoi(fi[12]),		//12
-				atof(fi[13]),		//13
+				atoi(fi[13]),		//13
 				atof(fi[14]),		//14
 				atof(fi[15]),		//15
-				bpm			//16-19
+				atof(fi[16]),		//16
+				bpm			//17-21
 			);
 		}
 		else if(strcasecmp(fi[0],"!DirTreePath")==0)
@@ -1314,7 +1366,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 				strcpy
 				(
 					cmdInput,
-					"mencoder - -nosound -audiofile \"%s\" -oac copy -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell=yes:v4mv=yes:vbitrate=%i:autoaspect=1:threads=1 -vf scale=%i:%i,harddup -noskip -of avi -o \"%s\""
+					"mencoder - -nosound -audiofile \"%s\" -oac pcm -demuxer rawvideo -rawvideo fps=60:w=%i:h=%i:format=rgb24 -idx -flip -ovc lavc -lavcopts vcodec=mpeg4:mbd=2:trell=yes:v4mv=yes:vbitrate=%i:autoaspect=1:threads=1 -vf scale=%i:%i,harddup -noskip -of avi -o \"%s\""
 				);
 				sprintf(videoFile,"%s.avi",noExtensionFile);
 			}
@@ -1365,7 +1417,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 			assert(fi.Size()==1);
 			if(visualsOnly)
 			{
-				LGL_ViewPortScreen(0,1,0,1);
+				LGL_ViewPortDisplay(0,1,0,1);
 			}
 		}
 		else if(strcasecmp(fi[0],"!LuminescenceTitleScreenOmega")==0)
@@ -1373,7 +1425,7 @@ printf("!Luminescence::DeleteVideo|%s|ERROR\n",fi[1]);
 			assert(fi.Size()==1);
 			if(visualsOnly)
 			{
-				LGL_ViewPortScreen(0.0f,0.5f,0.5f,1.0f);
+				LGL_ViewPortDisplay(0.0f,0.5f,0.5f,1.0f);
 			}
 		}
 		else if(strcasecmp(fi[0],"!LuminescenceVideoLengthSeconds")==0)
