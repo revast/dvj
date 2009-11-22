@@ -83,8 +83,10 @@ VisualizerObj()
 	{
 		SoundsLoaded[a]=false;
 		Videos[a]=NULL;
+		VideoBrightness[a]=0.0f;
 		NoiseFactor[a]=1.0f;
 	}
+	VideoFPSDisplay=0.0f;
 	for(int a=0;a<4;a++)
 	{
 		FreqVideos[a]=NULL;
@@ -1012,7 +1014,7 @@ DrawVideos
 	float	overrideBrightness
 )
 {
-	//float lOrig=l;
+	float lOrig=l;
 	float rOrig=r;
 	float wOrig=r-l;
 	float bOrig=b;
@@ -1116,23 +1118,36 @@ DrawVideos
 				preview?1.0f:0.0f
 			);
 
-			if(preview)
+			if(Videos[videoNow]->GetFPSMissed()>0)
+			{
+				VideoFPSDisplay=5.0f;
+			}
+			else
+			{
+				VideoFPSDisplay-=LGL_SecondsSinceLastFrame();
+			}
+
+			if
+			(
+				preview &&
+				VideoFPSDisplay
+			)
 			{
 				LGL_GetFont().DrawString
 				(
-					rOrig+0.05f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
-					1,1,1,1,
+					lOrig+0.05f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
+					VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,
 					false,
 					0.75f,
 					"%i",
-					Videos[videoNow]->GetFPS()
+					(int)(ceilf(Videos[videoNow]->GetFPS()))
 				);
 
-				float br=1.0f;
+				float br=VideoFPSDisplay;
 				LGL_GetFont().DrawString
 				(
-					rOrig+0.05f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
-					br,br,br,1,
+					lOrig+0.05f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
+					br,br,br,br,
 					false,
 					0.75f,
 					"%i",
@@ -1143,8 +1158,8 @@ DrawVideos
 				{
 					LGL_GetFont().DrawString
 					(
-						rOrig+0.25f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
-						br,0,0,1,
+						rOrig-0.3f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
+						br,0,0,br,
 						false,
 						0.75f,
 						"(%i)",

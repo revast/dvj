@@ -112,6 +112,7 @@ private:
 
 	LGL_VideoDecoder*	Videos[2];
 	float			VideoBrightness[2];
+	float			VideoFPSDisplay;
 
 	int			FreqMode[2];
 	LGL_VideoDecoder*	FreqVideos[4];
