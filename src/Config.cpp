@@ -54,6 +54,7 @@ char dotDvj[2048];
 char musicRootPath[2048];
 char dvjSessionFlacPath[2048];
 char dvjSessionTracklistPath[2048];
+char dvjSessionDrawLogPath[2048];
 
 void
 ConfigInit()
@@ -61,6 +62,7 @@ ConfigInit()
 	sprintf(dotDvj,"%s/.dvj",LGL_GetHomeDir());
 	dvjSessionFlacPath[0]='\0';
 	dvjSessionTracklistPath[0]='\0';
+	dvjSessionDrawLogPath[0]='\0';
 
 	CreateDotJackdrc();
 	CreateDotDVJTree();
@@ -87,6 +89,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"dvjSessionFlacPath=~/Desktop/dvj_session.flac\n");
 		fprintf(fd,"dvjSessionTracklistPath=~/Desktop/dvj_session_tracklist.txt\n");
+		fprintf(fd,"dvjSessionDrawLogPath=~/Desktop/dvj_session_drawlog.txt.gz\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#projectorQuadrentResX=0\n");
 		fprintf(fd,"#projectorQuadrentResY=0\n");
@@ -426,6 +429,25 @@ GetDVJSessionTracklistPath()
 	}
 
 	return(dvjSessionTracklistPath);
+}
+
+const char*
+GetDVJSessionDrawLogPath()
+{
+	if(dvjSessionDrawLogPath[0]=='\0')
+	{
+		const char* defaultDVJSessionDrawLogPath = "";//~/Desktop/dvj_session.flac";
+		std::string pathStr = dvjrcConfigFile->read<std::string>("dvjSessionDrawLogPath",defaultDVJSessionDrawLogPath);
+		strcpy(dvjSessionDrawLogPath,pathStr.c_str());
+		if(dvjSessionDrawLogPath[0]=='~')
+		{
+			char tmp[2048];
+			sprintf(tmp,"%s/%s",LGL_GetHomeDir(),&(dvjSessionDrawLogPath[2]));
+			strcpy(dvjSessionDrawLogPath,tmp);
+		}
+	}
+
+	return(dvjSessionDrawLogPath);
 }
 
 float
