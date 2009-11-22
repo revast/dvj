@@ -29,7 +29,7 @@ public:
 
 private:
 
-	LGL_Video*		Video;
+	LGL_VideoDecoder*	Video;
 	char*			Buffer;
 	char			Path[1024];
 	char			Path2[1024];
