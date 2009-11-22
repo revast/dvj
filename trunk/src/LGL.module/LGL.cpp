@@ -1578,7 +1578,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 
 	//GL Settings
 
-	LGL.VSync = true;//(LGL.WindowFullscreen && LGL.DisplayCount>1) ? false : true;
+	LGL.VSync = (LGL.WindowFullscreen && LGL.DisplayCount>1) ? false : true;
 #ifdef	SDL_2
 	SDL_GL_SetSwapInterval(LGL_VSync());	//VSYNC
 #endif
@@ -8021,7 +8021,7 @@ GetImage()
 
 	//Update Image
 	char name[1024];
-	sprintf(name,"%s|%li\n",PathShort,frameNumber);
+	sprintf(name,"%s",Path);
 	Image->UpdateTexture
 	(
 		BufferWidth,
@@ -15675,6 +15675,12 @@ LGL_RecordDVJToFileStart
 			LGL.AudioEncoderPath,
 			surroundMode
 		);
+
+		/*
+		char* neo=new char[1024];
+		sprintf(neo,"!dvj::Record.mp3|%s\n",LGL.AudioEncoderPath);
+		LGL.DrawLog.push_back(neo);
+		*/
 	}
 }
 
@@ -24815,7 +24821,7 @@ LGL_DrawLogStart
 		if(LGL.DrawLogFD<=0)
 		{
 			printf("LGL_DrawLogStart('%s'): Error! Couldn't open file...\n",outFile);
-			assert(LGL.DrawLogFD>0);
+			return;
 		}
 
 		char intro[1024];
