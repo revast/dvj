@@ -18,7 +18,7 @@ TestVideoLoad()
 	PercentComplete=-1.0f;
 	strcpy(Name,"VideoLoad");
 
-	Video = new LGL_Video(Path);
+	Video = new LGL_VideoDecoder(Path);
 	SetVideoPos(0.65f,0.85f,0.65f,0.85f);
 }
 
@@ -45,11 +45,10 @@ Update()
 
 	if(Active)
 	{
-		LGL_Image* img = Video->LockImage();
+		LGL_Image* img = Video->GetImage();
 		{
 			img->DrawToScreen(Left,Right,Bottom,Top);
 		}
-		Video->UnlockImage(img);
 		if(LGL_RandInt(0,10)==0)
 		{
 			if(strcmp(Video->GetPath(),Path)==0)
