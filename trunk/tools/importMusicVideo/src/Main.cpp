@@ -752,11 +752,10 @@ bool convertMusicVideo
 			printf("importMusicVideo: Error! File '%s' doesn't exist!\n",vidFile);
 			return(false);
 		}
-		LGL_Video vid(vidFile);
-		vid.SetPrimaryDecoder();
+		LGL_VideoDecoder vid(vidFile);
 		vid.SetTime(1.0f);
 		LGL_DelayMS(1000);
-		LGL_Image* image=vid.LockImage();
+		LGL_Image* image=vid.GetImage();
 		if(image==NULL)
 		{
 			printf("Error! Bad Video! '%s'\n",vidFile);
@@ -770,7 +769,6 @@ bool convertMusicVideo
 		{
 			sprintf(zoomArg,"-vf harddup,scale,pp=fd -zoom -xy 512");
 		}
-		vid.UnlockImage(image);
 	}
 	sprintf
 	(
