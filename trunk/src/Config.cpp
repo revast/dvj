@@ -89,7 +89,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"dvjSessionFlacPath=~/Desktop/dvj_session.flac\n");
 		fprintf(fd,"dvjSessionTracklistPath=~/Desktop/dvj_session_tracklist.txt\n");
-		fprintf(fd,"dvjSessionDrawLogPath=~/Desktop/dvj_session_drawlog.txt.gz\n");
+		fprintf(fd,"dvjSessionDrawLogPath=~/Desktop/dvj_session_drawlog.txt\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#projectorQuadrentResX=0\n");
 		fprintf(fd,"#projectorQuadrentResY=0\n");
