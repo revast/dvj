@@ -95,7 +95,7 @@ findCachedPath
 	if
 	(
 		strstr(srcPath,".mjpeg.avi") &&
-		strcmp(extension,"ogg")==0
+		strcmp(extension,"flac")==0
 	)
 	{
 		sprintf(foundPath,"%s/dvj/%s",soundSrcDir,soundName);
@@ -117,7 +117,7 @@ findCachedPath
 	if
 	(
 		strstr(srcPath,".mjpeg.avi") &&
-		strcmp(extension,"ogg")==0
+		strcmp(extension,"flac")==0
 	)
 	{
 		sprintf(foundPath,"%s/.dvj/video/tracks/%s",LGL_GetHomeDir(),soundName);
@@ -1951,6 +1951,8 @@ NextFrame
 			}
 			Mode=0;
 			Mode0BackspaceTimer.Reset();
+			RecordScratch=false;
+			LuminScratch=false;
 		}
 		else
 		{
