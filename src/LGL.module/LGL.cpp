@@ -86,7 +86,7 @@
 #define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
 #else
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
-#define	LGL_PRIORITY_MAIN		(0.9f-1.0f)
+#define	LGL_PRIORITY_MAIN		(0.9f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(0.8f-1.0f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.7f-1.0f)
 #define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f-1.0f)
@@ -1700,7 +1700,7 @@ printf("All good (2B) (%s)!\n",Path);
 
 	//LGL_Assert(inAudioChannels==0 || inAudioChannels==2 || inAudioChannels==4);
 
-	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec",true);
+	LGL.AVCodecSemaphore=new LGL_Semaphore("AV Codec",true);	//Promiscuous...?!
 	LGL.AVOpenCloseSemaphore=new LGL_Semaphore("AV Codec Open/Close");
 
 	//LGL.AudioSpec=AudioObtained;
@@ -7795,10 +7795,15 @@ LGL_VideoDecoder::
 ~LGL_VideoDecoder()
 {
 	UnloadVideo();
+	
+	av_close_input_file(FormatContext);
 
 	ThreadTerminate=true;
-	LGL_ThreadWait(Thread);
-	Thread=NULL;
+	if(Thread)
+	{
+		LGL_ThreadWait(Thread);
+		Thread=NULL;
+	}
 }
 
 void
@@ -7836,6 +7841,7 @@ Init()
 	SwsConvertContext=NULL;
 
 	Image = NULL;
+	VideoOK=false;
 
 	ThreadTerminate=false;
 	Thread=LGL_ThreadCreate(lgl_video_decoder_thread,this);
@@ -8249,6 +8255,7 @@ MaybeLoadVideo()
 	//Go for it!!
 
 	UnloadVideo();
+	VideoOK=false;
 
 	LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 
@@ -8359,6 +8366,8 @@ MaybeLoadVideo()
 		printf("LGL_VideoDecoder::MaybeLoadVideo(): NULL SwsConvertContext for '%s'\n",Path);
 		return;
 	}
+	
+	VideoOK=true;
 }
 
 void
@@ -8371,7 +8380,8 @@ MaybeDecodeImage()
 		CodecContext==NULL ||
 		FrameNative==NULL ||
 		FrameRGB==NULL ||
-		strcmp(Path,"NULL")==0
+		strcmp(Path,"NULL")==0 ||
+		VideoOK==false
 	)
 	{
 		return;
@@ -8380,6 +8390,11 @@ MaybeDecodeImage()
 	//Find frameNumber of image to add
 	long frameNumberTarget=GetNextFrameNumberToDecode();
 	if(frameNumberTarget==-1)
+	{
+		return;
+	}
+
+	if(frameNumberTarget >= SecondsToFrameNumber(GetLengthSeconds())-1)
 	{
 		return;
 	}
@@ -8966,7 +8981,6 @@ LGL_VideoEncoder
 			UnsupportedCodec=true;
 			return;
 		}
-printf("SrcCodec: '%s'\n",SrcCodec->name);
 
 		// Find the decoder for the audio stream
 		if(srcAudioCodecContext)
@@ -18110,6 +18124,7 @@ void
 LGL_Wiimote::
 ListenForConnection(bool listen)
 {
+return;
 	if(Connected())
 	{
 		return;
@@ -25942,7 +25957,7 @@ LGL_ThreadSetPriority
 {
 #ifndef	LGL_OSX
 	//Linux version currently runs better without priorities... FIXME
-	return;
+	//return;
 #endif
 
 	priority = LGL_Clamp(-1.0f,priority,1.0f);
@@ -26218,7 +26233,8 @@ Init
 	}
 	if(LockObtained==false)
 	{
-		printf("Lock not obtained!!\n");
+		printf("Lock not obtained!! (timeout = %.2f) (sem = %s)\n",timeoutSeconds,Semaphore ? "OK" : "NULL");
+		printf("\tLikely, you haven't yet called LGL_Init()...\n");
 	}
 }
 

@@ -1230,6 +1230,7 @@ private:
 	SwsContext*		SwsConvertContext;
 
 	LGL_Image*		Image;
+	bool			VideoOK;
 
 private:
 
