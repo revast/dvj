@@ -24,6 +24,8 @@
 #ifndef _DVJ_DRUM_MACHINE_H_
 #define	_DVJ_DRUM_MACHINE_H_
 
+#include "LGL.module/LGL.h"
+
 class DrumMachineObj
 {
 

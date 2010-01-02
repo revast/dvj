@@ -22,6 +22,11 @@
  */
 
 #include "Visualizer.h"
+
+#include "Common.h"
+#include "Config.h"
+#include "Turntable.h"
+
 #include <string.h>
 
 bool NOISE_IMAGE_INITIALIZED=false;
