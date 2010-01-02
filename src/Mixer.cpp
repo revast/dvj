@@ -24,6 +24,8 @@
 #include "Mixer.h"
 
 #include "Config.h"
+#include "Common.h"
+#include "Input.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

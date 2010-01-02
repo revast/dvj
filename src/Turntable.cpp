@@ -24,6 +24,8 @@
 #include "Turntable.h"
 #include "FileInterface.h"
 #include "Common.h"
+#include "Config.h"
+#include "Input.h"
 #include <string.h>
 #include <stdlib.h>
 

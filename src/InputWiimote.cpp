@@ -21,7 +21,7 @@
  *
  */
 
-#include "InputNull.h"
+#include "InputWiimote.h"
 
 InputWiimoteObj::
 InputWiimoteObj()

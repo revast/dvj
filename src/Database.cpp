@@ -5,7 +5,10 @@
  */
 
 #include "Database.h"
+
+#include "Config.h"
 #include "FileInterface.h"
+
 #include "LGL.module/LGL.h"
 
 //DatabaseFilterObj
