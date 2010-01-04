@@ -2313,6 +2313,7 @@ NextFrame
 				FileEverOpened=true;
 
 				//Start recording!
+				/*
 				char path[2048];
 				strcpy(path,GetDVJSessionFlacPath());
 				SurroundMode=Sound->GetChannelCount()==4;
@@ -2322,6 +2323,7 @@ NextFrame
 				}
 				LGL_RecordDVJToFileStart(path,SurroundMode);
 				LGL_DrawLogStart(GetDVJSessionDrawLogPath());
+				*/
 				{
 					/*
 					char drawLogPath[2048];
