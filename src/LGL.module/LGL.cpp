@@ -24851,6 +24851,12 @@ LGL_DrawLogStart
 #endif	//LGL_OSX
 		char command[1024];
 		sprintf(command,"%s \"%s\" --gzip",diskWriterPath,outFile);
+		if(LGL_FileExists(diskWriterPath)==false)
+		{
+			printf("LGL_DrawLogStart('%s'): Error! Couldn't open diskWriter '%s'...\n",diskWriterPath);
+			LGL.DrawLogFD=0;
+			return;
+		}
 		LGL.DrawLogFD=popen
 		(
 			command,
@@ -24859,6 +24865,7 @@ LGL_DrawLogStart
 		if(LGL.DrawLogFD<=0)
 		{
 			printf("LGL_DrawLogStart('%s'): Error! Couldn't open file...\n",outFile);
+			LGL.DrawLogFD=0;
 			return;
 		}
 
