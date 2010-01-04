@@ -191,7 +191,7 @@ CreateDotJackdrc()
 	{
 		if(FILE* fd=fopen(dotJackdrcPath,"w"))
 		{
-			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio\n");
+			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p 512\n");
 			fclose(fd);
 		}
 	}
@@ -322,7 +322,6 @@ CreateDotDVJTree()
 		system(cmd);
 	}
 #endif	//LGL_OSX
-
 }
 
 const char*
