@@ -1580,12 +1580,32 @@ NextFrame
 			//Looping with BPM
 			const int exponentMin=-9;
 			const int exponentMax=6;
+			const int exponentAll=9999;
+
+			if
+			(
+				Input.WaveformLoopAll(target) &&
+				Sound->IsLoaded()
+			)
+			{
+				LoopLengthMeasuresExponent=exponentAll;
+				loopChanged=true;
+				LoopActive=true;
+			}
 
 			if(Input.WaveformLoopMeasuresHalf(target))
 			{
-				LoopLengthMeasuresExponent=LGL_Max(LoopLengthMeasuresExponent-1,exponentMin);
+				if(LoopLengthMeasuresExponent==exponentAll)
+				{
+					LoopLengthMeasuresExponent=exponentMax;
+				}
+				else
+				{
+					LoopLengthMeasuresExponent=LGL_Max(LoopLengthMeasuresExponent-1,exponentMin);
+				}
 				loopChanged=true;
 			}
+
 			if(Input.WaveformLoopMeasuresDouble(target))
 			{
 				LoopLengthMeasuresExponent=LGL_Min(LoopLengthMeasuresExponent+1,exponentMax);
@@ -1632,27 +1652,36 @@ NextFrame
 				}
 				else
 				{
-					LoopStartSeconds=GetBeginningOfCurrentMeasureSeconds();
-					double deltaMeasure = 4*(60.0/(double)GetBPM());
-					float deltaSeconds = deltaMeasure*powf(2,LoopLengthMeasuresExponent);
-					for(;;)
+					if(LoopLengthMeasuresExponent==exponentAll)
 					{
-						float posSeconds = Sound->GetPositionSeconds(Channel);
-						if(LoopStartSeconds + deltaSeconds < posSeconds)
-						{
-							LoopStartSeconds += deltaSeconds;
-						}
-						else
-						{
-							break;
-						}
+						LoopStartSeconds = GetBPMFirstBeatSeconds();
+						LoopEndSeconds = GetBPMLastMeasureSeconds();
 					}
+					else
+					{
+						LoopStartSeconds = GetBeginningOfCurrentMeasureSeconds();
+						double deltaMeasure = 4*(60.0/(double)GetBPM());
+						float deltaSeconds = deltaMeasure*powf(2,LoopLengthMeasuresExponent);
 
-					LoopEndSeconds=LGL_Min
-					(
-						LoopStartSeconds+deltaSeconds,
-						Sound->GetLengthSeconds()
-					);
+						for(;;)
+						{
+							float posSeconds = Sound->GetPositionSeconds(Channel);
+							if(LoopStartSeconds + deltaSeconds < posSeconds)
+							{
+								LoopStartSeconds += deltaSeconds;
+							}
+							else
+							{
+								break;
+							}
+						}
+
+						LoopEndSeconds=LGL_Min
+						(
+							LoopStartSeconds+deltaSeconds,
+							GetBPMLastMeasureSeconds()
+						);
+					}
 
 					Sound->SetWarpPoint
 					(
@@ -1684,8 +1713,19 @@ NextFrame
 			}
 
 			float secondsMin=powf(2.0f,-9);
-			float secondsMax=powf(2.0f,6);
+			float secondsMax=Sound->GetLengthSeconds();//powf(2.0f,6);
 
+			if
+			(
+				Input.WaveformLoopAll(target) &&
+				Sound->IsLoaded()
+			)
+			{
+				LoopStartSeconds=0.0f;
+				LoopLengthNoBPMSeconds=Sound->GetLengthSeconds();
+				loopChanged=true;
+				LoopActive=true;
+			}
 			if(Input.WaveformLoopSecondsLess(target))
 			{
 				LoopLengthNoBPMSeconds=LGL_Max
@@ -1696,6 +1736,7 @@ NextFrame
 				);
 				loopChanged=true;
 			}
+
 			if(Input.WaveformLoopSecondsMore(target))
 			{
 				LoopLengthNoBPMSeconds=LGL_Min
@@ -2435,13 +2476,15 @@ NextFrame
 
 		if
 		(
-			CachedLengthSeconds!=0.0f &&
 			Sound->GetLengthSeconds()>CachedLengthSeconds &&
 			Sound->IsLoaded()
 		)
 		{
 			CachedLengthSeconds=Sound->GetLengthSeconds();
-			SaveCachedMetadata();
+			if(CachedLengthSeconds!=0.0f)
+			{
+				SaveCachedMetadata();
+			}
 		}
 
 		//Smooth waveform scrolling
@@ -4599,6 +4642,27 @@ GetBPMFirstBeatSeconds()
 	if(BPMAvailable())
 	{
 		return(SavePointSeconds[0]);
+	}
+	else
+	{
+		return(0.0f);
+	}
+}
+
+float
+TurntableObj::
+GetBPMLastMeasureSeconds()
+{
+	if(BPMAvailable())
+	{
+		double firstBeatSeconds = GetBPMFirstBeatSeconds();
+		double deltaMeasure = 4*(60.0/(double)GetBPM());
+		double candidate = firstBeatSeconds;
+		while(candidate + deltaMeasure < Sound->GetLengthSeconds())
+		{
+			candidate += deltaMeasure;
+		}
+		return(candidate);
 	}
 	else
 	{

@@ -989,9 +989,9 @@ Turntable_DrawWaveform
 				pointWidth,
 				pointBottom,
 				pointTop,
-				warmR*0.5f,
-				warmG*0.5f,
-				warmB*0.5f,
+				warmR*1.0f,
+				warmG*1.0f,
+				warmB*1.0f,
 				noiseImage256x64
 			);
 		}
@@ -1121,7 +1121,6 @@ Turntable_DrawWaveform
 		}
 
 		//Tristrip!
-
 		if(!lowRez)
 		{
 			LGL_DrawTriStripToScreen
@@ -1134,8 +1133,7 @@ Turntable_DrawWaveform
 		}
 
 		//Linestrip top!
-
-		for(int a=0;a<pointsToDrawIndexEnd-pointsToDrawIndexStart;a++)
+		for(int a=0;a<pointsToDrawIndexEnd/*-pointsToDrawIndexStart*/;a++)
 		{
 			if(overdriven[a])
 			{
@@ -1144,8 +1142,14 @@ Turntable_DrawWaveform
 				arrayC[(a*4)+2]=0.0f;
 				arrayC[(a*4)+3]=1.0f;
 			}
+			else
+			{
+				arrayC[(a*4)+0]*=2.0f;
+				arrayC[(a*4)+1]*=2.0f;
+				arrayC[(a*4)+2]*=2.0f;
+				arrayC[(a*4)+3]=1.0f;
+			}
 		}
-
 		LGL_DrawLineStripToScreen
 		(
 			&(arrayV[pointsToDrawIndexStart*2]),
@@ -1156,12 +1160,10 @@ Turntable_DrawWaveform
 		);
 
 		//Linestrip bottom!
-
 		for(int a=pointsToDrawIndexStart;a<pointsToDrawIndexEnd;a++)
 		{
 			arrayV[(a*2)+1]=(pointBottom+0.5f*pointHeight)-(arrayV[(a*2)+1]-(pointBottom+0.5f*pointHeight));
 		}
-
 		LGL_DrawLineStripToScreen
 		(
 			&(arrayV[pointsToDrawIndexStart*2]),
@@ -1226,9 +1228,9 @@ Turntable_DrawWaveform
 				pointWidth,
 				pointBottom,
 				pointTop,
-				warmR*2.0f,
-				warmG*2.0f,
-				warmB*2.0f,
+				warmR*1.0f,
+				warmG*1.0f,
+				warmB*1.0f,
 				noiseImage256x64
 			);
 		}
@@ -1498,9 +1500,33 @@ Turntable_DrawWaveform
 
 	if(freqSensitiveMode!=2)
 	{
+		float noiseBottom=viewPortBottom;
+		float noiseTop=pointBottom;
+		float noiseLeft=viewPortLeft + (warpPointSecondsStart/cachedLengthSeconds)*viewPortWidth;
+		float noiseRight=viewPortLeft + (warpPointSecondsTrigger/cachedLengthSeconds)*viewPortWidth;
+		float noiseHeight=noiseTop-noiseBottom;
+		float noiseWidth=noiseRight-noiseLeft;
+		float noiseRelativeWidth=noiseWidth/viewPortWidth;
+
+		//Background loop noise
+		if(warpPointSecondsStart!=-1.0f)
+		{
+			noiseImage256x64->DrawToScreen
+			(
+				noiseLeft,noiseRight,
+				noiseBottom,noiseTop,
+				0,
+				warmR,warmG,warmB,0.0f,
+				false,false,0,0,0,
+				0,1.0f,
+				0,LGL_Min(1,4*(noiseHeight/noiseWidth)/noiseRelativeWidth)
+			);
+		}
+
 		//Entire Wave Array
 		if(loaded)
 		{
+			//Waveform
 			for(;;)
 			{
 				if(entireWaveArrayFillIndex<entireWaveArrayCount)
@@ -1566,15 +1592,21 @@ Turntable_DrawWaveform
 					waveTop
 				);
 
-				entireWaveArrayLine1Colors[a*4+0]=
+				entireWaveArrayLine1Colors[a*4+0]=2.0f*
+				(
 					(1.0f-zeroCrossingFactor) * coolR +
-					(0.0f+zeroCrossingFactor) * warmR;
-				entireWaveArrayLine1Colors[a*4+1]=
+					(0.0f+zeroCrossingFactor) * warmR
+				);
+				entireWaveArrayLine1Colors[a*4+1]=2.0f*
+				(
 					(1.0f-zeroCrossingFactor) * coolG +
-					(0.0f+zeroCrossingFactor) * warmG;
-				entireWaveArrayLine1Colors[a*4+2]=
+					(0.0f+zeroCrossingFactor) * warmG
+				);
+				entireWaveArrayLine1Colors[a*4+2]=2.0f*
+				(
 					(1.0f-zeroCrossingFactor) * coolB +
-					(0.0f+zeroCrossingFactor) * warmB;
+					(0.0f+zeroCrossingFactor) * warmB
+				);
 				entireWaveArrayLine1Colors[a*4+3]=1.0f;
 
 				entireWaveArrayLine2Points[a*2+0]=viewPortLeft+(a/(float)entireWaveArrayCount)*viewPortWidth;
@@ -1628,6 +1660,7 @@ Turntable_DrawWaveform
 					entireWaveArrayFillIndex*2
 				);
 			}
+
 			LGL_DrawLineStripToScreen
 			(
 				entireWaveArrayLine1Points,
@@ -1665,6 +1698,40 @@ Turntable_DrawWaveform
 						);
 					}
 				}
+			}
+
+			if(warpPointSecondsStart!=-1.0f)
+			{
+				LGL_DrawLineToScreen
+				(
+					noiseLeft,noiseBottom,
+					noiseLeft,noiseTop,
+					0.0f,0.0f,0.0f,1.0f,
+					4.5f,
+					true
+				);
+				LGL_DrawLineToScreen
+				(
+					noiseRight,noiseBottom,
+					noiseRight,noiseTop,
+					0.0f,0.0f,0.0f,1.0f,
+					4.5f,
+					true
+				);
+				LGL_DrawLineToScreen
+				(
+					noiseLeft,noiseBottom,
+					noiseLeft,noiseTop,
+					warmR,warmG,warmB,0.0f,
+					1.0f
+				);
+				LGL_DrawLineToScreen
+				(
+					noiseRight,noiseBottom,
+					noiseRight,noiseTop,
+					warmR,warmG,warmB,0.0f,
+					1.0f
+				);
 			}
 
 			if(cachedLengthSeconds!=0)
@@ -1882,34 +1949,52 @@ Turntable_DrawWaveform
 			lb,lb,lb,1.0f
 		);
 
+		char loopStr[2048];
 		if(bpmAdjusted>0)
 		{
-			LGL_GetFont().DrawString
-			(
-				//viewPortLeft+.02f*viewPortWidth,
-				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.1325f,
-				viewPortBottom+.80f*viewPortHeight,
-				0.05f*viewPortHeight,
-				1,1,1,1,
-				false,.5f,
-				loopExponent>=0 ? "%i" : "1/%i",
-				loopExponent>=0 ? (int)(powf(2,loopExponent)) : (int)(powf(2,-loopExponent))
-			);
+			if(loopExponent>1000)
+			{
+				strcpy(loopStr,"all");
+			}
+			else
+			{
+				sprintf
+				(
+					loopStr,
+					loopExponent>=0 ? "%i" : "1/%i",
+					loopExponent>=0 ? (int)(powf(2,loopExponent)) : (int)(powf(2,-loopExponent))
+				);
+			}
 		}
 		else
 		{
-			LGL_GetFont().DrawString
+			if
 			(
-				//viewPortLeft+.02f*viewPortWidth,
-				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.1325f,
-				viewPortBottom+.80f*viewPortHeight,
-				0.05f*viewPortHeight,
-				1,1,1,1,
-				false,.5f,
-				loopSeconds < 10.0 ? "%.3f" : "%.2f",
-				loopSeconds
-			);
+				warpPointSecondsStart==0.0f &&
+				warpPointSecondsTrigger>=soundLengthSeconds
+			)
+			{
+				strcpy(loopStr,"all");
+			}
+			else
+			{
+				sprintf
+				(
+					loopStr,
+					loopSeconds < 10.0 ? "%.3f" : "%.2f",
+					loopSeconds
+				);
+			}
 		}
+		LGL_GetFont().DrawString
+		(
+			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.1325f,
+			viewPortBottom+.80f*viewPortHeight,
+			0.05f*viewPortHeight,
+			1,1,1,1,
+			false,.5f,
+			loopStr
+		);
 		
 		/*
 		LGL_GetFont().DrawString
