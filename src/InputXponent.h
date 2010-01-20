@@ -124,6 +124,8 @@ private:
 	LGL_Timer
 		WaveformHeadphonesDownTimerRight;
 
+	bool	WaveformLoopAllDebumpLeft;
+	bool	WaveformLoopAllDebumpRight;
 };
 
 #endif	//_INPUT_XPONENT_H_

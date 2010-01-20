@@ -45,6 +45,19 @@ NextFrame()
 	{
 		WaveformFreqSenseMode2Timer.Reset();
 	}
+
+	if
+	(
+		LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey())==false &&
+		LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey())==false
+	)
+	{
+		WaveformLoopAllDebump=false;
+	}
+	else if(WaveformLoopAll(TARGET_FOCUS))
+	{
+		WaveformLoopAllDebump=true;
+	}
 }
 
 //Global Input
@@ -838,7 +851,11 @@ WaveformLoopMeasuresHalf
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresHalfKey()));
+		return
+		(
+			WaveformLoopAllDebump==false &&
+			LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresHalfKey())
+		);
 	}
 	else
 	{
@@ -855,7 +872,11 @@ WaveformLoopMeasuresDouble
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresDoubleKey()));
+		return
+		(
+			WaveformLoopAllDebump==false &&
+			LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresDoubleKey())
+		);
 	}
 	else
 	{
@@ -874,6 +895,7 @@ WaveformLoopSecondsLess
 	{
 		return
 		(
+			WaveformLoopAllDebump==false &&
 			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey()) &&
 			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey())==false
 		);
@@ -895,6 +917,7 @@ WaveformLoopSecondsMore
 	{
 		return
 		(
+			WaveformLoopAllDebump==false &&
 			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey()) &&
 			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey())==false
 		);

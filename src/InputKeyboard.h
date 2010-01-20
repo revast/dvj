@@ -120,6 +120,7 @@ private:
 	LGL_Timer
 		WaveformFreqSenseMode2Timer;
 
+	bool	WaveformLoopAllDebump;
 };
 
 #endif	//_INPUT_KEYBOARD_H_

@@ -64,6 +64,32 @@ NextFrame()
 		{
 			WaveformHeadphonesDownTimerRight.Reset();
 		}
+	
+		if
+		(
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_IN)==false &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT)==false
+		)
+		{
+			WaveformLoopAllDebumpLeft=false;
+		}
+		else if(WaveformLoopAll(TARGET_TOP))
+		{
+			WaveformLoopAllDebumpLeft=true;
+		}
+
+		if
+		(
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN)==false &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT)==false
+		)
+		{
+			WaveformLoopAllDebumpRight=false;
+		}
+		else if(WaveformLoopAll(TARGET_BOTTOM))
+		{
+			WaveformLoopAllDebumpRight=true;
+		}
 	}
 }
 
@@ -1683,11 +1709,11 @@ WaveformLoopMeasuresHalf
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			half|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN);
+			half |= LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN) && (WaveformLoopAllDebumpRight==false);
 		}
 		else if((target & TARGET_TOP))
 		{
-			half|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_IN);
+			half |= LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_IN) && (WaveformLoopAllDebumpLeft==false);
 		}
 	}
 
@@ -1707,11 +1733,11 @@ WaveformLoopMeasuresDouble
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			twoX|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT);
+			twoX |= LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT) && (WaveformLoopAllDebumpRight==false);
 		}
 		else if((target & TARGET_TOP))
 		{
-			twoX|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT);
+			twoX |= LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT) && (WaveformLoopAllDebumpLeft==false);
 		}
 	}
 
@@ -1731,11 +1757,11 @@ WaveformLoopSecondsLess
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			less|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN);
+			less |= LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN) && (WaveformLoopAllDebumpRight==false);
 		}
 		else if((target & TARGET_TOP))
 		{
-			less|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_IN);
+			less |= LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_IN) && (WaveformLoopAllDebumpLeft==false);
 		}
 	}
 
@@ -1755,11 +1781,11 @@ WaveformLoopSecondsMore
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			more|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT);
+			more |= LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT) && (WaveformLoopAllDebumpRight==false);
 		}
 		else if((target & TARGET_TOP))
 		{
-			more|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT);
+			more |= LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT) && (WaveformLoopAllDebumpLeft==false);
 		}
 	}
 
