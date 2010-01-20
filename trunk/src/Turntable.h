@@ -314,6 +314,7 @@ static	bool				GetSurroundMode();
 	float				GetBPM();
 	float				GetBPMAdjusted();
 	float				GetBPMFirstBeatSeconds();
+	float				GetBPMLastMeasureSeconds();
 	void				SetBPMAdjusted(float bpmAdjusted);
 	void				SetBPMMaster(float bpmMaster);
 	bool				GetBeatThisFrame(float fractionOfBeat=1.0f);
