@@ -10968,7 +10968,8 @@ LGL_INTERNAL_ProcessInput()
 			(
 				LGL_KeyStream()[a]=='\b' ||
 				LGL_KeyStream()[a]==127	//OSX Delete
-			) && length>0
+			) &&
+			length>0
 		)
 		{
 			Buffer[length-1]='\0';
@@ -15856,6 +15857,12 @@ LGL_ProcessInput()
 			{
 				LGL.KeyDown[event.key.keysym.sym]=true;
 				LGL.KeyStroke[event.key.keysym.sym]=true;
+				if(event.key.keysym.sym==8)
+				{
+					//OSX Backspace ("delete" as they call it...)
+					event.key.keysym.unicode=event.key.keysym.sym;
+				}
+
 				if
 				(
 					StreamCounter<255 &&
@@ -24853,7 +24860,7 @@ LGL_DrawLogStart
 		sprintf(command,"%s \"%s\" --gzip",diskWriterPath,outFile);
 		if(LGL_FileExists(diskWriterPath)==false)
 		{
-			printf("LGL_DrawLogStart('%s'): Error! Couldn't open diskWriter '%s'...\n",diskWriterPath);
+			printf("LGL_DrawLogStart('%s'): Error! Couldn't open diskWriter '%s'...\n",outFile,diskWriterPath);
 			LGL.DrawLogFD=0;
 			return;
 		}
