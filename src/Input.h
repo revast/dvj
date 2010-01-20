@@ -118,6 +118,7 @@ virtual	bool	WaveformLoopMeasuresHalf	(unsigned int target)	const;	//Loop half a
 virtual	bool	WaveformLoopMeasuresDouble	(unsigned int target)	const;	//Loop twice as many measures
 virtual	bool	WaveformLoopSecondsLess		(unsigned int target)	const;	//Loop less seconds (When no BPM is available)
 virtual	bool	WaveformLoopSecondsMore		(unsigned int target)	const;	//Loop more seconds (When no BPM is available)
+virtual bool	WaveformLoopAll			(unsigned int target)	const;	//Loop all measures (to savepoint [9], or last measure), or all seconds
 virtual	bool	WaveformLoopToggle		(unsigned int target)	const;	//Enter/Exit loop mode
 virtual	bool	WaveformLoopThenRecallActive	(unsigned int target)	const;	//Loops, but when done, just to where we would have otherwise been, preserving flow
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video

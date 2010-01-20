@@ -945,6 +945,17 @@ WaveformLoopSecondsMore
 
 bool
 InputXsessionObj::
+WaveformLoopAll
+(
+	unsigned int	target
+)	const
+{
+	bool all=false;
+	return(all);
+}
+
+bool
+InputXsessionObj::
 WaveformLoopToggle
 (
 	unsigned int	target

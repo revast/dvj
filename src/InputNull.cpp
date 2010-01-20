@@ -637,6 +637,17 @@ WaveformLoopSecondsMore
 	bool more=false;
 	return(more);
 }
+bool
+InputNullObj::
+WaveformLoopAll
+(
+	unsigned int	target
+)	const
+{
+	bool all=false;
+	return(all);
+}
+
 
 bool
 InputNullObj::
