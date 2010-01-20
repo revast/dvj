@@ -872,7 +872,11 @@ WaveformLoopSecondsLess
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey()));
+		return
+		(
+			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey())==false
+		);
 	}
 	else
 	{
@@ -889,7 +893,38 @@ WaveformLoopSecondsMore
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey()));
+		return
+		(
+			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey())==false
+		);
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformLoopAll
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return
+		(
+			(
+				LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey()) &&
+				LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresDoubleKey())
+			) ||
+			(
+				LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresHalfKey()) &&
+				LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey())
+			)
+		);
 	}
 	else
 	{

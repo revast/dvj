@@ -1768,13 +1768,56 @@ WaveformLoopSecondsMore
 
 bool
 InputXponentObj::
+WaveformLoopAll
+(
+	unsigned int	target
+)	const
+{
+	bool all=false;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			all |=
+			(
+				(
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN) &&
+					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT)
+				) ||
+				(
+					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN) &&
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT)
+				)
+			);
+		}
+		else if((target & TARGET_TOP))
+		{
+			all |=
+			(
+				(
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_IN) &&
+					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT)
+				) ||
+				(
+					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_IN) &&
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT)
+				)
+			);
+		}
+	}
+
+	return(all);
+}
+
+bool
+InputXponentObj::
 WaveformLoopToggle
 (
 	unsigned int	target
 )	const
 {
 	bool toggle=false;
-
 	return(toggle);
 }
 

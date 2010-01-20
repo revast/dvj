@@ -795,6 +795,17 @@ WaveformLoopSecondsMore
 
 bool
 InputWiimoteObj::
+WaveformLoopAll
+(
+	unsigned int	target
+)	const
+{
+	bool all=false;
+	return(all);
+}
+
+bool
+InputWiimoteObj::
 WaveformLoopToggle
 (
 	unsigned int	target

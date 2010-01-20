@@ -650,6 +650,17 @@ WaveformLoopSecondsMore
 
 bool
 InputMouseObj::
+WaveformLoopAll
+(
+	unsigned int	target
+)	const
+{
+	bool all=false;
+	return(all);
+}
+
+bool
+InputMouseObj::
 WaveformLoopToggle
 (
 	unsigned int	target

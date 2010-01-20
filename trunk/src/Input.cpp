@@ -1047,6 +1047,23 @@ WaveformLoopSecondsMore
 
 bool
 InputObj::
+WaveformLoopAll
+(
+	unsigned int	target
+)	const
+{
+	bool all=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		all|=Children[a]->WaveformLoopAll(target);
+	}
+
+	return(all);
+}
+
+bool
+InputObj::
 WaveformLoopToggle
 (
 	unsigned int	target
