@@ -15857,11 +15857,13 @@ LGL_ProcessInput()
 			{
 				LGL.KeyDown[event.key.keysym.sym]=true;
 				LGL.KeyStroke[event.key.keysym.sym]=true;
+#ifdef	LGL_OSX
 				if(event.key.keysym.sym==8)
 				{
 					//OSX Backspace ("delete" as they call it...)
 					event.key.keysym.unicode=event.key.keysym.sym;
 				}
+#endif	//LGL_OSX
 
 				if
 				(
@@ -22829,7 +22831,7 @@ Refresh_INTERNAL()
 
 unsigned int
 LGL_DirTree::
-GetFileCount()
+GetFileCount()	const
 {
 	WaitOnWorkerThread();
 	return(FileList.size());
@@ -22837,7 +22839,7 @@ GetFileCount()
 
 unsigned int
 LGL_DirTree::
-GetDirCount()
+GetDirCount()	const
 {
 	WaitOnWorkerThread();
 	return(DirList.size());
@@ -22849,7 +22851,7 @@ LGL_DirTree::
 GetFileName
 (
 	unsigned int	index
-)
+)	const
 {
 	WaitOnWorkerThread();
 	assert(index>=0 && index<FileList.size());
@@ -22863,7 +22865,7 @@ LGL_DirTree::
 GetDirName
 (
 	unsigned int	index
-)
+)	const
 {
 	WaitOnWorkerThread();
 	assert(index>=0 && index<DirList.size());
@@ -23099,12 +23101,13 @@ GetFilteredDirName
 
 void
 LGL_DirTree::
-WaitOnWorkerThread()
+WaitOnWorkerThread() const
 {
 	if(WorkerThread)
 	{
 		LGL_ThreadWait(WorkerThread);
-		WorkerThread=NULL;
+		SDL_Thread** workerThread = const_cast<SDL_Thread**>(&WorkerThread);
+		*workerThread=NULL;
 	}
 }
 
