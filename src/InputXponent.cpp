@@ -1807,28 +1807,20 @@ WaveformLoopAll
 		{
 			all |=
 			(
-				(
-					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN) &&
-					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT)
-				) ||
-				(
-					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN) &&
-					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT)
-				)
+				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN) &&
+				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT) &&
+				LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN) >= 1.0f &&
+				LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_RIGHT_LOOP_OUT) >= 1.0f
 			);
 		}
 		else if((target & TARGET_TOP))
 		{
 			all |=
 			(
-				(
-					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_IN) &&
-					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT)
-				) ||
-				(
-					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_IN) &&
-					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT)
-				)
+				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_IN) &&
+				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT) &&
+				LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_LEFT_LOOP_IN) >= 1.0f &&
+				LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_LEFT_LOOP_OUT) >= 1.0f
 			);
 		}
 	}

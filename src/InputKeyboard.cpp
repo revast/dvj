@@ -939,14 +939,10 @@ WaveformLoopAll
 	{
 		return
 		(
-			(
-				LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey()) &&
-				LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresDoubleKey())
-			) ||
-			(
-				LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresHalfKey()) &&
-				LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey())
-			)
+			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey()) &&
+			LGL_KeyTimer(GetInputKeyboardWaveformLoopMeasuresHalfKey()) >= 1.0f &&
+			LGL_KeyTimer(GetInputKeyboardWaveformLoopMeasuresDoubleKey()) >= 1.0f
 		);
 	}
 	else
