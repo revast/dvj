@@ -296,6 +296,7 @@ typedef struct
 	bool			KeyDown[LGL_KEY_MAX];
 	bool			KeyStroke[LGL_KEY_MAX];
 	bool			KeyRelease[LGL_KEY_MAX];
+	LGL_Timer		KeyTimer[LGL_KEY_MAX];
 	char			KeyStream[256];
 	LGL_InputBuffer*	InputBufferFocus;
 
@@ -1091,6 +1092,7 @@ LGL_Init
 		LGL.KeyDown[a]=false;
 		LGL.KeyStroke[a]=false;
 		LGL.KeyRelease[a]=false;
+		LGL.KeyTimer[a].Reset();
 	}
 	for(a=0;a<256;a++)
 	{
@@ -14341,6 +14343,15 @@ if(channel<0)
 	{
 		ret = (signed long)LGL.SoundChannel[channel].FuturePositionSamplesNow;
 	}
+	if(LGL.SoundChannel[channel].DivergeState==-1)
+	{
+		//Recall!
+		signed long early=(signed long)LGL.SoundChannel[channel].DivergeSamples;
+		if(LGL.SoundChannel[channel].DivergeState==-1)
+		{
+			ret=early;
+		}
+	}
 
 	if(ret<0)
 	{
@@ -15857,6 +15868,7 @@ LGL_ProcessInput()
 			{
 				LGL.KeyDown[event.key.keysym.sym]=true;
 				LGL.KeyStroke[event.key.keysym.sym]=true;
+				LGL.KeyTimer[event.key.keysym.sym].Reset();
 #ifdef	LGL_OSX
 				if(event.key.keysym.sym==8)
 				{
@@ -15899,8 +15911,10 @@ LGL_ProcessInput()
 			{
 				event.key.keysym.sym = 256 + (event.key.keysym.sym % LGL_KEY_MAX);
 			}
+			LGL.KeyTimer[event.key.keysym.sym].Reset();
 			LGL.KeyDown[event.key.keysym.sym]=false;
 			LGL.KeyRelease[event.key.keysym.sym]=true;
+			LGL.KeyTimer[event.key.keysym.sym].Reset();
 		}
 		if(event.type==SDL_TEXTINPUT)
 		{
@@ -15914,6 +15928,7 @@ LGL_ProcessInput()
 		{
 			LGL.KeyDown[event.key.keysym.sym]=true;
 			LGL.KeyStroke[event.key.keysym.sym]=true;
+			LGL.KeyTimer[event.key.keysym.sym].Reset();
 			if
 			(
 				StreamCounter<255 &&
@@ -15945,6 +15960,7 @@ LGL_ProcessInput()
 		{
 			LGL.KeyDown[event.key.keysym.sym]=false;
 			LGL.KeyRelease[event.key.keysym.sym]=true;
+			LGL.KeyTimer[event.key.keysym.sym].Reset();
 		}
 #endif	//SDL_2
 
@@ -17568,6 +17584,16 @@ LGL_KeyRelease
 {
 	if(lgl_KeySanityCheck(key)==false) return(false);
 	return(LGL.KeyRelease[key]);
+}
+
+float
+LGL_KeyTimer
+(
+	int	key
+)
+{
+	if(lgl_KeySanityCheck(key)==false) return(0.0f);
+	return(LGL.KeyTimer[key].SecondsSinceLastReset());
 }
 
 const
@@ -19716,6 +19742,7 @@ LGL_MidiDevice() : BackBufferSemaphore("MidiDevice BackBuffer")
 			ButtonDownBack[a]=false;
 			ButtonReleaseFront[a]=false;
 			ButtonReleaseBack[a]=false;
+			ButtonTimer[a].Reset();
 			ButtonForceFront[a]=0.0f;
 			ButtonForceBack[a]=0.0f;
 			KnobTweakFront[a]=false;
@@ -19761,6 +19788,15 @@ LGL_MidiDevice::GetButtonRelease
 }
 
 float
+LGL_MidiDevice::GetButtonTimer
+(
+	int	button
+)
+{
+	return(ButtonTimer[button].SecondsSinceLastReset());
+}
+
+float
 LGL_MidiDevice::GetButtonForce
 (
 	int	button
@@ -19795,6 +19831,14 @@ LGL_INTERNAL_SwapBuffers()
 	{
 		for(int a=0;a<LGL_MIDI_CONTROL_MAX;a++)
 		{
+			if
+			(
+				ButtonStrokeBack[a] ||
+				ButtonReleaseBack[a]
+			)
+			{
+				ButtonTimer[a].Reset();
+			}
 			ButtonStrokeFront[a]=ButtonStrokeBack[a];
 			ButtonStrokeBack[a]=false;
 			ButtonForceFront[a]=ButtonForceBack[a];
