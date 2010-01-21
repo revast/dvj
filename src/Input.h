@@ -24,7 +24,7 @@
 #ifndef	_INPUT_H_
 #define	_INPUT_H_
 
-#include "LGL.Module/LGL.h"
+#include "LGL.module/LGL.h"
 
 #include <vector>
 
