@@ -1144,9 +1144,9 @@ Turntable_DrawWaveform
 			}
 			else
 			{
-				arrayC[(a*4)+0]*=2.0f;
-				arrayC[(a*4)+1]*=2.0f;
-				arrayC[(a*4)+2]*=2.0f;
+				arrayC[(a*4)+0]*=1.25f;
+				arrayC[(a*4)+1]*=1.25f;
+				arrayC[(a*4)+2]*=1.25f;
 				arrayC[(a*4)+3]=1.0f;
 			}
 		}
@@ -1602,7 +1602,7 @@ Turntable_DrawWaveform
 					(1.0f-zeroCrossingFactor) * coolG +
 					(0.0f+zeroCrossingFactor) * warmG
 				);
-				entireWaveArrayLine1Colors[a*4+2]=2.0f*
+				entireWaveArrayLine1Colors[a*4+2]=1.25f*
 				(
 					(1.0f-zeroCrossingFactor) * coolB +
 					(0.0f+zeroCrossingFactor) * warmB
