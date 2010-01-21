@@ -2134,6 +2134,7 @@ void		LGL_ProcessInput();
 bool		LGL_KeyDown(int key);
 bool		LGL_KeyStroke(int key);
 bool		LGL_KeyRelease(int key);
+float		LGL_KeyTimer(int key);
 const
 char*		LGL_KeyStream();
 
@@ -2357,6 +2358,7 @@ virtual			~LGL_MidiDevice();
 	bool		GetButtonStroke(int button);
 	bool		GetButtonDown(int button);
 	bool		GetButtonRelease(int button);
+	float		GetButtonTimer(int button);
 	float		GetButtonForce(int button);
 
 	bool		GetKnobTweak(int knob);
@@ -2372,6 +2374,7 @@ virtual			~LGL_MidiDevice();
 	bool		ButtonDownBack[LGL_MIDI_CONTROL_MAX];
 	bool		ButtonReleaseFront[LGL_MIDI_CONTROL_MAX];
 	bool		ButtonReleaseBack[LGL_MIDI_CONTROL_MAX];
+	LGL_Timer	ButtonTimer[LGL_MIDI_CONTROL_MAX];
 	float		ButtonForceFront[LGL_MIDI_CONTROL_MAX];
 	float		ButtonForceBack[LGL_MIDI_CONTROL_MAX];
 
