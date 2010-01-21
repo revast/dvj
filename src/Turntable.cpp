@@ -3057,12 +3057,12 @@ DrawFrame
 		float r=coolR;
 		float g=coolG;
 		float b=coolB;
-		float localGlow=glow;
+		float localGlow=0.25f+0.75*glow;
 		LGL_DrawRectToScreen
 		(
 			ViewPortLeft,ViewPortRight,
 			ViewPortBottom,ViewPortTop,
-			0.3f*r*localGlow,0.3f*g*localGlow,0.3f*b*localGlow,rectAlpha
+			0.5f*r*localGlow,0.5f*g*localGlow,0.5f*b*localGlow,rectAlpha
 		);
 	}
 	
