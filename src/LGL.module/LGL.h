@@ -2866,13 +2866,13 @@ public:
 	void			Refresh();
 	void			Refresh_INTERNAL();
 
-	unsigned int		GetFileCount();
-	unsigned int		GetDirCount();
+	unsigned int		GetFileCount() const;
+	unsigned int		GetDirCount() const;
 
 	const
-	char*			GetFileName(unsigned int index);
+	char*			GetFileName(unsigned int index) const;
 	const
-	char*			GetDirName(unsigned int index);
+	char*			GetDirName(unsigned int index) const;
 
 	const
 	char*			GetFilterText() const;
@@ -2890,7 +2890,7 @@ public:
 	char*			GetFilteredFileName(unsigned int index);
 	const
 	char*			GetFilteredDirName(unsigned int index);
-	void			WaitOnWorkerThread();
+	void			WaitOnWorkerThread() const;
 
 private:
 
