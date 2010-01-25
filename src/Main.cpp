@@ -617,7 +617,10 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 LGL_Image* logo=NULL;
 
 void
-DrawLoadScreen()
+DrawLoadScreen
+(
+	float percent=-1.0f
+)
 {
 	char loadScreenPath[2048];
 
@@ -658,10 +661,119 @@ DrawLoadScreen()
 			1,1,1,1,
 			true,
 			.75,
-			" loading..."
+			" initializing..."
 		);
 	}
+
+	if(percent!=-1.0f)
+	{
+		LGL_GetFont().DrawString
+		(
+			.5,.1+0.12f,.02,
+			1,1,1,1,
+			true,
+			.75,
+			" Wiring memory..."
+		);
+		LGL_GetFont().DrawString
+		(
+			.5,.1+0.09,.015f,
+			1,1,1,1,
+			true,
+			.75,
+			" [ESC] skips (and risks framerate spikes)"
+		);
+		LGL_GetFont().DrawString
+		(
+			.5,.1-0.03f,.015f,
+			1,1,1,1,
+			true,
+			.75,
+			" This bar will pause. Don't worry."
+		);
+	}
+	else
+	{
+		percent=1.0f;
+	}
+
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
+	float pct=percent;
+	float glow = 1.0f;	//GetGlowFromTime(LGL_FramesSinceExecution()/60.0f);
+	float brW = pct;
+	float brC = pct * (1.0f-brW);
+	LGL_DrawRectToScreen
+	(
+		0,pct/2.0f,
+		0,0.05f,
+		brC*coolR*glow + brW*warmR*glow,
+		brC*coolG*glow + brW*warmG*glow,
+		brC*coolB*glow + brW*warmB*glow,
+		1.0f
+	);
+	LGL_DrawRectToScreen
+	(
+		1.0f-pct/2.0f,1.0f,
+		0,0.05f,
+		brC*coolR*glow + brW*warmR*glow,
+		brC*coolG*glow + brW*warmG*glow,
+		brC*coolB*glow + brW*warmB*glow,
+		1.0f
+	);
 	LGL_SwapBuffers();
+}
+
+float SwapOutOtherProgramsPercent=0.0f;
+bool SwapOutOtherProgramsFinished=false;
+
+int
+SwapOutOtherPrograms(void* baka)
+{
+	long int memDelta = 128;
+	long int memMax = 2048;
+	for(long int size=memDelta;size<=memMax;size+=memDelta)
+	{
+		void* mem = malloc(size*1024*1024);
+		if(mem && size!=memMax)
+		{
+			free(mem);
+			if(SwapOutOtherProgramsFinished)
+			{
+				break;
+			}
+		}
+		else
+		{
+			mem=NULL;
+			while(mem==NULL)
+			{
+				size-=memDelta;
+				mem = malloc(size*1024*1024);
+			}
+			char* memChar = (char*)mem;
+			for(long int a=0;a<size*1024*1024;a+=2048)
+			{
+				memChar[a]=1;
+				SwapOutOtherProgramsPercent=(a/(float)(size*1024*1024));
+				if(SwapOutOtherProgramsFinished)
+				{
+					break;
+				}
+			}
+			free(mem);
+			break;
+		}
+	}
+	SwapOutOtherProgramsFinished=true;
+	return(0);
 }
 
 int main(int argc, char** argv)
@@ -762,6 +874,24 @@ int main(int argc, char** argv)
 	);
 
 	VerifyMusicDir();
+
+	SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
+	for(;;)
+	{
+		LGL_ProcessInput();
+		if(LGL_KeyStroke(LGL_KEY_ESCAPE))
+		{
+			SwapOutOtherProgramsFinished=true;
+			break;
+		}
+		DrawLoadScreen(SwapOutOtherProgramsPercent);
+
+		if(SwapOutOtherProgramsFinished)
+		{
+			LGL_ThreadWait(thread);
+			break;
+		}
+	}
 
 	DrawLoadScreen();
 

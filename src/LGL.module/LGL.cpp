@@ -7724,7 +7724,7 @@ SwapInNewBuffer
 	long		frameNumber
 )
 {
-	strcpy(VideoPath,videoPath);
+	strcpy(VideoPath,videoPath?videoPath:"");
 	unsigned char* bufferOld=Buffer;
 	unsigned int bufferBytesOld=BufferBytes;
 	Buffer=buffer;
@@ -7798,7 +7798,10 @@ LGL_VideoDecoder::
 {
 	UnloadVideo();
 	
-	av_close_input_file(FormatContext);
+	if(FormatContext)
+	{
+		av_close_input_file(FormatContext);
+	}
 
 	ThreadTerminate=true;
 	if(Thread)
@@ -7844,6 +7847,33 @@ Init()
 
 	Image = NULL;
 	VideoOK=false;
+
+	//Preallocate lgl_FrameBuffers
+	for(long int a=0;a<FrameBufferAddRadius+FrameBufferSubtractRadius;a++)
+	{
+		unsigned int bufferBytes=3*1920*480;
+		unsigned char* buffer=new uint8_t[bufferBytes];
+		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
+		unsigned char* oldie = frameBuffer->SwapInNewBuffer
+		(
+			NULL,
+			buffer,
+			bufferBytes,
+			-9999-a
+		);
+		if(oldie)
+		{
+			delete oldie;
+			oldie=NULL;
+		}
+		FrameBufferReady.push_back(frameBuffer);
+		std::sort
+		(
+			FrameBufferReady.begin(),
+			FrameBufferReady.end(),
+			lgl_FrameBufferSortPredicate
+		);
+	}
 
 	ThreadTerminate=false;
 	Thread=LGL_ThreadCreate(lgl_video_decoder_thread,this);

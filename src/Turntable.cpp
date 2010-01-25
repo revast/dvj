@@ -542,7 +542,7 @@ TurntableObj
 
 	TrackListFileUpdates.clear();
 
-	VideoFront=NULL;
+	VideoFront=new LGL_VideoDecoder(NULL);
 	VideoBack=NULL;
 	VideoLo=NULL;
 	VideoHi=NULL;
@@ -1654,8 +1654,8 @@ NextFrame
 				{
 					if(LoopLengthMeasuresExponent==exponentAll)
 					{
-						LoopStartSeconds = GetBPMFirstBeatSeconds();
-						LoopEndSeconds = GetBPMLastMeasureSeconds();
+						LoopStartSeconds = (SavePointSeconds[8+2] != -1.0f) ? SavePointSeconds[8+2] : GetBPMFirstBeatSeconds();
+						LoopEndSeconds = (SavePointSeconds[9+2] != -1.0f) ? SavePointSeconds[9+2] : GetBPMLastMeasureSeconds();
 					}
 					else
 					{
