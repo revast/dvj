@@ -622,6 +622,7 @@ DrawLoadScreen
 	float percent=-1.0f
 )
 {
+	bool pctWasNegativeOne = percent==-1.0f;
 	char loadScreenPath[2048];
 
 	//Try user-specified (defaults to ~/.dvj/data/image/loadscreen.png
@@ -661,7 +662,7 @@ DrawLoadScreen
 			1,1,1,1,
 			true,
 			.75,
-			" initializing..."
+			(percent!=-1.0f) ? " Initializing" : " Finalizing"
 		);
 	}
 
@@ -669,19 +670,11 @@ DrawLoadScreen
 	{
 		LGL_GetFont().DrawString
 		(
-			.5,.1+0.12f,.02,
+			.5,.1,.02,
 			1,1,1,1,
 			true,
 			.75,
-			" Wiring memory..."
-		);
-		LGL_GetFont().DrawString
-		(
-			.5,.1+0.09,.015f,
-			1,1,1,1,
-			true,
-			.75,
-			" [ESC] skips (and risks framerate spikes)"
+			" Wiring memory"
 		);
 		LGL_GetFont().DrawString
 		(
@@ -689,7 +682,7 @@ DrawLoadScreen
 			1,1,1,1,
 			true,
 			.75,
-			" This bar will pause. Don't worry."
+			" [ESC] skips (and risks framerate spikes)"
 		);
 	}
 	else
@@ -728,6 +721,16 @@ DrawLoadScreen
 		brC*coolB*glow + brW*warmB*glow,
 		1.0f
 	);
+	if(pctWasNegativeOne==false)
+	{
+		LGL_DrawLineToScreen
+		(
+			0.5f,0.0f,
+			0.5f,1.0f,
+			0,0,0,1,
+			1.0f
+		);
+	}
 	LGL_SwapBuffers();
 }
 
@@ -742,9 +745,9 @@ SwapOutOtherPrograms(void* baka)
 	for(long int size=memDelta;size<=memMax;size+=memDelta)
 	{
 		void* mem = malloc(size*1024*1024);
+		free(mem);
 		if(mem && size!=memMax)
 		{
-			free(mem);
 			if(SwapOutOtherProgramsFinished)
 			{
 				break;
@@ -884,7 +887,7 @@ int main(int argc, char** argv)
 			SwapOutOtherProgramsFinished=true;
 			break;
 		}
-		DrawLoadScreen(SwapOutOtherProgramsPercent);
+		DrawLoadScreen(powf(SwapOutOtherProgramsPercent,3));
 
 		if(SwapOutOtherProgramsFinished)
 		{
