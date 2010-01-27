@@ -682,7 +682,7 @@ DrawLoadScreen
 			1,1,1,1,
 			true,
 			.75,
-			" [ESC] skips (and risks framerate spikes)"
+			"[ESC] skips (and risks framerate spikes)"
 		);
 	}
 	else
