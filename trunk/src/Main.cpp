@@ -662,7 +662,7 @@ DrawLoadScreen
 			1,1,1,1,
 			true,
 			.75,
-			(percent!=-1.0f) ? " Initializing" : " Finalizing"
+			(percent!=-1.0f) ? "Initializing" : "Scanning library"
 		);
 	}
 
@@ -670,15 +670,15 @@ DrawLoadScreen
 	{
 		LGL_GetFont().DrawString
 		(
-			.5,.1,.02,
+			.5f,.1f,.02f,
 			1,1,1,1,
 			true,
-			.75,
-			" Wiring memory"
+			.75f,
+			"Wiring memory"
 		);
 		LGL_GetFont().DrawString
 		(
-			.5,.1-0.03f,.015f,
+			.5f,.1-0.03f,.015f,
 			1,1,1,1,
 			true,
 			.75,
