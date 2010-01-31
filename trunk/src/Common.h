@@ -150,7 +150,10 @@ Turntable_DrawWaveform
 	bool		waveformRecordHold,
 	const char*	soundName,
 	float		videoSecondsBufferedLeft,
-	float		videoSecondsBufferedRight
+	float		videoSecondsBufferedRight,
+	bool		isMaster,
+	bool		rapidVolumeInvertSelf,
+	float		beginningOfCurrentMeasureSeconds
 );
 
 void

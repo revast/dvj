@@ -388,6 +388,7 @@ void NextFrame()
 		}
 		ParticlePointersActive[0]=true;
 	}
+
 	for(int a=0;a<8;a++)
 	{
 		float seconds = LGL_Max(LGL_SecondsSinceLastFrame(),1.0f/60.0f);
@@ -422,6 +423,7 @@ void NextFrame()
 		}
 		else if
 		(
+			0 &&
 			a==0 &&
 			LGL_GetWiimote(a).Connected()==false &&
 			mouseMotionEver
@@ -819,6 +821,7 @@ int main(int argc, char** argv)
 	float drawFPSSpike=0.0f;
 	int resX=9999;
 	int resY=9999;
+	bool wireMemory=true;
 
 	for(int a=0;a<argc;a++)
 	{
@@ -841,10 +844,14 @@ int main(int argc, char** argv)
 		{
 			drawFPS=true;
 		}
+		else if(strcasecmp(argv[a],"--noWireMemory")==0)
+		{
+			wireMemory=false;
+		}
 		else if(strcasecmp(argv[a],"--help")==0)
 		{
 			printf("dvj, svn pre-release\n\n");
-			printf("usage: dvj [--480p] [--720p] [--1080p] [--drawFPS] [--help]\n\n");
+			printf("usage: dvj [--480p] [--720p] [--1080p] [--drawFPS] [--noWireMemory] [--help]\n\n");
 			exit(0);
 		}
 	}
@@ -878,21 +885,24 @@ int main(int argc, char** argv)
 
 	VerifyMusicDir();
 
-	SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
-	for(;;)
+	if(wireMemory)
 	{
-		LGL_ProcessInput();
-		if(LGL_KeyStroke(LGL_KEY_ESCAPE))
+		SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
+		for(;;)
 		{
-			SwapOutOtherProgramsFinished=true;
-			break;
-		}
-		DrawLoadScreen(powf(SwapOutOtherProgramsPercent,3));
+			LGL_ProcessInput();
+			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
+			{
+				SwapOutOtherProgramsFinished=true;
+				break;
+			}
+			DrawLoadScreen(powf(SwapOutOtherProgramsPercent,3));
 
-		if(SwapOutOtherProgramsFinished)
-		{
-			LGL_ThreadWait(thread);
-			break;
+			if(SwapOutOtherProgramsFinished)
+			{
+				LGL_ThreadWait(thread);
+				break;
+			}
 		}
 	}
 

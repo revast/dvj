@@ -211,6 +211,8 @@ private:
 	bool				VolumeSolo;
 	float				VolumeMultiplierNow;
 	float				VolumeInvertBinary;
+	bool				RapidVolumeInvertSelf;
+	bool				RapidVolumeInvertOther;
 	bool				VideoFileExists;
 	float				MixerVolumeFront;
 	float				MixerVolumeBack;
@@ -239,6 +241,7 @@ private:
 	void				UpdateSoundFreqResponse();
 
 	int				Which;		//Which turntable we are.
+static	int				Master;
 
 	char				ImageSetPrefix[1024];
 	char				MovieClipPrefix[1024];
@@ -272,6 +275,9 @@ public:
 	float				GetEQLo();
 	float				GetEQMid();
 	float				GetEQHi();
+
+	bool				GetMaster();
+	void				SetMaster();
 
 private:
 

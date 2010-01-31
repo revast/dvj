@@ -2004,6 +2004,7 @@ public:
 	bool		SetWarpPoint(int channel);
 	bool		SetWarpPoint(int channel, double triggerSeconds, double dstSeconds, bool loop=false);
 	float		GetWarpPointSecondsTrigger(int channel);
+	void		SetRapidVolumeInvertProperties(int channel, float secondsAnchor, float secondsDelta);
 
 	float		GetVU(int channel) const;
 

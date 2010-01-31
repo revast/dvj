@@ -1091,6 +1091,70 @@ WaveformVolumeInvert
 
 bool
 InputXponentObj::
+WaveformRapidVolumeInvertSelf
+(
+	unsigned int	target
+)	const
+{
+	/*
+	if(LGL_GetXponent())
+	{
+		if
+		(
+			(target & TARGET_BOTTOM) &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_VOLUME)
+		)
+		{
+			return(true);
+		}
+		else if
+		(
+			(target & TARGET_TOP) &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_VOLUME)
+		)
+		{
+			return(true);
+		}
+	}
+	*/
+
+	return(false);
+}
+
+bool
+InputXponentObj::
+WaveformRapidVolumeInvertOther
+(
+	unsigned int	target
+)	const
+{
+	/*
+	if(LGL_GetXponent())
+	{
+		if
+		(
+			(target & TARGET_BOTTOM) &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_VOLUME)
+		)
+		{
+			return(true);
+		}
+		else if
+		(
+			(target & TARGET_TOP) &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_VOLUME)
+		)
+		{
+			return(true);
+		}
+	}
+	*/
+
+	return(false);
+}
+
+bool
+InputXponentObj::
 WaveformVolumeSolo
 (
 	unsigned int	target

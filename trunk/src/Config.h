@@ -124,6 +124,8 @@ int	GetInputKeyboardWaveformEQHighKillKey();
 int	GetInputKeyboardWaveformGainDeltaDownKey();
 int	GetInputKeyboardWaveformGainDeltaUpKey();
 int	GetInputKeyboardWaveformVolumeInvertKey();
+int	GetInputKeyboardWaveformRapidVolumeInvertSelfKey();
+int	GetInputKeyboardWaveformRapidVolumeInvertOtherKey();
 int	GetInputKeyboardWaveformVolumeSoloKey();
 int	GetInputKeyboardWaveformRewindKey();
 int	GetInputKeyboardWaveformFFKey();

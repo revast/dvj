@@ -653,6 +653,40 @@ WaveformVolumeInvert
 
 bool
 InputObj::
+WaveformRapidVolumeInvertSelf
+(
+	unsigned int	target
+)	const
+{
+	bool invert=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		invert|=Children[a]->WaveformRapidVolumeInvertSelf(target);
+	}
+
+	return(invert);
+}
+
+bool
+InputObj::
+WaveformRapidVolumeInvertOther
+(
+	unsigned int	target
+)	const
+{
+	bool invert=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		invert|=Children[a]->WaveformRapidVolumeInvertOther(target);
+	}
+
+	return(invert);
+}
+
+bool
+InputObj::
 WaveformVolumeSolo
 (
 	unsigned int	target

@@ -398,6 +398,28 @@ WaveformVolumeInvert
 
 bool
 InputMouseObj::
+WaveformRapidVolumeInvertSelf
+(
+	unsigned int	target
+)	const
+{
+	bool invert=false;
+	return(invert);
+}
+
+bool
+InputMouseObj::
+WaveformRapidVolumeInvertOther
+(
+	unsigned int	target
+)	const
+{
+	bool invert=false;
+	return(invert);
+}
+
+bool
+InputMouseObj::
 WaveformVolumeSolo
 (
 	unsigned int	target

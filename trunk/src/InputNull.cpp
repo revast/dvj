@@ -398,6 +398,28 @@ WaveformVolumeInvert
 
 bool
 InputNullObj::
+WaveformRapidVolumeInvertSelf
+(
+	unsigned int	target
+)	const
+{
+	bool invert=false;
+	return(invert);
+}
+
+bool
+InputNullObj::
+WaveformRapidVolumeInvertOther
+(
+	unsigned int	target
+)	const
+{
+	bool invert=false;
+	return(invert);
+}
+
+bool
+InputNullObj::
 WaveformVolumeSolo
 (
 	unsigned int	target
