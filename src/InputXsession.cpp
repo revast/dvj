@@ -668,6 +668,28 @@ WaveformVolumeInvert
 
 bool
 InputXsessionObj::
+WaveformRapidVolumeInvertSelf
+(
+	unsigned int	target
+)	const
+{
+	bool invert=false;
+	return(invert);
+}
+
+bool
+InputXsessionObj::
+WaveformRapidVolumeInvertOther
+(
+	unsigned int	target
+)	const
+{
+	bool invert=false;
+	return(invert);
+}
+
+bool
+InputXsessionObj::
 WaveformVolumeSolo
 (
 	unsigned int	target

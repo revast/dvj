@@ -556,6 +556,40 @@ WaveformVolumeInvert
 
 bool
 InputKeyboardObj::
+WaveformRapidVolumeInvertSelf
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyDown(GetInputKeyboardWaveformRapidVolumeInvertSelfKey()));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformRapidVolumeInvertOther
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyDown(GetInputKeyboardWaveformRapidVolumeInvertOtherKey()));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
 WaveformVolumeSolo
 (
 	unsigned int	target

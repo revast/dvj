@@ -730,6 +730,8 @@ typedef enum
 	WAVEFORM_GAIN_DELTA_DOWN,
 	WAVEFORM_GAIN_DELTA_UP,
 	WAVEFORM_VOLUME_INVERT,
+	WAVEFORM_RAPID_VOLUME_INVERT_SELF,
+	WAVEFORM_RAPID_VOLUME_INVERT_OTHER,
 	WAVEFORM_VOLUME_SOLO,
 	WAVEFORM_REWIND,
 	WAVEFORM_FF,
@@ -876,6 +878,10 @@ PrepareKeyMap()
 		("waveformGainDeltaUp",			"LGL_KEY_EQUALS");
 	dvjKeyMap[WAVEFORM_VOLUME_INVERT].Set
 		("waveformVolumeInvert",		"LGL_KEY_PERIOD");
+	dvjKeyMap[WAVEFORM_RAPID_VOLUME_INVERT_SELF].Set
+		("waveformRapidVolumeInvertSelf",	"LGL_KEY_I");
+	dvjKeyMap[WAVEFORM_RAPID_VOLUME_INVERT_OTHER].Set
+		("waveformRapidVolumeInvertOther",	"LGL_KEY_U");
 	dvjKeyMap[WAVEFORM_VOLUME_SOLO].Set
 		("waveformVolumeSolo",			"LGL_KEY_COMMA");
 	dvjKeyMap[WAVEFORM_REWIND].Set
@@ -1050,6 +1056,10 @@ int GetInputKeyboardWaveformGainDeltaUpKey()
 	{ return(dvjKeyMap[WAVEFORM_GAIN_DELTA_UP].ValueInt); }
 int GetInputKeyboardWaveformVolumeInvertKey()
 	{ return(dvjKeyMap[WAVEFORM_VOLUME_INVERT].ValueInt); }
+int GetInputKeyboardWaveformRapidVolumeInvertSelfKey()
+	{ return(dvjKeyMap[WAVEFORM_RAPID_VOLUME_INVERT_SELF].ValueInt); }
+int GetInputKeyboardWaveformRapidVolumeInvertOtherKey()
+	{ return(dvjKeyMap[WAVEFORM_RAPID_VOLUME_INVERT_OTHER].ValueInt); }
 int GetInputKeyboardWaveformVolumeSoloKey()
 	{ return(dvjKeyMap[WAVEFORM_VOLUME_SOLO].ValueInt); }
 int GetInputKeyboardWaveformRewindKey()

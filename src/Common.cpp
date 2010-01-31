@@ -751,7 +751,10 @@ Turntable_DrawWaveform
 	bool		waveformRecordHold,
 	const char*	soundName,
 	float		videoSecondsBufferedLeft,
-	float		videoSecondsBufferedRight
+	float		videoSecondsBufferedRight,
+	bool		isMaster,
+	bool		rapidVolumeInvertSelf,
+	float		beginningOfCurrentMeasureSeconds
 )
 {
 	float coolR;
@@ -996,6 +999,16 @@ Turntable_DrawWaveform
 			);
 		}
 
+		int localExponent = loopExponent;
+		if(localExponent<-7)
+		{
+			localExponent=-7;
+		}
+		double secondsPerBeat = (bpm!=0) ? (60.0/bpm) : 0;
+		double secondsPerLoopPeriod = pow(2,localExponent)*(secondsPerBeat*4);
+		long bpmFirstBeatCurrentMeasureSamples = beginningOfCurrentMeasureSeconds*44100.0;
+		long samplesPerLoopPeriod = secondsPerLoopPeriod*44100.0;
+
 		//Experimental frequency-sensitive renderer
 		for(int z=-pointResolution;z<pointResolution*2;z++)
 		{
@@ -1052,28 +1065,47 @@ Turntable_DrawWaveform
 					)
 				);
 
-				arrayC[(a*4)+0]=
-					active ?
-					1.0f :
-					(
-						(1.0f-zeroCrossingFactor)*coolR +
-						(0.0f+zeroCrossingFactor)*warmR
-					);
-				arrayC[(a*4)+1]=
-					active ?
-					1.0f :
-					(
-						(1.0f-zeroCrossingFactor)*coolG +
-						(0.0f+zeroCrossingFactor)*warmG
-					);
-				arrayC[(a*4)+2]=
-					active ?
-					1.0f :
-					(
-						(1.0f-zeroCrossingFactor)*coolB +
-						(0.0f+zeroCrossingFactor)*warmB
-					);
-				arrayC[(a*4)+3]=1.0f;
+				bool muted=false;
+				if(rapidVolumeInvertSelf)
+				{
+					muted=(((long)fabs(sampleNow-bpmFirstBeatCurrentMeasureSamples)/samplesPerLoopPeriod)%2)==1;
+					if(sampleNow<bpmFirstBeatCurrentMeasureSamples)
+					{
+						muted=!muted;
+					}
+				}
+				if(muted)
+				{
+					for(int m=0;m<4;m++)
+					{
+						arrayC[a*4+m]=0;
+					}
+				}
+				else
+				{
+					arrayC[(a*4)+0]=
+						active ?
+						1.0f :
+						(
+							(1.0f-zeroCrossingFactor)*coolR +
+							(0.0f+zeroCrossingFactor)*warmR
+						);
+					arrayC[(a*4)+1]=
+						active ?
+						1.0f :
+						(
+							(1.0f-zeroCrossingFactor)*coolG +
+							(0.0f+zeroCrossingFactor)*warmG
+						);
+					arrayC[(a*4)+2]=
+						active ?
+						1.0f :
+						(
+							(1.0f-zeroCrossingFactor)*coolB +
+							(0.0f+zeroCrossingFactor)*warmB
+						);
+					arrayC[(a*4)+3]=1.0f;
+				}
 
 				//Tristrip!
 
@@ -1140,14 +1172,14 @@ Turntable_DrawWaveform
 				arrayC[(a*4)+0]=1.0f;
 				arrayC[(a*4)+1]=0.0f;
 				arrayC[(a*4)+2]=0.0f;
-				arrayC[(a*4)+3]=1.0f;
+				//arrayC[(a*4)+3]=1.0f;
 			}
 			else
 			{
 				arrayC[(a*4)+0]*=1.25f;
 				arrayC[(a*4)+1]*=1.25f;
 				arrayC[(a*4)+2]*=1.25f;
-				arrayC[(a*4)+3]=1.0f;
+				//arrayC[(a*4)+3]=1.0f;
 			}
 		}
 		LGL_DrawLineStripToScreen
@@ -1886,6 +1918,46 @@ Turntable_DrawWaveform
 				"%.2f",
 				bpmAdjusted
 			);
+
+			if(0 && isMaster)
+			{
+				float masterBoxLeft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.006f;
+				float masterBoxRight=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.105f;
+				float masterBoxBottom=viewPortBottom+.78f*viewPortHeight;
+				float masterBoxTop=viewPortBottom+.88f*viewPortHeight;
+				LGL_DrawLineToScreen
+				(
+					masterBoxLeft,
+					masterBoxTop,
+					masterBoxRight,
+					masterBoxTop,
+					1,1,1,1
+				);
+				LGL_DrawLineToScreen
+				(
+					masterBoxRight,
+					masterBoxTop,
+					masterBoxRight,
+					masterBoxBottom,
+					1,1,1,1
+				);
+				LGL_DrawLineToScreen
+				(
+					masterBoxRight,
+					masterBoxBottom,
+					masterBoxLeft,
+					masterBoxBottom,
+					1,1,1,1
+				);
+				LGL_DrawLineToScreen
+				(
+					masterBoxLeft,
+					masterBoxBottom,
+					masterBoxLeft,
+					masterBoxTop,
+					1,1,1,1
+				);
+			}
 		}
 		
 		float pbFloat=

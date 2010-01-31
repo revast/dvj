@@ -164,6 +164,10 @@ typedef struct
 
 	long			FutureGlitchSamplesNow;	//Not affected by FutureGlitchSettingsAvailable. Meh.
 
+	long			RapidVolumeInvertAnchorSamples;
+	long			RapidVolumeInvertDeltaSamples;
+	int			RapidVolumeInvertMode;
+
 	float			VU;
 
 	bool			Loop;
@@ -594,6 +598,9 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].GlitchLuminScratch=false;
 	LGL.SoundChannel[a].GlitchLuminScratchPositionDesired=-10000;
 	LGL.SoundChannel[a].FutureGlitchSamplesNow=-10000;
+	LGL.SoundChannel[a].RapidVolumeInvertAnchorSamples=0;
+	LGL.SoundChannel[a].RapidVolumeInvertDeltaSamples=0;
+	LGL.SoundChannel[a].RapidVolumeInvertMode=0;
 	LGL.SoundChannel[a].GlitchSamplesNow=0;
 	LGL.SoundChannel[a].GlitchLast=0;
 	LGL.SoundChannel[a].GlitchBegin=0;
@@ -13810,6 +13817,9 @@ Play
 		LGL.SoundChannel[available].GlitchLuminScratch=false;
 		LGL.SoundChannel[available].GlitchLuminScratchPositionDesired=-10000;
 		LGL.SoundChannel[available].FutureGlitchSamplesNow=-10000;
+		LGL.SoundChannel[available].RapidVolumeInvertAnchorSamples=0;
+		LGL.SoundChannel[available].RapidVolumeInvertDeltaSamples=0;
+		LGL.SoundChannel[available].RapidVolumeInvertMode=0;
 		LGL.SoundChannel[available].GlitchSamplesNow=0;
 		LGL.SoundChannel[available].GlitchLast=0;
 		LGL.SoundChannel[available].GlitchBegin=0;
@@ -14537,6 +14547,20 @@ GetWarpPointSecondsTrigger
 )
 {
 	return(LGL.SoundChannel[channel].WarpPointSecondsTrigger);
+}
+
+void
+LGL_Sound::
+SetRapidVolumeInvertProperties
+(
+	int	channel,
+	float	secondsAnchor,
+	float	secondsDelta
+)
+{
+	LGL.SoundChannel[channel].RapidVolumeInvertAnchorSamples=secondsAnchor*Hz;
+	LGL.SoundChannel[channel].RapidVolumeInvertDeltaSamples=secondsDelta*Hz;
+	//LGL.SoundChannel[channel].RapidVolumeInvertMode=mode;
 }
 
 float
@@ -27322,6 +27346,22 @@ lgl_AudioOutCallbackGenerator
 				fr+=myFR*localSpeedVolFactor;
 				bl+=myBL*localSpeedVolFactor;
 				br+=myBR*localSpeedVolFactor;
+
+				if(sc->RapidVolumeInvertDeltaSamples!=0)
+				{
+					bool muted=(((long)fabsf(sc->PositionSamplesNow-sc->RapidVolumeInvertAnchorSamples)/sc->RapidVolumeInvertDeltaSamples)%2)==1;
+					if(sc->PositionSamplesNow<sc->RapidVolumeInvertAnchorSamples)
+					{
+						muted=!muted;
+					}
+					if(muted)
+					{
+						volumeArrayFL[a/4]=0;
+						volumeArrayFR[a/4]=0;
+						volumeArrayBL[a/4]=0;
+						volumeArrayBR[a/4]=0;
+					}
+				}
 
 				//Volume Omega
 

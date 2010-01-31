@@ -37,6 +37,7 @@ const int lm = 8;	//Low => Mid transition
 const int mh = 40;	//Mid => High transition
 int ENTIRE_WAVE_ARRAY_COUNT;
 
+int TurntableObj::Master=0;
 VisualizerObj* TurntableObj::Visualizer=NULL;
 LGL_Image* TurntableObj::NoiseImage[NOISE_IMAGE_COUNT_256_64];
 LGL_Image* TurntableObj::LoopImage=NULL;
@@ -515,6 +516,8 @@ TurntableObj
 	VolumeSlider=1.0f;
 	VolumeMultiplierNow=1.0f;
 	VolumeInvertBinary=false;
+	RapidVolumeInvertSelf=false;
+	RapidVolumeInvertOther=false;
 	LoopStartSeconds=-1.0;
 	LoopLengthMeasuresExponent=-3;
 	LoopLengthNoBPMSeconds=1.0;
@@ -1035,6 +1038,8 @@ NextFrame
 						SecondsLast=0.0f;
 						SecondsNow=0.0f;
 						VolumeInvertBinary=false;
+						RapidVolumeInvertSelf=false;
+						RapidVolumeInvertOther=false;
 						LoopStartSeconds=-1.0;
 						LoopLengthNoBPMSeconds=1.0;
 						LoopActive=false;
@@ -1262,6 +1267,35 @@ NextFrame
 
 		//Volume
 		VolumeInvertBinary=Input.WaveformVolumeInvert(target);
+
+		if(GetBPM()>0)
+		{
+			if(Input.WaveformRapidVolumeInvertSelf(target))
+			{
+				RapidVolumeInvertSelf=true;
+			}
+			else
+			{
+				RapidVolumeInvertSelf=false;
+			}
+			double deltaMeasure = 4*(60.0/(double)GetBPM());
+			float deltaSeconds = deltaMeasure*powf(2,LoopLengthMeasuresExponent);
+			Sound->SetRapidVolumeInvertProperties
+			(
+				Channel,
+				RapidVolumeInvertSelf ? GetBeginningOfCurrentMeasureSeconds() : 0,
+				RapidVolumeInvertSelf ? deltaSeconds : 0
+			);
+		}
+		else
+		{
+			RapidVolumeInvertSelf=false;
+		}
+
+		if(Input.WaveformRapidVolumeInvertOther(target))
+		{
+			//
+		}
 
 		//Save Points
 		if(VideoFrequencySensitiveMode!=2)
@@ -1552,8 +1586,16 @@ NextFrame
 		bool loopActiveLastFrame = LoopActive;
 		bool loopThenRecallActiveLastFrame = LoopThenRecallActive;
 
-		LoopActive = Input.WaveformLoopToggle(target) ? !LoopActive : LoopActive;
-		LoopThenRecallActive = Input.WaveformLoopThenRecallActive(target);
+		LoopActive = 
+		(
+			(Input.WaveformLoopToggle(target) ? !LoopActive : LoopActive) &&
+			RapidVolumeInvertSelf==false
+		);
+		LoopThenRecallActive =
+		(
+			Input.WaveformLoopThenRecallActive(target) &&
+			RapidVolumeInvertSelf==false
+		);
 
 		bool loopChanged=
 			(
@@ -1656,6 +1698,10 @@ NextFrame
 					{
 						LoopStartSeconds = (SavePointSeconds[8+2] != -1.0f) ? SavePointSeconds[8+2] : GetBPMFirstBeatSeconds();
 						LoopEndSeconds = (SavePointSeconds[9+2] != -1.0f) ? SavePointSeconds[9+2] : GetBPMLastMeasureSeconds();
+						if(LoopEndSeconds<LoopStartSeconds)
+						{
+							LoopEndSeconds=LoopStartSeconds;
+						}
 					}
 					else
 					{
@@ -1681,6 +1727,10 @@ NextFrame
 							LoopStartSeconds+deltaSeconds,
 							GetBPMLastMeasureSeconds()
 						);
+						if(LoopEndSeconds<LoopStartSeconds)
+						{
+							LoopEndSeconds=LoopStartSeconds;
+						}
 					}
 
 					Sound->SetWarpPoint
@@ -1781,6 +1831,10 @@ NextFrame
 						LoopStartSeconds+deltaSeconds,
 						Sound->GetLengthSeconds()
 					);
+					if(LoopEndSeconds<LoopStartSeconds)
+					{
+						LoopEndSeconds=LoopStartSeconds;
+					}
 					Sound->SetWarpPoint
 					(
 						Channel,
@@ -1790,6 +1844,18 @@ NextFrame
 					);
 				}
 			}
+		}
+
+		//Rapid Volume Invert vs LoopLengthExponent
+		const int rapidVolumeInvertMeasuresExponentMin=-6;
+		const int rapidVolumeInvertMeasuresExponentMax=-1;
+		if(LoopLengthMeasuresExponent<rapidVolumeInvertMeasuresExponentMin)
+		{
+			LoopLengthMeasuresExponent=rapidVolumeInvertMeasuresExponentMin;
+		}
+		if(LoopLengthMeasuresExponent>rapidVolumeInvertMeasuresExponentMax)
+		{
+			LoopLengthMeasuresExponent=rapidVolumeInvertMeasuresExponentMax;
 		}
 
 		//Video
@@ -2579,9 +2645,19 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 		if(Looping())
 		{
 			double loopLengthSamples = Sound->GetHz()*(LoopEndSeconds - LoopStartSeconds);
-			while(SmoothWaveformScrollingSample>LoopEndSeconds*Sound->GetHz())
+			if(loopLengthSamples>0)
 			{
-				SmoothWaveformScrollingSample-=loopLengthSamples;
+				while(SmoothWaveformScrollingSample>LoopEndSeconds*Sound->GetHz())
+				{
+					SmoothWaveformScrollingSample-=loopLengthSamples;
+				}
+			}
+			else
+			{
+				if(SmoothWaveformScrollingSample>LoopEndSeconds*Sound->GetHz())
+				{
+					SmoothWaveformScrollingSample=0;
+				}
 			}
 		}
 
@@ -3326,8 +3402,8 @@ if(videoSecondsBufferedRight > 10) printf("r: %.2f\n",videoSecondsBufferedRight)
 		);
 		LGL_DrawLogWrite
 		(
-			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35   36   37 38   39 40 41   42   43
-			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f|%.3f|%i|%.3f|%c|%s|%.2f|%.2f\n",
+			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35   36   37 38   39 40 41   42   43 44 45  46
+			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f|%.3f|%i|%.3f|%c|%s|%.2f|%.2f|%c|%c|.3f\n",
 			Which,							//01
 			Sound->IsLoaded() ? 'T' : 'F',				//02
 			GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
@@ -3370,7 +3446,10 @@ if(videoSecondsBufferedRight > 10) printf("r: %.2f\n",videoSecondsBufferedRight)
 			Input.WaveformRecordHold(target) ? 'T' : 'F',		//40
 			SoundName,						//41
 			videoSecondsBufferedLeft,				//42
-			videoSecondsBufferedRight				//43
+			videoSecondsBufferedRight,				//43
+			(Which==Master) ? 'T' : 'F',				//44
+			(RapidVolumeInvertSelf) ? 'T' : 'F',			//45
+			GetBeginningOfCurrentMeasureSeconds()			//46
 		);
 		
 		bool waveArrayFilledBefore=(EntireWaveArrayFillIndex==ENTIRE_WAVE_ARRAY_COUNT);
@@ -3431,7 +3510,10 @@ if(videoSecondsBufferedRight > 10) printf("r: %.2f\n",videoSecondsBufferedRight)
 			Input.WaveformRecordHold(target),			//51
 			SoundName,						//52
 			videoSecondsBufferedLeft,				//53
-			videoSecondsBufferedRight				//54
+			videoSecondsBufferedRight,				//54
+			Which==Master,						//55
+			RapidVolumeInvertSelf,					//56
+			GetBeginningOfCurrentMeasureSeconds()			//57
 		);
 		LGL_DrawLogPause(false);
 	
@@ -3619,7 +3701,29 @@ float
 TurntableObj::
 GetVideoBrightness()
 {
-	return(GetMixerVolumeFront()*VideoBrightness);
+	bool muted=false;
+	if(GetBPM()>0)
+	{
+		if(RapidVolumeInvertSelf)
+		{
+			double secondsPerBeat = 60.0/GetBPM();
+			long sampleNow = SmoothWaveformScrollingSample;
+			long bpmFirstBeatCurrentMeasureSamples = GetBeginningOfCurrentMeasureSeconds()*Sound->GetHz();
+			double secondsPerLoopPeriod = pow(2,LoopLengthMeasuresExponent)*(secondsPerBeat*4);
+			long samplesPerLoopPeriod = secondsPerLoopPeriod*Sound->GetHz();
+			muted=(((long)fabs(sampleNow-bpmFirstBeatCurrentMeasureSamples)/samplesPerLoopPeriod)%2)==1;
+			if(sampleNow<bpmFirstBeatCurrentMeasureSamples)
+			{
+				muted=!muted;
+			}
+		}
+	}
+	return
+	(
+		GetMixerVolumeFront()*
+		VideoBrightness*
+		(muted ? 0 : 1)
+	);
 }
 
 void
@@ -4454,6 +4558,20 @@ GetEQHi()
 	return(EQFinal[2]);
 }
 
+bool
+TurntableObj::
+GetMaster()
+{
+	return(Master==Which);
+}
+
+void
+TurntableObj::
+SetMaster()
+{
+	Master=Which;
+}
+
 void
 TurntableObj::
 SwapVideos()
@@ -4798,7 +4916,7 @@ GetBeginningOfCurrentMeasureSeconds
 	}
 	
 	double deltaMeasure = measureMultiplier*4*(60.0/(double)GetBPM());
-	
+
 	double candidate = GetBPMFirstBeatSeconds();
 	if(candidate==SecondsNow)
 	{
