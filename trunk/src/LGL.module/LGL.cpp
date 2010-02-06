@@ -76,6 +76,7 @@
 #include <mach/mach_init.h>
 #include <mach/thread_policy.h>
 #include <mach/thread_act.h>
+#include <Aliases.h>
 #endif	//LGL_OSX
 
 #ifdef	LGL_OSX
@@ -22902,14 +22903,77 @@ Refresh_INTERNAL()
 
 	for(unsigned int a=0;a<everything.size();a++)
 	{
-		char check[2048];
+		char check[4096];
 
 		sprintf(check,"%s/%s",Path,everything[a]);
+
+		bool isAlias = LGL_PathIsAlias(check);
 		
-		if(LGL_DirectoryExists(check))
+		if(isAlias)
+		{
+			const int len=4096;
+			char aliasPath[len];
+			if
+			(
+				LGL_ResolveAlias
+				(
+					aliasPath,
+					len,
+					check
+				)
+			)
+			{
+				char checkDotSymlink[4096];
+				sprintf(checkDotSymlink,"%s.symlink",check);
+				if
+				(
+					LGL_FileExists(checkDotSymlink)==false &&
+					LGL_DirectoryExists(checkDotSymlink)==false
+				)
+				{
+					unlink(checkDotSymlink);
+					char cmd[4096];
+					sprintf
+					(
+						cmd,
+						"ln -s '%s' '%s'",
+						aliasPath,
+						checkDotSymlink
+					);
+					system(cmd);
+				}
+				sprintf(check,checkDotSymlink);
+				char* checkDotSymlinkShort = strrchr(checkDotSymlink,'/');
+				if(checkDotSymlinkShort)
+				{
+					checkDotSymlinkShort=&(checkDotSymlinkShort[1]);
+					bool alreadyExisted=false;
+					for(int b=0;b<everything.size();b++)
+					{
+						if(strcmp(checkDotSymlinkShort,everything[b])==0)
+						{
+							alreadyExisted=true;
+							break;
+						}
+					}
+					if(alreadyExisted==false)
+					{
+						char* neo=new char[strlen(checkDotSymlinkShort)+1];
+						strcpy(neo,checkDotSymlinkShort);
+						everything.push_back(neo);
+					}
+				}
+			}
+		}
+
+		if(isAlias)
+		{
+			//It's an alias
+			delete everything[a];
+		}
+		else if(LGL_DirectoryExists(check))
 		{
 			//It's a directory
-
 			DirList.push_back(everything[a]);
 		}
 		else
@@ -24015,7 +24079,7 @@ sum(FILE *fd, char* output)
 	byte digest[16];
 	int i, n;
 	MD5state *s;
-	MD5state *nil=NULL;
+	MD5state *myNil=NULL;
 
 	Table tab[] =
 	{
@@ -24092,7 +24156,7 @@ sum(FILE *fd, char* output)
 		{ 0xeb86d391, 9, S44},	
 	};
 
-	s = nil;
+	s = myNil;
 	n = 0;
 	buf = (byte*)calloc(256,64);
 	for(;;){
@@ -24102,10 +24166,10 @@ sum(FILE *fd, char* output)
 		n += i;
 		if(n & 0x3f)
 			continue;
-		s = md5(buf, n, 0, s, nil, tab);
+		s = md5(buf, n, 0, s, myNil, tab);
 		n = 0;
 	}
-	md5(buf, n, digest, s, nil, tab);
+	md5(buf, n, digest, s, myNil, tab);
 
 	sprintf
 	(
@@ -24129,7 +24193,7 @@ sum(FILE *fd, char* output)
  *  the last call
  */
 MD5state*
-md5(byte *p, uint len, byte *digest, MD5state *s, MD5state *nil, Table* tab)
+md5(byte *p, uint len, byte *digest, MD5state *s, MD5state *myNil, Table* tab)
 {
 	uint a, b, c, d, tmp;
 	uint i, done;
@@ -24137,10 +24201,10 @@ md5(byte *p, uint len, byte *digest, MD5state *s, MD5state *nil, Table* tab)
 	byte *end;
 	uint x[16];
 
-	if(s == nil){
+	if(s == myNil){
 		s = (MD5state*)calloc(sizeof(*s),1);
-		if(s == nil)
-			return nil;
+		if(s == myNil)
+			return myNil;
 
 		/* seed the state, these constants would look nicer big-endian */
 		s->state[0] = 0x67452301;
@@ -24218,7 +24282,7 @@ md5(byte *p, uint len, byte *digest, MD5state *s, MD5state *nil, Table* tab)
 	if(done){
 		encode(digest, s->state, 16);
 		free(s);
-		return nil;
+		return myNil;
 	}
 	return s;
 }
@@ -24556,6 +24620,123 @@ LGL_GetHomeDir()
 		strcpy(LGL.HomeDir,homeDir);
 	}
 	return(LGL.HomeDir);
+}
+
+bool
+LGL_PathIsAlias
+(
+	const
+	char*	path
+)
+{
+#ifdef	LGL_OSX
+	OSStatus err = noErr;
+	FSRef fsRef;
+	Boolean fileFlag;
+	Boolean folderFlag;
+
+	err = FSPathMakeRef
+	(
+		(UInt8*)path,
+		&fsRef,
+		&fileFlag
+	);
+
+	if(err != noErr)
+	{
+		return(false);
+	}
+
+	err = FSIsAliasFile
+	(
+		&fsRef,
+		&fileFlag,
+		&folderFlag
+	);
+
+	if(err != noErr)
+	{
+		return(false);
+	}
+
+	return(err == noErr && fileFlag);
+#endif	//LGL_OSX
+
+	return(false);
+}
+
+bool
+LGL_ResolveAlias
+(
+	char*	outPath,
+	int	outPathLength,
+	const
+	char*	inPath
+)
+{
+	outPath[0]='\0';
+
+#ifdef	LGL_OSX
+	OSStatus err = noErr;
+	FSRef fsRef;
+	Boolean fileFlag;
+	Boolean folderFlag;
+
+	err = FSPathMakeRef
+	(
+		(UInt8*)inPath,
+		&fsRef,
+		&fileFlag
+	);
+
+	if(err != noErr)
+	{
+		return(false);
+	}
+
+	err = FSIsAliasFile
+	(
+		&fsRef,
+		&fileFlag,
+		&folderFlag
+	);
+
+	if(err != noErr)
+	{
+		return(false);
+	}
+
+	if(err == noErr && fileFlag)
+	{
+		//We're an alias
+		Boolean wasAliased;
+		err = FSResolveAliasFileWithMountFlags
+		(
+			&fsRef,
+			true,	//Resolve chains
+			&folderFlag,
+			&wasAliased,
+			kResolveAliasFileNoUI
+		);
+
+		if(err == noErr)
+		{
+			err = FSRefMakePath
+			(
+				&fsRef,
+				(UInt8*)outPath,
+				outPathLength
+			);
+
+			if(err == noErr)
+			{
+				return(true);
+			}
+		}
+	}
+#endif	//LGL_OSX
+
+	return(false);
 }
 
 //Memory
