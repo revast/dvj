@@ -2951,6 +2951,8 @@ bool		LGL_FileExtension(const char* filename, const char* extension);
 void		LGL_SimplifyPath(char* simplePath, const char* complexPath);
 const char*	LGL_GetUsername();
 const char*	LGL_GetHomeDir();
+bool		LGL_PathIsAlias(const char* path);
+bool		LGL_ResolveAlias(char* outPath, int outPathLength, const char* inPath);
 
 //DEPRECATED! Use LGL_DirTree.
 std::vector<char*>

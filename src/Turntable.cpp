@@ -1847,15 +1847,18 @@ NextFrame
 		}
 
 		//Rapid Volume Invert vs LoopLengthExponent
-		const int rapidVolumeInvertMeasuresExponentMin=-6;
-		const int rapidVolumeInvertMeasuresExponentMax=-1;
-		if(LoopLengthMeasuresExponent<rapidVolumeInvertMeasuresExponentMin)
+		if(RapidVolumeInvertSelf)
 		{
-			LoopLengthMeasuresExponent=rapidVolumeInvertMeasuresExponentMin;
-		}
-		if(LoopLengthMeasuresExponent>rapidVolumeInvertMeasuresExponentMax)
-		{
-			LoopLengthMeasuresExponent=rapidVolumeInvertMeasuresExponentMax;
+			const int rapidVolumeInvertMeasuresExponentMin=-6;
+			const int rapidVolumeInvertMeasuresExponentMax=-1;
+			if(LoopLengthMeasuresExponent<rapidVolumeInvertMeasuresExponentMin)
+			{
+				LoopLengthMeasuresExponent=rapidVolumeInvertMeasuresExponentMin;
+			}
+			if(LoopLengthMeasuresExponent>rapidVolumeInvertMeasuresExponentMax)
+			{
+				LoopLengthMeasuresExponent=rapidVolumeInvertMeasuresExponentMax;
+			}
 		}
 
 		//Video
