@@ -22942,13 +22942,13 @@ Refresh_INTERNAL()
 					);
 					system(cmd);
 				}
-				sprintf(check,checkDotSymlink);
+				strcpy(check,checkDotSymlink);
 				char* checkDotSymlinkShort = strrchr(checkDotSymlink,'/');
 				if(checkDotSymlinkShort)
 				{
 					checkDotSymlinkShort=&(checkDotSymlinkShort[1]);
 					bool alreadyExisted=false;
-					for(int b=0;b<everything.size();b++)
+					for(unsigned int b=0;b<everything.size();b++)
 					{
 						if(strcmp(checkDotSymlinkShort,everything[b])==0)
 						{
