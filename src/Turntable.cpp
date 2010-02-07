@@ -4779,7 +4779,7 @@ GetBPMLastMeasureSeconds()
 		double firstBeatSeconds = GetBPMFirstBeatSeconds();
 		double deltaMeasure = 4*(60.0/(double)GetBPM());
 		double candidate = firstBeatSeconds;
-		while(candidate + deltaMeasure < Sound->GetLengthSeconds())
+		while(candidate + deltaMeasure < Sound->GetLengthSeconds()-0.01f)
 		{
 			candidate += deltaMeasure;
 		}
