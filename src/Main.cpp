@@ -617,14 +617,11 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 }
 
 LGL_Image* logo=NULL;
+float loadScreenPercent=0.0f;
 
 void
-DrawLoadScreen
-(
-	float percent=-1.0f
-)
+DrawLoadScreen()
 {
-	bool pctWasNegativeOne = percent==-1.0f;
 	char loadScreenPath[2048];
 
 	//Try user-specified (defaults to ~/.dvj/data/image/loadscreen.png
@@ -664,11 +661,12 @@ DrawLoadScreen
 			1,1,1,1,
 			true,
 			.75,
-			(percent!=-1.0f) ? "Initializing" : "Scanning library"
+			(loadScreenPercent<2.0f) ? "Initializing" : "Scanning library"
 		);
 	}
 
-	if(percent!=-1.0f)
+	float pct=LGL_Min(1.0f,loadScreenPercent);
+	if(loadScreenPercent<2.0f)
 	{
 		LGL_GetFont().DrawString
 		(
@@ -687,10 +685,6 @@ DrawLoadScreen
 			"[ESC] skips (and risks framerate spikes)"
 		);
 	}
-	else
-	{
-		percent=1.0f;
-	}
 
 	float coolR;
 	float coolG;
@@ -701,29 +695,31 @@ DrawLoadScreen
 	float warmB;
 	GetColorWarm(warmR,warmG,warmB);
 
-	float pct=percent;
 	float glow = 1.0f;	//GetGlowFromTime(LGL_FramesSinceExecution()/60.0f);
 	float brW = pct;
 	float brC = pct * (1.0f-brW);
-	LGL_DrawRectToScreen
-	(
-		0,pct/2.0f,
-		0,0.05f,
-		brC*coolR*glow + brW*warmR*glow,
-		brC*coolG*glow + brW*warmG*glow,
-		brC*coolB*glow + brW*warmB*glow,
-		1.0f
-	);
-	LGL_DrawRectToScreen
-	(
-		1.0f-pct/2.0f,1.0f,
-		0,0.05f,
-		brC*coolR*glow + brW*warmR*glow,
-		brC*coolG*glow + brW*warmG*glow,
-		brC*coolB*glow + brW*warmB*glow,
-		1.0f
-	);
-	if(pctWasNegativeOne==false)
+	if(loadScreenPercent!=2.0f)
+	{
+		LGL_DrawRectToScreen
+		(
+			0,pct/2.0f,
+			0,0.05f,
+			brC*coolR*glow + brW*warmR*glow,
+			brC*coolG*glow + brW*warmG*glow,
+			brC*coolB*glow + brW*warmB*glow,
+			1.0f
+		);
+		LGL_DrawRectToScreen
+		(
+			1.0f-pct/2.0f,1.0f,
+			0,0.05f,
+			brC*coolR*glow + brW*warmR*glow,
+			brC*coolG*glow + brW*warmG*glow,
+			brC*coolB*glow + brW*warmB*glow,
+			1.0f
+		);
+	}
+	if(loadScreenPercent<2.0f)
 	{
 		LGL_DrawLineToScreen
 		(
@@ -746,6 +742,7 @@ SwapOutOtherPrograms(void* baka)
 	long int memMax = 2048;
 	for(long int size=memDelta;size<=memMax;size+=memDelta)
 	{
+		LGL_DelayMS(1);
 		void* mem = malloc(size*1024*1024);
 		free(mem);
 		if(mem && size!=memMax)
@@ -766,6 +763,10 @@ SwapOutOtherPrograms(void* baka)
 			char* memChar = (char*)mem;
 			for(long int a=0;a<size*1024*1024;a+=2048)
 			{
+				if(a%(1024*1024)==0)
+				{
+					LGL_DelayMS(1);
+				}
 				memChar[a]=1;
 				SwapOutOtherProgramsPercent=(a/(float)(size*1024*1024));
 				if(SwapOutOtherProgramsFinished)
@@ -885,6 +886,8 @@ int main(int argc, char** argv)
 
 	VerifyMusicDir();
 
+	DrawLoadScreen();
+
 	if(wireMemory)
 	{
 		SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
@@ -894,13 +897,17 @@ int main(int argc, char** argv)
 			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
 			{
 				SwapOutOtherProgramsFinished=true;
+				loadScreenPercent=2.0f;
 				break;
 			}
-			DrawLoadScreen(powf(SwapOutOtherProgramsPercent,3));
+			loadScreenPercent=powf(SwapOutOtherProgramsPercent,3);
+			DrawLoadScreen();
+			LGL_DelaySeconds(1.0f/60.0f);
 
 			if(SwapOutOtherProgramsFinished)
 			{
 				LGL_ThreadWait(thread);
+				loadScreenPercent=3.0f;
 				break;
 			}
 		}
