@@ -1763,7 +1763,7 @@ NextFrame
 			}
 
 			float secondsMin=powf(2.0f,-9);
-			float secondsMax=Sound->GetLengthSeconds();//powf(2.0f,6);
+			float secondsMax=LGL_Max(0.0f,Sound->GetLengthSeconds()-0.01f);//powf(2.0f,6);
 
 			if
 			(
@@ -1772,7 +1772,7 @@ NextFrame
 			)
 			{
 				LoopStartSeconds=0.0f;
-				LoopLengthNoBPMSeconds=Sound->GetLengthSeconds();
+				LoopLengthNoBPMSeconds=secondsMax;
 				loopChanged=true;
 				LoopActive=true;
 			}
