@@ -626,7 +626,7 @@ TurntableObj::
 				VideoEncoderTerminateSignal=0;
 				break;
 			}
-			LGL_DelayMS(60.0f/1000.0f);
+			LGL_DelayMS(50);
 		}
 	}
 
@@ -667,7 +667,7 @@ TurntableObj::
 			}
 			else
 			{
-				LGL_DelayMS(1);
+				LGL_DelayMS(50);
 			}
 		}
 		delete Sound;
