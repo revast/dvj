@@ -912,6 +912,10 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+	else
+	{
+		loadScreenPercent=2.0f;
+	}
 
 	DrawLoadScreen();
 
