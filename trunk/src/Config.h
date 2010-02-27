@@ -33,6 +33,9 @@ GetMusicRootPath();
 const char*
 GetMusicRootConfigFilePath();
 
+const char*
+GetDvjCacheDirName();
+
 void
 SetMusicRootPath(const char* path);
 

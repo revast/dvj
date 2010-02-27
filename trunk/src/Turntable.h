@@ -102,9 +102,6 @@ public:
 	void				LoadCachedMetadata();
 	void				SaveCachedMetadata();
 
-	bool				LoadCachedFileLength();
-	void				SaveCachedFileLength();
-
 const	char*				GetSoundPath();
 const	char*				GetSoundPathShort();
 

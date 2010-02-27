@@ -330,13 +330,23 @@ GetMusicRootPath()
 	return(musicRootPath);
 }
 
-char musicRootPathConfigPath[2048];
-
 const char*
 GetMusicRootConfigFilePath()
 {
-	sprintf(musicRootPathConfigPath,"%s/musicRootPath.txt",dotDvj);
+	static char* musicRootPathConfigPath;
+	if(musicRootPathConfigPath==NULL)
+	{
+		musicRootPathConfigPath= new char[2048];
+		sprintf(musicRootPathConfigPath,"%s/musicRootPath.txt",dotDvj);
+	}
 	return(musicRootPathConfigPath);
+}
+
+const char*
+GetDvjCacheDirName()
+{
+	const char* cacheName = "dvj_cache";
+	return(cacheName);
 }
 
 void
