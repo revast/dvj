@@ -155,6 +155,47 @@ findVideoPath
 )
 {
 	findCachedPath(foundPath,srcPath,"mjpeg.avi");
+	if(LGL_FileExists(foundPath))
+	{
+		return;
+	}
+
+	if(LGL_VideoIsMJPEG(srcPath))
+	{
+		char soundSrcDir[2048];
+		strcpy(soundSrcDir,srcPath);
+		if(char* lastSlash = strrchr(soundSrcDir,'/'))
+		{
+			lastSlash[0]='\0';
+		}
+		else
+		{
+			soundSrcDir[0]='\0';
+		}
+		char soundName[2048];
+		if(strrchr(soundSrcDir,'/'))
+		{
+			strcpy(soundName,&(strrchr(srcPath,'/')[1]));
+		}
+		else
+		{
+			strcpy(soundName,srcPath);
+		}
+		sprintf(foundPath,"%s/dvj/%s.mjpeg.avi",soundSrcDir,soundName);
+		if(LGL_FileExists(foundPath)==false)
+		{
+			char cmd[4096];
+			sprintf
+			(
+				cmd,
+				"ln -s '%s' '%s'",
+				srcPath,
+				foundPath
+			);
+			system(cmd);
+		}
+		return;
+	}
 }
 
 const char* audioExtension = "flac";
