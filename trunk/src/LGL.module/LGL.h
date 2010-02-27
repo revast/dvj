@@ -1272,6 +1272,7 @@ public:
 	float			GetPercentFinished();
 	bool			IsFinished();
 	const char*		GetCodecName();
+	bool			IsMJPEG();
 	float			GetBitrateMaxMBps();
 static	void			SetBitrateMaxMBps(float max);
 
@@ -1307,7 +1308,7 @@ static	float			BitrateMaxMBps;
 	double			SrcSecondsNow;
 
 	//Convert
-	
+
 	SwsContext*		SwsConvertContext;
 
 	//Dst
@@ -1384,6 +1385,12 @@ private:
 	SDL_Thread*		Thread;
 	bool			DestructHint;
 };
+
+bool
+LGL_VideoIsMJPEG
+(
+	const char*	path
+);
 
 class LGL_Font
 {

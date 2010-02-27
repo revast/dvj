@@ -7804,19 +7804,14 @@ LGL_VideoDecoder
 LGL_VideoDecoder::
 ~LGL_VideoDecoder()
 {
-	UnloadVideo();
-	
-	if(FormatContext)
-	{
-		av_close_input_file(FormatContext);
-	}
-
 	ThreadTerminate=true;
 	if(Thread)
 	{
 		LGL_ThreadWait(Thread);
 		Thread=NULL;
 	}
+
+	UnloadVideo();
 }
 
 void
@@ -7891,7 +7886,12 @@ void
 LGL_VideoDecoder::
 UnloadVideo()
 {
-	//
+	if(FormatContext)
+	{
+		av_close_input_file(FormatContext);
+		//NOT necessary: av_free(FormatContext);
+		FormatContext=NULL;
+	}
 }
 
 void
@@ -8911,7 +8911,7 @@ LGL_VideoEncoder
 	strcpy(DstPath,dstVideo);
 	strcpy(DstMp3Path,dstAudio);
 
-	Valid=false;
+	Valid=0;
 	UnsupportedCodec=false;
 	EncodeAudio=true;
 	EncodeVideo=true;
@@ -8962,6 +8962,7 @@ LGL_VideoEncoder
 				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't open '%s'\n",src);
 				return;
 			}
+			SrcFormatContext=fc;
 		}
 
 		//Find streams
@@ -9010,7 +9011,6 @@ LGL_VideoEncoder
 		{
 			EncodeAudio=false;
 		}
-		SrcFormatContext=fc;	//Only set this once fc is fully initialized
 
 		// Find the decoder for the video stream
 		SrcCodec=avcodec_find_decoder(SrcCodecContext->codec_id);
@@ -9295,7 +9295,7 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 		}
 	}
 
-	Valid=true;
+	Valid=1;
 }
 
 LGL_VideoEncoder::
@@ -9357,7 +9357,23 @@ LGL_VideoEncoder::
 	}
 	if(DstFormatContext)
 	{
+		if(DstFormatContext->pb)
+		{
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			url_fclose(DstFormatContext->pb);
+			DstFormatContext->pb=NULL;
+		}
 		av_freep(&DstFormatContext);
+	}
+	if(DstMp3FormatContext)
+	{
+		if(DstMp3FormatContext->pb)
+		{
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			url_fclose(DstMp3FormatContext->pb);
+			DstMp3FormatContext->pb=NULL;
+		}
+		av_freep(&DstMp3FormatContext);
 	}
 	if(DstStream)
 	{
@@ -9389,7 +9405,7 @@ bool
 LGL_VideoEncoder::
 IsValid()
 {
-	return(Valid);
+	return(Valid==1);
 }
 
 bool
@@ -9595,6 +9611,7 @@ Encode
 			//We're done!
 			if(EncodeVideo)
 			{
+				LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 				av_write_trailer(DstFormatContext);
 				url_fclose(DstFormatContext->pb);	//FIXME: Memleak
 			}
@@ -9620,6 +9637,7 @@ Encode
 				}
 
 				av_write_trailer(DstMp3FormatContext);
+				LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 				url_fclose(DstMp3FormatContext->pb);	//FIXME: Memleak
 			}
 			if(DstMp3FormatContext)
@@ -9719,6 +9737,28 @@ LGL_VideoEncoder::
 GetCodecName()
 {
 	return(SrcCodecName);
+}
+
+bool
+LGL_VideoEncoder::
+IsMJPEG()
+{
+	if(Valid==false)
+	{
+		return(false);
+	}
+
+	int result=false;
+	if(SrcCodecContext)
+	{
+		result = 
+		(
+			SrcCodecContext->codec_id == CODEC_ID_MJPEG ||
+			SrcCodecContext->codec_id == CODEC_ID_MJPEGB ||
+			SrcCodecContext->codec_id == CODEC_ID_LJPEG
+		);
+	}
+	return(result);
 }
 
 float
@@ -9979,8 +10019,11 @@ Finalize()
 	}
 	*/
 
-	av_write_trailer(DstMp3FormatContext);
-	url_fclose(DstMp3FormatContext->pb);	//FIXME: Memleak
+	{
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+		av_write_trailer(DstMp3FormatContext);
+		url_fclose(DstMp3FormatContext->pb);	//FIXME: Memleak
+	}
 
 	if(DstMp3FormatContext)
 	{
@@ -10094,6 +10137,28 @@ FlushBuffer
 		DstMp3Packet.dts++;
 		DstMp3Packet.pts++;
 	}
+}
+
+bool
+LGL_VideoIsMJPEG
+(
+	const char*	path
+)
+{
+	if(LGL_FileExists(path)==false)
+	{
+		return(false);
+	}
+
+	LGL_VideoEncoder* ve = new LGL_VideoEncoder
+	(
+		path,
+		"/dev/null",
+		"/dev/null"
+	);
+	bool ret=ve->IsMJPEG();
+	delete ve;
+	return(ret);
 }
 
 //LGL_Font
@@ -15002,6 +15067,7 @@ LoadToMemory()
 		{
 			printf("LGL_Sound::LoadToMemory(): Couldn't find streams for '%s'\n",Path);
 			BadFile=true;
+			av_close_input_file(formatContext);
 			return;
 		}
 
@@ -15035,6 +15101,7 @@ LoadToMemory()
 			{
 				printf("LGL_Sound::LoadToMemory: Couldn't find audio codec for '%s'. Codec = '%s'\n",Path,codecContext->codec_name);
 				BadFile=true;
+				av_close_input_file(formatContext);
 				return;
 			}
 
@@ -15048,6 +15115,7 @@ LoadToMemory()
 			{
 				printf("LGL_Sound::LoadToMemory(): Invalid channel count found for '%s': %i\n",Path,Channels);
 				BadFile=true;
+				av_close_input_file(formatContext);
 				return;
 			}
 
@@ -15059,8 +15127,8 @@ LoadToMemory()
 				if(avcodec_open(codecContext,codec)<0)
 				{
 					printf("LGL_Sound::LoadToMemory(): Couldn't open codec for '%s'\n",Path);
-					av_close_input_file(formatContext);
 					BadFile=true;
+					av_close_input_file(formatContext);
 					return;
 				}
 			}
@@ -23545,6 +23613,14 @@ LGL_FileExists
 	char*	path
 )
 {
+	if
+	(
+		path==NULL ||
+		path[0]=='\0'
+	)
+	{
+		return(false);
+	}
 #ifndef	LGL_WIN32
 	struct stat buf;
 	int ret=stat(path,&buf);
