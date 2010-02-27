@@ -440,7 +440,7 @@ Refresh
 		if
 		(
 			dirTree.GetDirName(a)[0]!='.' &&
-			strcmp(dirTree.GetDirName(a),"dvj")!=0
+			strcmp(dirTree.GetDirName(a),GetDvjCacheDirName())!=0
 		)
 		{
 			char path[2048];

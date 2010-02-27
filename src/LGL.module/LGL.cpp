@@ -22999,7 +22999,7 @@ Refresh_INTERNAL()
 					LGL_DirectoryExists(checkDotSymlink)==false
 				)
 				{
-					unlink(checkDotSymlink);
+					LGL_FileDelete(checkDotSymlink);
 					char cmd[4096];
 					sprintf
 					(
