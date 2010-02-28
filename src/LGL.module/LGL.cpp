@@ -1697,14 +1697,6 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	avcodec_register_all();
 	av_log_set_level(AV_LOG_WARNING);	//QUIET, ERROR, WARNING, DEBUG
 
-/*
-char* Path = "/Users/id/mp3/dvj/Beeple - Simple Extraction.mpg.mjpeg.avi";
-AVFormatContext* fc=NULL;
-printf("All good (2A) (%s)!\n",Path);
-av_open_input_file(&fc, Path, NULL, 0, NULL);
-printf("All good (2B) (%s)!\n",Path);
-*/
-
 	//bool audioIn=inAudioChannels < 0;
 	inAudioChannels=abs(inAudioChannels);
 
