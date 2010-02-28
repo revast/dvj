@@ -8923,7 +8923,6 @@ LGL_VideoEncoder
 	const char*	dstAudio
 )
 {
-printf("Hello world!\n");
 	strcpy(SrcPath,src);
 	strcpy(DstPath,dstVideo);
 	strcpy(DstMp3Path,dstAudio);
