@@ -8923,6 +8923,7 @@ LGL_VideoEncoder
 	const char*	dstAudio
 )
 {
+printf("Hello world!\n");
 	strcpy(SrcPath,src);
 	strcpy(DstPath,dstVideo);
 	strcpy(DstMp3Path,dstAudio);
@@ -10162,6 +10163,17 @@ LGL_VideoIsMJPEG
 )
 {
 	if(LGL_FileExists(path)==false)
+	{
+		return(false);
+	}
+
+	if
+	(
+		LGL_FileExtension(path,"mp3") ||
+		LGL_FileExtension(path,"ogg") ||
+		LGL_FileExtension(path,"flac") ||
+		LGL_FileExtension(path,"wav")
+	)
 	{
 		return(false);
 	}
