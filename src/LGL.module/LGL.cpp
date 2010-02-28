@@ -7794,7 +7794,7 @@ LGL_VideoDecoder
 (
 	const char* path
 ) :
-	FrameBufferReadySemaphore("Path Semaphore"),
+	FrameBufferReadySemaphore("FrameBufferReady Semaphore"),
 	PathSemaphore("Path Semaphore")
 {
 	Init();
@@ -8107,6 +8107,10 @@ GetSecondsBufferedLeft()
 
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberLength==0)
+	{
+		return(0.0f);
+	}
 	if(frameNumberNow>frameNumberLength-1) frameNumberNow=frameNumberLength-1;
 	int currentIndex=-1;
 	for(unsigned int a=0;a<FrameBufferReady.size();a++)
@@ -8162,7 +8166,7 @@ GetSecondsBufferedLeft()
 			break;
 		}
 	}
-	
+
 	return(seconds);
 }
 
@@ -8179,6 +8183,10 @@ GetSecondsBufferedRight()
 
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberLength==0)
+	{
+		return(0.0f);
+	}
 	if(frameNumberNow>frameNumberLength-1) frameNumberNow=frameNumberLength-1;
 	int currentIndex=-1;
 	for(unsigned int a=0;a<FrameBufferReady.size();a++)
@@ -8580,6 +8588,11 @@ void
 LGL_VideoDecoder::
 MaybeRecycleBuffers()
 {
+	if(VideoOK==false)
+	{
+		return;
+	}
+
 	char path[2048];
 	{
 		LGL_ScopeLock pathLock(PathSemaphore);
@@ -8590,16 +8603,18 @@ MaybeRecycleBuffers()
 
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberLength==0)
+	{
+		return;
+	}
 
 	long frameNumberPrev = SecondsToFrameNumber(TimeSecondsPrev);
 	long frameNumberTarget = frameNumberNow + (frameNumberNow-frameNumberPrev);
 
 	//Handle wrap-around
 	long frameNumberPredict=frameNumberTarget;
-	while(frameNumberPredict>frameNumberLength)
-	{
-		frameNumberPredict-=frameNumberLength;
-	}
+	frameNumberPredict = frameNumberPredict % frameNumberLength;
+
 	for(unsigned int a=0;a<FrameBufferReady.size();a++)
 	{
 		if
@@ -8734,16 +8749,17 @@ GetNextFrameNumberToDecodePredictNext(bool mustNotBeDecoded)
 {
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberLength==0)
+	{
+		return(0);
+	}
 
 	long frameNumberPrev = SecondsToFrameNumber(TimeSecondsPrev);
 	long frameNumberTarget = frameNumberNow + (frameNumberNow-frameNumberPrev);
 
 	//Handle wrap-around
 	long frameNumberFind=frameNumberTarget;
-	while(frameNumberFind>frameNumberLength)
-	{
-		frameNumberFind-=frameNumberLength;
-	}
+	frameNumberFind = frameNumberFind % frameNumberLength;
 
 	if(frameNumberFind<0) frameNumberFind=0;
 	if(frameNumberFind>frameNumberLength) frameNumberFind=frameNumberLength;
@@ -8785,6 +8801,10 @@ GetNextFrameNumberToDecodeForwards()
 {
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberLength==0)
+	{
+		return(0);
+	}
 
 	int frameBufferIndex=0;
 	long frameNumberFinal = frameNumberNow+FrameBufferAddRadius;
@@ -8833,6 +8853,10 @@ GetNextFrameNumberToDecodeBackwards()
 {
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberLength==0)
+	{
+		return(0);
+	}
 	if(frameNumberNow>frameNumberLength) frameNumberNow=frameNumberLength;
 	
 	int frameBufferIndex=FrameBufferReady.size()-1;
