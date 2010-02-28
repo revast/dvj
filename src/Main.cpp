@@ -886,10 +886,9 @@ int main(int argc, char** argv)
 
 	VerifyMusicDir();
 
-	DrawLoadScreen();
-
 	if(wireMemory)
 	{
+		DrawLoadScreen();
 		SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
 		for(;;)
 		{
