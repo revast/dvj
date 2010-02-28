@@ -199,7 +199,7 @@ findVideoPath
 		{
 			strcpy(soundName,srcPath);
 		}
-		sprintf(foundPath,"%s/dvj/%s.mjpeg.avi",soundSrcDir,soundName);
+		sprintf(foundPath,"%s/%s/%s.mjpeg.avi",soundSrcDir,GetDvjCacheDirName(),soundName);
 		if(LGL_FileExists(foundPath)==false)
 		{
 			LGL_FileDelete(foundPath);	//For stale symlinks...
@@ -1047,7 +1047,7 @@ NextFrame
 				}
 				
 				char videoTracksPath[2048];
-				sprintf(videoTracksPath,"%s/dvj",SoundSrcDir);
+				sprintf(videoTracksPath,"%s/%s",SoundSrcDir,GetDvjCacheDirName());
 				char filenameCached[2048];
 				findAudioPath(filenameCached,SoundSrcPath);
 
