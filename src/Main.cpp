@@ -745,12 +745,13 @@ SwapOutOtherPrograms(void* baka)
 		LGL_DelayMS(1);
 		void* mem = malloc(size*1024*1024);
 		free(mem);
+		if(SwapOutOtherProgramsFinished)
+		{
+			break;
+		}
 		if(mem && size!=memMax)
 		{
-			if(SwapOutOtherProgramsFinished)
-			{
-				break;
-			}
+			//
 		}
 		else
 		{
