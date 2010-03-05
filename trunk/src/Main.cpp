@@ -759,7 +759,15 @@ SwapOutOtherPrograms(void* baka)
 			while(mem==NULL)
 			{
 				size-=memDelta;
+				if(size<=0)
+				{
+					break;
+				}
 				mem = malloc(size*1024*1024);
+			}
+			if(mem==NULL)
+			{
+				break;
 			}
 			char* memChar = (char*)mem;
 			for(long int a=0;a<size*1024*1024;a+=2048)
