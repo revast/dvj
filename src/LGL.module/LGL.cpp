@@ -283,6 +283,7 @@ typedef struct
 	bool			AudioMasterToHeadphones;
 	char			AudioEncoderPath[2048];
 	LGL_AudioEncoder*	AudioEncoder;
+	LGL_Timer		AudioOutCallbackTimer;
 
 	//AudioIn
 
@@ -13760,6 +13761,13 @@ PrepareForDeleteThreadFunc()
 					break;
 				}
 			}
+			if(!ok)
+			{
+				if(LGL.AudioOutCallbackTimer.SecondsSinceLastReset()>5.0f)
+				{
+					ok=true;
+				}
+			}
 			if(ok)
 			{
 				break;
@@ -26767,6 +26775,7 @@ lgl_AudioOutCallback
 	int	len8
 )
 {
+	LGL.AudioOutCallbackTimer.Reset();
 	bool mix4to6 = LGL.AudioSpec->channels==6;
 	for(;;)
 	{
