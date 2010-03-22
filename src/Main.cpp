@@ -749,9 +749,9 @@ SwapOutOtherPrograms(void* baka)
 		{
 			break;
 		}
-		if(mem && size!=memMax)
+		if(mem && size<memMax)
 		{
-			//
+			//Keep on going...
 		}
 		else
 		{
