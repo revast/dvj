@@ -90,6 +90,13 @@ findCachedPath
 		strcpy(soundName,srcPath);
 	}
 
+	sprintf(foundPath,"%s/%s.%s",soundSrcDir,soundName,extension);
+	if(LGL_FileExists(foundPath))
+	{
+		//Found /home/id/mp3/hajnal.mov.mjpeg.avi
+		return;
+	}
+
 	sprintf(foundPath,"%s/%s/%s.%s",soundSrcDir,GetDvjCacheDirName(),soundName,extension);
 	if(LGL_FileExists(foundPath))
 	{
@@ -563,6 +570,8 @@ TurntableObj
 	FinalSpeed=0.0f;
 	FinalSpeedLastFrame=0.0f;
 	RewindFF=false;
+	RecordHoldLastFrame=false;
+	RecordSpeedAsZeroUntilZero=false;
 	LuminScratch=false;
 	LuminScratchSamplePositionDesired=-10000;
 	MixerVolumeFront=1.0f;
@@ -1218,7 +1227,31 @@ NextFrame
 		float rewindFFFactor=Input.WaveformRewindFF(target);
 		float recordSpeed=Input.WaveformRecordSpeed(target);
 		bool recordHold=Input.WaveformRecordHold(target);
-		if(recordHold) RecordHoldReleaseTimer.Reset();
+		if(recordSpeed==0.0f)
+		{
+			RecordSpeedAsZeroUntilZero=false;
+		}
+		if(recordHold)
+		{
+			RecordHoldReleaseTimer.Reset();
+		}
+		else
+		{
+			if(RecordSpeedAsZeroUntilZero)
+			{
+				recordSpeed=0.0f;
+			}
+		}
+		if
+		(
+			RecordHoldLastFrame &&
+			recordHold==false
+		)
+		{
+			Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier,true);
+			RecordSpeedAsZeroUntilZero=true;
+		}
+		RecordHoldLastFrame=recordHold;
 		if(VideoFrequencySensitiveMode==2)
 		{
 			rewindFFFactor=0.0f;
@@ -1305,7 +1338,7 @@ NextFrame
 					Sound->SetWarpPoint(Channel);
 				}
 				RecordScratch=true;
-				float driveFactor=LGL_Min(RecordHoldReleaseTimer.SecondsSinceLastReset()*4.0f,1.0f);
+				float driveFactor=Input.WaveformRecordHold(target) ? 0.0f : 1.0f;//LGL_Min(RecordHoldReleaseTimer.SecondsSinceLastReset()*4.0f,1.0f);
 
 				float driveSpeed = 
 					(1.0f-driveFactor) * recordSpeed +
@@ -2473,7 +2506,8 @@ NextFrame
 			(
 				Channel,
 				//16.0/44100.0
-				20.0/44100.0
+				//20.0/44100.0
+				32.0f/44100.0f
 			);
 
 			if(FileEverOpened==false)
@@ -3991,7 +4025,7 @@ GetVideoSolo()
 		(MixerVolumeFront==0.0f ? 1.0f : 0.0f) :
 		MixerVolumeFront;
 	volFront*=(VolumeKill?0.0f:1.0f);
-	return((RecordScratch || LuminScratch) && (volFront>0.0f));
+	return(volFront>0.0f);
 }
 
 float

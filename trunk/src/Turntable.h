@@ -190,7 +190,9 @@ private:
 	float				FinalSpeedLastFrame;
 	bool				RewindFF;
 	LGL_Timer			RecordHoldReleaseTimer;
+	bool				RecordHoldLastFrame;
 	bool				RecordScratch;
+	bool				RecordSpeedAsZeroUntilZero;
 	LGL_Timer			EjectTimer;
 	bool				LuminScratch;	//Pointer scratch...?
 	long				LuminScratchSamplePositionDesired;

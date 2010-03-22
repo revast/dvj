@@ -1096,13 +1096,12 @@ WaveformRapidVolumeInvertSelf
 	unsigned int	target
 )	const
 {
-	/*
 	if(LGL_GetXponent())
 	{
 		if
 		(
 			(target & TARGET_BOTTOM) &&
-			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_VOLUME)
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_8)
 		)
 		{
 			return(true);
@@ -1110,13 +1109,12 @@ WaveformRapidVolumeInvertSelf
 		else if
 		(
 			(target & TARGET_TOP) &&
-			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_VOLUME)
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_8)
 		)
 		{
 			return(true);
 		}
 	}
-	*/
 
 	return(false);
 }
@@ -1746,14 +1744,14 @@ WaveformLoopMeasuresExponent
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_1)) exponent=0;
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_2)) exponent=1;
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_4)) exponent=2;
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_8)) exponent=3;
+			//if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOOP_8)) exponent=3;
 		}
 		else if((target & TARGET_TOP))
 		{
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_1)) exponent=0;
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_2)) exponent=1;
 			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_4)) exponent=2;
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_8)) exponent=3;
+			//if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOOP_8)) exponent=3;
 		}
 	}
 
