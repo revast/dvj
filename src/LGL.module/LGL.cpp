@@ -98,10 +98,7 @@
 unsigned int LGL_SAMPLESIZE_SDL;
 
 void lgl_AudioOutCallback(void* userdata, Uint8* stream, int len8);
-
-#ifdef	LGL_LINUX
 void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8);
-#endif	//LGL_LINUX
 
 void lgl_fftw_init();
 
@@ -454,13 +451,47 @@ lgl_AudioOutCallbackJackXrun
 	void*	baka
 )
 {
-	/*
 	double delayedUsecs=jack_get_xrun_delayed_usecs(jack_client);
 	if(delayedUsecs>0)
 	{
-		printf("Jack xrun... %.5fms\n",delayedUsecs/1000.0f);
+		printf("[%.2f] Jack xrun... %.5fms\n",LGL_SecondsSinceExecution(),delayedUsecs/1000.0f);
 	}
-	*/
+	return(0);
+}
+
+Uint8 lgl_AudioInCallbackJackBuf[4096];
+int lgl_AudioInCallbackJackBufPos=0;
+
+int lgl_AudioInCallbackJack(void *udata, Uint8 *stream, int len8)
+{
+	if(LGL.AudioAvailable==false) return(0);
+
+	if(len8==2048)
+	{
+		lgl_AudioInCallback(NULL,stream,len8);
+		return(0);
+	}
+	else if(len8<2048)
+	{
+		memcpy(&(lgl_AudioInCallbackJackBuf[lgl_AudioInCallbackJackBufPos]),stream,len8);
+		lgl_AudioInCallbackJackBufPos+=len8;
+		if(lgl_AudioInCallbackJackBufPos>=2048)
+		{
+			lgl_AudioInCallback(NULL,lgl_AudioInCallbackJackBuf,2048);
+			int remain = lgl_AudioInCallbackJackBufPos-2048;
+			if(remain>0)
+			{
+				remain = LGL_Min(remain,2048);
+				memcpy(lgl_AudioInCallbackJackBuf,&(lgl_AudioInCallbackJackBuf[2048]),remain);
+			}
+			lgl_AudioInCallbackJackBufPos=0;
+		}
+	}
+	else
+	{
+		assert(false);
+	}
+
 	return(0);
 }
 
@@ -522,7 +553,7 @@ lgl_AudioOutCallbackJack
 			out_fr[a]+=in_r[a];
 */
 		}
-		lgl_AudioInCallback(NULL,jack_input_buffer8,nframes*2*2);
+		lgl_AudioInCallbackJack(NULL,jack_input_buffer8,nframes*2*2);
 	}
 
 	return(0);
@@ -990,6 +1021,7 @@ LGL_JackInit()
 	}
 	else
 	{
+		printf("jack_get_ports() for jack_ports_out failed!\n");
 		jack_input_port_l=NULL;
 		jack_input_port_r=NULL;
 	}
@@ -27453,13 +27485,15 @@ lgl_AudioOutCallbackGenerator
 					{
 						int index=sc->SampleRateConverterBufferCurrentSamplesIndex;
 						sc->SampleRateConverterBufferCurrentSamplesIndex++;
-						assert(index>=0 && index<SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES);
-						if(index<sc->SampleRateConverterBufferValidSamples)
+						if(index>=0 && index<SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES)
 						{
-							neoFL = sc->SampleRateConverterBuffer[0][index];
-							neoFR = sc->SampleRateConverterBuffer[1][index];
-							neoBL = sc->SampleRateConverterBuffer[2%sc->Channels][index];
-							neoBR = sc->SampleRateConverterBuffer[3%sc->Channels][index];
+							if(index<sc->SampleRateConverterBufferValidSamples)
+							{
+								neoFL = sc->SampleRateConverterBuffer[0][index];
+								neoFR = sc->SampleRateConverterBuffer[1][index];
+								neoBL = sc->SampleRateConverterBuffer[2%sc->Channels][index];
+								neoBR = sc->SampleRateConverterBuffer[3%sc->Channels][index];
+							}
 						}
 					}
 					else if
@@ -27946,7 +27980,11 @@ void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8)
 {
 	Sint16* stream16=(Sint16*)stream;
 	int len16=len8/2;
-	assert(len16==1024);
+	if(len16!=1024)
+	{
+		printf("len16: %i\n",len16);
+		assert(len16==1024);
+	}
 
 	if(streamStereo8==NULL)
 	{
@@ -27955,8 +27993,8 @@ void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8)
 	}
 	for(int a=0;a<len16;a++)
 	{
-		streamStereo16[2*a+0]=stream16[a];
-		streamStereo16[2*a+1]=stream16[a];
+		streamStereo16[2*a+0]=stream16[a]+stream16[a+1];
+		streamStereo16[2*a+1]=stream16[a]+stream16[a+1];
 	}
 
 	LGL_AudioGrain* grain=new LGL_AudioGrain;
