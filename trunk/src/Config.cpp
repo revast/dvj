@@ -185,6 +185,74 @@ LoadKeyboardInput()
 void
 CreateDotJackdrc()
 {
+#ifndef LGL_OSX
+	//This fn currently is written to use coreaudio, and thus only works with OSX.
+	//TODO: Make this work beyond OSX.
+	return;
+#endif	//LGL_OSX
+
+	//Run jackd -d coreaudio -l -d baka > /tmp/jack.output
+	const char* jackOutputPath = "/tmp/jack.output";
+	char cmd[2048];
+	bool jackdInCurrentDir = LGL_FileExists("jackd");
+	sprintf(cmd,"%s -d coreaudio -l -d baka > '%s'",jackdInCurrentDir ? "./jackd" : "jackd",jackOutputPath);
+	int result = system(cmd);
+	if(result!=0)
+	{
+		printf("CreateDotJackdrc(): cmd failed: %s\n",cmd);
+		return;
+	}
+
+	//Scan jack.output for string "Aggregate".
+	bool aggregate=false;
+	if(FILE* fd = fopen(jackOutputPath,"r"))
+	{
+		const int bufLen=2048;
+		char buf[bufLen];
+		for(;;)
+		{
+			fgets(buf,bufLen,fd);
+			if(feof(fd))
+			{
+				break;
+			}
+			if(strstr(buf,"Aggregate"))
+			{
+				aggregate=true;
+				break;
+			}
+		}
+	}
+	else
+	{
+		printf("CreateDotJackdrc(): Couldn't open: %s\n",jackOutputPath);
+		return;
+	}
+
+	//Write correct ~/.jackdrc
+	char dotJackdrcPath[2048];
+	sprintf(dotJackdrcPath,"%s/.jackdrc",LGL_GetHomeDir());
+	if(LGL_FileExists(dotJackdrcPath))
+	{
+		LGL_FileDelete(dotJackdrcPath);
+	}
+
+	if(FILE* fd = fopen(dotJackdrcPath,"w"))
+	{
+		if(aggregate)
+		{
+			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p 512 -d \"~:Aggregate:0\" -c 6 -i 2 -o 4\n");
+		}
+		else
+		{
+			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p 512\n");
+		}
+		fclose(fd);
+	}
+
+	return;
+
+	/*
 	char dotJackdrcPath[2048];
 	sprintf(dotJackdrcPath,"%s/.jackdrc",LGL_GetHomeDir());
 	if(LGL_FileExists(dotJackdrcPath)==false)
@@ -195,6 +263,7 @@ CreateDotJackdrc()
 			fclose(fd);
 		}
 	}
+	*/
 }
 
 void
