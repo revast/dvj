@@ -1059,8 +1059,9 @@ DrawVideos
 
 	int videoNow=which;
 
-	if(FreqMode[videoNow]>0)
+	if(FreqMode[videoNow]==1)
 	{
+		/*
 		//Frequency-sensitive video mixing
 
 		LGL_VideoDecoder* vidL=FreqVideos[videoNow*2+0];
@@ -1101,6 +1102,57 @@ DrawVideos
 					}
 				}
 			}
+		}
+		*/
+	}
+	else if(FreqMode[videoNow]==2)
+	{
+		float coolR;
+		float coolG;
+		float coolB;
+		GetColorCool(coolR,coolG,coolB);
+
+		float warmR;
+		float warmG;
+		float warmB;
+		GetColorWarm(warmR,warmG,warmB);
+
+		float volAve;
+		float volMax;
+		float freqFactor;
+		LGL_AudioInMetadata(volAve,volMax,freqFactor);
+
+		float red=
+			(1.0f-freqFactor)*coolR+
+			(0.0f+freqFactor)*warmR;
+		float green=
+			(1.0f-freqFactor)*coolG+
+			(0.0f+freqFactor)*warmG;
+		float blue=
+			(1.0f-freqFactor)*coolB+
+			(0.0f+freqFactor)*warmB;
+
+		if(volMax>=0.99f)
+		{
+			red=1.0f;
+			green=0.0f;
+			blue=0.0f;
+		}
+
+		if
+		(
+			GetFreqBrightness(false,freqFactor,2*volAve*1.0f) ||
+			GetFreqBrightness(true,freqFactor,2*volAve*1.0f)
+		)
+		{
+			float bright = (overrideBrightness==-1.0f) ? VideoBrightness[videoNow] : overrideBrightness;
+			LGL_DrawAudioInWaveform
+			(
+				l,r,b,t,
+				red*bright,green*bright,blue*bright,0.0f,
+				3.0f,
+				true
+			);
 		}
 	}
 	else if(Videos[videoNow])
