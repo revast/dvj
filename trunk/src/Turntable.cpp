@@ -897,13 +897,23 @@ NextFrame
 		if(strcmp(FilterText.GetString(),FilterTextMostRecent)!=0)
 		{
 			filterDelta=true;
-			strcpy(FilterTextMostRecent,FilterText.GetString());
+			strncpy(FilterTextMostRecent,FilterText.GetString(),sizeof(FilterTextMostRecent));
+			FilterTextMostRecent[sizeof(FilterTextMostRecent)-1]='\0';
 
 			char oldSelection[2048];
-			strcpy(oldSelection,DatabaseFilteredEntries[FileSelectInt]->PathShort);
+			if(FileSelectInt < DatabaseFilteredEntries.size())
+			{
+				strncpy(oldSelection,DatabaseFilteredEntries[FileSelectInt]->PathShort,sizeof(oldSelection));
+			}
+			else
+			{
+				oldSelection[0]='\0';
+			}
+			oldSelection[sizeof(oldSelection)-1]='\0';
 
 			char filterText[2048];
-			strcpy(filterText,FilterText.GetString());
+			strncpy(filterText,FilterText.GetString(),sizeof(filterText));
+			filterText[sizeof(filterText)-1]='\0';
 			while(char* space=strchr(filterText,' '))
 			{
 				space[0]='|';
@@ -968,9 +978,9 @@ NextFrame
 					{
 						if(pattern[0]!='\0')
 						{
-							strcat(pattern," ");
+							strncat(pattern," ",sizeof(pattern)-strlen(pattern)-1);
 						}
-						strcat(pattern,item);
+						strncat(pattern,item,sizeof(pattern)-strlen(pattern)-1);
 					}
 				}
 			}
@@ -2153,6 +2163,7 @@ NextFrame
 				VideoBack->SetVideo(NULL);
 			}
 			Mode=0;
+			VideoFrequencySensitiveMode=0;
 			Mode0BackspaceTimer.Reset();
 			RecordScratch=false;
 			LuminScratch=false;
