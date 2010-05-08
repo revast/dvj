@@ -1068,7 +1068,7 @@ WaveformVideoFreqSenseMode
 
 	if(target & TARGET_FOCUS)
 	{
-		if(LGL_KeyStroke(GetInputKeyboardWaveformVideoFreqSenseModeKey()))
+		if(0 && LGL_KeyStroke(GetInputKeyboardWaveformVideoFreqSenseModeKey()))
 		{
 			mode=-10;
 		}
