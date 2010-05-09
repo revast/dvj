@@ -998,6 +998,17 @@ WaveformLoopThenRecallActive
 	return(active);
 }
 
+int
+InputXsessionObj::
+WaveformAutoDivergeRecall
+(
+	unsigned int	target
+)	const
+{
+	int ret=0;
+	return(ret);
+}
+
 bool
 InputXsessionObj::
 WaveformVideoSelect

@@ -219,10 +219,11 @@ private:
 	bool				Looping();
 	double				LoopStartSeconds;
 	double				LoopEndSeconds;
-	int				LoopLengthMeasuresExponent;
-	double				LoopLengthNoBPMSeconds;
+	int				QuantizePeriodMeasuresExponent;
+	double				QuantizePeriodNoBPMSeconds;
 	bool				LoopActive;
 	bool				LoopThenRecallActive;
+	bool				AutoDivergeRecallActive;
 	int				SavePointIndex;
 	double				SavePointSeconds[18];
 	bool				MetaDataSavedThisFrame;
@@ -236,6 +237,9 @@ private:
 	void				ClearRecallOrigin();
 	bool				RecallIsSet();
 	void				Recall();
+	double				GetQuantizePeriodSeconds();
+	double				GetBeatLengthSeconds();
+	double				GetMeasureLengthSeconds();
 
 	void				UpdateSoundFreqResponse();
 

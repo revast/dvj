@@ -107,7 +107,8 @@ virtual	bool	WaveformLoopSecondsLess		(unsigned int target)	const;	//Loop less s
 virtual	bool	WaveformLoopSecondsMore		(unsigned int target)	const;	//Loop more seconds (When no BPM is available)
 virtual bool	WaveformLoopAll			(unsigned int target)	const;	//Loop all measures (to savepoint [9], or last measure), or all seconds
 virtual	bool	WaveformLoopToggle		(unsigned int target)	const;	//Enter/Exit loop mode
-virtual	bool	WaveformLoopThenRecallActive	(unsigned int target)	const;	//Loops, but when done, just to where we would have otherwise been, preserving flow
+virtual	bool	WaveformLoopThenRecallActive	(unsigned int target)	const;	//Loops, but when done, jump to where we would have otherwise been, preserving flow
+virtual int	WaveformAutoDivergeRecall	(unsigned int target)	const;	//When done diverging, jump to where we would have otherwise been, had we not diverged
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio

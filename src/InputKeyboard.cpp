@@ -1019,6 +1019,23 @@ WaveformLoopThenRecallActive
 	}
 }
 
+int
+InputKeyboardObj::
+WaveformAutoDivergeRecall
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(GetInputKeyboardWaveformAutoDivergeRecallKey()) ? -2 : 0);
+	}
+	else
+	{
+		return(0);
+	}
+}
+
 bool
 InputKeyboardObj::
 WaveformVideoSelect

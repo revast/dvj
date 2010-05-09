@@ -586,10 +586,11 @@ TurntableObj
 	RapidVolumeInvertSelf=false;
 	RapidVolumeInvertOther=false;
 	LoopStartSeconds=-1.0;
-	LoopLengthMeasuresExponent=-3;
-	LoopLengthNoBPMSeconds=1.0;
+	QuantizePeriodMeasuresExponent=-3;
+	QuantizePeriodNoBPMSeconds=1.0;
 	LoopActive=false;
 	LoopThenRecallActive=false;
+	AutoDivergeRecallActive=false;
 	SavePointIndex=0;
 	RecordScratch=false;
 	LuminScratch=false;
@@ -901,7 +902,7 @@ NextFrame
 			FilterTextMostRecent[sizeof(FilterTextMostRecent)-1]='\0';
 
 			char oldSelection[2048];
-			if(FileSelectInt < DatabaseFilteredEntries.size())
+			if(FileSelectInt < (int)DatabaseFilteredEntries.size())
 			{
 				strncpy(oldSelection,DatabaseFilteredEntries[FileSelectInt]->PathShort,sizeof(oldSelection));
 			}
@@ -1118,9 +1119,11 @@ NextFrame
 						RapidVolumeInvertSelf=false;
 						RapidVolumeInvertOther=false;
 						LoopStartSeconds=-1.0;
-						LoopLengthNoBPMSeconds=1.0;
+						//QuantizePeriodMeasuresExponent=QuantizePeriodMeasuresExponent
+						QuantizePeriodNoBPMSeconds=1.0;
 						LoopActive=false;
 						LoopThenRecallActive=false;
+						AutoDivergeRecallActive=false;
 						SavePointIndex=0;
 						for(int a=0;a<18;a++)
 						{
@@ -1379,8 +1382,7 @@ NextFrame
 			{
 				RapidVolumeInvertSelf=false;
 			}
-			double deltaMeasure = 4*(60.0/(double)GetBPM());
-			float deltaSeconds = deltaMeasure*powf(2,LoopLengthMeasuresExponent);
+			float deltaSeconds = GetQuantizePeriodSeconds();
 			Sound->SetRapidVolumeInvertProperties
 			(
 				Channel,
@@ -1567,7 +1569,7 @@ NextFrame
 					{
 						//Jump at start of next measure
 						double beatStart=GetBPMFirstBeatSeconds();
-						double measureLength=(1.0f/GetBPM())*60.0f*(4.0f);
+						double measureLength=GetMeasureLengthSeconds();
 						while(beatStart>0)
 						{
 							beatStart-=measureLength;
@@ -1731,27 +1733,27 @@ NextFrame
 				Sound->IsLoaded()
 			)
 			{
-				LoopLengthMeasuresExponent=exponentAll;
+				QuantizePeriodMeasuresExponent=exponentAll;
 				loopChanged=true;
 				LoopActive=true;
 			}
 
 			if(Input.WaveformLoopMeasuresHalf(target))
 			{
-				if(LoopLengthMeasuresExponent==exponentAll)
+				if(QuantizePeriodMeasuresExponent==exponentAll)
 				{
-					LoopLengthMeasuresExponent=exponentMax;
+					QuantizePeriodMeasuresExponent=exponentMax;
 				}
 				else
 				{
-					LoopLengthMeasuresExponent=LGL_Max(LoopLengthMeasuresExponent-1,exponentMin);
+					QuantizePeriodMeasuresExponent=LGL_Max(QuantizePeriodMeasuresExponent-1,exponentMin);
 				}
 				loopChanged=true;
 			}
 
 			if(Input.WaveformLoopMeasuresDouble(target))
 			{
-				LoopLengthMeasuresExponent=LGL_Min(LoopLengthMeasuresExponent+1,exponentMax);
+				QuantizePeriodMeasuresExponent=LGL_Min(QuantizePeriodMeasuresExponent+1,exponentMax);
 				loopChanged=true;
 			}
 
@@ -1761,7 +1763,7 @@ NextFrame
 				if
 				(
 					LoopActive &&
-					LoopLengthMeasuresExponent==candidate
+					QuantizePeriodMeasuresExponent==candidate
 				)
 				{
 					LoopActive=false;
@@ -1770,7 +1772,7 @@ NextFrame
 				{
 					LoopActive=true;
 				}
-				LoopLengthMeasuresExponent=LGL_Clamp(exponentMin,candidate,exponentMax);
+				QuantizePeriodMeasuresExponent=LGL_Clamp(exponentMin,candidate,exponentMax);
 				loopChanged=true;
 			}
 
@@ -1795,7 +1797,7 @@ NextFrame
 				}
 				else
 				{
-					if(LoopLengthMeasuresExponent==exponentAll)
+					if(QuantizePeriodMeasuresExponent==exponentAll)
 					{
 						LoopStartSeconds = (SavePointSeconds[8+2] != -1.0f) ? SavePointSeconds[8+2] : GetBPMFirstBeatSeconds();
 						LoopEndSeconds = (SavePointSeconds[9+2] != -1.0f) ? SavePointSeconds[9+2] : GetBPMLastMeasureSeconds();
@@ -1807,8 +1809,7 @@ NextFrame
 					else
 					{
 						LoopStartSeconds = GetBeginningOfCurrentMeasureSeconds();
-						double deltaMeasure = 4*(60.0/(double)GetBPM());
-						float deltaSeconds = deltaMeasure*powf(2,LoopLengthMeasuresExponent);
+						float deltaSeconds = GetQuantizePeriodSeconds();
 
 						for(;;)
 						{
@@ -1873,16 +1874,16 @@ NextFrame
 			)
 			{
 				LoopStartSeconds=0.0f;
-				LoopLengthNoBPMSeconds=secondsMax;
+				QuantizePeriodNoBPMSeconds=secondsMax;
 				loopChanged=true;
 				LoopActive=true;
 			}
 			if(Input.WaveformLoopSecondsLess(target))
 			{
-				LoopLengthNoBPMSeconds=LGL_Max
+				QuantizePeriodNoBPMSeconds=LGL_Max
 				(
-					LoopLengthNoBPMSeconds-
-					LoopLengthNoBPMSeconds*2.0f*LGL_SecondsSinceLastFrame(),
+					QuantizePeriodNoBPMSeconds-
+					QuantizePeriodNoBPMSeconds*2.0f*LGL_SecondsSinceLastFrame(),
 					secondsMin
 				);
 				loopChanged=true;
@@ -1890,10 +1891,10 @@ NextFrame
 
 			if(Input.WaveformLoopSecondsMore(target))
 			{
-				LoopLengthNoBPMSeconds=LGL_Min
+				QuantizePeriodNoBPMSeconds=LGL_Min
 				(
-					LoopLengthNoBPMSeconds+
-					LoopLengthNoBPMSeconds*2.0f*LGL_SecondsSinceLastFrame(),
+					QuantizePeriodNoBPMSeconds+
+					QuantizePeriodNoBPMSeconds*2.0f*LGL_SecondsSinceLastFrame(),
 					secondsMax
 				);
 				loopChanged=true;
@@ -1902,7 +1903,7 @@ NextFrame
 			candidate=Input.WaveformLoopMeasuresExponent(target);
 			if(candidate!=WAVEFORM_LOOP_MEASURES_EXPONENT_NULL)
 			{
-				LoopLengthNoBPMSeconds=LGL_Clamp(secondsMin,candidate,secondsMax);
+				QuantizePeriodNoBPMSeconds=LGL_Clamp(secondsMin,candidate,secondsMax);
 				loopChanged=true;
 			}
 
@@ -1926,7 +1927,7 @@ NextFrame
 				}
 				else
 				{
-					float deltaSeconds = LoopLengthNoBPMSeconds;
+					float deltaSeconds = QuantizePeriodNoBPMSeconds;
 					LoopEndSeconds=LGL_Min
 					(
 						LoopStartSeconds+deltaSeconds,
@@ -1947,18 +1948,37 @@ NextFrame
 			}
 		}
 
-		//Rapid Volume Invert vs LoopLengthExponent
+		//AutoDivergeRecall
+		int autoDivergeRecall = Input.WaveformAutoDivergeRecall(target);
+		if(autoDivergeRecall==-2)
+		{
+			AutoDivergeRecallActive=!AutoDivergeRecallActive;
+		}
+		else if(autoDivergeRecall==-1)
+		{
+			AutoDivergeRecallActive=false;
+		}
+		else if (autoDivergeRecall==0)
+		{
+			//
+		}
+		else
+		{
+			AutoDivergeRecallActive=true;
+		}
+
+		//Rapid Volume Invert vs QuantizePeriodMeasuresExponent
 		if(RapidVolumeInvertSelf)
 		{
 			const int rapidVolumeInvertMeasuresExponentMin=-6;
 			const int rapidVolumeInvertMeasuresExponentMax=-1;
-			if(LoopLengthMeasuresExponent<rapidVolumeInvertMeasuresExponentMin)
+			if(QuantizePeriodMeasuresExponent<rapidVolumeInvertMeasuresExponentMin)
 			{
-				LoopLengthMeasuresExponent=rapidVolumeInvertMeasuresExponentMin;
+				QuantizePeriodMeasuresExponent=rapidVolumeInvertMeasuresExponentMin;
 			}
-			if(LoopLengthMeasuresExponent>rapidVolumeInvertMeasuresExponentMax)
+			if(QuantizePeriodMeasuresExponent>rapidVolumeInvertMeasuresExponentMax)
 			{
-				LoopLengthMeasuresExponent=rapidVolumeInvertMeasuresExponentMax;
+				QuantizePeriodMeasuresExponent=rapidVolumeInvertMeasuresExponentMax;
 			}
 		}
 
@@ -2408,7 +2428,7 @@ NextFrame
 					else
 					{
 						double beatStart=GetBPMFirstBeatSeconds();
-						double measureLength=(1.0f/GetBPM())*60.0f*(4.0f);
+						double measureLength=GetMeasureLengthSeconds();
 						double savePointSeconds=SavePointSeconds[SavePointIndex];
 						if
 						(
@@ -2750,12 +2770,12 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 
 		if(Looping())
 		{
-			double loopLengthSamples = Sound->GetHz()*(LoopEndSeconds - LoopStartSeconds);
-			if(loopLengthSamples>0)
+			double loopSamples = Sound->GetHz()*(LoopEndSeconds - LoopStartSeconds);
+			if(loopSamples>0)
 			{
 				while(SmoothWaveformScrollingSample>LoopEndSeconds*Sound->GetHz())
 				{
-					SmoothWaveformScrollingSample-=loopLengthSamples;
+					SmoothWaveformScrollingSample-=loopSamples;
 				}
 			}
 			else
@@ -3547,8 +3567,8 @@ if(videoSecondsBufferedRight > 10) printf("r: %.2f\n",videoSecondsBufferedRight)
 			VideoFrequencySensitiveMode,				//35
 			Looping() ? LoopStartSeconds : -1.0f,			//36
 			Sound->GetWarpPointSecondsTrigger(Channel),		//37
-			LoopLengthMeasuresExponent,				//38
-			LoopLengthNoBPMSeconds,					//39
+			QuantizePeriodMeasuresExponent,				//38
+			QuantizePeriodNoBPMSeconds,				//39
 			Input.WaveformRecordHold(target) ? 'T' : 'F',		//40
 			SoundName,						//41
 			videoSecondsBufferedLeft,				//42
@@ -3611,8 +3631,8 @@ if(videoSecondsBufferedRight > 10) printf("r: %.2f\n",videoSecondsBufferedRight)
 			VideoFrequencySensitiveMode,				//46
 			Looping() ? LoopStartSeconds : -1.0f,			//47
 			Sound->GetWarpPointSecondsTrigger(Channel),		//48
-			LoopLengthMeasuresExponent,				//49
-			LoopLengthNoBPMSeconds,					//50
+			QuantizePeriodMeasuresExponent,				//49
+			QuantizePeriodNoBPMSeconds,				//50
 			Input.WaveformRecordHold(target),			//51
 			SoundName,						//52
 			videoSecondsBufferedLeft,				//53
@@ -3812,10 +3832,9 @@ GetVideoBrightness()
 	{
 		if(RapidVolumeInvertSelf)
 		{
-			double secondsPerBeat = 60.0/GetBPM();
 			long sampleNow = SmoothWaveformScrollingSample;
 			long bpmFirstBeatCurrentMeasureSamples = GetBeginningOfCurrentMeasureSeconds()*Sound->GetHz();
-			double secondsPerLoopPeriod = pow(2,LoopLengthMeasuresExponent)*(secondsPerBeat*4);
+			double secondsPerLoopPeriod = GetQuantizePeriodSeconds();
 			long samplesPerLoopPeriod = secondsPerLoopPeriod*Sound->GetHz();
 			muted=(((long)fabs(sampleNow-bpmFirstBeatCurrentMeasureSamples)/samplesPerLoopPeriod)%2)==1;
 			if(sampleNow<bpmFirstBeatCurrentMeasureSamples)
@@ -4551,6 +4570,24 @@ Recall()
 	ClearRecallOrigin();
 }
 
+double
+TurntableObj::GetQuantizePeriodSeconds()
+{
+	return(GetMeasureLengthSeconds()*pow(2,QuantizePeriodMeasuresExponent));
+}
+
+double
+TurntableObj::GetBeatLengthSeconds()
+{
+	return((60.0/(double)GetBPMAdjusted()));
+}
+
+double
+TurntableObj::GetMeasureLengthSeconds()
+{
+	return(4*GetBeatLengthSeconds());
+}
+
 void
 TurntableObj::
 UpdateSoundFreqResponse()
@@ -4818,7 +4855,7 @@ GetBPMLastMeasureSeconds()
 	if(BPMAvailable())
 	{
 		double firstBeatSeconds = GetBPMFirstBeatSeconds();
-		double deltaMeasure = 4*(60.0/(double)GetBPM());
+		double deltaMeasure = GetMeasureLengthSeconds();
 		double candidate = firstBeatSeconds;
 		while(candidate + deltaMeasure < Sound->GetLengthSeconds()-0.01f)
 		{
@@ -4938,7 +4975,7 @@ GetPercentOfCurrentMeasure
 	}
 
 	double startMeasure = GetBeginningOfCurrentMeasureSeconds(measureMultiplier);
-	double deltaMeasure = measureMultiplier*4*(60.0/(double)GetBPM());
+	double deltaMeasure = measureMultiplier*GetMeasureLengthSeconds();
 
 	return((SecondsNow-startMeasure)/deltaMeasure);
 }
@@ -4959,7 +4996,7 @@ GetBeginningOfCurrentMeasureSeconds
 		return(-1.0);
 	}
 	
-	double deltaMeasure = measureMultiplier*4*(60.0/(double)GetBPM());
+	double deltaMeasure = measureMultiplier*GetMeasureLengthSeconds();
 
 	double candidate = GetBPMFirstBeatSeconds();
 	if(candidate==SecondsNow)
