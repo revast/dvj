@@ -149,6 +149,7 @@ int	GetInputKeyboardWaveformLoopMeasuresHalfKey();
 int	GetInputKeyboardWaveformLoopMeasuresDoubleKey();
 int	GetInputKeyboardWaveformLoopToggleKey();
 int	GetInputKeyboardWaveformLoopThenRecallKey();
+int	GetInputKeyboardWaveformAutoDivergeRecallKey();
 int	GetInputKeyboardWaveformVideoSelectKey();
 int	GetInputKeyboardWaveformVideoFreqSenseModeKey();
 int	GetInputKeyboardWaveformSyncBPMKey();

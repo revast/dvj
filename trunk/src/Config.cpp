@@ -831,6 +831,7 @@ typedef enum
 	WAVEFORM_LOOP_MEASURES_DOUBLE,
 	WAVEFORM_LOOP_TOGGLE,
 	WAVEFORM_LOOP_THEN_RECALL,
+	WAVEFORM_AUTO_DIVERGE_THEN_RECALL,
 	WAVEFORM_VIDEO_SELECT,
 	WAVEFORM_VIDEO_FREQ_SENSE_MODE,
 	WAVEFORM_SYNC_BPM,
@@ -1001,6 +1002,8 @@ PrepareKeyMap()
 		("waveformLoopToggle",			"LGL_KEY_L");
 	dvjKeyMap[WAVEFORM_LOOP_THEN_RECALL].Set
 		("waveformLoopThenRecall",		"LGL_KEY_O");
+	dvjKeyMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].Set
+		("waveformAutoDivergeThenRecall",	"LGL_KEY_M");
 	dvjKeyMap[WAVEFORM_VIDEO_SELECT].Set
 		("waveformVideoSelect",			"LGL_KEY_SPACE");
 	dvjKeyMap[WAVEFORM_VIDEO_FREQ_SENSE_MODE].Set
@@ -1179,6 +1182,8 @@ int GetInputKeyboardWaveformLoopToggleKey()
 	{ return(dvjKeyMap[WAVEFORM_LOOP_TOGGLE].ValueInt); }
 int GetInputKeyboardWaveformLoopThenRecallKey()
 	{ return(dvjKeyMap[WAVEFORM_LOOP_THEN_RECALL].ValueInt); }
+int GetInputKeyboardWaveformAutoDivergeRecallKey()
+	{ return(dvjKeyMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].ValueInt); }
 int GetInputKeyboardWaveformVideoSelectKey()
 	{ return(dvjKeyMap[WAVEFORM_VIDEO_SELECT].ValueInt); }
 int GetInputKeyboardWaveformVideoFreqSenseModeKey()

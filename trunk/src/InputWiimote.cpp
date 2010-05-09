@@ -848,6 +848,17 @@ WaveformLoopThenRecallActive
 	return(active);
 }
 
+int
+InputWiimoteObj::
+WaveformAutoDivergeRecall
+(
+	unsigned int	target
+)	const
+{
+	int ret=0;
+	return(ret);
+}
+
 bool
 InputWiimoteObj::
 WaveformVideoSelect

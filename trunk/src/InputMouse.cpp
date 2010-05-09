@@ -703,6 +703,17 @@ WaveformLoopThenRecallActive
 	return(active);
 }
 
+int
+InputMouseObj::
+WaveformAutoDivergeRecall
+(
+	unsigned int	target
+)	const
+{
+	int ret=0;
+	return(ret);
+}
+
 bool
 InputMouseObj::
 WaveformVideoSelect
