@@ -807,10 +807,10 @@ int main(int argc, char** argv)
 #endif	//LGL_OSX
 	}
 
-	//Purge active memory
-
 	//Load config
 	ConfigInit();
+
+	//Purge active memory
 
 #ifdef	LGL_OSX
 	if

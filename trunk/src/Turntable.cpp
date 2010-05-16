@@ -3439,217 +3439,244 @@ DrawFrame
 	}
 	if(Mode==2)
 	{
-		unsigned int target =
-			(Focus ? TARGET_FOCUS : 0) |
-			((Which==0) ? TARGET_TOP : TARGET_BOTTOM);
-
-		double currentSample=SmoothWaveformScrollingSample;
-
-		unsigned int savePointBitfield=0;
-		for(int a=0;a<18;a++)
+		if(LGL_AudioOutDisconnected())
 		{
-			savePointBitfield|=(SavePointSeconds[a]==-1.0f)?0:(1<<a);
-		}
+			LGL_GetFont().DrawString
+			(
+				CenterX,
+				ViewPortBottom+ViewPortHeight*0.5f-ViewPortHeight*0.2f*0.5f,
+				ViewPortHeight*0.2f,
+				1,0,0,1,
+				true,
+				0.5f,
+				"Audio Connection Lost"
+			);
 
-		float videoSecondsBufferedLeft=0.0f;
-		float videoSecondsBufferedRight=0.0f;
-		if(VideoFront)
+			LGL_GetFont().DrawString
+			(
+				CenterX,
+				ViewPortBottom+ViewPortHeight*0.1f-ViewPortHeight*0.1f*0.5f,
+				ViewPortHeight*0.1f,
+				1,0,0,1,
+				true,
+				0.5f,
+				"Audio will resume upon reconnecting external soundcard"
+			);
+		}
+		else
 		{
-			videoSecondsBufferedLeft=VideoFront->GetSecondsBufferedLeft();
-			videoSecondsBufferedRight=VideoFront->GetSecondsBufferedRight();
-		}
-if(videoSecondsBufferedRight > 10) printf("r: %.2f\n",videoSecondsBufferedRight);
+			unsigned int target =
+				(Focus ? TARGET_FOCUS : 0) |
+				((Which==0) ? TARGET_TOP : TARGET_BOTTOM);
 
-		LGL_DrawLogWrite
-		(
-			"dttprehps|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
-			SavePointSeconds[0],
-			SavePointSeconds[1],
-			SavePointSeconds[2],
-			SavePointSeconds[3],
-			SavePointSeconds[4],
-			SavePointSeconds[5],
-			SavePointSeconds[6],
-			SavePointSeconds[7],
-			SavePointSeconds[8],
-			SavePointSeconds[9],
-			SavePointSeconds[10],
-			SavePointSeconds[11],
-			SavePointSeconds[12],
-			SavePointSeconds[13],
-			SavePointSeconds[14],
-			SavePointSeconds[15],
-			SavePointSeconds[16],
-			SavePointSeconds[17]
-		);
-		LGL_DrawLogWrite
-		(
-			"dttpreflash|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
-			SavePointUnsetFlashPercent[0],
-			SavePointUnsetFlashPercent[1],
-			SavePointUnsetFlashPercent[2],
-			SavePointUnsetFlashPercent[3],
-			SavePointUnsetFlashPercent[4],
-			SavePointUnsetFlashPercent[5],
-			SavePointUnsetFlashPercent[6],
-			SavePointUnsetFlashPercent[7],
-			SavePointUnsetFlashPercent[8],
-			SavePointUnsetFlashPercent[9],
-			SavePointUnsetFlashPercent[10],
-			SavePointUnsetFlashPercent[11],
-			SavePointUnsetFlashPercent[12],
-			SavePointUnsetFlashPercent[13],
-			SavePointUnsetFlashPercent[14],
-			SavePointUnsetFlashPercent[15],
-			SavePointUnsetFlashPercent[16],
-			SavePointUnsetFlashPercent[17]
-		);
-		LGL_DrawLogWrite
-		(
-			"dttprenoise|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
-			SavePointUnsetNoisePercent[0],
-			SavePointUnsetNoisePercent[1],
-			SavePointUnsetNoisePercent[2],
-			SavePointUnsetNoisePercent[3],
-			SavePointUnsetNoisePercent[4],
-			SavePointUnsetNoisePercent[5],
-			SavePointUnsetNoisePercent[6],
-			SavePointUnsetNoisePercent[7],
-			SavePointUnsetNoisePercent[8],
-			SavePointUnsetNoisePercent[9],
-			SavePointUnsetNoisePercent[10],
-			SavePointUnsetNoisePercent[11],
-			SavePointUnsetNoisePercent[12],
-			SavePointUnsetNoisePercent[13],
-			SavePointUnsetNoisePercent[14],
-			SavePointUnsetNoisePercent[15],
-			SavePointUnsetNoisePercent[16],
-			SavePointUnsetNoisePercent[17]
-		);
-		LGL_DrawLogWrite
-		(
-			//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35   36   37 38   39 40 41   42   43 44 45  46
-			"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f|%.3f|%i|%.3f|%c|%s|%.2f|%.2f|%c|%c|.3f\n",
-			Which,							//01
-			Sound->IsLoaded() ? 'T' : 'F',				//02
-			GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
-			(GlitchDuo || LuminScratch || GlitchPure) ? 'T' : 'F',	//04
-			GlitchBegin,						//05
-			GlitchLength,						//06
-			currentSample,						//07
-			(double)Sound->GetLengthSamples(),			//08
-			Sound->GetSpeed(Channel),				//09
-			Pitchbend,						//10
-			GrainStreamCrossfader,					//11
-			GrainStreamSourcePoint,					//12
-			GrainStreamLength,					//13
-			GrainStreamPitch,					//14
-			ViewPortLeft,						//15
-			ViewPortRight,						//16
-			ViewPortBottom,						//17
-			ViewPortTop,						//18
-			VolumeMultiplierNow,					//19
-			CenterX,						//20
-			PauseMultiplier ? 'T' : 'F',				//21
-			Nudge,							//22
-			0.0f,							//23
-			LGL_SecondsSinceExecution(),				//24
-			SavePointIndex,						//25
-			SavePointIndex,						//26
-			savePointBitfield,					//27
-			GetBPM(),						//28
-			GetBPMAdjusted(),					//29
-			GetBPMFirstBeatSeconds(),				//30
-			EQFinal[0],						//31
-			EQFinal[1],						//32
-			EQFinal[2],						//33
-			LowRez ? 'T' : 'F',					//34
-			VideoFrequencySensitiveMode,				//35
-			Looping() ? LoopStartSeconds : -1.0f,			//36
-			Sound->GetWarpPointSecondsTrigger(Channel),		//37
-			QuantizePeriodMeasuresExponent,				//38
-			QuantizePeriodNoBPMSeconds,				//39
-			Input.WaveformRecordHold(target) ? 'T' : 'F',		//40
-			SoundName,						//41
-			videoSecondsBufferedLeft,				//42
-			videoSecondsBufferedRight,				//43
-			(Which==Master) ? 'T' : 'F',				//44
-			(RapidVolumeInvertSelf) ? 'T' : 'F',			//45
-			GetBeginningOfCurrentMeasureSeconds()			//46
-		);
+			double currentSample=SmoothWaveformScrollingSample;
+
+			unsigned int savePointBitfield=0;
+			for(int a=0;a<18;a++)
+			{
+				savePointBitfield|=(SavePointSeconds[a]==-1.0f)?0:(1<<a);
+			}
+
+			float videoSecondsBufferedLeft=0.0f;
+			float videoSecondsBufferedRight=0.0f;
+			if(VideoFront)
+			{
+				videoSecondsBufferedLeft=VideoFront->GetSecondsBufferedLeft();
+				videoSecondsBufferedRight=VideoFront->GetSecondsBufferedRight();
+			}
+	if(videoSecondsBufferedRight > 10) printf("r: %.2f\n",videoSecondsBufferedRight);
+
+			LGL_DrawLogWrite
+			(
+				"dttprehps|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
+				SavePointSeconds[0],
+				SavePointSeconds[1],
+				SavePointSeconds[2],
+				SavePointSeconds[3],
+				SavePointSeconds[4],
+				SavePointSeconds[5],
+				SavePointSeconds[6],
+				SavePointSeconds[7],
+				SavePointSeconds[8],
+				SavePointSeconds[9],
+				SavePointSeconds[10],
+				SavePointSeconds[11],
+				SavePointSeconds[12],
+				SavePointSeconds[13],
+				SavePointSeconds[14],
+				SavePointSeconds[15],
+				SavePointSeconds[16],
+				SavePointSeconds[17]
+			);
+			LGL_DrawLogWrite
+			(
+				"dttpreflash|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
+				SavePointUnsetFlashPercent[0],
+				SavePointUnsetFlashPercent[1],
+				SavePointUnsetFlashPercent[2],
+				SavePointUnsetFlashPercent[3],
+				SavePointUnsetFlashPercent[4],
+				SavePointUnsetFlashPercent[5],
+				SavePointUnsetFlashPercent[6],
+				SavePointUnsetFlashPercent[7],
+				SavePointUnsetFlashPercent[8],
+				SavePointUnsetFlashPercent[9],
+				SavePointUnsetFlashPercent[10],
+				SavePointUnsetFlashPercent[11],
+				SavePointUnsetFlashPercent[12],
+				SavePointUnsetFlashPercent[13],
+				SavePointUnsetFlashPercent[14],
+				SavePointUnsetFlashPercent[15],
+				SavePointUnsetFlashPercent[16],
+				SavePointUnsetFlashPercent[17]
+			);
+			LGL_DrawLogWrite
+			(
+				"dttprenoise|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
+				SavePointUnsetNoisePercent[0],
+				SavePointUnsetNoisePercent[1],
+				SavePointUnsetNoisePercent[2],
+				SavePointUnsetNoisePercent[3],
+				SavePointUnsetNoisePercent[4],
+				SavePointUnsetNoisePercent[5],
+				SavePointUnsetNoisePercent[6],
+				SavePointUnsetNoisePercent[7],
+				SavePointUnsetNoisePercent[8],
+				SavePointUnsetNoisePercent[9],
+				SavePointUnsetNoisePercent[10],
+				SavePointUnsetNoisePercent[11],
+				SavePointUnsetNoisePercent[12],
+				SavePointUnsetNoisePercent[13],
+				SavePointUnsetNoisePercent[14],
+				SavePointUnsetNoisePercent[15],
+				SavePointUnsetNoisePercent[16],
+				SavePointUnsetNoisePercent[17]
+			);
+			LGL_DrawLogWrite
+			(
+				//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35   36   37 38   39 40 41   42   43 44 45  46
+				"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f|%.3f|%i|%.3f|%c|%s|%.2f|%.2f|%c|%c|.3f\n",
+				Which,							//01
+				Sound->IsLoaded() ? 'T' : 'F',				//02
+				GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
+				(GlitchDuo || LuminScratch || GlitchPure) ? 'T' : 'F',	//04
+				GlitchBegin,						//05
+				GlitchLength,						//06
+				currentSample,						//07
+				(double)Sound->GetLengthSamples(),			//08
+				Sound->GetSpeed(Channel),				//09
+				Pitchbend,						//10
+				GrainStreamCrossfader,					//11
+				GrainStreamSourcePoint,					//12
+				GrainStreamLength,					//13
+				GrainStreamPitch,					//14
+				ViewPortLeft,						//15
+				ViewPortRight,						//16
+				ViewPortBottom,						//17
+				ViewPortTop,						//18
+				VolumeMultiplierNow,					//19
+				CenterX,						//20
+				PauseMultiplier ? 'T' : 'F',				//21
+				Nudge,							//22
+				0.0f,							//23
+				LGL_SecondsSinceExecution(),				//24
+				SavePointIndex,						//25
+				SavePointIndex,						//26
+				savePointBitfield,					//27
+				GetBPM(),						//28
+				GetBPMAdjusted(),					//29
+				GetBPMFirstBeatSeconds(),				//30
+				EQFinal[0],						//31
+				EQFinal[1],						//32
+				EQFinal[2],						//33
+				LowRez ? 'T' : 'F',					//34
+				VideoFrequencySensitiveMode,				//35
+				Looping() ? LoopStartSeconds : -1.0f,			//36
+				Sound->GetWarpPointSecondsTrigger(Channel),		//37
+				QuantizePeriodMeasuresExponent,				//38
+				QuantizePeriodNoBPMSeconds,				//39
+				Input.WaveformRecordHold(target) ? 'T' : 'F',		//40
+				SoundName,						//41
+				videoSecondsBufferedLeft,				//42
+				videoSecondsBufferedRight,				//43
+				(Which==Master) ? 'T' : 'F',				//44
+				(RapidVolumeInvertSelf) ? 'T' : 'F',			//45
+				GetBeginningOfCurrentMeasureSeconds()			//46
+			);
+			
+			bool waveArrayFilledBefore=(EntireWaveArrayFillIndex==ENTIRE_WAVE_ARRAY_COUNT);
+
+			LGL_DrawLogPause();
+			Turntable_DrawWaveform
+			(
+				Sound,							//01
+				Sound->IsLoaded(),					//02
+				GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
+				GlitchDuo || LuminScratch || GlitchPure,		//04
+				GlitchBegin,						//05
+				GlitchLength,						//06
+				currentSample,						//07
+				Sound->GetLengthSamples(),				//08
+				Sound->GetSpeed(Channel),				//09
+				Pitchbend,						//10
+				GrainStreamCrossfader,					//11
+				GrainStreamSourcePoint,					//12
+				GrainStreamLength,					//13
+				GrainStreamPitch,					//14
+				ViewPortLeft,						//15
+				ViewPortRight,						//16
+				ViewPortBottom,						//17
+				ViewPortTop,						//18
+				VolumeMultiplierNow,					//19
+				CenterX,						//20
+				PauseMultiplier,					//21
+				Nudge,							//22
+				0.0f,							//23
+				LGL_SecondsSinceExecution(),				//24
+				SavePointSeconds,					//25
+				SavePointIndex,						//26
+				SavePointIndex,						//27
+				savePointBitfield,					//28
+				SavePointUnsetNoisePercent,				//29
+				SavePointUnsetFlashPercent,				//30
+				GetBPM(),						//31
+				GetBPMAdjusted(),					//32
+				GetBPMFirstBeatSeconds(),				//33
+				EQFinal[0],						//34
+				EQFinal[1],						//35
+				EQFinal[2],						//36
+				LowRez,							//37
+				EntireWaveArrayFillIndex,				//38
+				ENTIRE_WAVE_ARRAY_COUNT,				//39
+				EntireWaveArrayMagnitudeAve,				//40
+				EntireWaveArrayMagnitudeMax,				//41
+				EntireWaveArrayFreqFactor,				//42
+				CachedLengthSeconds,					//43
+				NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44
+				LoopImage,						//45
+				VideoFrequencySensitiveMode,				//46
+				Looping() ? LoopStartSeconds : -1.0f,			//47
+				Sound->GetWarpPointSecondsTrigger(Channel),		//48
+				QuantizePeriodMeasuresExponent,				//49
+				QuantizePeriodNoBPMSeconds,				//50
+				Input.WaveformRecordHold(target),			//51
+				SoundName,						//52
+				videoSecondsBufferedLeft,				//53
+				videoSecondsBufferedRight,				//54
+				Which==Master,						//55
+				RapidVolumeInvertSelf,					//56
+				GetBeginningOfCurrentMeasureSeconds()			//57
+			);
+			LGL_DrawLogPause(false);
 		
-		bool waveArrayFilledBefore=(EntireWaveArrayFillIndex==ENTIRE_WAVE_ARRAY_COUNT);
+			bool waveArrayFilledAfter=(EntireWaveArrayFillIndex==ENTIRE_WAVE_ARRAY_COUNT);
 
-		LGL_DrawLogPause();
-		Turntable_DrawWaveform
-		(
-			Sound,							//01
-			Sound->IsLoaded(),					//02
-			GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
-			GlitchDuo || LuminScratch || GlitchPure,		//04
-			GlitchBegin,						//05
-			GlitchLength,						//06
-			currentSample,						//07
-			Sound->GetLengthSamples(),				//08
-			Sound->GetSpeed(Channel),				//09
-			Pitchbend,						//10
-			GrainStreamCrossfader,					//11
-			GrainStreamSourcePoint,					//12
-			GrainStreamLength,					//13
-			GrainStreamPitch,					//14
-			ViewPortLeft,						//15
-			ViewPortRight,						//16
-			ViewPortBottom,						//17
-			ViewPortTop,						//18
-			VolumeMultiplierNow,					//19
-			CenterX,						//20
-			PauseMultiplier,					//21
-			Nudge,							//22
-			0.0f,							//23
-			LGL_SecondsSinceExecution(),				//24
-			SavePointSeconds,					//25
-			SavePointIndex,						//26
-			SavePointIndex,						//27
-			savePointBitfield,					//28
-			SavePointUnsetNoisePercent,				//29
-			SavePointUnsetFlashPercent,				//30
-			GetBPM(),						//31
-			GetBPMAdjusted(),					//32
-			GetBPMFirstBeatSeconds(),				//33
-			EQFinal[0],						//34
-			EQFinal[1],						//35
-			EQFinal[2],						//36
-			LowRez,							//37
-			EntireWaveArrayFillIndex,				//38
-			ENTIRE_WAVE_ARRAY_COUNT,				//39
-			EntireWaveArrayMagnitudeAve,				//40
-			EntireWaveArrayMagnitudeMax,				//41
-			EntireWaveArrayFreqFactor,				//42
-			CachedLengthSeconds,					//43
-			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44
-			LoopImage,						//45
-			VideoFrequencySensitiveMode,				//46
-			Looping() ? LoopStartSeconds : -1.0f,			//47
-			Sound->GetWarpPointSecondsTrigger(Channel),		//48
-			QuantizePeriodMeasuresExponent,				//49
-			QuantizePeriodNoBPMSeconds,				//50
-			Input.WaveformRecordHold(target),			//51
-			SoundName,						//52
-			videoSecondsBufferedLeft,				//53
-			videoSecondsBufferedRight,				//54
-			Which==Master,						//55
-			RapidVolumeInvertSelf,					//56
-			GetBeginningOfCurrentMeasureSeconds()			//57
-		);
-		LGL_DrawLogPause(false);
-	
-		bool waveArrayFilledAfter=(EntireWaveArrayFillIndex==ENTIRE_WAVE_ARRAY_COUNT);
-
-		if(waveArrayFilledBefore!=waveArrayFilledAfter)
-		{
-			//We just finished filled our wave array data!
-			//Save it so we can instantly load it next time.
-			SaveAllCachedData();
+			if(waveArrayFilledBefore!=waveArrayFilledAfter)
+			{
+				//We just finished filled our wave array data!
+				//Save it so we can instantly load it next time.
+				SaveAllCachedData();
+			}
 		}
 	}
 
