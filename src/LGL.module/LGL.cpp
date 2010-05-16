@@ -97,6 +97,9 @@
 #define LGL_SAMPLESIZE		(256)
 unsigned int LGL_SAMPLESIZE_SDL;
 
+bool lgl_sdl_initialized=false;
+bool lgl_lgl_initialized=false;
+
 void lgl_AudioOutCallback(void* userdata, Uint8* stream, int len8);
 void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8);
 
@@ -281,10 +284,12 @@ typedef struct
 	char			AudioEncoderPath[2048];
 	LGL_AudioEncoder*	AudioEncoder;
 	LGL_Timer		AudioOutCallbackTimer;
+	LGL_Timer		AudioOutReconnectTimer;
 
 	//AudioIn
 
 	bool			AudioInAvailable;
+	bool			AudioOutDisconnected;
 	std::vector<LGL_AudioGrain*>
 				AudioInGrainListFixedSize;
 	std::vector<LGL_AudioGrain*>
@@ -906,11 +911,10 @@ gl2DeleteBuffers_Func gl2DeleteBuffers=NULL;
 bool
 LGL_JackInit()
 {
-	printf("\n\nLGL JACK Initialization\n");
-	printf("---\n");
 	LGL.AudioSpec->silence=0;
 	jack_options_t jack_options = JackNullOption;
 	jack_status_t status;
+	bzero(&status,sizeof(jack_status_t));
 
 	//Setup environment
 	if(LGL_IsOsxAppBundle())
@@ -923,7 +927,7 @@ LGL_JackInit()
 		//Our JACK drivers live inside our App Bundle
 		setenv("JACK_DRIVER_DIR","lib/jack",1);
 	}
-	
+
 	//Open a client connection to the JACK server
 	const char* client_name = "dvj";
 	printf("LGL_JackInit(): JACK server starting...\n\n");
@@ -931,7 +935,24 @@ LGL_JackInit()
 	printf("\n");
 	if(jack_client==NULL)
 	{
-		printf("LGL_JackInit(): Error! jack_client_open() failed! status = 0x%2.0x\n",status);
+		printf("LGL_JackInit(): Error! jack_client_open() failed! status = 0x%.2x\n",status);
+		/*
+		char dotJackdrcPath[2048];
+		sprintf(dotJackdrcPath,"%s/.jackdrc",LGL_GetHomeDir());
+		if(FILE* fd = fopen(dotJackdrcPath,"r"))
+		{
+			const int bufLen=2048;
+			char buf[bufLen];
+			fgets(buf,bufLen,fd);
+			buf[strlen(buf)-1]='\0';	//Get rid of '\n'
+			strcat(buf," > /tmp/jack.fail 2>&1");
+			printf("Generating /tmp/jack.fail: Alpha\n");
+			printf("\t%s\n",buf);
+			system(buf);
+			printf("Generating /tmp/jack.fail: Omega\n");
+			fclose(fd);
+		}
+		*/
 		return(false);
 	}
 	if(status & JackServerStarted)
@@ -994,7 +1015,7 @@ LGL_JackInit()
 	{
 		while(jack_ports_out[portCountOut]!=NULL)
 		{
-			printf("Out found: '%s'\n",jack_ports_out[portCountOut]);
+			printf("LGL_JackInit(): Audio In found '%s'\n",jack_ports_out[portCountOut]);
 			portCountOut++;
 			if(portCountOut==2)
 			{
@@ -1066,14 +1087,14 @@ LGL_JackInit()
 
 	LGL.AudioAvailable=true;
 	LGL.AudioWasOnceAvailable=true;
+	LGL.AudioOutDisconnected=false;
 	LGL.AudioSpec->freq = jack_get_sample_rate(jack_client);
 
 	//MEMLEAK: if we return early, these calls to free() don't happen. Meh.
 	free(jack_ports_in);
 	free(jack_ports_out);
 
-	printf("LGL_JackInit(): Success! (%i channels)\n",LGL.AudioSpec->channels);
-	printf("---\n\n");
+	printf("LGL_JackInit(): Success! (%i channels) (Input: %s)\n",LGL.AudioSpec->channels,LGL.AudioInAvailable ? "Present" : "Absent");
 
 	return(true);
 }
@@ -1535,6 +1556,7 @@ LGL_Init
 	}
 	else
 	{
+		lgl_sdl_initialized=true;
 		//printf("LGL: SDL_Init() Success!\n");
 	}
 
@@ -1697,6 +1719,8 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	LGL.AudioStreamListSemaphore=new LGL_Semaphore("Audio Stream List");
 	LGL.AudioInSemaphore=new LGL_Semaphore("AudioIn");
 	LGL.AudioInFallbackGrain=new LGL_AudioGrain;
+	Uint8 zero=0;
+	LGL.AudioInFallbackGrain->SetWaveformFromMemory(&zero,1);
 	LGL.AudioBufferPos=0;
 
 	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
@@ -1722,10 +1746,15 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		{
 			LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
 		}
+		printf("\n\nLGL JACK Initialization: ALPHA\n");
+		printf("---\n");
+		bool jackInitOK = LGL_JackInit();
+		printf("---\n");
+		printf("LGL JACK Initialization: OMEGA\n\n\n");
 		if
 		(
 			pulserunning==false &&
-			LGL_JackInit()
+			jackInitOK
 		)
 		{
 			//Huzzah!
@@ -2327,12 +2356,23 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	{
 		printf
 		(
-			"JACK\t\t\t%i channels, %ihz. %.1fms latency.\n",// RT Priority: %i\n",
+			"JACK Output\t\t%i channels. %ihz. %.1fms latency.\n",// RT Priority: %i\n",
 			LGL.AudioSpec->channels,
 			jack_get_sample_rate(jack_client),
 			1000.0f*LGL_SAMPLESIZE_SDL/(44100.0f)
 			//jack_client_real_time_priority(jack_client)
 		);
+		printf
+		(
+			"JACK Input\t\t%s\n",
+			LGL.AudioInAvailable ? "Present" : "Absent"
+		);
+		if(LGL.AudioInAvailable==false)
+		{
+#ifdef	LGL_OSX
+			printf("\t\t\t\tIn System Preferences => Sound, verify Input and Output devices are correct.\n");
+#endif	//LGL_OSX
+		}
 	}
 	else
 	{
@@ -2418,6 +2458,8 @@ printf("\tScreen[%i]: %i x %i\n",a,
 #endif	//LGL_NO_GRAPHICS
 
 	LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
+
+	lgl_lgl_initialized=true;
 
 	return(true);
 }
@@ -2592,7 +2634,7 @@ void
 LGL_Timer::
 Reset()
 {
-	TimeAtLastReset=SDL_GetTicks();
+	TimeAtLastReset=lgl_sdl_initialized ? SDL_GetTicks() : 0;
 }
 
 unsigned int
@@ -2611,6 +2653,12 @@ bool
 LGL_AudioInAvailable()
 {
 	return(LGL.AudioInAvailable);
+}
+
+bool
+LGL_AudioOutDisconnected()
+{
+	return(LGL.AudioOutDisconnected);
 }
 
 std::vector<LGL_AudioGrain*>&
@@ -3117,6 +3165,29 @@ int* lgl_font_gl_buffer_int_ptr;
 void
 LGL_SwapBuffers()
 {
+	if(lgl_lgl_initialized && LGL.AudioOutCallbackTimer.SecondsSinceLastReset()>1.0f)
+	{
+		if(LGL.AudioWasOnceAvailable)
+		{
+			LGL.AudioOutDisconnected=true;
+			if(LGL.AudioUsingJack)
+			{
+				if(LGL.AudioOutReconnectTimer.SecondsSinceLastReset()>1.0f)
+				{
+					printf("Trying to revive JACK!\n");
+					system("killall jackd");
+					jack_client_close(jack_client);
+					LGL_JackInit();
+					LGL.AudioOutReconnectTimer.Reset();
+				}
+			}
+		}
+	}
+	else
+	{
+		LGL.AudioOutDisconnected=false;
+	}
+
 	if(LGL.AudioBufferPos>=1024)
 	{
 		memcpy
@@ -3208,14 +3279,12 @@ LGL_SwapBuffers()
 
 	if(LGL.AudioInAvailable)
 	{
-		if(LGL.AudioInGrainListFront.empty()==false)
+		for(unsigned int a=0;a<LGL.AudioInGrainListFront.size();a++)
 		{
-			LGL.AudioInFallbackGrain->SetWaveformFromAudioGrain
-			(
-				LGL.AudioInGrainListFront[LGL.AudioInGrainListFront.size()-1]
-			);
+			delete LGL.AudioInGrainListFront[a];
 		}
-		std::vector<LGL_AudioGrain*> oldFront = LGL.AudioInGrainListFront;
+		LGL.AudioInGrainListFront.clear();
+
 		//FIXME: We're blocking our audio thread!! (ever so briefly...)
 		LGL.AudioInSemaphore->Lock("Main","Moving back grains to front");
 		{
@@ -3224,80 +3293,24 @@ LGL_SwapBuffers()
 		}
 		LGL.AudioInSemaphore->Unlock();
 
-		std::vector<LGL_AudioGrain*> neoFixedSize;
-		const unsigned int fixedSize=4;
-		for(int a=(int)LGL.AudioInGrainListFront.size()-1;a>=0;a--)
+		for(unsigned int a=0;a<LGL.AudioInGrainListFront.size();a++)
 		{
-			if(neoFixedSize.size()<fixedSize)
-			{
-				neoFixedSize.push_back(LGL.AudioInGrainListFront[a]);
-			}
-			else
-			{
-				break;
-			}
+			LGL_AudioGrain* neo = new LGL_AudioGrain;
+			neo->SetWaveformFromAudioGrain(LGL.AudioInGrainListFront[a]);
+			LGL.AudioInGrainListFixedSize.insert(LGL.AudioInGrainListFixedSize.begin(),neo);
 		}
-		for(int a=(int)LGL.AudioInGrainListFixedSize.size()-1;a>=0;a--)
+		while(LGL.AudioInGrainListFixedSize.size()>4)
 		{
-			if(neoFixedSize.size()<fixedSize)
-			{
-				neoFixedSize.push_back(LGL.AudioInGrainListFixedSize[a]);
-			}
-			else
-			{
-				break;
-			}
+			LGL_AudioGrain* del = LGL.AudioInGrainListFixedSize[LGL.AudioInGrainListFixedSize.size()-1];
+			delete del;
+			LGL.AudioInGrainListFixedSize.pop_back();
 		}
-		for(unsigned int a=0;a<oldFront.size();a++)
+		while(LGL.AudioInGrainListFixedSize.size()<4)
 		{
-			bool stillAlive=false;
-			for(int b=0;b<(int)neoFixedSize.size();b++)
-			{
-				if(oldFront[a]==neoFixedSize[b])
-				{
-					stillAlive=true;
-					break;
-				}
-			}
-			if(stillAlive==false)
-			{
-				delete oldFront[a];
-				for(unsigned int c=0;c<LGL.AudioInGrainListFixedSize.size();c++)
-				{
-					if(LGL.AudioInGrainListFixedSize[c]==oldFront[a])
-					{
-						LGL.AudioInGrainListFixedSize[c]=NULL;
-					}
-				}
-			}
+			LGL_AudioGrain* neo = new LGL_AudioGrain;
+			neo->SetWaveformFromAudioGrain(LGL.AudioInFallbackGrain);
+			LGL.AudioInGrainListFixedSize.insert(LGL.AudioInGrainListFixedSize.begin(),neo);
 		}
-		oldFront.clear();
-
-		for(unsigned int a=0;a<LGL.AudioInGrainListFixedSize.size();a++)
-		{
-			bool stillAlive=false;
-			for(int b=0;b<(int)neoFixedSize.size();b++)
-			{
-				if(LGL.AudioInGrainListFixedSize[a]==neoFixedSize[b])
-				{
-					stillAlive=true;
-					break;
-				}
-			}
-			if(stillAlive==false)
-			{
-				if(LGL.AudioInGrainListFixedSize[a])
-				{
-					delete LGL.AudioInGrainListFixedSize[a];
-				}
-			}
-		}
-		LGL.AudioInGrainListFixedSize.clear();
-		for(int b=(int)neoFixedSize.size()-1;b>=0;b--)
-		{
-			LGL.AudioInGrainListFixedSize.push_back(neoFixedSize[b]);
-		}
-		neoFixedSize.clear();
 	}
 
 	if(LGL.DrawLogFD)
@@ -14139,7 +14152,7 @@ PrepareForDeleteThreadFunc()
 			}
 			if(!ok)
 			{
-				if(LGL.AudioOutCallbackTimer.SecondsSinceLastReset()>5.0f)
+				if(LGL.AudioOutCallbackTimer.SecondsSinceLastReset()>1.0f)
 				{
 					ok=true;
 				}

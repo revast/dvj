@@ -191,11 +191,20 @@ CreateDotJackdrc()
 	return;
 #endif	//LGL_OSX
 
-	//Run jackd -d coreaudio -l -d baka > /tmp/jack.output
-	const char* jackOutputPath = "/tmp/jack.output";
+	//Kill any pre-existing JACK processes
 	char cmd[2048];
+	strcpy(cmd,"killall jackd > /dev/null 2>&1");
+	system(cmd);
+	LGL_DelayMS(50);
+	strcpy(cmd,"killall jackd -9 > /dev/null 2>&1");
+	system(cmd);
+	LGL_DelayMS(50);
+
+	//Run jackd -d coreaudio -l -d baka > /tmp/jack.output	
+	const char* jackOutputPath = "/tmp/jack.output";
 	bool jackdInCurrentDir = LGL_FileExists("jackd");
-	sprintf(cmd,"%s -d coreaudio -l -d baka > '%s'",jackdInCurrentDir ? "./jackd" : "jackd",jackOutputPath);
+	sprintf(cmd,"%s -d coreaudio -l -p 0 > '%s' 2>&1",jackdInCurrentDir ? "./jackd" : "jackd",jackOutputPath);
+	printf("CreateDotJackdrc(): %s\n",cmd);
 	int result = system(cmd);
 	if(result!=0)
 	{
@@ -218,10 +227,17 @@ CreateDotJackdrc()
 			}
 			if(strstr(buf,"Aggregate"))
 			{
+				printf("JACK aggregate device detected!\n");
 				aggregate=true;
+			}
+			if(strstr(buf,"Default input and output devices are not the same"))
+			{
+				printf("JACK aggregate device improperly configured!\n");
+				aggregate=false;
 				break;
 			}
 		}
+		fclose(fd);
 	}
 	else
 	{
@@ -241,7 +257,8 @@ CreateDotJackdrc()
 	{
 		if(aggregate)
 		{
-			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p 512 -d \"~:Aggregate:0\" -c 6 -i 2 -o 4\n");
+			//Don't be tempted to put ~:Aggregate:0 below in quotes. This will fail.
+			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p 512 -d ~:Aggregate:0 -c 6 -i 2 -o 4\n");
 		}
 		else
 		{

@@ -1514,6 +1514,9 @@ LGL_AudioOutAvailable();
 bool
 LGL_AudioInAvailable();
 
+bool
+LGL_AudioOutDisconnected();
+
 std::vector<LGL_AudioGrain*>&
 LGL_AudioInGrainList();
 
