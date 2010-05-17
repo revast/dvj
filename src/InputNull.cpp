@@ -398,7 +398,7 @@ WaveformVolumeInvert
 
 bool
 InputNullObj::
-WaveformRapidVolumeInvertSelf
+WaveformRapidVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -409,7 +409,7 @@ WaveformRapidVolumeInvertSelf
 
 bool
 InputNullObj::
-WaveformRapidVolumeInvertOther
+WaveformRapidSoloInvert
 (
 	unsigned int	target
 )	const

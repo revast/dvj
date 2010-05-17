@@ -583,8 +583,8 @@ TurntableObj
 	VolumeSlider=1.0f;
 	VolumeMultiplierNow=1.0f;
 	VolumeInvertBinary=false;
-	RapidVolumeInvertSelf=false;
-	RapidVolumeInvertOther=false;
+	RapidVolumeInvert=false;
+	RapidSoloInvert=false;
 	LoopStartSeconds=-1.0;
 	QuantizePeriodMeasuresExponent=-3;
 	QuantizePeriodNoBPMSeconds=1.0;
@@ -1116,8 +1116,8 @@ NextFrame
 						SecondsLast=0.0f;
 						SecondsNow=0.0f;
 						VolumeInvertBinary=false;
-						RapidVolumeInvertSelf=false;
-						RapidVolumeInvertOther=false;
+						RapidVolumeInvert=false;
+						RapidSoloInvert=false;
 						LoopStartSeconds=-1.0;
 						//QuantizePeriodMeasuresExponent=QuantizePeriodMeasuresExponent
 						QuantizePeriodNoBPMSeconds=1.0;
@@ -1372,33 +1372,30 @@ NextFrame
 		//Volume
 		VolumeInvertBinary=Input.WaveformVolumeInvert(target);
 
+		Sound->SetRapidInvertProperties
+		(
+			Channel,
+			GetBeginningOfCurrentMeasureSeconds(),
+			GetQuantizePeriodSeconds()
+		);
 		if(GetBPM()>0)
 		{
-			if(Input.WaveformRapidVolumeInvertSelf(target))
+			if(Input.WaveformRapidVolumeInvert(target))
 			{
-				RapidVolumeInvertSelf=true;
+				RapidVolumeInvert=true;
 			}
 			else
 			{
-				RapidVolumeInvertSelf=false;
+				RapidVolumeInvert=false;
 			}
-			float deltaSeconds = GetQuantizePeriodSeconds();
-			Sound->SetRapidVolumeInvertProperties
-			(
-				Channel,
-				RapidVolumeInvertSelf ? GetBeginningOfCurrentMeasureSeconds() : 0,
-				RapidVolumeInvertSelf ? deltaSeconds : 0
-			);
+			Sound->SetRapidVolumeInvert(Channel,RapidVolumeInvert);
 		}
 		else
 		{
-			RapidVolumeInvertSelf=false;
+			RapidVolumeInvert=false;
 		}
 
-		if(Input.WaveformRapidVolumeInvertOther(target))
-		{
-			//
-		}
+		RapidSoloInvert = Input.WaveformRapidSoloInvert(target);
 
 		//Save Points
 		if(VideoFrequencySensitiveMode!=2)
@@ -1692,12 +1689,12 @@ NextFrame
 		LoopActive = 
 		(
 			(Input.WaveformLoopToggle(target) ? !LoopActive : LoopActive) &&
-			RapidVolumeInvertSelf==false
+			RapidVolumeInvert==false
 		);
 		LoopThenRecallActive =
 		(
 			Input.WaveformLoopThenRecallActive(target) &&
-			RapidVolumeInvertSelf==false
+			RapidVolumeInvert==false
 		);
 
 		bool loopChanged=
@@ -1968,7 +1965,7 @@ NextFrame
 		}
 
 		//Rapid Volume Invert vs QuantizePeriodMeasuresExponent
-		if(RapidVolumeInvertSelf)
+		if(RapidVolumeInvert || RapidSoloInvert)
 		{
 			const int rapidVolumeInvertMeasuresExponentMin=-6;
 			const int rapidVolumeInvertMeasuresExponentMax=-1;
@@ -2169,6 +2166,7 @@ NextFrame
 		{
 			delete Sound;
 			Sound=NULL;
+			Channel=-1;
 			DatabaseEntryNow=NULL;
 			VideoEncoderPathSrc[0]='\0';
 			VideoEncoderUnsupportedCodecTime=0.0f;
@@ -3600,7 +3598,7 @@ DrawFrame
 				videoSecondsBufferedLeft,				//42
 				videoSecondsBufferedRight,				//43
 				(Which==Master) ? 'T' : 'F',				//44
-				(RapidVolumeInvertSelf) ? 'T' : 'F',			//45
+				(RapidVolumeInvert) ? 'T' : 'F',			//45
 				GetBeginningOfCurrentMeasureSeconds()			//46
 			);
 			
@@ -3664,7 +3662,7 @@ DrawFrame
 				videoSecondsBufferedLeft,				//53
 				videoSecondsBufferedRight,				//54
 				Which==Master,						//55
-				RapidVolumeInvertSelf,					//56
+				RapidVolumeInvert,					//56
 				GetBeginningOfCurrentMeasureSeconds()			//57
 			);
 			LGL_DrawLogPause(false);
@@ -3857,7 +3855,7 @@ GetVideoBrightness()
 	bool muted=false;
 	if(GetBPM()>0)
 	{
-		if(RapidVolumeInvertSelf)
+		if(RapidVolumeInvert)
 		{
 			long sampleNow = SmoothWaveformScrollingSample;
 			long bpmFirstBeatCurrentMeasureSamples = GetBeginningOfCurrentMeasureSeconds()*Sound->GetHz();
@@ -3868,6 +3866,13 @@ GetVideoBrightness()
 			{
 				muted=!muted;
 			}
+		}
+	}
+	if(Sound)
+	{
+		if(Sound->GetRespondToRapidSoloInvertCurrentValue(Channel)==0)
+		{
+			muted=true;
 		}
 	}
 	return
@@ -4606,7 +4611,7 @@ TurntableObj::GetQuantizePeriodSeconds()
 double
 TurntableObj::GetBeatLengthSeconds()
 {
-	return((60.0/(double)GetBPMAdjusted()));
+	return((60.0/(double)GetBPM()));
 }
 
 double
@@ -4678,6 +4683,13 @@ TurntableObj::
 SetMaster()
 {
 	Master=Which;
+}
+
+int
+TurntableObj::
+GetSoundChannel()
+{
+	return(Sound ? Channel : -1);
 }
 
 void
@@ -5053,6 +5065,30 @@ TurntableObj::
 GetSolo()
 {
 	return(VolumeSolo);
+}
+
+bool
+TurntableObj::
+GetRapidSoloInvert()
+{
+	return(RapidSoloInvert);
+}
+
+void
+TurntableObj::
+SetRespondToRapidSoloInvert
+(
+	int	soloChannel
+)
+{
+	if(Sound)
+	{
+		Sound->SetRespondToRapidSoloInvertChannel
+		(
+			Channel,
+			soloChannel
+		);
+	}
 }
 
 void

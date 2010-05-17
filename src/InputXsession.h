@@ -83,8 +83,8 @@ virtual float	WaveformGainDelta		(unsigned int target)	const;	//Respected in all
 virtual	bool	WaveformGainKill		(unsigned int target)	const;	//Respected in all modes
 virtual	float	WaveformVolumeSlider		(unsigned int target)	const;	//Respected in all modes
 virtual	bool	WaveformVolumeInvert		(unsigned int target)	const;	//Audible => Inaudible => Full
-virtual	bool	WaveformRapidVolumeInvertSelf	(unsigned int target)	const;	//Invert my Turntable's volume so I'm audible on nth notes, as defined by LoopMeasures
-virtual	bool	WaveformRapidVolumeInvertOther	(unsigned int target)	const;	//Invert other TT's volume so I'm audible on nth notes, as defined by LoopMeasures
+virtual	bool	WaveformRapidVolumeInvert	(unsigned int target)	const;	//Invert my Turntable's volume so I'm audible on nth notes, as defined by LoopMeasures
+virtual	bool	WaveformRapidSoloInvert		(unsigned int target)	const;	//Invert other TT's volume so only I'm audible on nth notes, as defined by LoopMeasures
 virtual	bool	WaveformVolumeSolo		(unsigned int target)	const;	//Full + others muted
 virtual	float	WaveformRewindFF		(unsigned int target)	const;	//Velocity of seeking
 virtual	bool	WaveformRecordHold		(unsigned int target)	const;	//Finger on Record

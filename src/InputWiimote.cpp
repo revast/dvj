@@ -545,7 +545,7 @@ WaveformVolumeInvert
 
 bool
 InputWiimoteObj::
-WaveformRapidVolumeInvertSelf
+WaveformRapidVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -556,7 +556,7 @@ WaveformRapidVolumeInvertSelf
 
 bool
 InputWiimoteObj::
-WaveformRapidVolumeInvertOther
+WaveformRapidSoloInvert
 (
 	unsigned int	target
 )	const

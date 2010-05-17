@@ -210,8 +210,8 @@ private:
 	bool				VolumeSolo;
 	float				VolumeMultiplierNow;
 	float				VolumeInvertBinary;
-	bool				RapidVolumeInvertSelf;
-	bool				RapidVolumeInvertOther;
+	bool				RapidVolumeInvert;
+	bool				RapidSoloInvert;
 	bool				VideoFileExists;
 	float				MixerVolumeFront;
 	float				MixerVolumeBack;
@@ -282,6 +282,8 @@ public:
 	bool				GetMaster();
 	void				SetMaster();
 
+	int				GetSoundChannel();
+
 private:
 
 	float				BPM;
@@ -330,6 +332,8 @@ static	bool				GetSurroundMode();
 	double				GetPercentOfCurrentMeasure(float measureMultiplier=1.0f);
 	double				GetBeginningOfCurrentMeasureSeconds(float measureMultiplier=1.0f);
 	bool				GetSolo();
+	bool				GetRapidSoloInvert();
+	void				SetRespondToRapidSoloInvert(int soloChannel);
 	void				BlankFilterTextIfMode0();
 
 };

@@ -2014,7 +2014,10 @@ public:
 	bool		SetWarpPoint(int channel);
 	bool		SetWarpPoint(int channel, double triggerSeconds, double dstSeconds, bool loop=false);
 	float		GetWarpPointSecondsTrigger(int channel);
-	void		SetRapidVolumeInvertProperties(int channel, float secondsAnchor, float secondsDelta);
+	void		SetRapidInvertProperties(int channel, float secondsAlpha, float secondsDelta);
+	void		SetRapidVolumeInvert(int channel, bool rapidVolumeInvert);
+	void		SetRespondToRapidSoloInvertChannel(int channel, int soloChannel);
+	int		GetRespondToRapidSoloInvertCurrentValue(int channel);
 
 	float		GetVU(int channel) const;
 

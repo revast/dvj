@@ -556,14 +556,14 @@ WaveformVolumeInvert
 
 bool
 InputKeyboardObj::
-WaveformRapidVolumeInvertSelf
+WaveformRapidVolumeInvert
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(GetInputKeyboardWaveformRapidVolumeInvertSelfKey()));
+		return(LGL_KeyDown(GetInputKeyboardWaveformRapidVolumeInvertKey()));
 	}
 	else
 	{
@@ -573,14 +573,14 @@ WaveformRapidVolumeInvertSelf
 
 bool
 InputKeyboardObj::
-WaveformRapidVolumeInvertOther
+WaveformRapidSoloInvert
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(GetInputKeyboardWaveformRapidVolumeInvertOtherKey()));
+		return(LGL_KeyDown(GetInputKeyboardWaveformRapidSoloInvertKey()));
 	}
 	else
 	{

@@ -653,7 +653,7 @@ WaveformVolumeInvert
 
 bool
 InputObj::
-WaveformRapidVolumeInvertSelf
+WaveformRapidVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -662,7 +662,7 @@ WaveformRapidVolumeInvertSelf
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		invert|=Children[a]->WaveformRapidVolumeInvertSelf(target);
+		invert|=Children[a]->WaveformRapidVolumeInvert(target);
 	}
 
 	return(invert);
@@ -670,7 +670,7 @@ WaveformRapidVolumeInvertSelf
 
 bool
 InputObj::
-WaveformRapidVolumeInvertOther
+WaveformRapidSoloInvert
 (
 	unsigned int	target
 )	const
@@ -679,7 +679,7 @@ WaveformRapidVolumeInvertOther
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		invert|=Children[a]->WaveformRapidVolumeInvertOther(target);
+		invert|=Children[a]->WaveformRapidSoloInvert(target);
 	}
 
 	return(invert);
