@@ -668,7 +668,7 @@ WaveformVolumeInvert
 
 bool
 InputXsessionObj::
-WaveformRapidVolumeInvertSelf
+WaveformRapidVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -679,7 +679,7 @@ WaveformRapidVolumeInvertSelf
 
 bool
 InputXsessionObj::
-WaveformRapidVolumeInvertOther
+WaveformRapidSoloInvert
 (
 	unsigned int	target
 )	const

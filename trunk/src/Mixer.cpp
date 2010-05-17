@@ -379,7 +379,14 @@ NextFrame
 
 	for(int a=0;a<2;a++)
 	{
+		int b=(a+1)%2;
 		Turntable[a]->SetMixerVolumeBack(0);
+		Turntable[a]->SetRespondToRapidSoloInvert
+		(
+			Turntable[b]->GetRapidSoloInvert() ?
+				Turntable[b]->GetSoundChannel() :
+				-1
+		);
 	}
 
 	bool solo[2];

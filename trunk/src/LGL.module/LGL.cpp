@@ -165,9 +165,12 @@ typedef struct
 
 	long			FutureGlitchSamplesNow;	//Not affected by FutureGlitchSettingsAvailable. Meh.
 
-	long			RapidVolumeInvertAnchorSamples;
-	long			RapidVolumeInvertDeltaSamples;
-	int			RapidVolumeInvertMode;
+	long			RapidInvertAlphaSamples;
+	long			RapidInvertDeltaSamples;
+	bool			RapidVolumeInvert;
+
+	int			RespondToRapidSoloInvertChannel;
+	int			RespondToRapidSoloInvertCurrentValue;
 
 	float			VU;
 
@@ -636,9 +639,11 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].GlitchLuminScratch=false;
 	LGL.SoundChannel[a].GlitchLuminScratchPositionDesired=-10000;
 	LGL.SoundChannel[a].FutureGlitchSamplesNow=-10000;
-	LGL.SoundChannel[a].RapidVolumeInvertAnchorSamples=0;
-	LGL.SoundChannel[a].RapidVolumeInvertDeltaSamples=0;
-	LGL.SoundChannel[a].RapidVolumeInvertMode=0;
+	LGL.SoundChannel[a].RapidInvertAlphaSamples=0;
+	LGL.SoundChannel[a].RapidInvertDeltaSamples=0;
+	LGL.SoundChannel[a].RapidVolumeInvert=false;
+	LGL.SoundChannel[a].RespondToRapidSoloInvertChannel=-1;
+	LGL.SoundChannel[a].RespondToRapidSoloInvertCurrentValue=1;
 	LGL.SoundChannel[a].GlitchSamplesNow=0;
 	LGL.SoundChannel[a].GlitchLast=0;
 	LGL.SoundChannel[a].GlitchBegin=0;
@@ -14307,9 +14312,11 @@ Play
 		LGL.SoundChannel[available].GlitchLuminScratch=false;
 		LGL.SoundChannel[available].GlitchLuminScratchPositionDesired=-10000;
 		LGL.SoundChannel[available].FutureGlitchSamplesNow=-10000;
-		LGL.SoundChannel[available].RapidVolumeInvertAnchorSamples=0;
-		LGL.SoundChannel[available].RapidVolumeInvertDeltaSamples=0;
-		LGL.SoundChannel[available].RapidVolumeInvertMode=0;
+		LGL.SoundChannel[available].RapidInvertAlphaSamples=0;
+		LGL.SoundChannel[available].RapidInvertDeltaSamples=0;
+		LGL.SoundChannel[available].RapidVolumeInvert=false;
+		LGL.SoundChannel[available].RespondToRapidSoloInvertChannel=-1;
+		LGL.SoundChannel[available].RespondToRapidSoloInvertCurrentValue=1;
 		LGL.SoundChannel[available].GlitchSamplesNow=0;
 		LGL.SoundChannel[available].GlitchLast=0;
 		LGL.SoundChannel[available].GlitchBegin=0;
@@ -15041,16 +15048,47 @@ GetWarpPointSecondsTrigger
 
 void
 LGL_Sound::
-SetRapidVolumeInvertProperties
+SetRapidInvertProperties
 (
 	int	channel,
-	float	secondsAnchor,
+	float	secondsAlpha,
 	float	secondsDelta
 )
 {
-	LGL.SoundChannel[channel].RapidVolumeInvertAnchorSamples=secondsAnchor*Hz;
-	LGL.SoundChannel[channel].RapidVolumeInvertDeltaSamples=secondsDelta*Hz;
-	//LGL.SoundChannel[channel].RapidVolumeInvertMode=mode;
+	LGL.SoundChannel[channel].RapidInvertAlphaSamples=secondsAlpha*Hz;
+	LGL.SoundChannel[channel].RapidInvertDeltaSamples=secondsDelta*Hz;
+}
+
+void
+LGL_Sound::
+SetRapidVolumeInvert
+(
+	int	channel,
+	bool	rapidVolumeInvert
+)
+{
+	LGL.SoundChannel[channel].RapidVolumeInvert=rapidVolumeInvert;
+}
+
+void
+LGL_Sound::
+SetRespondToRapidSoloInvertChannel
+(
+	int	channel,
+	int	soloChannel
+)
+{
+	LGL.SoundChannel[channel].RespondToRapidSoloInvertChannel=soloChannel;
+}
+
+int
+LGL_Sound::
+GetRespondToRapidSoloInvertCurrentValue
+(
+	int	channel
+)
+{
+	return(LGL.SoundChannel[channel].RespondToRapidSoloInvertCurrentValue);
 }
 
 float
@@ -28031,10 +28069,10 @@ lgl_AudioOutCallbackGenerator
 				bl+=myBL*localSpeedVolFactor;
 				br+=myBR*localSpeedVolFactor;
 
-				if(sc->RapidVolumeInvertDeltaSamples!=0)
+				if(sc->RapidVolumeInvert)
 				{
-					bool muted=(((long)fabsf(sc->PositionSamplesNow-sc->RapidVolumeInvertAnchorSamples)/sc->RapidVolumeInvertDeltaSamples)%2)==1;
-					if(sc->PositionSamplesNow<sc->RapidVolumeInvertAnchorSamples)
+					bool muted=(((long)fabsf(sc->PositionSamplesNow-sc->RapidInvertAlphaSamples)/sc->RapidInvertDeltaSamples)%2)==1;
+					if(sc->PositionSamplesNow<sc->RapidInvertAlphaSamples)
 					{
 						muted=!muted;
 					}
@@ -28045,6 +28083,29 @@ lgl_AudioOutCallbackGenerator
 						volumeArrayBL[a/4]=0;
 						volumeArrayBR[a/4]=0;
 					}
+				}
+
+				if(sc->RespondToRapidSoloInvertChannel!=-1)
+				{
+					LGL_SoundChannel* scSolo=&LGL.SoundChannel[sc->RespondToRapidSoloInvertChannel];
+					bool muted=(((long)fabsf(scSolo->PositionSamplesNow-scSolo->RapidInvertAlphaSamples)/scSolo->RapidInvertDeltaSamples)%2)==1;
+					//TODO: This isn't sample-accurate, but is acceptable for most purposes
+					if(scSolo->PositionSamplesNow<scSolo->RapidInvertAlphaSamples)
+					{
+						muted=!muted;
+					}
+					if(muted)
+					{
+						volumeArrayFL[a/4]=0;
+						volumeArrayFR[a/4]=0;
+						volumeArrayBL[a/4]=0;
+						volumeArrayBR[a/4]=0;
+					}
+					sc->RespondToRapidSoloInvertCurrentValue=muted ? 0 : 1;
+				}
+				else
+				{
+					sc->RespondToRapidSoloInvertCurrentValue=1;
 				}
 
 				//Volume Omega
