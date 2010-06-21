@@ -201,6 +201,28 @@ typedef struct
 
 #define	LGL_SOUND_CHANNEL_NUMBER	32
 
+class lgl_WriteFileAsyncWorkItem
+{
+public:
+	lgl_WriteFileAsyncWorkItem
+	(
+		const char*	path,
+		const char*	data,
+		int		len
+	);
+
+	~lgl_WriteFileAsyncWorkItem();
+
+	void		Write();
+	const char*	GetPath();
+
+private:
+
+	char*		Path;
+	char*		Data;
+	int		Len;
+};
+
 typedef struct
 {
 	//Video
@@ -431,6 +453,11 @@ typedef struct
 
 	char			HomeDir[2048];
 	char			Username[2048];
+
+	LGL_Semaphore*		WriteFileAsyncSemaphore;
+	std::vector<lgl_WriteFileAsyncWorkItem*>
+				WriteFileAsyncWorkItemList;
+	SDL_Thread*		WriteFileAsyncThread;
 } LGL_State;
 
 LGL_State LGL;
@@ -2143,6 +2170,8 @@ printf("\tScreen[%i]: %i x %i\n",a,
 #endif	//LGL_OSX
 
 	LGL.WiimoteSemaphore = new LGL_Semaphore("Wiimote");
+	LGL.WriteFileAsyncSemaphore = new LGL_Semaphore("WriteFileAsyncSemaphore");
+	LGL.WriteFileAsyncThread = NULL;
 
 #ifdef	LGL_LINUX_VIDCAM
 	int tempfd1=open("/dev/video0",O_RDWR);
@@ -2467,6 +2496,17 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	lgl_lgl_initialized=true;
 
 	return(true);
+}
+
+void
+LGL_Exit()
+{
+	LGL.Running=false;
+	if(LGL.WriteFileAsyncThread)
+	{
+		LGL_ThreadWait(LGL.WriteFileAsyncThread);
+	}
+	exit(0);
 }
 
 //Time
@@ -25275,6 +25315,132 @@ LGL_ResolveAlias
 #endif	//LGL_OSX
 
 	return(false);
+}
+
+lgl_WriteFileAsyncWorkItem::
+lgl_WriteFileAsyncWorkItem
+(
+	const char*	path,
+	const char*	data,
+	int		len
+)
+{
+	Path = new char[strlen(path)+2];
+	strcpy(Path,path);
+
+	Data = new char[len];
+	memcpy(Data,data,len);
+
+	Len = len;
+}
+
+lgl_WriteFileAsyncWorkItem::
+~lgl_WriteFileAsyncWorkItem()
+{
+	delete Path;
+	Path=NULL;
+
+	delete Data;
+	Data=NULL;
+
+	Len = 0;
+}
+
+void
+lgl_WriteFileAsyncWorkItem::
+Write()
+{
+	if(FILE* fd = fopen(Path,"w"))
+	{
+		fwrite(Data,Len,1,fd);
+		fclose(fd);
+	}
+}
+
+const char*
+lgl_WriteFileAsyncWorkItem::
+GetPath()
+{
+	return(Path);
+}
+
+int
+lgl_WriteFileAsyncThread
+(
+	void*	baka
+)
+{
+	for(;;)
+	{
+		unsigned int workItemSize = 0;
+		lgl_WriteFileAsyncWorkItem* wi = NULL;
+		
+		{
+			LGL_ScopeLock lock(LGL.WriteFileAsyncSemaphore);
+			workItemSize = LGL.WriteFileAsyncWorkItemList.size();
+			wi=NULL;
+			if(workItemSize>0)
+			{
+				wi = LGL.WriteFileAsyncWorkItemList[0];
+				LGL.WriteFileAsyncWorkItemList.erase(LGL.WriteFileAsyncWorkItemList.begin());
+				workItemSize = LGL.WriteFileAsyncWorkItemList.size();
+				for(unsigned int a=0;a<workItemSize;a++)
+				{
+					lgl_WriteFileAsyncWorkItem* wiNow = LGL.WriteFileAsyncWorkItemList[a];
+					if(strcasecmp(wi->GetPath(),wiNow->GetPath())==0)
+					{
+						delete wi;
+						wi=NULL;
+						break;
+					}
+				}
+			}
+		}
+		
+		if(wi)
+		{
+			wi->Write();
+			delete wi;
+		}
+		
+		if(LGL.Running==false && workItemSize==0)
+		{
+			return(0);
+		}
+
+		LGL_DelayMS((workItemSize>0) ? 1 : 100);
+	}
+	return(0);
+}
+
+void
+LGL_WriteFileAsync
+(
+	const char*	path,
+	const char*	data,
+	int		len
+)
+{
+	if(LGL.WriteFileAsyncThread == NULL)
+	{
+		LGL.WriteFileAsyncThread = LGL_ThreadCreate(lgl_WriteFileAsyncThread);
+	}
+
+	lgl_WriteFileAsyncWorkItem* wi = new lgl_WriteFileAsyncWorkItem
+	(
+		path,
+		data,
+		len
+	);
+	LGL_ScopeLock lock(LGL.WriteFileAsyncSemaphore);
+	LGL.WriteFileAsyncWorkItemList.push_back(wi);
+}
+
+unsigned int
+LGL_WriteFileAsyncQueueCount()
+{
+	LGL_ScopeLock lock(LGL.WriteFileAsyncSemaphore);
+	return(LGL.WriteFileAsyncWorkItemList.size());
 }
 
 //Memory

@@ -89,9 +89,12 @@ public:
 
 	bool				GetSavePointIndexAtNull() const;
 
+	void				GetMetaDataPath(char* dst);
+	void				GetCacheMetaDataPath(char* dst);
 	void				LoadMetaData();
+	void				LoadMetaData(const char* data);
 	void				SaveMetaData();
-	bool				GetMetaDataSavedThisFrame() const;
+	const char*			GetMetaDataSavedThisFrame() const;
 
 	void				LoadAllCachedData();
 	void				SaveAllCachedData();
@@ -226,7 +229,7 @@ private:
 	bool				AutoDivergeRecallActive;
 	int				SavePointIndex;
 	double				SavePointSeconds[18];
-	bool				MetaDataSavedThisFrame;
+	char*				MetaDataSavedThisFrame;
 	double				RecallOrigin;
 	unsigned long			RecallSampleCounter;
 	double				SmoothWaveformScrollingSample;

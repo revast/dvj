@@ -384,6 +384,8 @@ bool		LGL_Init
 			const char*	inWindowTitle
 		);
 
+void		LGL_Exit();
+
 
 class LGL_Vector
 {
@@ -2966,6 +2968,8 @@ const char*	LGL_GetUsername();
 const char*	LGL_GetHomeDir();
 bool		LGL_PathIsAlias(const char* path);
 bool		LGL_ResolveAlias(char* outPath, int outPathLength, const char* inPath);
+void		LGL_WriteFileAsync(const char* path, const char* data, int len);
+unsigned int	LGL_WriteFileAsyncQueueCount();
 
 //DEPRECATED! Use LGL_DirTree.
 std::vector<char*>

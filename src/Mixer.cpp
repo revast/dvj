@@ -566,7 +566,7 @@ NextFrame
 		Turntable[Which]->SetMixerVolumeBack(meBack);
 
 		Turntable[Which]->NextFrame(secondsElapsed);
-		if(Turntable[Which]->GetMetaDataSavedThisFrame())
+		if(const char* data = Turntable[Which]->GetMetaDataSavedThisFrame())
 		{
 			const char* pathShort=Turntable[Which]->GetSoundPathShort();
 			if(pathShort)
@@ -580,7 +580,7 @@ NextFrame
 						strcmp(Turntable[a]->GetSoundPathShort(),pathShort)==0
 					)
 					{
-						Turntable[a]->LoadMetaData();
+						Turntable[a]->LoadMetaData(data);
 					}
 				}
 			}

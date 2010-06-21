@@ -592,6 +592,7 @@ TurntableObj
 	LoopThenRecallActive=false;
 	AutoDivergeRecallActive=false;
 	SavePointIndex=0;
+	MetaDataSavedThisFrame=NULL;
 	RecordScratch=false;
 	LuminScratch=false;
 
@@ -788,7 +789,11 @@ NextFrame
 	}
 #endif	//LGL_OSX
 
-	MetaDataSavedThisFrame=false;
+	if(MetaDataSavedThisFrame)
+	{
+		delete MetaDataSavedThisFrame;
+		MetaDataSavedThisFrame=NULL;
+	}
 
 	bool volumeFull=false;
 	bool endpointsSticky=true;
@@ -1131,7 +1136,6 @@ NextFrame
 							SavePointUnsetNoisePercent[a]=0.0f;
 							SavePointUnsetFlashPercent[a]=0.0f;
 						}
-						LoadMetaData();
 						FilterText.ReleaseFocus();
 						ClearRecallOrigin();
 
@@ -2523,10 +2527,15 @@ NextFrame
 	{
 		//Loading...
 		
-		if(Sound->GetLengthSamples()>0)//Sound->IsLoaded())
-		//if(Sound->IsLoaded())
+		if
+		(
+			Sound->GetLengthSamples()>0 &&
+			LGL_WriteFileAsyncQueueCount()==0
+		)
 		{
 			Mode=2;
+
+			LoadMetaData();
 
 			BPMRecalculationRequired=true;
 
@@ -4174,42 +4183,49 @@ LoadMetaData()
 		return;
 	}
 
-	char metaDataPath[1024];
-	sprintf(metaDataPath,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
+	char metaDataPath[2048];
+	GetMetaDataPath(metaDataPath);
 	FILE* fd=fopen(metaDataPath,"r");
 	if(fd)
 	{
-		FileInterfaceObj fi;
-		for(;;)
-		{
-			fi.ReadLine(fd);
-			if(feof(fd))
-			{
-				break;
-			}
-			if(fi.Size()==0)
-			{
-				continue;
-			}
-			if
-			(
-				strcasecmp(fi[0],"HomePoints")==0 ||
-				strcasecmp(fi[0],"SavePoints")==0
-			)
-			{
-				if(fi.Size()!=19)
-				{
-					printf("TurntableObj::LoadMetaData('%s'): Warning!\n",SoundName);
-					printf("\tSavePoints has strange fi.size() of '%i' (Expecting 11)\n",fi.Size());
-				}
-				for(unsigned int a=0;a<fi.Size()-1 && a<18;a++)
-				{
-					SavePointSeconds[a]=atof(fi[a+1]);
-				}
-			}
-		}
-
+		const int dataLen=2048;
+		char data[dataLen];
+		fgets(data,dataLen,fd);
 		fclose(fd);
+		LoadMetaData(data);
+	}
+}
+
+void
+TurntableObj::
+LoadMetaData(const char* data)
+{
+	if(Sound==NULL)
+	{
+		return;
+	}
+
+	FileInterfaceObj fi;
+	fi.ReadLine(data);
+	if(fi.Size()==0)
+	{
+		return;
+	}
+	if
+	(
+		strcasecmp(fi[0],"HomePoints")==0 ||
+		strcasecmp(fi[0],"SavePoints")==0
+	)
+	{
+		if(fi.Size()!=19)
+		{
+			printf("TurntableObj::LoadMetaData('%s'): Warning!\n",SoundName);
+			printf("\tSavePoints has strange fi.size() of '%i' (Expecting 11)\n",fi.Size());
+		}
+		for(unsigned int a=0;a<fi.Size()-1 && a<18;a++)
+		{
+			SavePointSeconds[a]=atof(fi[a+1]);
+		}
 	}
 }
 
@@ -4227,46 +4243,46 @@ SaveMetaData()
 		DatabaseEntryNow->BPM = GetBPM();
 	}
 
-	char metaDataPath[1024];
-	sprintf(metaDataPath,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
-	FILE* fd=fopen(metaDataPath,"w");
-	if(fd)
-	{
-		fprintf
-		(
-			fd,
-			"SavePoints|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f\n",
-			SavePointSeconds[0],
-			SavePointSeconds[1],
-			SavePointSeconds[2],
-			SavePointSeconds[3],
-			SavePointSeconds[4],
-			SavePointSeconds[5],
-			SavePointSeconds[6],
-			SavePointSeconds[7],
-			SavePointSeconds[8],
-			SavePointSeconds[9],
-			SavePointSeconds[10],
-			SavePointSeconds[11],
-			SavePointSeconds[12],
-			SavePointSeconds[13],
-			SavePointSeconds[14],
-			SavePointSeconds[15],
-			SavePointSeconds[16],
-			SavePointSeconds[17]
-		);
-		fclose(fd);
+	char metaDataPath[2048];
+	GetMetaDataPath(metaDataPath);
 
-		MetaDataSavedThisFrame=true;
-	}
-	else
+	char data[4096];
+	sprintf
+	(
+		data,
+		"SavePoints|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f|%.5f\n",
+		SavePointSeconds[0],
+		SavePointSeconds[1],
+		SavePointSeconds[2],
+		SavePointSeconds[3],
+		SavePointSeconds[4],
+		SavePointSeconds[5],
+		SavePointSeconds[6],
+		SavePointSeconds[7],
+		SavePointSeconds[8],
+		SavePointSeconds[9],
+		SavePointSeconds[10],
+		SavePointSeconds[11],
+		SavePointSeconds[12],
+		SavePointSeconds[13],
+		SavePointSeconds[14],
+		SavePointSeconds[15],
+		SavePointSeconds[16],
+		SavePointSeconds[17]
+	);
+
+	LGL_WriteFileAsync(metaDataPath,data,strlen(data));
+
+	if(MetaDataSavedThisFrame)
 	{
-		printf("TurntableObj::SaveMetaData('%s'): Warning!\n",SoundName);
-		printf("\tCould not open '%s' for writing\n",metaDataPath);
+		delete MetaDataSavedThisFrame;
+		MetaDataSavedThisFrame=NULL;
 	}
+	MetaDataSavedThisFrame = new char[strlen(data)+2];
+	strcpy(MetaDataSavedThisFrame,data);
 }
 
-bool
+const char*
 TurntableObj::
 GetMetaDataSavedThisFrame()	const
 {
@@ -4356,10 +4372,30 @@ SaveWaveArrayData()
 
 void
 TurntableObj::
+GetMetaDataPath
+(
+	char*	dst
+)
+{
+	sprintf(dst,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
+}
+
+void
+TurntableObj::
+GetCacheMetaDataPath
+(
+	char*	dst
+)
+{
+	sprintf(dst,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
+}
+
+void
+TurntableObj::
 LoadCachedMetadata()
 {
-	char cachedPath[1024];
-	sprintf(cachedPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
+	char cachedPath[2048];
+	GetCacheMetaDataPath(cachedPath);
 
 	if(LGL_FileExists(cachedPath)==false)
 	{
@@ -4400,8 +4436,8 @@ SaveCachedMetadata()
 
 	CachedLengthSeconds=Sound->GetLengthSeconds();
 
-	char cachedLengthPath[1024];
-	sprintf(cachedLengthPath,"%s/.dvj/cache/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),SoundName);
+	char cachedLengthPath[2048];
+	GetCacheMetaDataPath(cachedLengthPath);
 	FILE* fd=fopen(cachedLengthPath,"w");
 	if(fd)
 	{
