@@ -25350,10 +25350,13 @@ void
 lgl_WriteFileAsyncWorkItem::
 Write()
 {
-	if(FILE* fd = fopen(Path,"w"))
+	char pathTmp[2048];
+	sprintf(pathTmp,"%s.tmp",Path);
+	if(FILE* fd = fopen(pathTmp,"w"))
 	{
 		fwrite(Data,Len,1,fd);
 		fclose(fd);
+		rename(pathTmp,Path);
 	}
 }
 
