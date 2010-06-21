@@ -317,7 +317,7 @@ void NextFrame()
 		{
 			delete Visualizer;
 			delete Mixer;
-			exit(0);
+			LGL_Exit();
 		}
 		if
 		(

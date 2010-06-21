@@ -1047,7 +1047,8 @@ Turntable_DrawWaveform
 				double sampleNowDouble=(sampleLeft+sampleWidth*(z/(double)pointResolution));
 				float xOffset=1.0f-(sampleNow-sampleNowDouble)/(float)deltaSample;
 
-				arrayV[(a*2)+0]=pointLeft+((z-xOffset)/(float)pointResolution)*pointWidth;
+				const float xFudgeFactor = 0.0045;
+				arrayV[(a*2)+0]=pointLeft+((z-xOffset)/(float)pointResolution)*pointWidth+xFudgeFactor;
 				arrayV[(a*2)+1]=LGL_Clamp(pointBottom,pointBottom+(0.5f+0.5f*magnitudeAve)*pointHeight,pointTop);
 
 				float glitchDelta = -0.35f*(glitchSampleRight-glitchSampleLeft);
