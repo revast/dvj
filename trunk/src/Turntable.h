@@ -220,8 +220,8 @@ private:
 	float				MixerVolumeBack;
 	float				MixerEQ[3];
 	bool				Looping();
-	double				LoopStartSeconds;
-	double				LoopEndSeconds;
+	double				LoopAlphaSeconds;
+	double				LoopOmegaSeconds;
 	int				QuantizePeriodMeasuresExponent;
 	double				QuantizePeriodNoBPMSeconds;
 	bool				LoopActive;

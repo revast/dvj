@@ -455,7 +455,7 @@ FileScroll
 	return(scroll);
 }
 
-bool
+int
 InputXponentObj::
 FileSelect
 (
@@ -464,7 +464,7 @@ FileSelect
 {
 	if(LGL_GetXponent()==NULL)
 	{
-		return(false);
+		return(0);
 	}
 	else
 	{
@@ -472,21 +472,25 @@ FileSelect
 		{
 			return
 			(
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_TOGGLE_PAUSE) ||
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_DASH)
+				(
+					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_TOGGLE_PAUSE) ||
+					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_DASH)
+				) ? 1 : 0
 			);
 		}
 		else if(target & TARGET_TOP)
 		{
 			return
 			(
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_TOGGLE_PAUSE) ||
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_DASH)
+				(
+					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_TOGGLE_PAUSE) ||
+					LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_DASH)
+				) ? 1 : 0
 			);
 		}
 		else
 		{
-			return(false);
+			return(0);
 		}
 	}
 }
@@ -567,7 +571,7 @@ DecodeAbort
 
 //Mode 2: Waveform
 
-bool
+int
 InputXponentObj::
 WaveformEject
 (
@@ -578,11 +582,11 @@ WaveformEject
 	{
 		if(target & TARGET_BOTTOM)
 		{
-			return(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_EJECT));
+			return(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_EJECT) ? 1 : 0);
 		}
 		else if(target & TARGET_TOP)
 		{
-			return(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_EJECT));
+			return(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_EJECT) ? 1 : 0);
 		}
 	}
 

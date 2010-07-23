@@ -230,20 +230,20 @@ FileScroll
 	return(scroll);
 }
 
-bool
+int
 InputWiimoteObj::
 FileSelect
 (
 	unsigned int	target
 )	const
 {
-	bool choose=false;
+	int choose=0;
 
 	if(target & TARGET_FOCUS)
 	{
 		if(LGL_GetWiimote(0).ButtonStroke(LGL_WIIMOTE_A))
 		{
-			choose=true;
+			choose=1;
 		}
 	}
 
@@ -287,19 +287,19 @@ DecodeAbort
 
 //Mode 2: Waveform
 
-bool
+int
 InputWiimoteObj::
 WaveformEject
 (
 	unsigned int	target
 )	const
 {
-	bool eject=false;
+	int eject=0;
 	if(target & TARGET_FOCUS)
 	{
 		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_HOME))
 		{
-			eject=HomeDownTimer.SecondsSinceLastReset()>0.5f;
+			eject=(HomeDownTimer.SecondsSinceLastReset()>0.5f) ? 1 : 0;
 		}
 	}
 	return(eject);

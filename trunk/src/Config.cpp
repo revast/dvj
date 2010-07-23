@@ -214,6 +214,7 @@ CreateDotJackdrc()
 
 	//Scan jack.output for string "Aggregate".
 	bool aggregate=false;
+	bool xponent=false;
 	if(FILE* fd = fopen(jackOutputPath,"r"))
 	{
 		const int bufLen=2048;
@@ -227,12 +228,17 @@ CreateDotJackdrc()
 			}
 			if(strstr(buf,"Aggregate"))
 			{
-				printf("JACK aggregate device detected!\n");
+				printf("JACK: Aggregate device detected!\n");
 				aggregate=true;
+			}
+			if(strstr(buf,"Xponent"))
+			{
+				printf("JACK: Xponent detected!\n");
+				xponent=true;
 			}
 			if(strstr(buf,"Default input and output devices are not the same"))
 			{
-				printf("JACK aggregate device improperly configured!\n");
+				printf("JACK: Aggregate device improperly configured!\n");
 				aggregate=false;
 				break;
 			}
@@ -243,6 +249,11 @@ CreateDotJackdrc()
 	{
 		printf("CreateDotJackdrc(): Couldn't open: %s\n",jackOutputPath);
 		return;
+	}
+
+	if(xponent==false)
+	{
+		aggregate=false;
 	}
 
 	//Write correct ~/.jackdrc
@@ -785,80 +796,6 @@ MapStringToSDLK
 	return(LGL_KEY_UNKNOWN);
 }
 
-typedef enum
-{
-	FOCUS_CHANGE = 0,
-	FOCUS_BOTTOM,
-	FOCUS_TOP,
-	XFADER_SPEAKERS_DELTA_DOWN,
-	XFADER_SPEAKERS_DELTA_UP,
-	XFADER_HEADPHONES_DELTA_DOWN,
-	XFADER_HEADPHONES_DELTA_UP,
-	SYNC_TOP_TO_BOTTOM,
-	SYNC_BOTTOM_TO_TOP,
-	FILE_SCROLL_DOWN_MANY,
-	FILE_SCROLL_UP_MANY,
-	FILE_SCROLL_DOWN_ONE,
-	FILE_SCROLL_UP_ONE,
-	FILE_SELECT,
-	FILE_MARK_UNOPENED,
-	FILE_REFRESH,
-	DECODE_ABORT,
-	WAVEFORM_EJECT,
-	WAVEFORM_TOGGLE_PAUSE,
-	WAVEFORM_NUDGE_LEFT_1,
-	WAVEFORM_NUDGE_RIGHT_1,
-	WAVEFORM_NUDGE_LEFT_2,
-	WAVEFORM_NUDGE_RIGHT_2,
-	WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW,
-	WAVEFORM_PITCHBEND_DELTA_UP_SLOW,
-	WAVEFORM_PITCHBEND_DELTA_DOWN_FAST,
-	WAVEFORM_PITCHBEND_DELTA_UP_FAST,
-	WAVEFORM_EQ_LOW_DELTA_DOWN,
-	WAVEFORM_EQ_LOW_DELTA_UP,
-	WAVEFORM_EQ_LOW_KILL,
-	WAVEFORM_EQ_MID_DELTA_DOWN,
-	WAVEFORM_EQ_MID_DELTA_UP,
-	WAVEFORM_EQ_MID_KILL,
-	WAVEFORM_EQ_HIGH_DELTA_DOWN,
-	WAVEFORM_EQ_HIGH_DELTA_UP,
-	WAVEFORM_EQ_HIGH_KILL,
-	WAVEFORM_GAIN_DELTA_DOWN,
-	WAVEFORM_GAIN_DELTA_UP,
-	WAVEFORM_VOLUME_INVERT,
-	WAVEFORM_RAPID_VOLUME_INVERT,
-	WAVEFORM_RAPID_SOLO_INVERT,
-	WAVEFORM_VOLUME_SOLO,
-	WAVEFORM_REWIND,
-	WAVEFORM_FF,
-	WAVEFORM_RECORD_SPEED_BACK,
-	WAVEFORM_RECORD_SPEED_FORWARD,
-	WAVEFORM_STUTTER,
-	WAVEFORM_SAVE_POINT_PREV,
-	WAVEFORM_SAVE_POINT_NEXT,
-	WAVEFORM_SAVE_POINT_SET,
-	WAVEFORM_SAVE_POINT_UNSET,
-	WAVEFORM_SAVE_POINT_SHIFT_LEFT,
-	WAVEFORM_SAVE_POINT_SHIFT_RIGHT,
-	WAVEFORM_SAVE_POINT_SHIFT_ALL_LEFT,
-	WAVEFORM_SAVE_POINT_SHIFT_ALL_RIGHT,
-	WAVEFORM_SAVE_POINT_JUMP_NOW,
-	WAVEFORM_SAVE_POINT_JUMP_AT_MEASURE,
-	WAVEFORM_LOOP_MEASURES_HALF,
-	WAVEFORM_LOOP_MEASURES_DOUBLE,
-	WAVEFORM_LOOP_TOGGLE,
-	WAVEFORM_LOOP_THEN_RECALL,
-	WAVEFORM_AUTO_DIVERGE_THEN_RECALL,
-	WAVEFORM_VIDEO_SELECT,
-	WAVEFORM_VIDEO_FREQ_SENSE_MODE,
-	WAVEFORM_SYNC_BPM,
-	RECORDING_START,
-	FULL_SCREEN_TOGGLE,
-	VISUALIZER_FULL_SCREEN_TOGGLE,
-	SCREENSHOT,
-	ACTION_LAST
-} DVJ_Action;
-
 class dvjKeyboardMapObj
 {
 
@@ -915,6 +852,8 @@ PrepareKeyMap()
 		("syncTopToBottom",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[SYNC_BOTTOM_TO_TOP].Set
 		("syncBottomToTop",			"LGL_KEY_UNKNOWN");
+	dvjKeyMap[MASTER_TO_HEADPHONES].Set
+		("masterToHeadphones",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[FILE_SCROLL_DOWN_MANY].Set
 		("fileScrollDownMany",			"LGL_KEY_PAGEDOWN");
 	dvjKeyMap[FILE_SCROLL_UP_MANY].Set
@@ -972,7 +911,9 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_GAIN_DELTA_DOWN].Set
 		("waveformGainDeltaDown",		"LGL_KEY_MINUS");
 	dvjKeyMap[WAVEFORM_GAIN_DELTA_UP].Set
-		("waveformGainDeltaUp",			"LGL_KEY_EQUALS");
+		("waveformGainDeltaDown",		"LGL_KEY_MINUS");
+	dvjKeyMap[WAVEFORM_GAIN_KILL].Set
+		("waveformGainKill",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_VOLUME_INVERT].Set
 		("waveformVolumeInvert",		"LGL_KEY_PERIOD");
 	dvjKeyMap[WAVEFORM_RAPID_VOLUME_INVERT].Set
@@ -991,25 +932,25 @@ PrepareKeyMap()
 		("waveformRecordSpeedForward",		"LGL_KEY_QUOTE");
 	dvjKeyMap[WAVEFORM_STUTTER].Set
 		("waveformStutter",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_PREV].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_PREV].Set
 		("waveformSavePointPrev",		"LGL_KEY_F");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_NEXT].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_NEXT].Set
 		("waveformSavePointNext",		"LGL_KEY_H");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_SET].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_SET].Set
 		("waveformSavePointSet",		"LGL_KEY_G");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_UNSET].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_UNSET].Set
 		("waveformSavePointUnset",		"LGL_KEY_G");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_SHIFT_LEFT].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_LEFT].Set
 		("waveformSavePointShiftLeft",		"LGL_KEY_V");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_SHIFT_RIGHT].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_RIGHT].Set
 		("waveformSavePointShiftRight",		"LGL_KEY_N");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_SHIFT_ALL_LEFT].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_LEFT].Set
 		("waveformSavePointShiftAllLeft",	"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_SHIFT_ALL_RIGHT].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_RIGHT].Set
 		("waveformSavePointShiftAllRight",	"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_JUMP_NOW].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_JUMP_NOW].Set
 		("waveformSavePointJumpNow",		"LGL_KEY_B");
-	dvjKeyMap[WAVEFORM_SAVE_POINT_JUMP_AT_MEASURE].Set
+	dvjKeyMap[WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE].Set
 		("waveformSavePointJumpAtMeasure",	"LGL_KEY_T");
 	dvjKeyMap[WAVEFORM_LOOP_MEASURES_HALF].Set
 		("waveformLoopMeasuresHalf",		"LGL_KEY_J");
@@ -1095,6 +1036,8 @@ int GetInputKeyboardSyncTopToBottomKey()
 	{ return(dvjKeyMap[SYNC_TOP_TO_BOTTOM].ValueInt); }
 int GetInputKeyboardSyncBottomToTopKey()
 	{ return(dvjKeyMap[SYNC_BOTTOM_TO_TOP].ValueInt); }
+int GetInputKeyboardMasterToHeadphones()
+	{ return(dvjKeyMap[MASTER_TO_HEADPHONES].ValueInt); }
 int GetInputKeyboardFileScrollDownManyKey()
 	{ return(dvjKeyMap[FILE_SCROLL_DOWN_MANY].ValueInt); }
 int GetInputKeyboardFileScrollUpManyKey()
@@ -1153,6 +1096,8 @@ int GetInputKeyboardWaveformGainDeltaDownKey()
 	{ return(dvjKeyMap[WAVEFORM_GAIN_DELTA_DOWN].ValueInt); }
 int GetInputKeyboardWaveformGainDeltaUpKey()
 	{ return(dvjKeyMap[WAVEFORM_GAIN_DELTA_UP].ValueInt); }
+int GetInputKeyboardWaveformGainKill()
+	{ return(dvjKeyMap[WAVEFORM_GAIN_KILL].ValueInt); }
 int GetInputKeyboardWaveformVolumeInvertKey()
 	{ return(dvjKeyMap[WAVEFORM_VOLUME_INVERT].ValueInt); }
 int GetInputKeyboardWaveformRapidVolumeInvertKey()
@@ -1172,25 +1117,25 @@ int GetInputKeyboardWaveformRecordSpeedForwardKey()
 int GetInputKeyboardWaveformStutterKey()
 	{ return(dvjKeyMap[WAVEFORM_STUTTER].ValueInt); }
 int GetInputKeyboardWaveformSavePointPrevKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_PREV].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_PREV].ValueInt); }
 int GetInputKeyboardWaveformSavePointNextKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_NEXT].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_NEXT].ValueInt); }
 int GetInputKeyboardWaveformSavePointSetKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_SET].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SET].ValueInt); }
 int GetInputKeyboardWaveformSavePointUnsetKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_UNSET].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_UNSET].ValueInt); }
 int GetInputKeyboardWaveformSavePointShiftLeftKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_SHIFT_LEFT].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_LEFT].ValueInt); }
 int GetInputKeyboardWaveformSavePointShiftRightKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_SHIFT_RIGHT].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_RIGHT].ValueInt); }
 int GetInputKeyboardWaveformSavePointShiftAllLeftKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_SHIFT_ALL_LEFT].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_LEFT].ValueInt); }
 int GetInputKeyboardWaveformSavePointShiftAllRightKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_SHIFT_ALL_RIGHT].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_RIGHT].ValueInt); }
 int GetInputKeyboardWaveformSavePointJumpNowKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_JUMP_NOW].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_JUMP_NOW].ValueInt); }
 int GetInputKeyboardWaveformSavePointJumpAtMeasureKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVE_POINT_JUMP_AT_MEASURE].ValueInt); }
+	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE].ValueInt); }
 int GetInputKeyboardWaveformLoopMeasuresHalfKey()
 	{ return(dvjKeyMap[WAVEFORM_LOOP_MEASURES_HALF].ValueInt); }
 int GetInputKeyboardWaveformLoopMeasuresDoubleKey()

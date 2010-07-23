@@ -186,8 +186,8 @@ typedef struct
 	double			DivergeSamples;
 	int			DivergeState;
 	float			DivergeSpeed;
-	double			WarpPointSecondsTrigger;
-	double			WarpPointSecondsDestination;
+	double			WarpPointSecondsAlpha;
+	double			WarpPointSecondsOmega;
 	bool			WarpPointLoop;
 
 	SRC_STATE*		SampleRateConverter[4];
@@ -638,8 +638,8 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].DivergeSamples=0;
 	LGL.SoundChannel[a].DivergeState=0;
 	LGL.SoundChannel[a].DivergeSpeed=1.0f;
-	LGL.SoundChannel[a].WarpPointSecondsTrigger=-1.0f;
-	LGL.SoundChannel[a].WarpPointSecondsDestination=-1.0f;
+	LGL.SoundChannel[a].WarpPointSecondsAlpha=-1.0f;
+	LGL.SoundChannel[a].WarpPointSecondsOmega=-1.0f;
 	LGL.SoundChannel[a].WarpPointLoop=false;
 	LGL.SoundChannel[a].VolumeFrontLeftDesired=1.0f;
 	LGL.SoundChannel[a].VolumeFrontRightDesired=1.0f;
@@ -9610,6 +9610,10 @@ LGL_VideoEncoder
 		DstCodecContext->strict_std_compliance=-1;
 
 printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext->pix_fmt);
+if(0 && LGL_KeyDown(LGL_KEY_ESCAPE))
+{
+	assert(false);
+}
 		{
 			if(lgl_avcodec_open(DstCodecContext, DstCodec) < 0)
 			{
@@ -9759,43 +9763,44 @@ LGL_VideoEncoder::
 	{
 		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 		lgl_avcodec_close(SrcCodecContext);
-		//lgl_av_freep(SrcCodecContext);
+		SrcCodecContext=NULL;
 	}
-	if(SrcAudioCodecContext && SrcAudioCodec)
+	if(SrcAudioCodecContext)
 	{
 		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 		lgl_avcodec_close(SrcAudioCodecContext);
-		//lgl_av_freep(SrcAudioCodecContext);
+		SrcAudioCodecContext=NULL;
 	}
 	if(SrcFormatContext)
 	{
 		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 		lgl_av_close_input_file(SrcFormatContext);
-		//lgl_av_freep(SrcFormatContext);
+		SrcFormatContext=NULL;
 	}
 	if(SrcCodec)
 	{
-		//???
+		//Don't think this needs to be freed
 	}
 	if(SrcAudioCodec)
 	{
-		//???
+		//Don't think this needs to be freed
 	}
 	if(SrcFrame)
 	{
 		lgl_av_freep(SrcFrame);
+		SrcFrame=NULL;
 	}
 
 	if(SwsConvertContext)
 	{
 		sws_freeContext(SwsConvertContext);
+		SwsConvertContext=NULL;
 	}
 
 	//Dst
 	if(DstOutputFormat)
 	{
 		//Don't free this...
-		//lgl_av_freep(DstOutputFormat);
 	}
 	if(DstCodecContext)
 	{
@@ -9804,7 +9809,7 @@ LGL_VideoEncoder::
 	}
 	if(DstCodec)
 	{
-		//???
+		//Don't think this needs to be freed
 	}
 	if(DstFormatContext)
 	{
@@ -9816,6 +9821,7 @@ LGL_VideoEncoder::
 		}
 		lgl_av_freep(&DstFormatContext);
 	}
+
 	if(DstMp3FormatContext)
 	{
 		if(DstMp3FormatContext->pb)
@@ -9825,6 +9831,16 @@ LGL_VideoEncoder::
 			DstMp3FormatContext->pb=NULL;
 		}
 		lgl_av_freep(&DstMp3FormatContext);
+	}
+	if(DstMp3CodecContext)
+	{
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+		lgl_avcodec_close(DstMp3CodecContext);
+		DstMp3CodecContext=NULL;
+	}
+	if(DstMp3Codec)
+	{
+		//Don't think this needs to be freed
 	}
 	if(DstStream)
 	{
@@ -14308,8 +14324,8 @@ Play
 		LGL.SoundChannel[available].DivergeSamples=0;
 		LGL.SoundChannel[available].DivergeState=0;
 		LGL.SoundChannel[available].DivergeSpeed=1.0f;
-		LGL.SoundChannel[available].WarpPointSecondsTrigger=-1.0f;
-		LGL.SoundChannel[available].WarpPointSecondsDestination=-1.0f;
+		LGL.SoundChannel[available].WarpPointSecondsAlpha=-1.0f;
+		LGL.SoundChannel[available].WarpPointSecondsOmega=-1.0f;
 		LGL.SoundChannel[available].WarpPointLoop=false;
 		LGL.SoundChannel[available].SampleRateConverterBufferValidSamples=0;
 		LGL.SoundChannel[available].SampleRateConverterBufferCurrentSamplesIndex=0;
@@ -15032,7 +15048,7 @@ if(channel<0)
 	printf("LGL_Sound::GetWarpPointIsSet(): WARNING! channel < 0\n");
 	return(false);
 }
-	return(LGL.SoundChannel[channel].WarpPointSecondsTrigger>=0);
+	return(LGL.SoundChannel[channel].WarpPointSecondsAlpha>=0);
 }
 
 bool
@@ -15047,8 +15063,8 @@ if(channel<0)
 	printf("LGL_Sound::SetWarpPoint(1): WARNING! channel < 0\n");
 	return(false);
 }
-	LGL.SoundChannel[channel].WarpPointSecondsTrigger=-1.0f;
-	LGL.SoundChannel[channel].WarpPointSecondsDestination=-1.0f;
+	LGL.SoundChannel[channel].WarpPointSecondsAlpha=-1.0f;
+	LGL.SoundChannel[channel].WarpPointSecondsOmega=-1.0f;
 	LGL.SoundChannel[channel].WarpPointLoop=false;
 
 	return(true);
@@ -15059,8 +15075,8 @@ LGL_Sound::
 SetWarpPoint
 (
 	int	channel,
-	double	triggerSeconds,
-	double	dstSeconds,
+	double	alphaSeconds,
+	double	omegaSeconds,
 	bool	loop
 )
 {
@@ -15069,8 +15085,8 @@ if(channel<0)
 	printf("LGL_Sound::SetWarpPoint(3): WARNING! channel < 0\n");
 	return(false);
 }
-	LGL.SoundChannel[channel].WarpPointSecondsTrigger=triggerSeconds;
-	LGL.SoundChannel[channel].WarpPointSecondsDestination=dstSeconds;
+	LGL.SoundChannel[channel].WarpPointSecondsAlpha=alphaSeconds;
+	LGL.SoundChannel[channel].WarpPointSecondsOmega=omegaSeconds;
 	LGL.SoundChannel[channel].WarpPointLoop=loop;
 	
 	return(true);
@@ -15078,12 +15094,12 @@ if(channel<0)
 
 float
 LGL_Sound::
-GetWarpPointSecondsTrigger
+GetWarpPointSecondsAlpha
 (
 	int	channel
 )
 {
-	return(LGL.SoundChannel[channel].WarpPointSecondsTrigger);
+	return(LGL.SoundChannel[channel].WarpPointSecondsAlpha);
 }
 
 void
@@ -27667,26 +27683,43 @@ lgl_AudioOutCallbackGenerator
 				sc->DivergeSamples+=
 					sc->DivergeSpeed*timeAdvancementMultiplier;
 			}
-
-			if(sc->WarpPointSecondsTrigger>=0.0f)
+			if(sc->WarpPointSecondsAlpha>=0.0f)
 			{
-				if(sc->PositionSamplesNow>=sc->WarpPointSecondsTrigger*sc->Hz)
+				if(sc->PositionSamplesNow>=sc->WarpPointSecondsAlpha*sc->Hz)
 				{
 					if
 					(
-						sc->WarpPointSecondsDestination >= 0 ||
+						sc->WarpPointSecondsOmega >= 0 ||
 						sc->LGLSound->IsLoaded()
 					)
 					{
-						sc->PositionSamplesNow=sc->WarpPointSecondsDestination*sc->Hz;
+						sc->PositionSamplesNow=sc->WarpPointSecondsOmega*sc->Hz;
 						while(sc->PositionSamplesNow<0) sc->PositionSamplesNow+=sc->LengthSamples*sc->Hz;
 						sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
 						sc->SampleRateConverterBufferValidSamples=0;
 					}
 					if(sc->WarpPointLoop==false)
 					{
-						sc->WarpPointSecondsTrigger=-1.0f;
-						sc->WarpPointSecondsDestination=-1.0f;
+						sc->WarpPointSecondsAlpha=-1.0f;
+						sc->WarpPointSecondsOmega=-1.0f;
+					}
+				}
+				else if
+				(
+					sc->WarpPointLoop &&
+					sc->PositionSamplesNow<=sc->WarpPointSecondsOmega*sc->Hz
+				)
+				{
+					if
+					(
+						sc->WarpPointSecondsAlpha >= 0 ||
+						sc->LGLSound->IsLoaded()
+					)
+					{
+						sc->PositionSamplesNow=sc->WarpPointSecondsAlpha*sc->Hz;
+						while(sc->PositionSamplesNow<0) sc->PositionSamplesNow+=sc->LengthSamples*sc->Hz;
+						sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
+						sc->SampleRateConverterBufferValidSamples=0;
 					}
 				}
 			}

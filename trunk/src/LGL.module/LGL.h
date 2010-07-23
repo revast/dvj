@@ -2014,8 +2014,8 @@ public:
 	bool		SetDivergeRecallEnd(int channel);
 	bool		GetWarpPointIsSet(int channel);
 	bool		SetWarpPoint(int channel);
-	bool		SetWarpPoint(int channel, double triggerSeconds, double dstSeconds, bool loop=false);
-	float		GetWarpPointSecondsTrigger(int channel);
+	bool		SetWarpPoint(int channel, double alphaSeconds, double omegaSeconds, bool loop=false);
+	float		GetWarpPointSecondsAlpha(int channel);
 	void		SetRapidInvertProperties(int channel, float secondsAlpha, float secondsDelta);
 	void		SetRapidVolumeInvert(int channel, bool rapidVolumeInvert);
 	void		SetRespondToRapidSoloInvertChannel(int channel, int soloChannel);

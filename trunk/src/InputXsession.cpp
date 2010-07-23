@@ -233,24 +233,24 @@ FileScroll
 	return(scroll);
 }
 
-bool
+int
 InputXsessionObj::
 FileSelect
 (
 	unsigned int	target
 )	const
 {
-	bool choose=false;
+	int choose=false;
 
 	if(LGL_MidiDevice* xsession = LGL_GetXsession())
 	{
 		if(target & TARGET_TOP)
 		{
-			choose=xsession->GetButtonStroke(LGL_XSESSION_BUTTON_LEFT_TOGGLE_PAUSE);
+			choose=(xsession->GetButtonStroke(LGL_XSESSION_BUTTON_LEFT_TOGGLE_PAUSE)) ? 1 : 0;
 		}
 		else if(target & TARGET_BOTTOM)
 		{
-			choose=xsession->GetButtonStroke(LGL_XSESSION_BUTTON_RIGHT_TOGGLE_PAUSE);
+			choose=(xsession->GetButtonStroke(LGL_XSESSION_BUTTON_RIGHT_TOGGLE_PAUSE)) ? 1 : 0;
 		}
 	}
 
@@ -307,24 +307,24 @@ DecodeAbort
 
 //Mode 2: Waveform
 
-bool
+int
 InputXsessionObj::
 WaveformEject
 (
 	unsigned int	target
 )	const
 {
-	bool eject=false;
+	int eject=false;
 
 	if(LGL_MidiDevice* xsession = LGL_GetXsession())
 	{
 		if(target & TARGET_TOP)
 		{
-			eject=xsession->GetButtonDown(LGL_XSESSION_BUTTON_LEFT_EJECT);
+			eject=(xsession->GetButtonDown(LGL_XSESSION_BUTTON_LEFT_EJECT)) ? 1 : 0;
 		}
 		else if(target & TARGET_BOTTOM)
 		{
-			eject=xsession->GetButtonDown(LGL_XSESSION_BUTTON_RIGHT_EJECT);
+			eject=(xsession->GetButtonDown(LGL_XSESSION_BUTTON_RIGHT_EJECT)) ? 1 : 0;
 		}
 	}
 

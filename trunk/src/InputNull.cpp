@@ -139,14 +139,14 @@ FileScroll
 	return(scroll);
 }
 
-bool
+int
 InputNullObj::
 FileSelect
 (
 	unsigned int	target
 )	const
 {
-	bool choose=false;
+	int choose=0;
 	return(choose);
 }
 
@@ -187,14 +187,14 @@ DecodeAbort
 
 //Mode 2: Waveform
 
-bool
+int
 InputNullObj::
 WaveformEject
 (
 	unsigned int	target
 )	const
 {
-	bool eject=false;
+	int eject=0;
 	return(eject);
 }
 
