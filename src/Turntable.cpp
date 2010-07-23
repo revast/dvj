@@ -863,6 +863,13 @@ NextFrame
 
 	VolumeSolo=Input.WaveformVolumeSolo(target);
 
+	if(VideoEncoderTerminateSignal==-1)
+	{
+		LGL_ThreadWait(VideoEncoderThread);
+		VideoEncoderThread=NULL;
+		VideoEncoderTerminateSignal=0;
+	}
+
 	if(Mode==0)
 	{
 		//File Select
@@ -2165,12 +2172,6 @@ NextFrame
 		if(VideoEncoderTerminateSignal==0)
 		{
 			VideoEncoderTerminateSignal=1;
-		}
-		if(VideoEncoderTerminateSignal==-1)
-		{
-			LGL_ThreadWait(VideoEncoderThread);
-			VideoEncoderThread=NULL;
-			VideoEncoderTerminateSignal=0;
 		}
 
 		if
@@ -4805,7 +4806,7 @@ SelectNewVideo
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoLo->GetPath());
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoHi->GetPath());
 	}
-	else
+	else if(VideoEncoderThread==NULL)
 	{
 		//Change the normal videos
 		char videoFileName[1024];

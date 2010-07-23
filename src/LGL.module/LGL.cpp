@@ -9610,10 +9610,6 @@ LGL_VideoEncoder
 		DstCodecContext->strict_std_compliance=-1;
 
 printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext->pix_fmt);
-if(0 && LGL_KeyDown(LGL_KEY_ESCAPE))
-{
-	assert(false);
-}
 		{
 			if(lgl_avcodec_open(DstCodecContext, DstCodec) < 0)
 			{
@@ -10612,6 +10608,8 @@ LGL_VideoIsMJPEG
 	const char*	path
 )
 {
+	//FIXME: Framerate hiccup like mad here...
+
 	if(LGL_FileExists(path)==false)
 	{
 		return(false);
@@ -10627,7 +10625,7 @@ LGL_VideoIsMJPEG
 	{
 		return(false);
 	}
-
+#if 0
 	LGL_VideoEncoder* ve = new LGL_VideoEncoder
 	(
 		path,
@@ -10636,6 +10634,48 @@ LGL_VideoIsMJPEG
 	);
 	bool ret=ve->IsMJPEG();
 	delete ve;
+	return(ret);
+#endif
+
+	bool ret=false;
+
+	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+
+		//Open file
+		AVFormatContext* fc=NULL;
+		if(lgl_av_open_input_file(&fc, path, NULL, 0, NULL)==0)
+		{
+			//Find streams
+			if(lgl_av_find_stream_info(fc)>=0)
+			{
+				// Find the first video stream
+				int srcVideoStreamIndex=-1;
+				for(unsigned int i=0; i<fc->nb_streams; i++)
+				{
+					if(fc->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO)
+					{
+						srcVideoStreamIndex=i;
+						break;
+					}
+				}
+				if(srcVideoStreamIndex!=-1)
+				{
+					AVCodecContext* srcCodecContext=fc->streams[srcVideoStreamIndex]->codec;
+					ret =
+						(
+							srcCodecContext->codec_id == CODEC_ID_MJPEG ||
+							srcCodecContext->codec_id == CODEC_ID_MJPEGB ||
+							srcCodecContext->codec_id == CODEC_ID_LJPEG
+						);
+				}
+			}
+
+			lgl_av_close_input_file(fc);
+		}
+	}
+
 	return(ret);
 }
 
