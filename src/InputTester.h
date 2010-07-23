@@ -1,6 +1,6 @@
 /*
  *
- * InputXsession.h - Input abstraction object
+ * InputTester.h - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,18 +21,19 @@
  *
  */
 
-#ifndef	_INPUT_XSESSION_H_
-#define	_INPUT_XSESSION_H_
+#ifndef	_INPUT_TESTER_H_
+#define	_INPUT_TESTER_H_
 
 #include "Input.h"
+#include "Config.h"
 
-class InputXsessionObj : public InputObj
+class InputTesterObj : public InputObj
 {
 
 public:
 
-		InputXsessionObj();
-virtual		~InputXsessionObj();
+		InputTesterObj();
+virtual		~InputTesterObj();
 
 	//Core
 
@@ -118,7 +119,17 @@ virtual	int	WaveformVideoFreqSenseMode	(unsigned int target)	const;	//Set Freque
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
 
+private:
+
+	LGL_Timer	LastActionTimer;
+
+	int		CurrentActionBottom;
+	int		CurrentActionTop;
+	bool		Enable;
+	LGL_Timer	EnableTimer;
+
+	int		GetCurrentAction(unsigned int target) const;
 };
 
-#endif	//_INPUT_XSESSION_H_
+#endif	//_INPUT_TESTER_H_
 

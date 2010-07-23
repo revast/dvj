@@ -35,6 +35,7 @@
 #include "InputXponent.h"
 #include "InputXsession.h"
 #include "InputWiimote.h"
+#include "InputTester.h"
 
 //Global Variables
 
@@ -116,6 +117,7 @@ void InitializeGlobals()
 	Input.AddChild(new InputXponentObj);
 	Input.AddChild(new InputXsessionObj);
 	Input.AddChild(new InputWiimoteObj);
+	Input.AddChild(new InputTesterObj);
 
 	QuadrentSplitX=.5f;
 	QuadrentSplitY=.5f;

@@ -54,7 +54,7 @@ virtual int	MasterToHeadphones()					const;	//Headphones hears what's being outp
 	//Mode 0: File Selection
 
 virtual	float	FileScroll			(unsigned int target)	const;	//How many file to scroll this frame
-virtual	bool	FileSelect			(unsigned int target)	const;	//Enter the directory or open the file
+virtual	int	FileSelect			(unsigned int target)	const;	//Enter the directory or open the file
 virtual bool	FileMarkUnopened		(unsigned int target)	const;	//Don't display that the current file has been opened
 virtual	bool	FileRefresh			(unsigned int target)	const;	//Rescan current folder
 
@@ -64,7 +64,7 @@ virtual bool	DecodeAbort			(unsigned int target)	const;	//Return to File Selecti
 
 	//Mode 2: Waveform
 
-virtual bool	WaveformEject			(unsigned int target)	const;	//Return to File Selection
+virtual int	WaveformEject			(unsigned int target)	const;	//Return to File Selection
 virtual bool	WaveformTogglePause		(unsigned int target)	const;	//Play/Pause the record
 virtual	float	WaveformNudge			(unsigned int target)	const;	//Temporary pitchbend for beatmatching
 virtual	float	WaveformPitchbend		(unsigned int target)	const;	//Permanent pitchbend for beatmatching

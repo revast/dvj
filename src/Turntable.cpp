@@ -585,7 +585,7 @@ TurntableObj
 	VolumeInvertBinary=false;
 	RapidVolumeInvert=false;
 	RapidSoloInvert=false;
-	LoopStartSeconds=-1.0;
+	LoopAlphaSeconds=-1.0;
 	QuantizePeriodMeasuresExponent=-3;
 	QuantizePeriodNoBPMSeconds=1.0;
 	LoopActive=false;
@@ -1025,9 +1025,10 @@ NextFrame
 			DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed=false;
 		}
 
+		int fileSelect = Input.FileSelect(target);
 		if
 		(
-			Input.FileSelect(target) &&
+			fileSelect > 0 &&
 			DatabaseFilteredEntries.empty()==false
 		)
 		{
@@ -1123,7 +1124,7 @@ NextFrame
 						VolumeInvertBinary=false;
 						RapidVolumeInvert=false;
 						RapidSoloInvert=false;
-						LoopStartSeconds=-1.0;
+						LoopAlphaSeconds=-1.0;
 						//QuantizePeriodMeasuresExponent=QuantizePeriodMeasuresExponent
 						QuantizePeriodNoBPMSeconds=1.0;
 						LoopActive=false;
@@ -1157,7 +1158,8 @@ NextFrame
 			else if
 			(
 				targetIsDir &&
-				targetPath[0]!='\0'
+				targetPath[0]!='\0' &&
+				fileSelect != 2
 			)
 			{
 				FilterTextMostRecent[0]='\0';
@@ -1296,11 +1298,11 @@ NextFrame
 				localVolumeMultiplier=
 					(0.0f+normalVolFactor)*1.00f+
 					(1.0f-normalVolFactor)*0.25f;
-				LoopActive=false;
-				Sound->SetWarpPoint(Channel);
+				//LoopActive=false;
+				//Sound->SetWarpPoint(Channel);
 				if(Looping()==false)
 				{
-					LoopStartSeconds=-1.0f;
+					LoopAlphaSeconds=-1.0f;
 					ClearRecallOrigin();
 				}
 				if
@@ -1346,11 +1348,11 @@ NextFrame
 				//Velocity Queue
 				if(Looping())
 				{
-					LoopActive=false;
+					//LoopActive=false;
 				}
 				if(Looping()==false)
 				{
-					LoopStartSeconds=-1.0f;
+					LoopAlphaSeconds=-1.0f;
 					ClearRecallOrigin();
 					Sound->SetWarpPoint(Channel);
 				}
@@ -1524,7 +1526,7 @@ NextFrame
 			{
 				if(Looping())
 				{
-					LoopStartSeconds=-1.0f;
+					LoopAlphaSeconds=-1.0f;
 					LoopActive=false;
 					LoopThenRecallActive=false;
 					Sound->SetWarpPoint(Channel);
@@ -1555,11 +1557,11 @@ NextFrame
 					Sound->SetWarpPoint(Channel);
 					if(Looping()==false)
 					{
-						LoopStartSeconds=-1.0f;
+						LoopAlphaSeconds=-1.0f;
 						ClearRecallOrigin();
 					}
 				}
-				if(Sound->GetWarpPointSecondsTrigger(Channel)>0.0f)
+				if(Sound->GetWarpPointSecondsAlpha(Channel)>0.0f)
 				{
 					Sound->SetWarpPoint(Channel);
 				}
@@ -1690,6 +1692,10 @@ NextFrame
 		bool loopActiveLastFrame = LoopActive;
 		bool loopThenRecallActiveLastFrame = LoopThenRecallActive;
 
+		if(LoopActive && Sound->GetWarpPointSecondsAlpha(Channel)<0)
+		{
+			LoopActive=false;
+		}
 		LoopActive = 
 		(
 			(Input.WaveformLoopToggle(target) ? !LoopActive : LoopActive) &&
@@ -1782,7 +1788,7 @@ NextFrame
 				if(Looping()==false)
 				{
 					Sound->SetWarpPoint(Channel);
-					LoopStartSeconds=-1.0f;
+					LoopAlphaSeconds=-1.0f;
 					if
 					(
 						loopThenRecallActiveLastFrame &&
@@ -1800,24 +1806,24 @@ NextFrame
 				{
 					if(QuantizePeriodMeasuresExponent==exponentAll)
 					{
-						LoopStartSeconds = (SavePointSeconds[8+2] != -1.0f) ? SavePointSeconds[8+2] : GetBPMFirstBeatSeconds();
-						LoopEndSeconds = (SavePointSeconds[9+2] != -1.0f) ? SavePointSeconds[9+2] : GetBPMLastMeasureSeconds();
-						if(LoopEndSeconds<LoopStartSeconds)
+						LoopAlphaSeconds = (SavePointSeconds[8+2] != -1.0f) ? SavePointSeconds[8+2] : GetBPMFirstBeatSeconds();
+						LoopOmegaSeconds = (SavePointSeconds[9+2] != -1.0f) ? SavePointSeconds[9+2] : GetBPMLastMeasureSeconds();
+						if(LoopOmegaSeconds<LoopAlphaSeconds)
 						{
-							LoopEndSeconds=LoopStartSeconds;
+							LoopOmegaSeconds=LoopAlphaSeconds;
 						}
 					}
 					else
 					{
-						LoopStartSeconds = GetBeginningOfCurrentMeasureSeconds();
+						LoopAlphaSeconds = GetBeginningOfCurrentMeasureSeconds();
 						float deltaSeconds = GetQuantizePeriodSeconds();
 
 						for(;;)
 						{
 							float posSeconds = Sound->GetPositionSeconds(Channel);
-							if(LoopStartSeconds + deltaSeconds < posSeconds)
+							if(LoopAlphaSeconds + deltaSeconds < posSeconds)
 							{
-								LoopStartSeconds += deltaSeconds;
+								LoopAlphaSeconds += deltaSeconds;
 							}
 							else
 							{
@@ -1825,22 +1831,22 @@ NextFrame
 							}
 						}
 
-						LoopEndSeconds=LGL_Min
+						LoopOmegaSeconds=LGL_Min
 						(
-							LoopStartSeconds+deltaSeconds,
+							LoopAlphaSeconds+deltaSeconds,
 							GetBPMLastMeasureSeconds()
 						);
-						if(LoopEndSeconds<LoopStartSeconds)
+						if(LoopOmegaSeconds<LoopAlphaSeconds)
 						{
-							LoopEndSeconds=LoopStartSeconds;
+							LoopOmegaSeconds=LoopAlphaSeconds;
 						}
 					}
 
 					Sound->SetWarpPoint
 					(
 						Channel,
-						LoopEndSeconds,
-						LoopStartSeconds,
+						LoopOmegaSeconds,
+						LoopAlphaSeconds,
 						true
 					);
 				}
@@ -1855,13 +1861,13 @@ NextFrame
 			//Looping without BPM
 			if(loopChanged)
 			{
-				if(LoopStartSeconds==-1.0f && Looping())
+				if(LoopAlphaSeconds==-1.0f && Looping())
 				{
-					LoopStartSeconds=Sound->GetPositionSeconds(Channel);
+					LoopAlphaSeconds=Sound->GetPositionSeconds(Channel);
 				}
-				else if(LoopStartSeconds!=1.0f && Looping()==false)
+				else if(LoopAlphaSeconds!=1.0f && Looping()==false)
 				{
-					LoopStartSeconds=-1.0f;
+					LoopAlphaSeconds=-1.0f;
 				}
 			}
 
@@ -1874,7 +1880,7 @@ NextFrame
 				Sound->IsLoaded()
 			)
 			{
-				LoopStartSeconds=0.0f;
+				LoopAlphaSeconds=0.0f;
 				QuantizePeriodNoBPMSeconds=secondsMax;
 				loopChanged=true;
 				LoopActive=true;
@@ -1929,20 +1935,20 @@ NextFrame
 				else
 				{
 					float deltaSeconds = QuantizePeriodNoBPMSeconds;
-					LoopEndSeconds=LGL_Min
+					LoopOmegaSeconds=LGL_Min
 					(
-						LoopStartSeconds+deltaSeconds,
+						LoopAlphaSeconds+deltaSeconds,
 						Sound->GetLengthSeconds()
 					);
-					if(LoopEndSeconds<LoopStartSeconds)
+					if(LoopOmegaSeconds<LoopAlphaSeconds)
 					{
-						LoopEndSeconds=LoopStartSeconds;
+						LoopOmegaSeconds=LoopAlphaSeconds;
 					}
 					Sound->SetWarpPoint
 					(
 						Channel,
-						LoopEndSeconds,
-						LoopStartSeconds,
+						LoopOmegaSeconds,
+						LoopAlphaSeconds,
 						true
 					);
 				}
@@ -2116,9 +2122,14 @@ NextFrame
 		}
 
 		//Eject
-		if(Input.WaveformEject(target))
+		int eject = Input.WaveformEject(target);
+		if(eject > 0)
 		{
-			if(EjectTimer.SecondsSinceLastReset()>=1.0f)
+			if
+			(
+				EjectTimer.SecondsSinceLastReset()>=1.0f ||
+				eject == 2
+			)
 			{
 				//Select New Track
 				LGL_DrawLogWrite("!dvj::DeleteSound|%i\n",Which);
@@ -2552,15 +2563,17 @@ NextFrame
 			{
 				FileEverOpened=true;
 
-				//Start recording!
-				/*
-				char path[2048];
-				strcpy(path,GetDVJSessionFlacPath());
+				//Enforce surround
 				SurroundMode=Sound->GetChannelCount()==4;
 				if(SurroundMode)
 				{
 					LGL_AudioMasterToHeadphones(false);
 				}
+				
+				//Start recording!
+				char path[2048];
+				strcpy(path,GetDVJSessionFlacPath());
+				/*
 				LGL_RecordDVJToFileStart(path,SurroundMode);
 				LGL_DrawLogStart(GetDVJSessionDrawLogPath());
 				*/
@@ -2693,6 +2706,11 @@ NextFrame
 		double currentSample=Sound->GetPositionSamples(Channel);
 		double diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
 		double diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
+		double deltaFrame = LGL_SecondsSinceLastFrame();
+		if(deltaFrame <= 5.0f/60.0f)
+		{
+			deltaFrame = 1.0f/60.0f;
+		}
 		if
 		(
 			PauseMultiplier==0 &&
@@ -2700,7 +2718,7 @@ NextFrame
 			fabsf(Sound->GetSpeed(Channel))<1.0f
 		)
 		{
-			proposedDelta=(LGL_AudioAvailable()?1:0)*LGL_Sign(currentSample-SmoothWaveformScrollingSample)*1.0f*Sound->GetHz()*(1.0f/60.0f);
+			proposedDelta=(LGL_AudioAvailable()?1:0)*LGL_Sign(currentSample-SmoothWaveformScrollingSample)*1.0f*Sound->GetHz()*deltaFrame;
 			if(fabsf(proposedDelta)>fabsf(diff))
 			{
 				proposedDelta=fabsf(diff)*LGL_Sign(proposedDelta);
@@ -2754,7 +2772,7 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 			float deltaMultiplier;
 			if(Sound->GetSpeed(Channel)>0.0f)
 			{
-				deltaMultiplier=(currentSample>SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor);
+				deltaMultiplier=(currentSample>SmoothWaveformScrollingSample+proposedDelta) ? (1.0f+deltaFactor) : (1.0f-deltaFactor);
 			}
 			else if (Sound->GetSpeed(Channel)==0.0f)
 			{
@@ -2762,10 +2780,10 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 			}
 			else
 			{
-				deltaMultiplier=(currentSample<SmoothWaveformScrollingSample+proposedDelta) ? (1.0f + deltaFactor) : (1.0f-deltaFactor);
+				deltaMultiplier=(currentSample<SmoothWaveformScrollingSample+proposedDelta) ? (1.0f+deltaFactor) : (1.0f-deltaFactor);
 			}
 			//deltaMultiplier=powf(deltaMultiplier,2);
-			proposedDelta*=deltaMultiplier;
+			proposedDelta*=deltaMultiplier*LGL_SecondsSinceLastFrame()*60.0f;
 			SmoothWaveformScrollingSample+=proposedDelta;
 		}
 		else
@@ -2777,17 +2795,21 @@ LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
 
 		if(Looping())
 		{
-			double loopSamples = Sound->GetHz()*(LoopEndSeconds - LoopStartSeconds);
+			double loopSamples = Sound->GetHz()*(LoopOmegaSeconds - LoopAlphaSeconds);
 			if(loopSamples>0)
 			{
-				while(SmoothWaveformScrollingSample>LoopEndSeconds*Sound->GetHz())
+				while(SmoothWaveformScrollingSample>LoopOmegaSeconds*Sound->GetHz())
 				{
 					SmoothWaveformScrollingSample-=loopSamples;
+				}
+				while(SmoothWaveformScrollingSample<LoopAlphaSeconds*Sound->GetHz())
+				{
+					SmoothWaveformScrollingSample+=loopSamples;
 				}
 			}
 			else
 			{
-				if(SmoothWaveformScrollingSample>LoopEndSeconds*Sound->GetHz())
+				if(SmoothWaveformScrollingSample>LoopOmegaSeconds*Sound->GetHz())
 				{
 					SmoothWaveformScrollingSample=0;
 				}
@@ -3598,8 +3620,8 @@ DrawFrame
 				EQFinal[2],						//33
 				LowRez ? 'T' : 'F',					//34
 				VideoFrequencySensitiveMode,				//35
-				Looping() ? LoopStartSeconds : -1.0f,			//36
-				Sound->GetWarpPointSecondsTrigger(Channel),		//37
+				Looping() ? LoopAlphaSeconds : -1.0f,			//36
+				Sound->GetWarpPointSecondsAlpha(Channel),		//37
 				QuantizePeriodMeasuresExponent,				//38
 				QuantizePeriodNoBPMSeconds,				//39
 				Input.WaveformRecordHold(target) ? 'T' : 'F',		//40
@@ -3662,8 +3684,8 @@ DrawFrame
 				NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44
 				LoopImage,						//45
 				VideoFrequencySensitiveMode,				//46
-				Looping() ? LoopStartSeconds : -1.0f,			//47
-				Sound->GetWarpPointSecondsTrigger(Channel),		//48
+				Looping() ? LoopAlphaSeconds : -1.0f,			//47
+				Sound->GetWarpPointSecondsAlpha(Channel),		//48
 				QuantizePeriodMeasuresExponent,				//49
 				QuantizePeriodNoBPMSeconds,				//50
 				Input.WaveformRecordHold(target),			//51
@@ -4066,13 +4088,13 @@ GetVideoTimeSeconds()
 			if
 			(
 				Looping() &&
-				LoopEndSeconds - LoopStartSeconds < 0.1f
+				LoopOmegaSeconds - LoopAlphaSeconds < 0.1f
 			)
 			{
 				float delta = (LGL_FramesSinceExecution()%4)/(float)GetVideo()->GetFPS();
 				return
 				(
-					LoopStartSeconds + 
+					LoopAlphaSeconds + 
 					delta
 				);
 			}
@@ -4673,7 +4695,11 @@ UpdateSoundFreqResponse()
 		FreqResponse[a]=LGL_Min(2.0f,EQFinal[2]*MixerEQ[2]);
 	}
 
-	if(Sound)
+	if
+	(
+		Sound &&
+		Channel != -1
+	)
 	{
 		Sound->SetFreqResponse(Channel,FreqResponse);
 	}
@@ -5010,7 +5036,7 @@ GetBeatThisFrame
 	if
 	(
 		Looping() &&
-		fabsf(SecondsNow-LoopStartSeconds) < 0.1 &&
+		fabsf(SecondsNow-LoopAlphaSeconds) < 0.1 &&
 		Sound->GetWarpPointIsSet(Channel)==false
 	)
 	{

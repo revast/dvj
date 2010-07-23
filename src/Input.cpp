@@ -232,18 +232,22 @@ FileScroll
 	return(scroll);
 }
 
-bool
+int
 InputObj::
 FileSelect
 (
 	unsigned int	target
 )	const
 {
-	bool choose=false;
+	int choose=0;
 
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		choose|=Children[a]->FileSelect(target);
+		int val=Children[a]->FileSelect(target);
+		if(val != 0)
+		{
+			choose = val;
+		}
 	}
 
 	return(choose);
@@ -304,18 +308,22 @@ DecodeAbort
 
 //Mode 2: Waveform
 
-bool
+int
 InputObj::
 WaveformEject
 (
 	unsigned int	target
 )	const
 {
-	bool eject=false;
+	int eject=0;
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		eject|=Children[a]->WaveformEject(target);
+		int val=Children[a]->WaveformEject(target);
+		if(val > eject)
+		{
+			eject = val;
+		}
 	}
 
 	return(eject);

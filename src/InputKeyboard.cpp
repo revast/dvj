@@ -177,7 +177,7 @@ FileScroll
 	return(scroll);
 }
 
-bool
+int
 InputKeyboardObj::
 FileSelect
 (
@@ -186,7 +186,7 @@ FileSelect
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(GetInputKeyboardFileSelectKey()));
+		return(LGL_KeyStroke(GetInputKeyboardFileSelectKey()) ? 1 : 0);
 	}
 	else
 	{
@@ -249,7 +249,7 @@ DecodeAbort
 
 //Mode 2: Waveform
 
-bool
+int
 InputKeyboardObj::
 WaveformEject
 (
@@ -258,7 +258,7 @@ WaveformEject
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(GetInputKeyboardWaveformEjectKey()));
+		return(LGL_KeyDown(GetInputKeyboardWaveformEjectKey()) ? 1 : 0);
 	}
 	else
 	{
