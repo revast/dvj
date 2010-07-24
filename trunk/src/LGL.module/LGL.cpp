@@ -13179,6 +13179,11 @@ lgl_analyze_wave_segment
 	magnitudeAve=0.0f;
 	magnitudeMax=0.0f;
 
+	if(buf16==NULL)
+	{
+		return;
+	}
+
 	float magnitudeTotal=0.0f;
 	int zeroCrossings=0;
 
@@ -28330,7 +28335,21 @@ lgl_AudioOutCallbackGenerator
 				if(sc->RespondToRapidSoloInvertChannel!=-1)
 				{
 					LGL_SoundChannel* scSolo=&LGL.SoundChannel[sc->RespondToRapidSoloInvertChannel];
-					bool muted=(((long)fabsf(scSolo->PositionSamplesNow-scSolo->RapidInvertAlphaSamples)/scSolo->RapidInvertDeltaSamples)%2)==1;
+					bool muted=
+						(
+							(
+								(long)fabsf
+									(
+										scSolo->PositionSamplesNow-
+										scSolo->RapidInvertAlphaSamples
+									) /
+									(
+										(scSolo->RapidInvertDeltaSamples > 0) ?
+										scSolo->RapidInvertDeltaSamples :
+										1
+									) %2
+							)
+						)==1;
 					//TODO: This isn't sample-accurate, but is acceptable for most purposes
 					if(scSolo->PositionSamplesNow<scSolo->RapidInvertAlphaSamples)
 					{
