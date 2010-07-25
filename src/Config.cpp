@@ -157,6 +157,10 @@ LoadMusicRootPath()
 			{
 				line[strlen(line)-1]='\0';
 			}
+			while(line[strlen(line)-1]=='/')
+			{
+				line[strlen(line)-1]='\0';
+			}
 			if(LGL_DirectoryExists(line))
 			{
 				strcpy(musicRootPath,line);
@@ -834,6 +838,8 @@ dvjKeyboardMapObj dvjKeyMap[ACTION_LAST];
 void
 PrepareKeyMap()
 {
+	dvjKeyMap[NOOP].Set
+		("NOOP",				"LGL_KEY_UNKNOWN");
 	dvjKeyMap[FOCUS_CHANGE].Set
 		("focusChange",				"LGL_KEY_TAB");
 	dvjKeyMap[FOCUS_BOTTOM].Set
@@ -1005,13 +1011,19 @@ CreateDefaultKeyboardInput
 		fprintf(fd,"\n");
 		for(int a=0;a<ACTION_LAST;a++)
 		{
-			fprintf(fd,"%s",dvjKeyMap[a].Key);
-			int numSpaces = maxLength - strlen(dvjKeyMap[a].Key);
-			for(int b=0;b<numSpaces;b++)
+			if(const char* key = dvjKeyMap[a].Key)
 			{
-				fprintf(fd, " ");
+				if(const char* valueStr = dvjKeyMap[a].ValueStr)
+				{
+					fprintf(fd,"%s",key);
+					int numSpaces = maxLength - strlen(key);
+					for(int b=0;b<numSpaces;b++)
+					{
+						fprintf(fd, " ");
+					}
+					fprintf(fd," = %s\n",valueStr);
+				}
 			}
-			fprintf(fd," = %s\n",dvjKeyMap[a].ValueStr);
 		}
 		fprintf(fd,"\n");
 		fclose(fd);
