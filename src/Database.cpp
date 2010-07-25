@@ -39,6 +39,13 @@ DatabaseFilterObj::
 	}
 }
 
+const char*
+DatabaseFilterObj::
+GetDir()
+{
+	return(Dir);
+}
+
 void
 DatabaseFilterObj::
 SetDir
