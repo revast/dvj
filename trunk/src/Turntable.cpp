@@ -1005,22 +1005,7 @@ NextFrame
 			FileSelectInt=0;
 			FileSelectFloat=0;
 
-			for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
-			{
-				if(strcmp(DatabaseFilteredEntries[a]->PathShort,oldSelection)==0)
-				{
-					FileTop=(DatabaseFilteredEntries.size()>4) ? a : 0;
-					FileSelectInt=a;
-					FileSelectFloat=FileSelectInt;
-
-					if((unsigned int)FileTop>DatabaseFilteredEntries.size()-5)
-					{
-						FileTop=LGL_Max(0,DatabaseFilteredEntries.size()-5);
-					}
-
-					break;
-				}
-			}
+			FileSelectToString(oldSelection);
 		}
 
 		if
@@ -1046,8 +1031,10 @@ NextFrame
 			strcpy(targetPath,DatabaseFilteredEntries[FileSelectInt]->PathFull);
 			targetIsDir=DatabaseFilteredEntries[FileSelectInt]->IsDir;
 			bool loadable=DatabaseFilteredEntries[FileSelectInt]->Loadable;
+			bool targetPathIsDotDot = false;
 			if(strcmp(targetPath,"..")==0)
 			{
+				targetPathIsDotDot = true;
 				strcpy(targetPath,DatabaseFilter.Dir);
 				if(char* slash = strrchr(targetPath,'/'))
 				{
@@ -1171,6 +1158,9 @@ NextFrame
 			{
 				FilterTextMostRecent[0]='\0';
 				FilterText.SetString("");
+				char oldDir[2048];
+				strcpy(oldDir,&(strrchr(DatabaseFilter.GetDir(),'/')[1]));
+
 				DatabaseFilter.SetDir(targetPath);
 				DatabaseFilter.SetPattern(FilterText.GetString());
 				DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
@@ -1181,6 +1171,13 @@ NextFrame
 				FilterText.SetString();
 				NoiseFactor=1.0f;
 				WhiteFactor=1.0f;
+
+				if(targetPathIsDotDot)
+				{
+					FileSelectToString(oldDir);
+					FileTop-=2;
+					if(FileTop<0) FileTop=0;
+				}
 			}
 		}
 
@@ -5159,5 +5156,35 @@ TurntableObj::
 BlankFilterTextIfMode0()
 {
 	if(Mode==0) FilterText.SetString();
+}
+
+void
+TurntableObj::
+FileSelectToString
+(
+	const char*	str
+)
+{
+	if(str==NULL)
+	{
+		return;
+	}
+
+	for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
+	{
+		if(strcmp(DatabaseFilteredEntries[a]->PathShort,str)==0)
+		{
+			FileTop=(DatabaseFilteredEntries.size()>4) ? a : 0;
+			FileSelectInt=a;
+			FileSelectFloat=FileSelectInt;
+
+			if((unsigned int)FileTop>DatabaseFilteredEntries.size()-5)
+			{
+				FileTop=LGL_Max(0,DatabaseFilteredEntries.size()-5);
+			}
+
+			break;
+		}
+	}
 }
 

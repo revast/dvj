@@ -338,6 +338,7 @@ static	bool				GetSurroundMode();
 	bool				GetRapidSoloInvert();
 	void				SetRespondToRapidSoloInvert(int soloChannel);
 	void				BlankFilterTextIfMode0();
+	void				FileSelectToString(const char* str);
 
 };
 

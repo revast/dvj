@@ -19,19 +19,20 @@ public:
 		DatabaseFilterObj();
 		~DatabaseFilterObj();
 
-	void	SetDir(const char* dir);
-	void	SetPattern(const char* pattern);
+	const char*	GetDir();
+	void		SetDir(const char* dir);
+	void		SetPattern(const char* pattern);
 
-	void	SetBPMCenter(float bpmCenter);
-	void	SetBPMRange(float bpmRange);
+	void		SetBPMCenter(float bpmCenter);
+	void		SetBPMRange(float bpmRange);
 
 //private:
 
-	char*	Dir;
-	char*	Pattern;
+	char*		Dir;
+	char*		Pattern;
 
-	float	BPMCenter;
-	float	BPMRange;
+	float		BPMCenter;
+	float		BPMRange;
 };
 
 class DatabaseEntryObj
