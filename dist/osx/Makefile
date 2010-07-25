@@ -23,7 +23,7 @@ all:
 	cp -v $(SRC_DVJ) $(DST_DVJ)
 	cp -v $(BIN_LOCAL)/jackd $(MACOS_DVJ)
 	cp -v $(LIB_LOCAL)/libSDL_image-1.2.0.dylib $(LIB_DVJ)
-	cp -v $(LIB_LOCAL)/libpng12.dylib $(LIB_DVJ)
+	cp -v $(LIB_LOCAL)/libpng12.0.dylib $(LIB_DVJ)
 	cp -v $(LIB_LOCAL)/libjpeg.62.dylib $(LIB_DVJ)
 	cp -v $(LIB_LOCAL)/libSDL_net-1.2.0.dylib $(LIB_DVJ)
 	cp -v $(LIB_LOCAL)/libSDL-1.3.0.dylib $(LIB_DVJ)
@@ -32,7 +32,6 @@ all:
 	cp -v $(LIB_LOCAL)/libjackserver.0.dylib $(LIB_DVJ)
 	cp -v $(LIB_LOCAL)/jack/jack_coreaudio.so $(LIB_DVJ)/jack
 	install_name_tool -change $(LIB_LOCAL)/libSDL_image-1.2.0.dylib @executable_path/lib/libSDL_image-1.2.0.dylib $(DST_DVJ)
-	install_name_tool -change $(LIB_LOCAL)/libpng12.dylib @executable_path/lib/libpng12.dylib $(DST_DVJ)
 	install_name_tool -change $(LIB_LOCAL)/libjpeg.62.dylib @executable_path/lib/libjpeg.62.dylib $(DST_DVJ)
 	install_name_tool -change $(LIB_LOCAL)/libSDL_net-1.2.0.dylib @executable_path/lib/libSDL_net-1.2.0.dylib $(DST_DVJ)
 	install_name_tool -change $(LIB_LOCAL)/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(DST_DVJ)
@@ -40,10 +39,11 @@ all:
 	install_name_tool -change $(LIB_LOCAL)/libjack.0.dylib @executable_path/lib/libjack.0.dylib $(DST_DVJ)
 	install_name_tool -change $(LIB_LOCAL)/libjackserver.0.dylib @executable_path/lib/libjackserver.0.dylib $(DST_DVJ)
 	install_name_tool -change $(LIB_LOCAL)/libjackserver.0.dylib @executable_path/lib/libjackserver.0.dylib $(MACOS_DVJ)/jackd
+	install_name_tool -change $(LIB_LOCAL)/libpng12.0.dylib @executable_path/lib/libpng12.0.dylib $(LIB_DVJ)/libSDL_image-1.2.0.dylib
 	install_name_tool -change $(LIB_LOCAL)/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(LIB_DVJ)/libSDL_image-1.2.0.dylib
 	install_name_tool -change $(LIB_LOCAL)/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(LIB_DVJ)/libSDL_net-1.2.0.dylib
 	cp -v $(DST_DVJ) $(DST_ZTRON)
-	cp -v $(BIN_LOCAL)/jackd $(MACOS_ZTRON)
+	cp -v $(MACOS_DVJ)/jackd $(MACOS_ZTRON)
 	cp -v $(LIB_DVJ)/*.dylib $(LIB_ZTRON)
 	cp -v $(LIB_DVJ)/jack/*.so $(LIB_ZTRON)/jack
 	rm -rf $(ROOT_DVJ_NOSVN)
