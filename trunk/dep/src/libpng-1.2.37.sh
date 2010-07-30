@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd libpng-1.2.37
-./configure
+./configure.dvj
 make
 sudo make install
 cd ..
