@@ -2,16 +2,20 @@ library		version				src
 
 SDL		2010.07.29 (5:10pm EST)		hg clone http://hg.libsdl.org/SDL
 SDL_image	1.2.7				http://www.libsdl.org/projects/SDL_image/release/SDL_image-1.2.7.tar.gz
-SDL_net		1.2.7				http://www.libsdl.org/projects/SDL_net/release/SDL_net-1.2.7.tar.gz
+SDL_net		1.2.7				[1] http://www.libsdl.org/projects/SDL_net/release/SDL_net-1.2.7.tar.gz
 ffmpeg		2010.07.29 (5pm EST)		svn export svn://svn.ffmpeg.org/ffmpeg/trunk ffmpeg
 fftw		3.2.1				http://www.fftw.org/fftw-3.2.1.tar.gz
 JACK		0.118.0				http://jackaudio.org/downloads/jack-audio-connection-kit-0.118.0.tar.gz
-jpeg		6b				http://www.ijg.org/files/jpegsrc.v6b.tar.gz	[1]
+jpeg		6b				[2] http://www.ijg.org/files/jpegsrc.v6b.tar.gz
 libpng		1.2.37				http://superb-west.dl.sourceforge.net/sourceforge/libpng/libpng-1.2.37.tar.gz
 libsamplerate	0.1.7				http://www.mega-nerd.com/SRC/libsamplerate-0.1.7.tar.gz
 yasm		1.0.1				http://www.tortall.net/projects/yasm/releases/yasm-1.0.1.tar.gz
 
 [1]
+I commented out #include "SDL_byteorder.h"
+[/1]
+
+[2]
 OSX required the following to properly build jpeg, after tar -zxf:
 
 #### OSX ONLY START
@@ -36,5 +40,5 @@ rm patch-ltmain.sh
 rm patch-config.sub
 rm patch-makefile.cfg
 ### OSX ONLY END
-[/1]
+[/2]
 
