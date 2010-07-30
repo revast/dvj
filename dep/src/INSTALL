@@ -1,0 +1,15 @@
+Install in this order:
+
+jpeg
+libpng
+
+SDL
+SDL_image
+SDL_net
+
+fftw
+libsamplerate
+yasm
+ffmpeg
+JACK
+
