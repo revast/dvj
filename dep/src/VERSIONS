@@ -19,6 +19,8 @@ I commented out #include "SDL_byteorder.h"
 OSX required the following to properly build jpeg, after tar -zxf:
 
 #### OSX ONLY START
+ln -s `which glibtool` libtool
+
 curl http://trac.macports.org/export/52572/trunk/dports/graphics/jpeg/files/patch-jpeglib.h >patch-jpeglib.h
 curl http://trac.macports.org/export/52572/trunk/dports/graphics/jpeg/files/patch-config.guess >patch-config.guess
 curl http://trac.macports.org/export/52572/trunk/dports/graphics/jpeg/files/patch-ltconfig >patch-ltconfig

@@ -1,0 +1,1 @@
+./configure --build=i86-apple-darwin10.4.0 --host=x86_64-apple-darwin10.4.0
