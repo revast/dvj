@@ -740,7 +740,8 @@ WaveformLoopSecondsLess
 	unsigned int	target
 )	const
 {
-	bool less=WAVEFORM_LOOP_MEASURES_HALF;
+	int currentAction = GetCurrentAction(target);
+	bool less=currentAction == WAVEFORM_LOOP_MEASURES_HALF;
 	return(less);
 }
 
