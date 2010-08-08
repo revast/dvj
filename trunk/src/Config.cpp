@@ -917,7 +917,7 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_GAIN_DELTA_DOWN].Set
 		("waveformGainDeltaDown",		"LGL_KEY_MINUS");
 	dvjKeyMap[WAVEFORM_GAIN_DELTA_UP].Set
-		("waveformGainDeltaDown",		"LGL_KEY_MINUS");
+		("waveformGainDeltaUp",			"LGL_KEY_EQUALS");
 	dvjKeyMap[WAVEFORM_GAIN_KILL].Set
 		("waveformGainKill",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_VOLUME_INVERT].Set
