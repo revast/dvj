@@ -102,6 +102,8 @@ CreateDefaultDVJRC
 		fprintf(fd,"#Generated files may be larger.\n");
 		fprintf(fd,"cachedVideoAveBitrateMBps=3.2\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"visualBrightnessAtCenter=0.5\n");
+		fprintf(fd,"\n");
 		fprintf(fd,"colorCoolR=0.0\n");
 		fprintf(fd,"colorCoolG=0.0\n");
 		fprintf(fd,"colorCoolB=0.5\n");
@@ -414,12 +416,13 @@ CreateDotDVJTree()
 	}
 
 #ifdef	LGL_OSX
-	char dvj[2048];
-	sprintf(dvj,"%s/dvj/",LGL_GetHomeDir());
-	if(LGL_DirectoryExists(dvj)==false)
+	char applicationsDvj[2048];
+	sprintf(applicationsDvj,"%s/Applications/dvj",LGL_GetHomeDir());
+	if(LGL_DirectoryExists(applicationsDvj)==false)
 	{
 		char cmd[2048];
-		sprintf(cmd,"ln -s '%s' '%s'",dotDvj,dvj);
+		sprintf(cmd,"ln -s '%s' '%s'",dotDvj,applicationsDvj);
+printf("Running cmd:\n\t'%s'\n",cmd);
 		system(cmd);
 	}
 #endif	//LGL_OSX
@@ -570,6 +573,20 @@ GetCachedVideoAveBitrateMBps()
 			0.1f,
 			dvjrcConfigFile->read<float>("cachedVideoAveBitrateMBps",3.2f),
 			10.0f
+		)
+	);
+}
+
+float
+GetVisualBrightnessAtCenter()
+{
+	return
+	(
+		LGL_Clamp
+		(
+			0.0f,
+			dvjrcConfigFile->read<float>("visualBrightnessAtCenter",1.0f),
+			1.0f
 		)
 	);
 }

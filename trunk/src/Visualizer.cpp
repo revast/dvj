@@ -25,7 +25,6 @@
 
 #include "Common.h"
 #include "Config.h"
-#include "Turntable.h"
 
 #include <string.h>
 
@@ -49,7 +48,6 @@ VisualizerObj()
 	{
 		float projAspect = LGL_DisplayResolutionX(1)/(float)LGL_DisplayResolutionY(1);
 		right = projAspect * (top-bottom);
-		printf("r=%.2f\n",right);
 	}
 
 	SetViewPortVisuals(left,right,bottom,top);
@@ -245,8 +243,9 @@ void
 VisualizerObj::
 DrawVisuals
 (
-	bool	visualizerQuadrent,
-	float	visualizerZoomOutPercent
+	bool		visualizerQuadrent,
+	float		visualizerZoomOutPercent,
+	TurntableObj**	tts
 )
 {
 	float l=ViewPortVisualsLeft;
@@ -346,8 +345,19 @@ DrawVisuals
 	//The ACTUAL videos we're drawing.
 	for(int videoNow=0;videoNow<2;videoNow++)
 	{
-		DrawVideos(false, videoNow,l,r,b,t);
+		DrawVideos
+		(
+			false,
+			videoNow,
+			tts[videoNow],
+			l,
+			r,
+			b,
+			t
+		);
 	}
+	
+	/*
 
 	//AccumulationNow->FrameBufferUpdate();
 
@@ -374,6 +384,7 @@ DrawVisuals
 			ScrollTextBuffer[0]
 		);
 	}
+	*/
 	LGL_ClipRectDisable();
 }
 
@@ -1010,13 +1021,14 @@ void
 VisualizerObj::
 DrawVideos
 (
-	bool	preview,
-	int	which,
-	float	l,
-	float	r,
-	float	b,
-	float	t,
-	float	overrideBrightness
+	bool		preview,
+	int		which,
+	TurntableObj*	tt,
+	float		l,
+	float		r,
+	float		b,
+	float		t,
+	float		overrideBrightness
 )
 {
 	float lOrig=l;
@@ -1026,8 +1038,12 @@ DrawVideos
 	float tOrig=t;
 	float hOrig=t-b;
 
+	int videoNow=which;
+	float bright = (overrideBrightness==-1.0f) ? VideoBrightness[videoNow] : overrideBrightness;
+
 	if(preview)
 	{
+		/*
 		float projAR=
 			(LGL_WindowResolutionX()*(ViewPortVisualsRight-ViewPortVisualsLeft))/(float)
 			(LGL_WindowResolutionY()*(ViewPortVisualsTop-ViewPortVisualsBottom));
@@ -1052,12 +1068,13 @@ DrawVideos
 
 		b=yCenter-(previewPixelAR/projAR)*yRadius;
 		t=yCenter+(previewPixelAR/projAR)*yRadius;
+		*/
 	}
 
 	//float w=r-l;
 	//float h=t-b;
 
-	int videoNow=which;
+	bool somethingDrawn=false;
 
 	if(FreqMode[videoNow]==1)
 	{
@@ -1145,7 +1162,6 @@ DrawVideos
 			GetFreqBrightness(true,freqFactor,2*volAve*1.0f)
 		)
 		{
-			float bright = (overrideBrightness==-1.0f) ? VideoBrightness[videoNow] : overrideBrightness;
 			LGL_DrawAudioInWaveform
 			(
 				l,r,b,t,
@@ -1154,10 +1170,11 @@ DrawVideos
 				true
 			);
 		}
+
+		somethingDrawn=true;
 	}
 	else if(Videos[videoNow])
 	{
-		float bright = (overrideBrightness==-1.0f) ? VideoBrightness[videoNow] : overrideBrightness;
 		LGL_Image* image=Videos[videoNow]->GetImage();//EIGHT_WAY ? !preview : preview);
 		if
 		(
@@ -1165,9 +1182,25 @@ DrawVideos
 			image->GetFrameNumber()!=-1
 		)
 		{
+			float imageAR = image->GetWidth()/(float)image->GetHeight();
+			//float targetAR = w/h;
+			float midH = 0.5f*(b+t);
+			float myL = l;
+			float myR = r;
+			float myB = midH - 0.5f*(myR-myL)/(imageAR/LGL_WindowAspectRatio());
+			float myT = midH + 0.5f*(myR-myL)/(imageAR/LGL_WindowAspectRatio());
+			if(myB<b)
+			{
+				float scaleFactor = (midH-b)/(midH-myB);
+				float midW = 0.5f*(l+r);
+				myL=midW-(midW-l)*scaleFactor;
+				myR=midW+(midW-l)*scaleFactor;
+				myB=b;
+				myT=t;
+			}
 			image->DrawToScreen
 			(
-				l,r,b,t,
+				myL,myR,myB,myT,
 				0,
 				bright,
 				bright,
@@ -1224,6 +1257,7 @@ DrawVideos
 					);
 				}
 			}
+			somethingDrawn=true;
 		}
 
 		bool videoReady = true;//Videos[videoNow]->GetImageDecodedSinceVideoChange();
@@ -1267,6 +1301,31 @@ DrawVideos
 		*/
 
 		ForceVideoToBackOfRandomQueue(Videos[videoNow]->GetPathShort());
+	}
+
+	float oscBright = tt->GetOscilloscopeBrightness();
+	if(oscBright==-1.0f && somethingDrawn==false)
+	{
+		oscBright=bright;
+	}
+	if(oscBright>0.0f)
+	{
+		tt->DrawWave
+		(
+			l,r,b,t,
+			oscBright,
+			preview
+		);
+	}
+
+	if(somethingDrawn==false)
+	{
+		tt->DrawWave
+		(
+			l,r,b,t,
+			bright,
+			preview
+		);
 	}
 }
 

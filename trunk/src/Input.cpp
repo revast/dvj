@@ -1239,6 +1239,27 @@ WaveformVideoFreqSenseMode
 	return(mode);
 }
 
+float
+InputObj::
+WaveformOscilloscopeBrightness
+(
+	unsigned int	target
+)	const
+{
+	float bright=-1.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformOscilloscopeBrightness(target);
+		if(candidate!=-1.0f)
+		{
+			bright=candidate;
+		}
+	}
+
+	return(bright);
+}
+
 bool
 InputObj::
 WaveformSyncBPM

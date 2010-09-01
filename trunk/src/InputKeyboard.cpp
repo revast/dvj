@@ -41,10 +41,6 @@ NextFrame()
 	{
 		WaveformSavePointUnsetTimer.Reset();
 	}
-	if(LGL_KeyDown(GetInputKeyboardWaveformVideoFreqSenseModeKey())==false)
-	{
-		WaveformFreqSenseMode2Timer.Reset();
-	}
 
 	if
 	(
@@ -1092,7 +1088,7 @@ WaveformVideoFreqSenseMode
 		if
 		(
 			LGL_KeyDown(GetInputKeyboardWaveformVideoFreqSenseModeKey()) &&
-			WaveformFreqSenseMode2Timer.SecondsSinceLastReset()>=1.0f
+			LGL_KeyTimer(GetInputKeyboardWaveformVideoFreqSenseModeKey())>=1.0f
 		)
 		{
 			mode=2;
@@ -1100,6 +1096,16 @@ WaveformVideoFreqSenseMode
 	}
 
 	return(mode);
+}
+
+float
+InputKeyboardObj::
+WaveformOscilloscopeBrightness
+(
+	unsigned int	target
+)	const
+{
+	return(-1.0f);
 }
 
 bool

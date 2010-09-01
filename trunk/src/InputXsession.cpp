@@ -1053,6 +1053,16 @@ WaveformVideoFreqSenseMode
 	return(mode);
 }
 
+float
+InputXsessionObj::
+WaveformOscilloscopeBrightness
+(
+	unsigned int	target
+)	const
+{
+	return(-1.0f);
+}
+
 bool
 InputXsessionObj::
 WaveformSyncBPM

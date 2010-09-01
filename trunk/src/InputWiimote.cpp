@@ -903,6 +903,16 @@ WaveformVideoFreqSenseMode
 	return(mode);
 }
 
+float
+InputWiimoteObj::
+WaveformOscilloscopeBrightness
+(
+	unsigned int	target
+)	const
+{
+	return(-1.0f);
+}
+
 bool
 InputWiimoteObj::
 WaveformSyncBPM

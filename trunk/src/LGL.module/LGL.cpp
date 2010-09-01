@@ -31,6 +31,7 @@
 #include <string.h>
 #include <ctype.h>	//isapha(), ispunct(), etc
 
+#include <SDL_video.h>
 #include <SDL_image.h>
 #include <SDL_net.h>
 #include <SDL_endian.h>
@@ -1309,7 +1310,18 @@ lgl_avcodec_find_encoder
 )
 {
 	LGL_ScopeLock lock(lgl_get_av_semaphore());
-	return(avcodec_find_encoder(id));
+	AVCodec* codec = avcodec_find_encoder(id);
+	return(codec);
+}
+
+AVCodec*
+lgl_avcodec_find_encoder_by_name
+(
+	const char*	name
+)
+{
+	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	return(avcodec_find_encoder_by_name(name));
 }
 
 void
@@ -1570,7 +1582,7 @@ LGL_Init
 		SDL_Init
 		(
 #ifndef	LGL_NO_GRAPHICS
-			SDL_INIT_VIDEO |
+			//SDL_INIT_VIDEO |
 #endif	//LGL_NO_GRAPHICS
 			SDL_INIT_AUDIO |
 			SDL_INIT_TIMER |
@@ -1588,6 +1600,7 @@ LGL_Init
 	}
 	else
 	{
+		SDL_VideoInit(NULL,0);
 		lgl_sdl_initialized=true;
 		//printf("LGL: SDL_Init() Success!\n");
 	}
@@ -1618,11 +1631,11 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	LGL.DisplayResolutionY[a]
 );
 		SDL_DisplayMode displayMode;
-		SDL_GetFullscreenDisplayMode(&displayMode);
+		SDL_GetWindowDisplayMode(LGL.WindowID,&displayMode);
 		displayMode.w=LGL.DisplayResolutionX[a];
 		displayMode.h=LGL.DisplayResolutionY[a];
 		displayMode.refresh_rate=60;
-		SDL_SetFullscreenDisplayMode(&displayMode);
+		SDL_SetWindowDisplayMode(LGL.WindowID,&displayMode);
 	}
 
 	SDL_SelectVideoDisplay(0);
@@ -2133,7 +2146,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	lgl_av_register_all();
 	lgl_avcodec_init(); 
 	lgl_avcodec_register_all();
-	lgl_av_log_set_level(AV_LOG_WARNING);	//QUIET, ERROR, WARNING, DEBUG
+	lgl_av_log_set_level(AV_LOG_WARNING);	//QUIET, ERROR, WARNING, INFO, VERBOSE, DEBUG
 
 	//bool audioIn=inAudioChannels < 0;
 	inAudioChannels=abs(inAudioChannels);
@@ -2466,10 +2479,12 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		printf("Absent\n");
 	}
 	printf("SDL_net\t\t\t%s\n",LGL.NetAvailable?"Present":SDLNet_GetError());
+#ifndef	LGL_NO_GRAPHICS
 	printf("OpenGL Renderer\t\t%s\n",(char*)(glGetString(GL_RENDERER)));
 	printf("OpenGL VBO\t\t%s\n",LGL_VBOAvailable()?"Present":"Absent");
 	printf("GLSL Vert Shader\t%s\n",LGL_ShaderAvailableVert()?"Present":"Absent");
 	printf("GLSL Frag Shader\t%s\n",LGL_ShaderAvailableFrag()?"Present":"Absent");
+#endif	//LGL_NO_GRAPHICS
 #ifdef	LGL_LINUX_VIDCAM
 	printf("Video4Linux Device\t%s\n",LGL_VidCamAvailable()?"Present":"Absent");
 #endif	//LGL_LINUX_VIDCAM
@@ -4037,6 +4052,7 @@ LGL_DrawLineToScreen
 #ifdef	LGL_NO_GRAPHICS
 	return;
 #endif	//LGL_NO_GRAPHICS
+
 	lgl_glScreenify2D();
 	
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
@@ -4106,6 +4122,43 @@ LGL_DrawLineStripToScreen
 #ifdef	LGL_NO_GRAPHICS
 	return;
 #endif	//LGL_NO_GRAPHICS
+
+	/*
+	float* p2 = new float[pointCount*2*2];
+	float* c2 = new float[pointCount*2*4];
+	for(int z=0;z<pointCount*2;z+=2)
+	{
+		//Bottom
+		p2[2*z+0] = pointsXY[z+0];//-(thickness/LGL_WindowResolutionX());
+		p2[2*z+1] = pointsXY[z+1]-(0.5f*thickness/LGL_WindowResolutionY());
+
+		c2[4*z+0] = r;
+		c2[4*z+1] = g;
+		c2[4*z+2] = b;
+		c2[4*z+3] = a;
+		
+		//Top
+		p2[2*z+2] = pointsXY[z+0];//+(thickness/LGL_WindowResolutionX());
+		p2[2*z+3] = pointsXY[z+1]+(0.5f*thickness/LGL_WindowResolutionY());
+
+		c2[4*z+4] = r;
+		c2[4*z+5] = g;
+		c2[4*z+6] = b;
+		c2[4*z+7] = a;
+	}
+
+	LGL_DrawTriStripToScreen
+	(
+		p2,
+		c2,
+		pointCount*2,
+		antialias
+	);
+	delete p2;
+	delete c2;
+	return;
+	*/
+
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
 	{
 		long datalen=sizeof(float)*2*pointCount;
@@ -4212,6 +4265,43 @@ LGL_DrawLineStripToScreen
 #ifdef	LGL_NO_GRAPHICS
 	return;
 #endif	//LGL_NO_GRAPHICS
+
+	/*
+	float* p2 = new float[pointCount*2*2];
+	float* c2 = new float[pointCount*2*4];
+	for(int a=0;a<pointCount*2;a+=2)
+	{
+		//Bottom
+		p2[2*a+0] = pointsXY[a+0];//-(thickness/LGL_WindowResolutionX());
+		p2[2*a+1] = pointsXY[a+1]-(thickness/LGL_WindowResolutionY());
+
+		c2[4*a+0] = colorsRGBA[2*a+0];
+		c2[4*a+1] = colorsRGBA[2*a+1];
+		c2[4*a+2] = colorsRGBA[2*a+2];
+		c2[4*a+3] = colorsRGBA[2*a+3];
+		
+		//Top
+		p2[2*a+2] = pointsXY[a+0];//+(thickness/LGL_WindowResolutionX());
+		p2[2*a+3] = pointsXY[a+1]+(thickness/LGL_WindowResolutionY());
+
+		c2[4*a+4] = colorsRGBA[2*a+0];
+		c2[4*a+5] = colorsRGBA[2*a+1];
+		c2[4*a+6] = colorsRGBA[2*a+2];
+		c2[4*a+7] = colorsRGBA[2*a+3];
+
+	}
+	LGL_DrawTriStripToScreen
+	(
+		p2,
+		c2,
+		pointCount*2,
+		antialias
+	);
+	delete p2;
+	delete c2;
+	return;
+	*/
+
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
 	{
 		long datalenPoints=sizeof(float)*2*pointCount;
@@ -5679,6 +5769,9 @@ LGL_Image
 	int	loadToExistantGLTextureY
 )
 {
+	ReferenceCount=0;
+	TextureGL=0;
+
 #ifdef	LGL_NO_GRAPHICS
 	return;
 #endif	//LGL_NO_GRAPHICS
@@ -5701,7 +5794,6 @@ LGL_Image
 		);
 	}
 
-	ReferenceCount=0;
 	FrameNumber=-1;
 	VideoPath[0]='\0';
 }
@@ -5717,6 +5809,9 @@ LGL_Image
 	const char*	name
 )
 {
+	ReferenceCount=0;
+	TextureGL=0;
+
 #ifdef	LGL_NO_GRAPHICS
 	return;
 #endif	//LGL_NO_GRAPHICS
@@ -5831,7 +5926,6 @@ LGL_Image
 		SDL_FreeSurface(mySDL_Surface1);
 	}
 
-	ReferenceCount=0;
 	FrameNumber=-1;
 	VideoPath[0]='\0';
 }
@@ -5844,6 +5938,9 @@ LGL_Image
 	bool	inReadFromFrontBuffer
 )
 {
+	ReferenceCount=0;
+	TextureGL=0;
+
 #ifdef	LGL_NO_GRAPHICS
 	return;
 #endif	//LGL_NO_GRAPHICS
@@ -5908,7 +6005,6 @@ LGL_Image
 
 	FrameBufferUpdate();
 
-	ReferenceCount=0;
 	FrameNumber=-1;
 	VideoPath[0]='\0';
 }
@@ -8804,9 +8900,43 @@ MaybeLoadVideo()
 	FPS=
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(float)
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den;
+printf("FPS A = %i / %i (%.2f)\n",
+		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num,
+		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den,
+		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(float)
+		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den);
+printf("FPS B = %i / %i (%.2f)\n",
+		FormatContext->streams[VideoStreamIndex]->time_base.num,
+		FormatContext->streams[VideoStreamIndex]->time_base.den,
+		FormatContext->streams[VideoStreamIndex]->time_base.num/(float)
+		FormatContext->streams[VideoStreamIndex]->time_base.den);
+printf("FPS C = %i / %i (%.2f)\n",
+		FormatContext->streams[VideoStreamIndex]->codec->time_base.num,
+		FormatContext->streams[VideoStreamIndex]->codec->time_base.den,
+		FormatContext->streams[VideoStreamIndex]->codec->time_base.num/(float)
+		FormatContext->streams[VideoStreamIndex]->codec->time_base.den);
+printf("VidStream->r_frame_rate = %i / %i (%.2f)\n",
+	FormatContext->streams[VideoStreamIndex]->r_frame_rate.num,
+	FormatContext->streams[VideoStreamIndex]->r_frame_rate.den,
+	FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(float)
+	FormatContext->streams[VideoStreamIndex]->r_frame_rate.den);
+printf("VidStream->time_base = %i / %i (%.2f) (%.2f)\n",
+	FormatContext->streams[VideoStreamIndex]->time_base.num,
+	FormatContext->streams[VideoStreamIndex]->time_base.den,
+	FormatContext->streams[VideoStreamIndex]->time_base.num/(float)
+	FormatContext->streams[VideoStreamIndex]->time_base.den,
+	FormatContext->streams[VideoStreamIndex]->time_base.den/(float)
+	FormatContext->streams[VideoStreamIndex]->time_base.num);
+printf("VidStream->codec->time_base = %i / %i (%.2f) (%.2f)\n",
+	FormatContext->streams[VideoStreamIndex]->codec->time_base.num,
+	FormatContext->streams[VideoStreamIndex]->codec->time_base.den,
+	FormatContext->streams[VideoStreamIndex]->codec->time_base.num/(float)
+	FormatContext->streams[VideoStreamIndex]->codec->time_base.den,
+	FormatContext->streams[VideoStreamIndex]->codec->time_base.den/(float)
+	FormatContext->streams[VideoStreamIndex]->codec->time_base.num);
 	FPSTimestamp=CodecContext->time_base.den/(float)CodecContext->time_base.num;
+printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
 	//FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
-	//FPS=FormatContext->streams[VideoStreamIndex]->time_base.den/(float)FormatContext->streams[VideoStreamIndex]->time_base.num;
 
 	FrameNative=lgl_avcodec_alloc_frame();
 	FrameRGB=lgl_avcodec_alloc_frame();
@@ -9348,7 +9478,7 @@ GetRecycledFrameBuffer()
 	}
 }
 
-float LGL_VideoEncoder::BitrateMaxMBps=3.2;
+float LGL_VideoEncoder::BitrateMaxMBps=3.2f;
 
 LGL_VideoEncoder::
 LGL_VideoEncoder
@@ -9599,15 +9729,37 @@ LGL_VideoEncoder
 		DstCodecContext->codec_type=CODEC_TYPE_VIDEO;
 		DstCodecContext->bit_rate=BitrateMaxMBps*1024*1024*8;
 		DstCodecContext->bit_rate_tolerance=DstCodecContext->bit_rate/8;	//Allow for some variance
+		DstCodecContext->flags|=0;	//No flags seems helpful to add.
+		DstCodecContext->me_method = 1;
 		DstCodecContext->sample_aspect_ratio=DstStream->sample_aspect_ratio;
 		DstCodecContext->width = SrcBufferWidth;
 		DstCodecContext->height = SrcBufferHeight;
 		//The next line appears goofy and incorrect, but is necessary to ensure a proper framerate.
 		//The SrcCodecContext's time_base can be incorrect, for reasons not entirely clear. ffmpeg can be like that.
-		DstCodecContext->time_base = DstStream->time_base;//SrcCodecContext->time_base;
+		//DstCodecContext->time_base = DstStream->time_base;//SrcCodecContext->time_base;
+		DstCodecContext->time_base.den=SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.num;
+		DstCodecContext->time_base.num=SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.den;
 		//DstCodecContext->pix_fmt = PIX_FMT_RGB32;
 		DstCodecContext->pix_fmt = PIX_FMT_YUVJ422P;
+
+		//These don't seem to help...
+		DstCodecContext->qmin = 1;
+		//DstCodecContext->qmax = 100;
+		DstCodecContext->max_qdiff = 100;
+
 		DstCodecContext->strict_std_compliance=-1;
+		
+		//This doesn't work either
+		DstCodecContext->rc_override=&DstCodecContextRcOverride;
+		DstCodecContext->rc_override_count=1;
+		DstCodecContextRcOverride.start_frame=0;
+		DstCodecContextRcOverride.end_frame=INT_MAX;
+		DstCodecContextRcOverride.qscale=1;
+		DstCodecContextRcOverride.quality_factor=1.0;
+
+		//DstCodecContext->rc_min_rate = DstCodecContext->bit_rate - DstCodecContext->bit_rate_tolerance;
+		//DstCodecContext->rc_max_rate = DstCodecContext->bit_rate;
+		DstCodecContext->global_quality = 100;
 
 printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext->pix_fmt);
 		{
@@ -9620,6 +9772,12 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 		}
 
 		dump_format(DstFormatContext,0,DstFormatContext->filename,1);
+
+		//DstStream->time_base.den=SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.num;
+		//DstStream->time_base.num=SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.den;
+		DstStream->codec->time_base.den=SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.num;
+		DstStream->codec->time_base.num=SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.den;
+		//DstCodecContext->ticks_per_frame = DstStream->codec->time_base.num;
 
 		int result = url_fopen(&(DstFormatContext->pb), DstFormatContext->filename, URL_WRONLY);
 		if(result<0)
@@ -9697,6 +9855,8 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 			// audio stream
 			DstMp3Stream = lgl_av_new_stream(DstMp3FormatContext,0);
 			DstMp3Stream->r_frame_rate=SrcFormatContext->streams[SrcAudioStreamIndex]->r_frame_rate;
+			//Next line doesn't seem to be accurate. So commented out.
+			//DstMp3Stream->avg_frame_rate=SrcFormatContext->streams[SrcAudioStreamIndex]->avg_frame_rate;
 			DstMp3Stream->quality=FF_QP2LAMBDA * 100;
 			DstMp3FormatContext->streams[0] = DstMp3Stream;
 			DstMp3FormatContext->nb_streams = 1;
@@ -9715,8 +9875,14 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 			DstMp3CodecContext->flags |= CODEC_FLAG_QSCALE;
 			DstMp3CodecContext->sample_rate=SrcAudioCodecContext->sample_rate;
 			DstMp3CodecContext->time_base = (AVRational){1,DstMp3CodecContext->sample_rate};
-			DstMp3CodecContext->channels=SrcAudioCodecContext->channels;
+			DstMp3CodecContext->channels=
+				(SrcAudioCodecContext->channels>=2) ?
+				SrcAudioCodecContext->channels :
+				2;
+			DstMp3CodecContext->sample_fmt=SAMPLE_FMT_S16;
 
+lgl_av_log_set_level(AV_LOG_WARNING);	//QUIET, ERROR, WARNING, INFO, VERBOSE, DEBUG
+printf("\n\n\nHere we go...\n");
 			int openResult=-1;
 			{
 				openResult = lgl_avcodec_open(DstMp3CodecContext, DstMp3Codec);
@@ -9783,7 +9949,8 @@ LGL_VideoEncoder::
 	}
 	if(SrcFrame)
 	{
-		lgl_av_freep(SrcFrame);
+		//FIXME: The docs say I need to free this like this, but it triggers malloc_error_break... Commenting out for now, and possibly leaking...
+		//lgl_av_freep(SrcFrame);
 		SrcFrame=NULL;
 	}
 
@@ -9986,11 +10153,21 @@ Encode
 						DstFrameYUV->data,
 						DstFrameYUV->linesize
 					);
+					DstFrameYUV->quality=1;	//Best
 					DstPacket.size = lgl_avcodec_encode_video(DstCodecContext, DstBuffer, SrcBufferWidth*SrcBufferHeight*4, DstFrameYUV);
 				}
 
-				DstPacket.dts = SrcPacket.dts;
-				DstPacket.pts = SrcPacket.pts;//DstCodecContext->coded_frame->pts;
+				int64_t conversionFactorNum =
+						SrcFormatContext->streams[SrcVideoStreamIndex]->time_base.num *
+						DstStream->time_base.den;
+				int64_t conversionFactorDen = SrcFormatContext->streams[SrcVideoStreamIndex]->time_base.den *
+						DstStream->time_base.num;
+				//float conversionFactorVal = (float)(conversionFactorNum/(float)conversionFactorDen);
+
+				DstPacket.pts = SrcPacket.pts * conversionFactorNum/conversionFactorDen;
+				DstPacket.dts = DstPacket.pts - 1;
+				if(DstPacket.dts<0) DstPacket.dts=0;
+
 				DstPacket.flags |= PKT_FLAG_KEY;
 				DstPacket.stream_index = 0;
 				DstPacket.data=DstBuffer;
@@ -10035,6 +10212,10 @@ Encode
 					}
 					SrcPacket.size-=result;
 					SrcPacket.data+=result;
+					if(DstMp3BufferSrcPts==0)
+					{
+						DstMp3BufferSrcPts = SrcPacket.pts;
+					}
 					if(SrcAudioCodecContext->channels>=2)
 					{
 						memcpy(&(DstMp3BufferSamples[DstMp3BufferSamplesIndex]),DstMp3Buffer,outbufsize);
@@ -10071,6 +10252,48 @@ Encode
 
 		if(eof)
 		{
+printf("Src->r_frame_rate = %i / %i (%.2f)\n",
+	SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.num,
+	SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.den,
+	SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.num/(float)
+	SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.den);
+printf("Src->time_base = %i / %i (%.2f) (%.2f)\n",
+	SrcFormatContext->streams[SrcVideoStreamIndex]->time_base.num,
+	SrcFormatContext->streams[SrcVideoStreamIndex]->time_base.den,
+	SrcFormatContext->streams[SrcVideoStreamIndex]->time_base.num/(float)
+	SrcFormatContext->streams[SrcVideoStreamIndex]->time_base.den,
+	SrcFormatContext->streams[SrcVideoStreamIndex]->time_base.den/(float)
+	SrcFormatContext->streams[SrcVideoStreamIndex]->time_base.num);
+printf("Src->codec->time_base = %i / %i (%.2f) (%.2f)\n",
+	SrcFormatContext->streams[SrcVideoStreamIndex]->codec->time_base.num,
+	SrcFormatContext->streams[SrcVideoStreamIndex]->codec->time_base.den,
+	SrcFormatContext->streams[SrcVideoStreamIndex]->codec->time_base.num/(float)
+	SrcFormatContext->streams[SrcVideoStreamIndex]->codec->time_base.den,
+	SrcFormatContext->streams[SrcVideoStreamIndex]->codec->time_base.den/(float)
+	SrcFormatContext->streams[SrcVideoStreamIndex]->codec->time_base.num);
+printf("Src ticks_per_frame: %i\n",SrcCodecContext->ticks_per_frame);
+
+printf("Dst->r_frame_rate = %i / %i (%.2f)\n",
+	DstStream->r_frame_rate.num,
+	DstStream->r_frame_rate.den,
+	DstStream->r_frame_rate.num/(float)
+	DstStream->r_frame_rate.den);
+printf("Dst->time_base = %i / %i (%.2f) (%.2f)\n",
+	DstStream->time_base.num,
+	DstStream->time_base.den,
+	DstStream->time_base.num/(float)
+	DstStream->time_base.den,
+	DstStream->time_base.den/(float)
+	DstStream->time_base.num);
+printf("Dst->codec->time_base = %i / %i (%.2f) (%.2f)\n",
+	DstStream->codec->time_base.num,
+	DstStream->codec->time_base.den,
+	DstStream->codec->time_base.num/(float)
+	DstStream->codec->time_base.den,
+	DstStream->codec->time_base.den/(float)
+	DstStream->codec->time_base.num);
+printf("Dst ticks_per_frame: %i\n",DstCodecContext->ticks_per_frame);
+
 			//We're done!
 			if(EncodeVideo)
 			{
@@ -10156,6 +10379,18 @@ FlushAudioBuffer
 		//DstMp3Packet.dts = DstMp3Packet.pts;
 		//DstPacket.dts = SrcPacket.dts;
 		//DstPacket.pts = SrcPacket.pts;//DstCodecContext->coded_frame->pts;
+		int64_t conversionFactorNum =
+				SrcFormatContext->streams[SrcAudioStreamIndex]->time_base.num *
+				DstStream->time_base.den;
+		int64_t conversionFactorDen = SrcFormatContext->streams[SrcAudioStreamIndex]->time_base.den *
+				DstStream->time_base.num;
+		//float conversionFactorVal = (float)(conversionFactorNum/(float)conversionFactorDen);
+
+		DstPacket.pts = DstMp3BufferSrcPts * conversionFactorNum/conversionFactorDen;
+		DstPacket.dts = DstPacket.pts - 1;
+		if(DstPacket.dts<0) DstPacket.dts=0;
+		DstMp3BufferSrcPts=0;
+
 		DstMp3Packet.flags |= PKT_FLAG_KEY;
 		DstMp3Packet.stream_index = 0;
 		DstMp3Packet.data=(uint8_t*)DstMp3Buffer2;
@@ -10688,9 +10923,17 @@ LGL_Font
 	char*	dirpath
 )
 {
+	for(int a=0;a<256;a++)
+	{
+		Glyph[a]=NULL;
+	}
+	TextureGL=0;
+	ReferenceCount=0;
+
 #ifdef	LGL_NO_GRAPHICS
 	return;
 #endif	//LGL_NO_GRAPHICS
+	
 	LGL_Assertf(dirpath!=NULL,("LGL_Font::LGL_Font(): Error! NULL dirpath!"));
 	LGL_SimplifyPath(Path,dirpath);
 	if(Path[strlen(Path)-1]=='/')
@@ -10810,7 +11053,6 @@ LGL_Font
 	}
 
 	DrawingString=false;
-	ReferenceCount=0;
 }
 
 LGL_Font::
@@ -12340,13 +12582,19 @@ DrawWaveform
 	float peak=0.0f;
 	for(int z=0;z<LengthSamples;z++)
 	{
-		pointsXY[2*z+0] = left+width*(z/(float)LengthSamples);
+		pointsXY[2*z+0] = left+width*(z/(float)(LengthSamples-1));
 		pointsXY[2*z+1] = bottom+height*WaveformMonoFloat[z];
 		if(pointsXY[2*z+1]>peak)
 		{
 			peak=pointsXY[2*z+1];
 		}
 	}
+	/*
+	if(LengthSamples>0)
+	{
+		pointsXY[2*(LengthSamples-1)]=right;
+	}
+	*/
 
 	//Draw
 	LGL_DrawLineStripToScreen
@@ -12801,20 +13049,32 @@ SetWaveformFromLGLSound
 
 	long centerPositionSamples=(int)LGL_Max(0,(centerSeconds+LGL_RandFloat(-centerSecondsVariance,centerSecondsVariance))*sound->GetHz());
 	LengthSamples=(int)LGL_Max(0,(lengthSeconds+LGL_RandFloat(-lengthSecondsVariance,lengthSecondsVariance))*sound->GetHz());
-	long startPositionSamples=centerPositionSamples-(LengthSamples/2);
-	long endPositionSamples=startPositionSamples+LengthSamples;
 
+	long startPositionSamples=centerPositionSamples-(LengthSamples/2);
+	if(startPositionSamples<0) startPositionSamples=0;
+	
+	long endPositionSamples=startPositionSamples+LengthSamples;
 	if(endPositionSamples >= sound->GetLengthSamples())
 	{
 		endPositionSamples=sound->GetLengthSamples()-1;
-		LengthSamples=endPositionSamples-startPositionSamples;
+		LengthSamples=LGL_Max(0,endPositionSamples-startPositionSamples);
 	}
 
 	Waveform=new Uint8[LengthSamples*4];
 	sound->LockBufferForReading(2);
 	{
-		Uint8* soundBuffer=sound->GetBuffer();
-		memcpy(Waveform,&(soundBuffer[startPositionSamples*4]),LengthSamples*4);
+		if(Uint8* soundBuffer=sound->GetBuffer())
+		{
+			memcpy
+			(
+				Waveform,
+				&(soundBuffer[startPositionSamples*4]),LengthSamples*4
+			);
+		}
+		else
+		{
+			bzero(Waveform,LengthSamples*4);
+		}
 	}
 	sound->UnlockBufferForReading();
 }
@@ -13159,7 +13419,7 @@ GetDistanceGreaterThanEuclidean
 	return(false);
 }
 
-void
+bool
 lgl_analyze_wave_segment
 (
 	long		sampleFirst,
@@ -13170,10 +13430,10 @@ lgl_analyze_wave_segment
 	const Sint16*	buf16,
 	unsigned long	len16,
 	bool		loaded,
-	int		hz
+	int		hz,
+	int		channels
 )
 {
-	int sampleAdvanceFactor=1;
 	assert(sampleLast>=sampleFirst);
 	zeroCrossingFactor=0.0f;
 	magnitudeAve=0.0f;
@@ -13181,7 +13441,7 @@ lgl_analyze_wave_segment
 
 	if(buf16==NULL)
 	{
-		return;
+		return(false);
 	}
 
 	float magnitudeTotal=0.0f;
@@ -13189,11 +13449,10 @@ lgl_analyze_wave_segment
 
 	for(int a=0;a<2;a++)
 	{
-		unsigned int myIndex = sampleFirst+a;
-		if(myIndex>len16-1) myIndex=len16-1;
+		long myIndex = sampleFirst+a;
+		if((unsigned long)myIndex>len16-1) myIndex=len16-1;
 		int zeroCrossingSign=(int)LGL_Sign(buf16[myIndex]);
-
-		for(long b=sampleFirst*2+a;b<sampleLast*2;b+=2*sampleAdvanceFactor)
+		for(long b=sampleFirst*channels+a;b<sampleLast*channels;b+=channels)
 		{
 			long index=b;
 			if
@@ -13219,11 +13478,15 @@ lgl_analyze_wave_segment
 					zeroCrossings++;
 				}
 			}
+			else
+			{
+				return(false);
+			}
 		}
 	}
 
 	int samplesScanned=(int)(sampleLast-sampleFirst);
-	magnitudeAve=(magnitudeTotal/(samplesScanned/sampleAdvanceFactor))/(1<<15);
+	magnitudeAve=(magnitudeTotal/samplesScanned)/(1<<15);
 	if(magnitudeAve>1.0f)
 	{
 		magnitudeAve=1.0f;
@@ -13247,6 +13510,8 @@ lgl_analyze_wave_segment
 		1.0f
 	);
 	zeroCrossingFactor=sqrtf(zeroCrossingFactor);
+
+	return(true);
 }
 
 void
@@ -13284,7 +13549,8 @@ CalculateWaveformDerivatives()
 		waveform16,
 		LengthSamples,
 		true,
-		44100	//HACK
+		44100,	//HACK,
+		2
 	);
 }
 
@@ -15419,7 +15685,7 @@ SetHogCPU
 	HogCPU=hogCPU;
 }
 
-void
+bool
 LGL_Sound::
 AnalyzeWaveSegment
 (
@@ -15430,6 +15696,7 @@ AnalyzeWaveSegment
 	float&		magnitudeMax
 )
 {
+	bool ret=false;
 	LockBufferForReading(10);
 	{
 		const Sint16* buf16=(Sint16*)GetBuffer();
@@ -15437,7 +15704,7 @@ AnalyzeWaveSegment
 		bool loaded=IsLoaded();
 		int hz=Hz;
 
-		lgl_analyze_wave_segment
+		ret = lgl_analyze_wave_segment
 		(
 			sampleFirst,
 			sampleLast,
@@ -15447,10 +15714,13 @@ AnalyzeWaveSegment
 			buf16,
 			len16,
 			loaded,
-			hz
+			hz,
+			Channels
 		);
 	}
 	UnlockBufferForReading(10);
+
+	return(ret);
 }
 	
 bool
@@ -15507,6 +15777,7 @@ GetMetadata
 	float secondsAnalyzed=MetadataFilledSize/(float)LGL_SOUND_METADATA_ENTRIES_PER_SECOND;
 	if(secondsEnd>secondsAnalyzed)
 	{
+/*
 		AnalyzeWaveSegment
 		(
 			secondsBegin*Hz,
@@ -15514,8 +15785,10 @@ GetMetadata
 			zeroCrossingFactor,
 			magnitudeAve,
 			magnitudeMax
+//,entireWaveArray
 		);
 		return(true);
+*/
 	}
 
 	float entriesUsed=0.0f;
@@ -15697,7 +15970,6 @@ LoadToMemory()
 			}
 		}
 	}
-
 	if(audioStreamIndex==-1)
 	{
 		Hz=44100;
@@ -15798,7 +16070,7 @@ LoadToMemory()
 						//There's enough room at the end of Buffer
 
 						//Copy Extra Bits To Buffer
-						if(Channels==1)
+						/*if(Channels==1)
 						{
 							int16_t* outbuf16 = (int16_t*)outbuf; 
 							int16_t* buf16 = (int16_t*)Buffer;
@@ -15811,18 +16083,15 @@ LoadToMemory()
 							}
 							BufferLength+=samples*2*2;
 						}
-						else if
+						else*/ if
 						(
+							Channels==1 ||
 							Channels==2 ||
 							Channels==4
 						)
 						{
 							memcpy(Buffer+BufferLength,(char*)outbuf,outbufsize);
 							BufferLength+=outbufsize;
-						}
-						else
-						{
-							assert(false);
 						}
 
 						for(int b=0;b<LGL_SOUND_CHANNEL_NUMBER;b++)
@@ -15854,7 +16123,7 @@ LoadToMemory()
 					{
 						long sampleFirst=secondsMetadataAlpha*Hz;
 						long sampleLast=(secondsMetadataAlpha+secondsMetadataDelta)*Hz;
-						AnalyzeWaveSegment
+						bool ret = AnalyzeWaveSegment
 						(
 							sampleFirst,
 							sampleLast,
@@ -15862,6 +16131,10 @@ LoadToMemory()
 							MetadataVolumeAve[MetadataFilledSize],
 							MetadataVolumeMax[MetadataFilledSize]
 						);
+						if(ret==false)
+						{
+							break;
+						}
 						if(MetadataVolumeMax[MetadataFilledSize]>MetadataVolumePeak)
 						{
 							MetadataVolumePeak=MetadataVolumeMax[MetadataFilledSize];
@@ -16552,9 +16825,13 @@ LGL_ProcessInput()
 
 			if(event.key.keysym.sym != 0)
 			{
+//printf("KeyDown: %i\n",event.key.keysym.sym);
+				LGL.KeyStroke[event.key.keysym.sym]=LGL.KeyDown[event.key.keysym.sym]==false;
 				LGL.KeyDown[event.key.keysym.sym]=true;
-				LGL.KeyStroke[event.key.keysym.sym]=true;
-				LGL.KeyTimer[event.key.keysym.sym].Reset();
+				if(LGL.KeyStroke[event.key.keysym.sym])
+				{
+					LGL.KeyTimer[event.key.keysym.sym].Reset();
+				}
 #ifdef	LGL_OSX
 				if(event.key.keysym.sym==8)
 				{
@@ -18394,9 +18671,6 @@ LGL_MouseVisible
 	bool	visible
 )
 {
-#ifdef	SDL_2
-	SDL_SelectMouse(0);
-#endif	//SDL_2
 	if(visible)
 	{
 		SDL_ShowCursor(1);

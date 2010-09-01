@@ -56,15 +56,6 @@ NextFrame()
 			WaveformSavePointUnsetTimerLeft.Reset();
 		}
 
-		if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_HEADPHONES))
-		{
-			WaveformHeadphonesDownTimerLeft.Reset();
-		}
-		if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES))
-		{
-			WaveformHeadphonesDownTimerRight.Reset();
-		}
-	
 		if
 		(
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOOP_IN)==false &&
@@ -1255,6 +1246,7 @@ WaveformStutter
 {
 	bool hold=false;
 
+	/*
 	if(LGL_GetXponent())
 	{
 		if((target & TARGET_BOTTOM))
@@ -1266,6 +1258,7 @@ WaveformStutter
 			hold|=LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_2);
 		}
 	}
+	*/
 
 	return(hold);
 }
@@ -2063,7 +2056,7 @@ WaveformVideoFreqSenseMode
 			else if
 			(
 				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES) &&
-				WaveformHeadphonesDownTimerRight.SecondsSinceLastReset()>=1.0f
+				LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES)>=1.0f
 			)
 			{
 				mode=2;
@@ -2078,7 +2071,7 @@ WaveformVideoFreqSenseMode
 			else if
 			(
 				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_HEADPHONES) &&
-				WaveformHeadphonesDownTimerLeft.SecondsSinceLastReset()>=1.0f
+				LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_LEFT_HEADPHONES)>=1.0f
 			)
 			{
 				mode=2;
@@ -2087,6 +2080,51 @@ WaveformVideoFreqSenseMode
 	}
 
 	return(mode);
+}
+
+float
+InputXponentObj::
+WaveformOscilloscopeBrightness
+(
+	unsigned int	target
+)	const
+{
+	float bright=-1.0f;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			//FIXME: Left / Right is asymmmetric, for Zebbler, for now... Shoudln't be, though..
+			if
+			(
+				LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_RIGHT_MOD_3) ||
+				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_3) ||
+				LGL_GetXponent()->GetButtonRelease(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_3)
+			)
+			{
+				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_RIGHT_MOD_3);
+				bright = ((knob == -1.0f) ? 1.0f : knob) *
+					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_3) ? 0 : 1);
+			}
+		}
+		else if((target & TARGET_TOP))
+		{
+			if
+			(
+				LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_LEFT_MOD_2) ||
+				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_2) ||
+				LGL_GetXponent()->GetButtonRelease(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_2)
+			)
+			{
+				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_MOD_2);
+				bright = ((knob == -1.0f) ? 1.0f : knob) *
+					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_2) ? 0 : 1);
+			}
+		}
+	}
+
+	return(bright);
 }
 
 bool

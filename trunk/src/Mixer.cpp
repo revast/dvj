@@ -55,9 +55,9 @@ MixerObj()
 		EQJP8k[a]=1.0f;
 	}
 
-	CrossFadeMiddle=1.0f;
-	CrossFadeSliderLeft=0.5f;
-	CrossFadeSliderRight=0.5f;
+	CrossfadeMiddle=1.0f;
+	CrossfadeSliderLeft=0.5f;
+	CrossfadeSliderRight=0.5f;
 
 	Visualizer=NULL;
 
@@ -187,25 +187,25 @@ NextFrame
 	candidate=Input.XfaderSpeakers();
 	if(candidate!=-1.0f)
 	{
-		CrossFadeSliderLeft=candidate;
+		CrossfadeSliderLeft=candidate;
 		if
 		(
-			CrossFadeSliderLeft>=63.0f/127.0f &&
-			CrossFadeSliderLeft<=65.0f/127.0f
+			CrossfadeSliderLeft>=63.0f/127.0f &&
+			CrossfadeSliderLeft<=65.0f/127.0f
 		)
 		{
-			CrossFadeSliderLeft=0.5f;
+			CrossfadeSliderLeft=0.5f;
 		}
 		if(LGL_AudioChannels()==2)
 		{
-			CrossFadeSliderRight=candidate;
+			CrossfadeSliderRight=candidate;
 			if
 			(
-				CrossFadeSliderRight>=63.0f/127.0f &&
-				CrossFadeSliderRight<=65.0f/127.0f
+				CrossfadeSliderRight>=63.0f/127.0f &&
+				CrossfadeSliderRight<=65.0f/127.0f
 			)
 			{
-				CrossFadeSliderRight=0.5f;
+				CrossfadeSliderRight=0.5f;
 			}
 		}
 	}
@@ -220,25 +220,25 @@ NextFrame
 	}
 	if(candidate!=-1.0f)
 	{
-		CrossFadeSliderRight=candidate;
+		CrossfadeSliderRight=candidate;
 		if
 		(
-			CrossFadeSliderRight>=63.0f/127.0f &&
-			CrossFadeSliderRight<=65.0f/127.0f
+			CrossfadeSliderRight>=63.0f/127.0f &&
+			CrossfadeSliderRight<=65.0f/127.0f
 		)
 		{
-			CrossFadeSliderRight=0.5f;
+			CrossfadeSliderRight=0.5f;
 		}
 		if(LGL_AudioChannels()==2)
 		{
-			CrossFadeSliderLeft=candidate;
+			CrossfadeSliderLeft=candidate;
 			if
 			(
-				CrossFadeSliderLeft>=63.0f/127.0f &&
-				CrossFadeSliderLeft<=65.0f/127.0f
+				CrossfadeSliderLeft>=63.0f/127.0f &&
+				CrossfadeSliderLeft<=65.0f/127.0f
 			)
 			{
-				CrossFadeSliderLeft=0.5f;
+				CrossfadeSliderLeft=0.5f;
 			}
 		}
 	}
@@ -331,13 +331,13 @@ NextFrame
 		float delta=0;
 		delta+=Input.XfaderSpeakersDelta();
 		delta+=Input.XfaderHeadphonesDelta();
-		CrossFadeSliderLeft=LGL_Clamp(0.0f,CrossFadeSliderLeft+delta,1.0f);
-		CrossFadeSliderRight=LGL_Clamp(0.0f,CrossFadeSliderRight+delta,1.0f);
+		CrossfadeSliderLeft=LGL_Clamp(0.0f,CrossfadeSliderLeft+delta,1.0f);
+		CrossfadeSliderRight=LGL_Clamp(0.0f,CrossfadeSliderRight+delta,1.0f);
 	}
 	else if(LGL_AudioChannels()==4)
 	{
-		CrossFadeSliderLeft=LGL_Clamp(0.0f,CrossFadeSliderLeft+Input.XfaderSpeakersDelta(),1.0f);
-		CrossFadeSliderRight=LGL_Clamp(0.0f,CrossFadeSliderRight+Input.XfaderHeadphonesDelta(),1.0f);
+		CrossfadeSliderLeft=LGL_Clamp(0.0f,CrossfadeSliderLeft+Input.XfaderSpeakersDelta(),1.0f);
+		CrossfadeSliderRight=LGL_Clamp(0.0f,CrossfadeSliderRight+Input.XfaderHeadphonesDelta(),1.0f);
 	}
 
 	int masterTT=-1;
@@ -347,7 +347,7 @@ NextFrame
 		Turntable[1]->GetMode()==2
 	)
 	{
-		if(CrossFadeSliderLeft>0.5f)
+		if(CrossfadeSliderLeft>0.5f)
 		{
 			masterTT=0;
 		}
@@ -395,7 +395,7 @@ NextFrame
 	bool soloActive=(solo[0] || solo[1]);
 
 	//Update Active Turntables
-	for(int Which=0;Which<2;Which++)
+	for(int which=0;which<2;which++)
 	{
 		float meFront;
 		float meBack;
@@ -403,12 +403,12 @@ NextFrame
 		int soloStatus=0;
 		if(soloActive)
 		{
-			soloStatus = solo[Which] ? 1 : -1;
+			soloStatus = solo[which] ? 1 : -1;
 		}
 
 		if
 		(
-			KillSwitch[Which]==1 ||
+			KillSwitch[which]==1 ||
 			soloStatus==-1
 		)
 		{
@@ -418,7 +418,7 @@ NextFrame
 		}
 		else if
 		(
-			FullSwitch[Which]==1 ||
+			FullSwitch[which]==1 ||
 			soloStatus==1
 		)
 		{
@@ -428,29 +428,29 @@ NextFrame
 		}
 		else
 		{
-			meFront=(1-Which)*CrossFadeSliderLeft+(Which*(1-CrossFadeSliderLeft));
-			meBack=(1-Which)*CrossFadeSliderRight+(Which*(1-CrossFadeSliderRight));
+			meFront=(1-which)*CrossfadeSliderLeft+(which*(1-CrossfadeSliderLeft));
+			meBack=(1-which)*CrossfadeSliderRight+(which*(1-CrossfadeSliderRight));
 		}
 
 		if(meFront>.5)
 		{
 			//Crossfader closs to max
-			meFront=CrossFadeMiddle+(1.0-CrossFadeMiddle)*2*(meFront-.5);
+			meFront=CrossfadeMiddle+(1.0-CrossfadeMiddle)*2*(meFront-.5);
 		}
 		else
 		{
 			//Crossfader far from max
-			meFront=CrossFadeMiddle*(2*meFront);
+			meFront=CrossfadeMiddle*(2*meFront);
 		}
 		if(meBack>.5)
 		{
 			//Crossfader closs to max
-			meBack=CrossFadeMiddle+(1.0-CrossFadeMiddle)*2*(meBack-.5);
+			meBack=CrossfadeMiddle+(1.0-CrossfadeMiddle)*2*(meBack-.5);
 		}
 		else
 		{
 			//Crossfader far from max
-			meBack=CrossFadeMiddle*(2*meBack);
+			meBack=CrossfadeMiddle*(2*meBack);
 		}
 
 		/*
@@ -562,20 +562,33 @@ NextFrame
 		meFront*=VolumeMaster;
 		meBack*=VolumeMaster;
 
-		Turntable[Which]->SetMixerVolumeFront(meFront);
-		Turntable[Which]->SetMixerVolumeBack(meBack);
+		Turntable[which]->SetMixerVolumeFront(meFront);
+		Turntable[which]->SetMixerVolumeBack(meBack);
 
-		Turntable[Which]->NextFrame(secondsElapsed);
-		if(const char* data = Turntable[Which]->GetMetaDataSavedThisFrame())
+		Turntable[which]->SetMixerCrossfadeFactorBack
+		(
+			(which==0) ?
+			0.0f+CrossfadeSliderRight :
+			1.0f-CrossfadeSliderRight
+		);
+		Turntable[which]->SetMixerCrossfadeFactorFront
+		(
+			(which==0) ?
+			0.0f+CrossfadeSliderLeft :
+			1.0f-CrossfadeSliderLeft
+		);
+
+		Turntable[which]->NextFrame(secondsElapsed);
+		if(const char* data = Turntable[which]->GetMetaDataSavedThisFrame())
 		{
-			const char* pathShort=Turntable[Which]->GetSoundPathShort();
+			const char* pathShort=Turntable[which]->GetSoundPathShort();
 			if(pathShort)
 			{
 				for(int a=0;a<2;a++)
 				{
 					if
 					(
-						a!=Which &&
+						a!=which &&
 						Turntable[a]->GetSoundPathShort() &&
 						strcmp(Turntable[a]->GetSoundPathShort(),pathShort)==0
 					)
@@ -588,7 +601,7 @@ NextFrame
 
 		if(RecordingTrackListFD!=NULL)
 		{
-			std::vector<char*> updates=Turntable[Which]->GetTrackListFileUpdates();
+			std::vector<char*> updates=Turntable[which]->GetTrackListFileUpdates();
 			if(updates.empty()==false)
 			{
 				int seconds=(int)
@@ -619,7 +632,7 @@ NextFrame
 
 				for(unsigned int a=0;a<updates.size();a++)
 				{
-					fprintf(RecordingTrackListFD,"%s - Turntable[%i] - %s\n",timestamp,Which,updates[a]);
+					fprintf(RecordingTrackListFD,"%s - Turntable[%i] - %s\n",timestamp,which,updates[a]);
 				}
 			}
 		}
@@ -627,11 +640,11 @@ NextFrame
 
 	//Maybe display the text of the song we're playing
 	TurntableObj* tt=NULL;
-	if(CrossFadeSliderLeft>0.75f)
+	if(CrossfadeSliderLeft>0.75f)
 	{
 		tt=Turntable[0];
 	}
-	else if(CrossFadeSliderLeft<0.25f)
+	else if(CrossfadeSliderLeft<0.25f)
 	{
 		tt=Turntable[1];
 	}
@@ -740,7 +753,7 @@ NextFrame
 
 		if(highlighted==-1)
 		{
-			highlighted=(CrossFadeSliderLeft <= 0.5f) ? 0 : 1;
+			highlighted=(CrossfadeSliderLeft <= 0.5f) ? 0 : 1;
 		}
 
 		//Pick a video to advance
@@ -829,18 +842,11 @@ NextFrame
 				int notA=(a==0) ? 1 : 0;
 				ttVideoBrightness[a]=
 					(
-						(
-							//(Turntable[a]->GetPaused() && Turntable[a]->GetRecordScratch()==false) ?
-							//0.0f :
-							1.0f
-						) *
-						(
-							LGL_AudioAvailable() ?
-							1 :
-							0
-						) *
-						(1.0f-soloFactor[notA])
-					);
+						LGL_AudioAvailable() ?
+						1 :
+						0
+					) *
+					(1.0f-soloFactor[notA]);
 			}
 		}
 
@@ -882,15 +888,15 @@ DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent)
 		Turntable[a]->DrawFrame(glow,visualizerQuadrent,visualizerZoomOutPercent);
 	}
 
-	LGL_DrawLogWrite("MixF|%.2f|%.2f|%c|%.3f\n",CrossFadeSliderLeft,CrossFadeSliderRight,visualizerQuadrent?'T':'F',visualizerZoomOutPercent);
+	LGL_DrawLogWrite("MixF|%.2f|%.2f|%c|%.3f\n",CrossfadeSliderLeft,CrossfadeSliderRight,visualizerQuadrent?'T':'F',visualizerZoomOutPercent);
 	LGL_DrawLogPause();
 	if(LowRez==false)
 	{
 		Mixer_DrawGlowLinesTurntables
 		(
 			LGL_SecondsSinceExecution(),
-			CrossFadeSliderLeft,
-			CrossFadeSliderRight,
+			CrossfadeSliderLeft,
+			CrossfadeSliderRight,
 			1.0f,
 			visualizerQuadrent,
 			visualizerZoomOutPercent
@@ -1013,6 +1019,23 @@ SetTurntable
 	{
 		Turntable[index]->SetViewPort(0.025,0.975,0.00,0.25);
 	}
+}
+
+TurntableObj*
+MixerObj::
+GetTurntable
+(
+	int	index
+)
+{
+	return(Turntable[index]);
+}
+
+TurntableObj**
+MixerObj::
+GetTurntables()
+{
+	return(Turntable);
 }
 
 void

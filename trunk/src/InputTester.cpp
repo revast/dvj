@@ -148,7 +148,11 @@ int
 InputTesterObj::
 MasterToHeadphones()	const
 {
-	int to=CurrentActionBottom == MASTER_TO_HEADPHONES;
+	int to = -1;
+	if(CurrentActionBottom == MASTER_TO_HEADPHONES)
+	{
+		to=LGL_RandInt(0,1);
+	}
 	return(to);
 }
 
@@ -284,7 +288,7 @@ WaveformPitchbend
 	unsigned int	target
 )	const
 {
-	float pitchbend=-1.0f;
+	float pitchbend=0.0f;
 	return(pitchbend);
 }
 
@@ -847,8 +851,24 @@ WaveformVideoFreqSenseMode
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	int mode=currentAction == WAVEFORM_VIDEO_FREQ_SENSE_MODE;
+	int mode = -1;
+	if(currentAction == WAVEFORM_VIDEO_FREQ_SENSE_MODE)
+	{
+		mode = -2;
+		currentAction = 0;
+	}
 	return(mode);
+}
+
+float
+InputTesterObj::
+WaveformOscilloscopeBrightness
+(
+	unsigned int	target
+)	const
+{
+	float bright=-1.0f;
+	return(bright);
 }
 
 bool

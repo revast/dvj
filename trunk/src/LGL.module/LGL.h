@@ -107,9 +107,9 @@ enum
 	LGL_KEY_RIGHTPAREN	= SDLK_RIGHTPAREN,
 	LGL_KEY_ASTERISK	= SDLK_ASTERISK,
 	LGL_KEY_PLUS		= SDLK_PLUS,
-	LGL_KEY_COMMA		= SDL_SCANCODE_COMMA,
-	LGL_KEY_MINUS		= SDL_SCANCODE_MINUS,
-	LGL_KEY_PERIOD		= SDL_SCANCODE_PERIOD,
+	LGL_KEY_COMMA		= 44,//SDL_SCANCODE_COMMA,
+	LGL_KEY_MINUS		= 45,//SDL_SCANCODE_MINUS,
+	LGL_KEY_PERIOD		= 46,//SDL_SCANCODE_PERIOD,
 	LGL_KEY_SLASH		= 47,//SDL_SCANCODE_SLASH,
 	LGL_KEY_BACKSLASH	= 92,//SDL_SCANCODE_BACKSLASH,
 	LGL_KEY_0		= SDL_SCANCODE_0,
@@ -125,7 +125,7 @@ enum
 	LGL_KEY_COLON		= SDLK_COLON,
 	LGL_KEY_SEMICOLON	= ';',
 	LGL_KEY_LESS		= SDLK_LESS,
-	LGL_KEY_EQUALS		= '=',
+	LGL_KEY_EQUALS		= 61,
 	LGL_KEY_GREATER		= SDLK_GREATER,
 	LGL_KEY_QUESTION	= SDLK_QUESTION,
 	LGL_KEY_AT		= SDLK_AT,
@@ -1319,6 +1319,7 @@ static	float			BitrateMaxMBps;
 	AVOutputFormat*		DstOutputFormat;
 	AVFormatContext*	DstFormatContext;
 	AVCodecContext*		DstCodecContext;
+	RcOverride		DstCodecContextRcOverride;
 	AVCodec*		DstCodec;
 	AVStream*		DstStream;
 	AVFrame*		DstFrameYUV;
@@ -1335,6 +1336,7 @@ static	float			BitrateMaxMBps;
 	int16_t*		DstMp3BufferSamples;
 	int			DstMp3BufferSamplesIndex;
 	long			DstMp3BufferSamplesTotalBytes;
+	int64_t			DstMp3BufferSrcPts;
 	int16_t*		DstMp3Buffer2;
 	AVPacket		DstMp3Packet;
 };
@@ -2027,7 +2029,7 @@ public:
 	long		GetLengthSamples();
 	bool		GetHogCPU() const;
 	void		SetHogCPU(bool hogCPU=true);
-	void		AnalyzeWaveSegment
+	bool		AnalyzeWaveSegment
 			(
 				long		sampleFirst,
 				long		sampleLast,

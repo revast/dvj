@@ -835,7 +835,7 @@ Turntable_DrawWaveform
 	float viewPortCenter=viewPortLeft+0.5f*viewPortWidth;
 	float pointLeft=	viewPortCenter-(0.5f+0.5f*percentTowardsNextZoomInLevel)*(WAVE_WIDTH_PERCENT*viewPortWidth);
 	float pointRight=	viewPortCenter+(0.5f+0.5f*percentTowardsNextZoomInLevel)*(WAVE_WIDTH_PERCENT*viewPortWidth);
-	float pointWidth=pointRight-pointLeft;
+	float pointWidth=	pointRight-pointLeft;
 	float pointBottom=	viewPortBottom+0.125*viewPortHeight;
 	float pointTop=		viewPortBottom+0.875*viewPortHeight;
 	float pointHeight=	pointTop-pointBottom;

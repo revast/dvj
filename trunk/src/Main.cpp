@@ -502,16 +502,16 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	if(VisualizerFullScreen)
 	{
 		if(LogEverything==false && LogVisuals==false) LGL_DrawLogPause();
-		//Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		//Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 		if(LogEverything==false && LogVisuals==false) LGL_DrawLogPause(false);
 	}
 
-	Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+	Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 	if(LGL_DisplayCount()>1 && LGL_IsFullScreen())
 	{
 		LGL_SetActiveDisplay(1);
 		Visualizer->SetViewPortVisuals(0.0f,1.0f,0.0f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 		float left=0.0f;
 		float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
 		float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
@@ -523,27 +523,27 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	else if(EIGHT_WAY==false)
 	{
 		Visualizer->SetViewPortVisuals(0.0f,0.5f,0.5f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 	}
 	else
 	{
 		Visualizer->SetViewPortVisuals(0.00f,0.25f,0.75f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 		Visualizer->SetViewPortVisuals(0.25f,0.50f,0.75f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 		Visualizer->SetViewPortVisuals(0.50f,0.75f,0.75f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 		Visualizer->SetViewPortVisuals(0.75f,1.0f,0.75f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 
 		Visualizer->SetViewPortVisuals(0.00f,0.25f,0.50f,0.75f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 		Visualizer->SetViewPortVisuals(0.25f,0.50f,0.50f,0.75f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 		Visualizer->SetViewPortVisuals(0.50f,0.75f,0.50f,0.75f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 		Visualizer->SetViewPortVisuals(0.75f,1.0f,0.50f,0.75f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent);
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
 	}
 	*/
 
