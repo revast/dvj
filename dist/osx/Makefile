@@ -40,6 +40,7 @@ all:
 	install_name_tool -change $(LIB_LOCAL)/libjackserver.0.dylib @executable_path/lib/libjackserver.0.dylib $(DST_DVJ)
 	install_name_tool -change $(LIB_LOCAL)/libjackserver.0.dylib @executable_path/lib/libjackserver.0.dylib $(MACOS_DVJ)/jackd
 	install_name_tool -change $(LIB_LOCAL)/libpng12.0.dylib @executable_path/lib/libpng12.0.dylib $(LIB_DVJ)/libSDL_image-1.2.0.dylib
+	install_name_tool -change $(LIB_LOCAL)/libjpeg.62.dylib @executable_path/lib/libjpeg.62.dylib $(LIB_DVJ)/libSDL_image-1.2.0.dylib
 	install_name_tool -change $(LIB_LOCAL)/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(LIB_DVJ)/libSDL_image-1.2.0.dylib
 	install_name_tool -change $(LIB_LOCAL)/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(LIB_DVJ)/libSDL_net-1.2.0.dylib
 	cp -v $(DST_DVJ) $(DST_ZTRON)
