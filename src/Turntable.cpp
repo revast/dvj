@@ -621,6 +621,7 @@ TurntableObj
 	VideoAdvanceRate=1.0f;
 	VideoFrequencySensitiveMode=0;
 	VideoBrightness=1.0f;
+	OscilloscopeBrightness=-1.0f;
 
 	ENTIRE_WAVE_ARRAY_COUNT=LGL_WindowResolutionX();
 
@@ -883,7 +884,7 @@ NextFrame
 		{
 			if(Mode0BackspaceTimer.SecondsSinceLastReset()>0.5f)
 			{
-				FilterText.SetString();
+				//FilterText.SetString();
 			}
 		}
 		else
@@ -2022,6 +2023,7 @@ NextFrame
 		int mode=Input.WaveformVideoFreqSenseMode(target);
 		if(mode!=-1)
 		{
+printf("Mode: %i\n",mode);
 			if(mode>=0)
 			{
 				VideoFrequencySensitiveMode=LGL_Clamp(0,mode,2);
@@ -2059,6 +2061,12 @@ NextFrame
 		if(newBright!=-1.0f)
 		{
 			VideoBrightness=newBright;
+		}
+
+		newBright=Input.WaveformOscilloscopeBrightness(target);
+		if(newBright!=-1.0f)
+		{
+			OscilloscopeBrightness=newBright;
 		}
 
 		float newRate=Input.WaveformVideoAdvanceRate(target);
@@ -3210,7 +3218,17 @@ DrawFrame
 		}
 		else
 		{
-			Visualizer->DrawVideos(true,Which,left,right,bottom,top,VideoBrightness);
+			Visualizer->DrawVideos
+			(
+				true,
+				Which,
+				this,
+				left,
+				right,
+				bottom,
+				top,
+				VideoBrightness
+			);
 			if(VideoFrequencySensitiveMode>0)
 			{
 				float volAve;
@@ -3781,10 +3799,97 @@ DrawWave
 	float	right,
 	float	bottom,
 	float	top,
-	float	glow
+	float	brightness,
+	bool	preview
 )
 {
-	//
+	if(Sound==NULL)
+	{
+		return;
+	}
+
+	float speedHeightScalar = LGL_Clamp(0.0f,FinalSpeed*100.0f,1.0f);
+	if(speedHeightScalar == 0.0f)
+	{
+		return;
+	}
+
+	float midHeight = 0.5f*(top+bottom);
+	bottom =
+		(1.0f-speedHeightScalar)*midHeight +
+		(0.0f+speedHeightScalar)*bottom;
+	top =	(1.0f-speedHeightScalar)*midHeight +
+		(0.0f+speedHeightScalar)*top;
+
+	LGL_AudioGrain grain;
+	grain.SetWaveformFromLGLSound
+	(
+		Sound,
+		GetTimeSeconds(),
+		LGL_Min(FinalSpeed,1.0f)/240.0f
+	);
+
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
+	float volAve;
+	float volMax;
+	float freqFactor;
+	grain.GetMetadata(volAve,volMax,freqFactor);
+
+	float red=
+		(1.0f-freqFactor)*coolR+
+		(0.0f+freqFactor)*warmR;
+	float green=
+		(1.0f-freqFactor)*coolG+
+		(0.0f+freqFactor)*warmG;
+	float blue=
+		(1.0f-freqFactor)*coolB+
+		(0.0f+freqFactor)*warmB;
+
+	//Hot...
+	red = red * powf(1.0f+freqFactor,2.0f);
+	green = green * powf(1.0f+freqFactor,2.0f);
+	blue = blue * powf(1.0f+freqFactor,2.0f);
+
+	if(volMax>=0.99f)
+	{
+		red=1.0f;
+		green=0.0f;
+		blue=0.0f;
+	}
+
+	if
+	(
+		GetFreqBrightness(false,freqFactor,2*volAve*1.0f) ||
+		GetFreqBrightness(true,freqFactor,2*volAve*1.0f)
+	)
+	{
+		float thickness = preview ? 1.0f : 3.0f;
+		thickness*=(1.0f+freqFactor*6.0f*volAve*4.0f);
+
+		float height = top-bottom;
+		top+=0.5f*height*(freqFactor-0.5f);
+		bottom+=0.5f*height*(freqFactor-0.5f);
+
+		grain.DrawWaveform
+		(
+			left,
+			right,
+			bottom,
+			top,
+			red*brightness,green*brightness,blue*brightness,brightness,
+			thickness,
+			true
+		);
+	}
 }
 
 void
@@ -3879,7 +3984,7 @@ SetVisualizer
 
 float
 TurntableObj::
-GetVideoBrightness()
+GetVisualBrightness()
 {
 	bool muted=false;
 	if(GetBPM()>0)
@@ -3904,11 +4009,57 @@ GetVideoBrightness()
 			muted=true;
 		}
 	}
+	float crossfadeFactorFront = GetMixerCrossfadeFactorFront();
+	float crossfadeFactor;
+	if(crossfadeFactorFront < 0.5f)
+	{
+		float factor = crossfadeFactorFront*2.0f;
+		crossfadeFactor =
+			(0.0f + factor) * GetVisualBrightnessAtCenter() +
+			(1.0f - factor) * 0.0f;
+	}
+	else if(crossfadeFactorFront == 0.5f)
+	{
+		crossfadeFactor = GetVisualBrightnessAtCenter();
+	}
+	else //crossfadeFactorFront >= 0.5f
+	{
+		float factor = (crossfadeFactorFront-0.5f)*2.0f;
+		crossfadeFactor =
+			(0.0f + factor) * 1.0f +
+			(1.0f - factor) * GetVisualBrightnessAtCenter();
+	}
 	return
 	(
 		GetMixerVolumeFront()*
-		VideoBrightness*
+		crossfadeFactor*
 		(muted ? 0 : 1)
+	);
+}
+
+float
+TurntableObj::
+GetVideoBrightness()
+{
+	return
+	(
+		GetVisualBrightness()*
+		VideoBrightness
+	);
+}
+
+float
+TurntableObj::
+GetOscilloscopeBrightness()
+{
+	return
+	(
+		(OscilloscopeBrightness == -1.0f) ?
+		-1.0f :
+		(
+			GetVisualBrightness()*
+			OscilloscopeBrightness
+		)
 	);
 }
 
@@ -3932,6 +4083,26 @@ SetMixerVolumeBack
 	MixerVolumeBack=LGL_Clamp(0,scalar,1);
 }
 
+void
+TurntableObj::
+SetMixerCrossfadeFactorFront
+(
+	float	factor
+)
+{
+	MixerCrossfadeFactorFront=LGL_Clamp(0,factor,1);
+}
+
+void
+TurntableObj::
+SetMixerCrossfadeFactorBack
+(
+	float	factor
+)
+{
+	MixerCrossfadeFactorBack=LGL_Clamp(0,factor,1);
+}
+
 float
 TurntableObj::
 GetMixerVolumeFront()
@@ -3945,7 +4116,7 @@ GetMixerVolumeFront()
 	{
 		if(MixerVolumeFront==0.0f)
 		{
-			return(1.01f);
+			return(1.0f);
 		}
 		else
 		{
@@ -3963,6 +4134,20 @@ TurntableObj::
 GetMixerVolumeBack()
 {
 	return(LGL_Clamp(0,MixerVolumeBack,1));
+}
+
+float
+TurntableObj::
+GetMixerCrossfadeFactorFront()
+{
+	return(LGL_Clamp(0,MixerCrossfadeFactorFront,1));
+}
+
+float
+TurntableObj::
+GetMixerCrossfadeFactorBack()
+{
+	return(LGL_Clamp(0,MixerCrossfadeFactorBack,1));
 }
 
 float

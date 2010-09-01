@@ -51,6 +51,8 @@ public:
 
 	void				SetVolumeMaster(float volumeMaster);
 	void				SetTurntable(int index);
+	TurntableObj*			GetTurntable(int index);
+	TurntableObj**			GetTurntables();
 	
 	void				SetRecording(bool inRecording=true);
 	bool				GetRecording() const;
@@ -90,9 +92,9 @@ private:
 	float				EQXponent[3];
 	float				EQJP8k[3];
 
-	float				CrossFadeMiddle;
-	float				CrossFadeSliderLeft;
-	float				CrossFadeSliderRight;
+	float				CrossfadeMiddle;
+	float				CrossfadeSliderLeft;
+	float				CrossfadeSliderRight;
 
 	VisualizerObj*			Visualizer;
 

@@ -49,7 +49,7 @@ public:
 	void				DrawFrame(float glow, bool visualsQuadrent, float visualizerZoomOutPercent);
 
 	void				DrawVU(float left, float right, float bottom, float top, float glow);
-	void				DrawWave(float left, float right, float bottom, float top, float glow);
+	void				DrawWave(float left, float right, float bottom, float top, float brightness, bool preview);
 	void				DrawSpectrum(float left, float right, float bottom, float top, float glow);
 	void				DrawWholeTrack(float left, float right, float bottom, float top, float glow);
 
@@ -62,13 +62,19 @@ public:
 	bool				GetFocus() const;
 	void				SetTurntableNumber(int num);
 	void				SetVisualizer(VisualizerObj* viz);
+	float				GetVisualBrightness();
 	float				GetVideoBrightness();
+	float				GetOscilloscopeBrightness();
 
 	void				SetMixerVolumeFront(float scalar);
 	void				SetMixerVolumeBack(float scalar);
+	void				SetMixerCrossfadeFactorFront(float factor);
+	void				SetMixerCrossfadeFactorBack(float factor);
 
 	float				GetMixerVolumeFront();
 	float				GetMixerVolumeBack();
+	float				GetMixerCrossfadeFactorFront();
+	float				GetMixerCrossfadeFactorBack();
 	float				GetGain();
 
 	void				SetMixerEQ(float low, float mid, float high);
@@ -218,6 +224,8 @@ private:
 	bool				VideoFileExists;
 	float				MixerVolumeFront;
 	float				MixerVolumeBack;
+	float				MixerCrossfadeFactorFront;
+	float				MixerCrossfadeFactorBack;
 	float				MixerEQ[3];
 	bool				Looping();
 	double				LoopAlphaSeconds;
@@ -264,6 +272,7 @@ static	VisualizerObj*			Visualizer;
 	float				VideoAdvanceRate;
 	int				VideoFrequencySensitiveMode;
 	float				VideoBrightness;
+	float				OscilloscopeBrightness;
 
 public:
 

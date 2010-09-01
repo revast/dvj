@@ -66,6 +66,9 @@ GetProjectorQuadrentResY();
 float
 GetCachedVideoAveBitrateMBps();
 
+float
+GetVisualBrightnessAtCenter();
+
 void
 GetColorCool
 (

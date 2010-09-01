@@ -27,6 +27,8 @@
 #include "LGL.module/LGL.h"
 #include <vector>
 
+class TurntableObj;
+
 using namespace std;
 
 #define	NOISE_IMAGE_COUNT_128_128 64
@@ -40,7 +42,12 @@ public:
 				~VisualizerObj();
 
 	void			NextFrame(float secondsElapsed);
-	void			DrawVisuals(bool visualizerQuadrent, float visualizerZoomOutPercent);
+	void			DrawVisuals
+				(
+					bool		visualizerQuadrent,
+					float		visualizerZoomOutPercent,
+					TurntableObj**	tts
+				);
 
 	void			SetViewPortVisuals
 				(
@@ -123,7 +130,17 @@ private:
 	float			FreqEQHi[2];
 
 public:
-	void			DrawVideos(bool preview, int which, float l, float r, float b, float t, float overrideBrightness=-1.0f);
+	void			DrawVideos
+				(
+					bool		preview,
+					int		which,
+					TurntableObj*	tt,
+					float		l,
+					float		r,
+					float		b,
+					float		t,
+					float		overrideBrightness=-1.0f
+				);
 
 private:
 	char			VideoRandomPath[1024];
