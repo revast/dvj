@@ -97,7 +97,7 @@ MODEFLAGS_LIN		= -g
 DEFINES_LIN		= -DLGL_LINUX -D__LINUX_ALSASEQ__
 CFLAGS_LIN		= -Wall -I$(OBJDIR_LIN) `sdl-config --cflags` -I/usr/include/SDL $(MODEFLAGS_LIN) -I$(ROOT_SRC_DIR) -fsingle-precision-constant $(DEFINES_LIN)
 CPPFLAGS_LIN		= -include PrecompiledHeaders.h $(CFLAGS_LIN)
-AVCODECLIBRARIES_LIN	= -lavformat -lavcodec -lswscale -lavutil
+AVCODECLIBRARIES_LIN	= -lavformat -lavcodec -lswscale -lavutil -lavcore
 LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cflags --libs jack` -lSDL_image -lSDL_net -lGL -lfftw3f -lm $(AVCODECLIBRARIES_LIN) -lsamplerate -lcwiid -lasound
 
 
