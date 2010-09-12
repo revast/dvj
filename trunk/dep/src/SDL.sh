@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Linux hint: Use ./configure instead of ./configure.dvj...
+#Linux hint: Use ./configure.dvj.lin instead of ./configure.dvj...
 
 cd SDL
 ./autogen.sh
