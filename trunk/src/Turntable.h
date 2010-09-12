@@ -335,7 +335,7 @@ static	bool				SurroundMode;
 public:
 
 static	bool				GetSurroundMode();
-	bool				GetAspectRatioMode();
+	int				GetAspectRatioMode();
 	void				SwapVideos();
 	void				SelectNewVideo(bool forceAmbient=false);
 	bool				BPMAvailable();

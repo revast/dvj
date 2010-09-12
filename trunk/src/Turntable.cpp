@@ -2060,7 +2060,7 @@ NextFrame
 		bool modeNext = Input.WaveformVideoAspectRatioModeNext(target);
 		if(modeNext)
 		{
-			AspectRatioMode=(AspectRatioMode+1)%2;
+			AspectRatioMode=(AspectRatioMode+1)%3;
 		}
 
 		float newBright=Input.WaveformVideoBrightness(target);
@@ -4959,7 +4959,7 @@ GetSurroundMode()
 	return(SurroundMode);
 }
 
-bool
+int
 TurntableObj::
 GetAspectRatioMode()
 {

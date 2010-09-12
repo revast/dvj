@@ -1627,7 +1627,7 @@ printf("%i screens!\n",LGL.DisplayCount);
 /*
 if(a==1)
 {
-	LGL.DisplayResolutionY[a]/=6;
+	LGL.DisplayResolutionY[a]/=3;
 }
 */
 		LGL.DisplayRefreshRate[a] = mode.refresh_rate ? mode.refresh_rate : 60;

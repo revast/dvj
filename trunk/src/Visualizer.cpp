@@ -1266,16 +1266,75 @@ DrawVideos
 					myR = r;
 				}
 			}
+			else if(tt->GetAspectRatioMode()==2)
+			{
+				//Zebbler-tiling
+				//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
+				float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
+				float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
 
-			image->DrawToScreen
-			(
-				myL,myR,myB,myT,
-				0,
-				bright,
-				bright,
-				bright,
-				preview?1.0f:0.0f
-			);
+				myL = targetLimitL;
+				myR = targetLimitR;
+				myB = b;
+				myT = t;
+
+				//Make sure we're not too wide
+				if(myL<l)
+				{
+					float scaleFactor = (midX-l)/(midX-myL);
+					myB = midY - 0.5f * h * scaleFactor;
+					myT = midY + 0.5f * h * scaleFactor;
+					myL = l;
+					myR = r;
+				}
+
+				//At this point we're filling the whole screen, so...
+				float myL13rd = myL + (1.0f/3.0f)*(myR-myL);
+				float myL23rd = myL + (2.0f/3.0f)*(myR-myL);
+				image->DrawToScreen
+				(
+					myL13rd,myL,
+					myB,myT,
+					0,
+					bright,
+					bright,
+					bright,
+					preview?1.0f:0.0f
+				);
+				image->DrawToScreen
+				(
+					myL13rd,myL23rd,
+					myB,myT,
+					0,
+					bright,
+					bright,
+					bright,
+					preview?1.0f:0.0f
+				);
+				image->DrawToScreen
+				(
+					myR,myL23rd,
+					myB,myT,
+					0,
+					bright,
+					bright,
+					bright,
+					preview?1.0f:0.0f
+				);
+			}
+
+			if(tt->GetAspectRatioMode()!=2)
+			{
+				image->DrawToScreen
+				(
+					myL,myR,myB,myT,
+					0,
+					bright,
+					bright,
+					bright,
+					preview?1.0f:0.0f
+				);
+			}
 
 			if(Videos[videoNow]->GetFPSMissed()>0)
 			{
