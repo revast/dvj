@@ -155,6 +155,7 @@ int	GetInputKeyboardWaveformLoopThenRecallKey();
 int	GetInputKeyboardWaveformAutoDivergeRecallKey();
 int	GetInputKeyboardWaveformVideoSelectKey();
 int	GetInputKeyboardWaveformVideoFreqSenseModeKey();
+int	GetInputKeyboardWaveformVideoAspectRatioModeNextKey();
 int	GetInputKeyboardWaveformSyncBPMKey();
 int	GetInputKeyboardRecordingStartKey();
 int	GetInputKeyboardFullScreenToggleKey();
@@ -231,6 +232,7 @@ typedef enum
 	WAVEFORM_AUTO_DIVERGE_THEN_RECALL,
 	WAVEFORM_VIDEO_SELECT,
 	WAVEFORM_VIDEO_FREQ_SENSE_MODE,
+	WAVEFORM_VIDEO_ASPECT_RATIO_MODE_NEXT,
 	WAVEFORM_SYNC_BPM,
 	RECORDING_START,
 	FULL_SCREEN_TOGGLE,

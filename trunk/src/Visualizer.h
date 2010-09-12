@@ -49,12 +49,12 @@ public:
 					TurntableObj**	tts
 				);
 
-	void			SetViewPortVisuals
+	void			SetViewportVisuals
 				(
 					float	left,	float	right,
 					float	bottom,	float	top
 				);
-	float			GetViewPortRight();
+	float			GetViewportRight();
 	void			ToggleFullScreen();
 
 	void			QueueScrollText(const char* text);
@@ -91,12 +91,12 @@ private:
 
 	void			PopulateCharStarBufferWithScrollTextFile(std::vector<char*>& buffer, const char* path);
 
-	float			ViewPortVisualsLeft;
-	float			ViewPortVisualsRight;
-	float			ViewPortVisualsBottom;
-	float			ViewPortVisualsTop;
-	float			ViewPortVisualsWidth;
-	float			ViewPortVisualsHeight;
+	float			ViewportVisualsLeft;
+	float			ViewportVisualsRight;
+	float			ViewportVisualsBottom;
+	float			ViewportVisualsTop;
+	float			ViewportVisualsWidth;
+	float			ViewportVisualsHeight;
 
 	bool			FullScreen;
 

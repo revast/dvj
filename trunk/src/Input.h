@@ -128,6 +128,7 @@ virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new vi
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual	int	WaveformVideoFreqSenseMode	(unsigned int target)	const;	//Set Frequency-sensitive video mixer mode
+virtual	bool	WaveformVideoAspectRatioModeNext(unsigned int target)	const;	//Advance to next aspect ratio mode
 virtual	float	WaveformOscilloscopeBrightness	(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching

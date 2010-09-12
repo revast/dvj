@@ -988,6 +988,8 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_VIDEO_SELECT].Set
 		("waveformVideoSelect",			"LGL_KEY_SPACE");
 	dvjKeyMap[WAVEFORM_VIDEO_FREQ_SENSE_MODE].Set
+		("waveformVideoFreqSenseMode",		"LGL_KEY_F12");
+	dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_MODE_NEXT].Set
 		("waveformVideoFreqSenseMode",		"LGL_KEY_SLASH");
 	dvjKeyMap[WAVEFORM_SYNC_BPM].Set
 		("waveformSyncBPM",			"LGL_KEY_BACKSLASH");
@@ -1179,6 +1181,8 @@ int GetInputKeyboardWaveformVideoSelectKey()
 	{ return(dvjKeyMap[WAVEFORM_VIDEO_SELECT].ValueInt); }
 int GetInputKeyboardWaveformVideoFreqSenseModeKey()
 	{ return(dvjKeyMap[WAVEFORM_VIDEO_FREQ_SENSE_MODE].ValueInt); }
+int GetInputKeyboardWaveformVideoAspectRatioModeNextKey()
+	{ return(dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_MODE_NEXT].ValueInt); }
 int GetInputKeyboardWaveformSyncBPMKey()
 	{ return(dvjKeyMap[WAVEFORM_SYNC_BPM].ValueInt); }
 int GetInputKeyboardRecordingStartKey()

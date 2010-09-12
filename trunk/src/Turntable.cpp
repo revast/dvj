@@ -526,7 +526,7 @@ TurntableObj
 {
 	Mode=0;
 
-	SetViewPort(left,right,bottom,top);
+	SetViewport(left,right,bottom,top);
 	SetFocus(false);
 	
 	Sound=NULL;
@@ -556,8 +556,8 @@ TurntableObj
 	GrainStreamVolumeVariance=0.25f*GrainStreamVolume;
 	GrainStreamSpawnDelaySeconds=0.0f;
 
-	CenterX=.5f*(ViewPortLeft+ViewPortRight);
-	CenterY=.5f*(ViewPortBottom+ViewPortTop);
+	CenterX=.5f*(ViewportLeft+ViewportRight);
+	CenterY=.5f*(ViewportBottom+ViewportTop);
 
 	FilterTextMostRecent[0]='\0';
 
@@ -648,6 +648,7 @@ TurntableObj
 	}
 
 	LowRez=false;
+	AspectRatioMode=0;
 
 	Database=database;
 	char musicRoot[2048];
@@ -2023,7 +2024,6 @@ NextFrame
 		int mode=Input.WaveformVideoFreqSenseMode(target);
 		if(mode!=-1)
 		{
-printf("Mode: %i\n",mode);
 			if(mode>=0)
 			{
 				VideoFrequencySensitiveMode=LGL_Clamp(0,mode,2);
@@ -2055,6 +2055,12 @@ printf("Mode: %i\n",mode);
 				PauseMultiplier=0.0f;
 			}
 			SelectNewVideo();
+		}
+
+		bool modeNext = Input.WaveformVideoAspectRatioModeNext(target);
+		if(modeNext)
+		{
+			AspectRatioMode=(AspectRatioMode+1)%2;
 		}
 
 		float newBright=Input.WaveformVideoBrightness(target);
@@ -2762,7 +2768,7 @@ LGL_DrawRectToScreen
 );
 badFlash-=LGL_SecondsSinceLastFrame();
 if(badFlash<0) badFlash=0.0f;
-LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
+LGL_ClipRectEnable(ViewportLeft,ViewportRight,ViewportBottom,ViewportTop);
 #endif
 
 		float constantThreashold=1024;//diffMax/2;
@@ -3054,7 +3060,7 @@ DrawFrame
 
 	if(visualsQuadrent==false)
 	{
-		LGL_ClipRectEnable(ViewPortLeft,ViewPortRight,ViewPortBottom,ViewPortTop);
+		LGL_ClipRectEnable(ViewportLeft,ViewportRight,ViewportBottom,ViewportTop);
 	}
 	else
 	{
@@ -3062,12 +3068,12 @@ DrawFrame
 	}
 
 	//On Left
-	float left=	ViewPortLeft;
-	float right=	0.5f-0.501f*WAVE_WIDTH_PERCENT*ViewPortWidth;
+	float left=	ViewportLeft;
+	float right=	0.5f-0.501f*WAVE_WIDTH_PERCENT*ViewportWidth;
 	float width=	right-left;
 
-	float bottom=	ViewPortBottom+0.125*ViewPortHeight;
-	float top=	ViewPortBottom+0.875*ViewPortHeight;
+	float bottom=	ViewportBottom+0.125*ViewportHeight;
+	float top=	ViewportBottom+0.875*ViewportHeight;
 	float height=	top-bottom;
 
 	float rectAlpha=1.0f;
@@ -3307,8 +3313,8 @@ DrawFrame
 		float localGlow=0.25f+0.75*glow;
 		LGL_DrawRectToScreen
 		(
-			ViewPortLeft,ViewPortRight,
-			ViewPortBottom,ViewPortTop,
+			ViewportLeft,ViewportRight,
+			ViewportBottom,ViewportTop,
 			0.5f*r*localGlow,0.5f*g*localGlow,0.5f*b*localGlow,rectAlpha
 		);
 	}
@@ -3381,8 +3387,8 @@ DrawFrame
 			),
 			fileNum-FileTop,				//12
 			FileSelectInt-FileTop,				//13
-			ViewPortBottom,					//14
-			ViewPortTop,					//15
+			ViewportBottom,					//14
+			ViewportTop,					//15
 			BadFileFlash,					//16
 			bpm[0],						//17
 			bpm[1],						//18
@@ -3402,8 +3408,8 @@ DrawFrame
 			alreadyPlayedBits,
 			fileNum-FileTop,
 			FileSelectInt-FileTop,
-			ViewPortBottom,
-			ViewPortTop,
+			ViewportBottom,
+			ViewportTop,
 			BadFileFlash,
 			bpm
 		);
@@ -3415,8 +3421,8 @@ DrawFrame
 /*
 		LGL_DrawRectToScreen
 		(
-			ViewPortLeft,ViewPortLeft+ViewPortWidth*Sound->GetPercentLoadedSmooth(),
-			ViewPortBottom+ViewPortHeight*.25,ViewPortBottom+ViewPortHeight*.5,
+			ViewportLeft,ViewportLeft+ViewportWidth*Sound->GetPercentLoadedSmooth(),
+			ViewportBottom+ViewportHeight*.25,ViewportBottom+ViewportHeight*.5,
 			0,0,.25+.25*glow,.5
 		);
 */
@@ -3430,7 +3436,7 @@ DrawFrame
 		);
 		LGL_GetFont().DrawString
 		(
-			CenterX,ViewPortBottom+ViewPortHeight*.66,.015,
+			CenterX,ViewportBottom+ViewportHeight*.66,.015,
 			1,1,1,1,
 			true,.5,
 			temp
@@ -3443,7 +3449,7 @@ DrawFrame
 		);
 		LGL_GetFont().DrawString
 		(
-			CenterX,ViewPortBottom+ViewPortHeight*.36,.015,
+			CenterX,ViewportBottom+ViewportHeight*.36,.015,
 			1,1,1,1,
 			true,.5,
 			temp
@@ -3476,7 +3482,7 @@ DrawFrame
 		}
 		LGL_GetFont().DrawString
 		(
-			CenterX,ViewPortBottom+ViewPortHeight*.10f,.015f,
+			CenterX,ViewportBottom+ViewportHeight*.10f,.015f,
 			1,1,1,1,
 			true,.5f,
 			temp
@@ -3489,8 +3495,8 @@ DrawFrame
 			LGL_GetFont().DrawString
 			(
 				CenterX,
-				ViewPortBottom+ViewPortHeight*0.5f-ViewPortHeight*0.2f*0.5f,
-				ViewPortHeight*0.2f,
+				ViewportBottom+ViewportHeight*0.5f-ViewportHeight*0.2f*0.5f,
+				ViewportHeight*0.2f,
 				1,0,0,1,
 				true,
 				0.5f,
@@ -3500,8 +3506,8 @@ DrawFrame
 			LGL_GetFont().DrawString
 			(
 				CenterX,
-				ViewPortBottom+ViewPortHeight*0.1f-ViewPortHeight*0.1f*0.5f,
-				ViewPortHeight*0.1f,
+				ViewportBottom+ViewportHeight*0.1f-ViewportHeight*0.1f*0.5f,
+				ViewportHeight*0.1f,
 				1,0,0,1,
 				true,
 				0.5f,
@@ -3615,10 +3621,10 @@ DrawFrame
 				GrainStreamSourcePoint,					//12
 				GrainStreamLength,					//13
 				GrainStreamPitch,					//14
-				ViewPortLeft,						//15
-				ViewPortRight,						//16
-				ViewPortBottom,						//17
-				ViewPortTop,						//18
+				ViewportLeft,						//15
+				ViewportRight,						//16
+				ViewportBottom,						//17
+				ViewportTop,						//18
 				VolumeMultiplierNow,					//19
 				CenterX,						//20
 				PauseMultiplier ? 'T' : 'F',				//21
@@ -3668,10 +3674,10 @@ DrawFrame
 				GrainStreamSourcePoint,					//12
 				GrainStreamLength,					//13
 				GrainStreamPitch,					//14
-				ViewPortLeft,						//15
-				ViewPortRight,						//16
-				ViewPortBottom,						//17
-				ViewPortTop,						//18
+				ViewportLeft,						//15
+				ViewportRight,						//16
+				ViewportBottom,						//17
+				ViewportTop,						//18
 				VolumeMultiplierNow,					//19
 				CenterX,						//20
 				PauseMultiplier,					//21
@@ -3731,10 +3737,10 @@ DrawFrame
 		float factor = NoiseFactor;
 		NoiseImage[which]->DrawToScreen
 		(
-			ViewPortLeft,
-			ViewPortRight,
-			ViewPortBottom,
-			ViewPortTop,
+			ViewportLeft,
+			ViewportRight,
+			ViewportBottom,
+			ViewportTop,
 			0,
 			factor,
 			factor,
@@ -3747,10 +3753,10 @@ DrawFrame
 		float factor = WhiteFactor;
 		LGL_DrawRectToScreen
 		(
-			ViewPortLeft,
-			ViewPortRight,
-			ViewPortBottom,
-			ViewPortTop,
+			ViewportLeft,
+			ViewportRight,
+			ViewportBottom,
+			ViewportTop,
 			factor,
 			factor,
 			factor,
@@ -3922,18 +3928,18 @@ DrawWholeTrack
 
 void
 TurntableObj::
-SetViewPort
+SetViewport
 (
 	float	left,	float	right,
 	float	bottom,	float	top
 )
 {
-	ViewPortLeft=left;
-	ViewPortRight=right;
-	ViewPortBottom=bottom;
-	ViewPortTop=top;
-	ViewPortWidth=right-left;
-	ViewPortHeight=top-bottom;
+	ViewportLeft=left;
+	ViewportRight=right;
+	ViewportBottom=bottom;
+	ViewportTop=top;
+	ViewportWidth=right-left;
+	ViewportHeight=top-bottom;
 
 	Left=left;
 	Right=right;
@@ -4951,6 +4957,13 @@ TurntableObj::
 GetSurroundMode()
 {
 	return(SurroundMode);
+}
+
+bool
+TurntableObj::
+GetAspectRatioMode()
+{
+	return(AspectRatioMode);
 }
 
 void
