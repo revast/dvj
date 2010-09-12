@@ -16844,13 +16844,13 @@ LGL_ProcessInput()
 				{
 					LGL.KeyTimer[event.key.keysym.sym].Reset();
 				}
-#ifdef	LGL_OSX
-				if(event.key.keysym.sym==8)
+
+				if(event.key.keysym.sym==LGL_KEY_BACKSPACE)
 				{
 					//OSX Backspace ("delete" as they call it...)
 					event.key.keysym.unicode=event.key.keysym.sym;
 				}
-#endif	//LGL_OSX
+
 
 				if
 				(
