@@ -758,6 +758,17 @@ WaveformVideoFreqSenseMode
 	return(mode);
 }
 
+bool
+InputMouseObj::
+WaveformVideoAspectRatioModeNext
+(
+	unsigned int	target
+)	const
+{
+	bool next=false;
+	return(next);
+}
+
 float
 InputMouseObj::
 WaveformOscilloscopeBrightness

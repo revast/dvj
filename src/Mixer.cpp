@@ -47,7 +47,7 @@ MixerObj()
 
 	CPUSpeedHighest=0;
 
-	SetViewPort(0,1,0,0.5f);
+	SetViewport(0,1,0,0.5f);
 
 	for(int a=0;a<3;a++)
 	{
@@ -73,7 +73,7 @@ MixerObj()
 	LowRez=false;
 	CanDisplayJackWarning=true;
 
-	SetViewPortStatus(GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0),1.0f,0.5f,1.0f);
+	SetViewportStatus(GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0),1.0f,0.5f,1.0f);
 }
 
 MixerObj::
@@ -918,8 +918,8 @@ DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent)
 	LGL_DrawLogPause();
 	Mixer_DrawLevels
 	(
-		ViewPortBottom,
-		ViewPortTop,
+		ViewportBottom,
+		ViewportTop,
 		LGL_Round(100.0f*Turntable[1]->GetMixerVolumeFront()),
 		LGL_Round(100.0f*Turntable[0]->GetMixerVolumeFront()),
 		LGL_Round(100.0f*Turntable[1]->GetMixerVolumeBack()),
@@ -936,28 +936,28 @@ DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent)
 
 void
 MixerObj::
-SetViewPort
+SetViewport
 (
 	float	left,	float	right,
 	float	bottom,	float	top
 )
 {
-	ViewPortLeft=left;
-	ViewPortRight=right;
-	ViewPortBottom=bottom;
-	ViewPortTop=top;
-	ViewPortWidth=right-left;
-	ViewPortHeight=top-bottom;
+	ViewportLeft=left;
+	ViewportRight=right;
+	ViewportBottom=bottom;
+	ViewportTop=top;
+	ViewportWidth=right-left;
+	ViewportHeight=top-bottom;
 
 	assert(Turntable[0]);
 	assert(Turntable[1]);
 
-	Turntable[0]->SetViewPort
+	Turntable[0]->SetViewport
 	(
 		.025,			.975,
 		bottom+.5*(top-bottom),	top
 	);
-	Turntable[1]->SetViewPort
+	Turntable[1]->SetViewport
 	(
 		.025,			.975,
 		0,			bottom+.5*(top-bottom)
@@ -1013,11 +1013,11 @@ SetTurntable
 
 	if(Focus==0)
 	{
-		Turntable[index]->SetViewPort(0.025,0.975,0.25,0.50);
+		Turntable[index]->SetViewport(0.025,0.975,0.25,0.50);
 	}
 	else
 	{
-		Turntable[index]->SetViewPort(0.025,0.975,0.00,0.25);
+		Turntable[index]->SetViewport(0.025,0.975,0.00,0.25);
 	}
 }
 
@@ -1102,18 +1102,18 @@ SetRecordingFailed()
 
 void
 MixerObj::
-SetViewPortStatus
+SetViewportStatus
 (
 	float	left,	float	right,
 	float	bottom,	float	top
 )
 {
-	ViewPortStatusLeft=left;
-	ViewPortStatusRight=right;
-	ViewPortStatusBottom=bottom;
-	ViewPortStatusTop=top;
-	ViewPortStatusWidth=right-left;
-	ViewPortStatusHeight=top-bottom;
+	ViewportStatusLeft=left;
+	ViewportStatusRight=right;
+	ViewportStatusBottom=bottom;
+	ViewportStatusTop=top;
+	ViewportStatusWidth=right-left;
+	ViewportStatusHeight=top-bottom;
 }
 
 void
@@ -1148,12 +1148,12 @@ DrawStatus
 {
 	bool drawEverything=false;
 
-	float l=ViewPortStatusLeft;
-	float r=ViewPortStatusRight;
-	float b=ViewPortStatusBottom;
-	float t=ViewPortStatusTop;
-	float w=ViewPortStatusWidth;
-	float h=ViewPortStatusHeight;
+	float l=ViewportStatusLeft;
+	float r=ViewportStatusRight;
+	float b=ViewportStatusBottom;
+	float t=ViewportStatusTop;
+	float w=ViewportStatusWidth;
+	float h=ViewportStatusHeight;
 
 	if(l>1.0f) return;
 

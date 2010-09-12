@@ -53,7 +53,7 @@ Main_DrawGlowLines
 	GetColorCool(coolR,coolG,coolB);
 
 	float glow = GetGlowFromTime(time) * brightness;
-	float quadrentSplitX = visualizerRight;
+	//float quadrentSplitX = visualizerRight;
 	float quadrentSplitY = 0.5f;
 
 	if(visualizerQuadrent)
@@ -65,21 +65,6 @@ Main_DrawGlowLines
 			0.5f,
 			1.0f
 		);
-	}
-	if(EIGHT_WAY==false)
-	{
-		float myX = quadrentSplitX + 1.0f/LGL_DisplayResolutionX(0);
-		if(myX<=1.0f)
-		{
-			LGL_DrawLineToScreen
-			(
-				myX,quadrentSplitY,
-				myX,1,
-				2*coolR*glow,2*coolG*glow,2*coolB*glow,glow,
-				1,
-				false
-			);
-		}
 	}
 
 	for(float a=1;a<7;a++)
@@ -101,33 +86,43 @@ Main_DrawGlowLines
 			false
 		);
 		LGL_ClipRectDisable();
-		if(0 && EIGHT_WAY)
+		LGL_ClipRectEnable
+		(
+			0.0f,
+			1.0f,
+			quadrentSplitY,
+			1.0f
+		);
+		if(LGL_DisplayCount()>1)
 		{
+			int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
+			int projW = LGL_DisplayResolutionX(projDisplay);
+			int projH = LGL_DisplayResolutionY(projDisplay);
+			
+			float projAR = projW/(float)projH;
+			float targetAR = 1.0f*LGL_DisplayResolutionX()/(float)((1.0f-quadrentSplitY)*LGL_DisplayResolutionY());
+			
+			float myL = 0.5f - 0.5f * 1.0f * (projAR/targetAR);
+			float myR = 0.5f + 0.5f * 1.0f * (projAR/targetAR);
+
 			LGL_DrawLineToScreen
 			(
-				0.25f,quadrentSplitY,
-				0.25f,1,
+				myL,quadrentSplitY,
+				myL,1.0f,
 				2*coolR*br,2*coolG*br,2*coolB*br,0.5f*br,
 				7-a,
 				false
 			);
 			LGL_DrawLineToScreen
 			(
-				0.75f,quadrentSplitY,
-				0.75f,1,
-				2*coolR*br,2*coolG*br,2*coolB*br,0.5f*br,
-				7-a,
-				false
-			);
-			LGL_DrawLineToScreen
-			(
-				0,0.75f,
-				1,0.75f,
+				myR,quadrentSplitY,
+				myR,1.0f,
 				2*coolR*br,2*coolG*br,2*coolB*br,0.5f*br,
 				7-a,
 				false
 			);
 		}
+		LGL_ClipRectDisable();
 	}
 	if(visualizerQuadrent)
 	{

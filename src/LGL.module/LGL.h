@@ -608,7 +608,7 @@ int		LGL_DisplayResolutionX(int which=-1);
 int		LGL_DisplayResolutionY(int which=-1);
 int		LGL_DisplayRefreshRate(int which=-1);
 float		LGL_WindowAspectRatio();
-float		LGL_DisplayAspectRatio();
+float		LGL_DisplayAspectRatio(int which=-1);
 int		LGL_GetActiveDisplay();
 void		LGL_SetActiveDisplay(int display);
 bool		LGL_VSync();

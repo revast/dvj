@@ -50,7 +50,7 @@ VisualizerObj()
 		right = projAspect * (top-bottom);
 	}
 
-	SetViewPortVisuals(left,right,bottom,top);
+	SetViewportVisuals(left,right,bottom,top);
 
 	FullScreen=false;
 
@@ -248,12 +248,12 @@ DrawVisuals
 	TurntableObj**	tts
 )
 {
-	float l=ViewPortVisualsLeft;
-	float r=ViewPortVisualsRight;
-	float b=ViewPortVisualsBottom;
-	float t=ViewPortVisualsTop;
-	float w=ViewPortVisualsWidth;
-	float h=ViewPortVisualsHeight;
+	float l=ViewportVisualsLeft;
+	float r=ViewportVisualsRight;
+	float b=ViewportVisualsBottom;
+	float t=ViewportVisualsTop;
+	float w=ViewportVisualsWidth;
+	float h=ViewportVisualsHeight;
 
 	if(FullScreen)
 	{
@@ -398,12 +398,12 @@ DrawStatus()
 		return;
 	}
 
-	float l=ViewPortStatusLeft;
-	float r=ViewPortStatusRight;
-	float b=ViewPortStatusBottom;
-	//float t=ViewPortStatusTop;
-	float w=ViewPortStatusWidth;
-	float h=ViewPortStatusHeight;
+	float l=ViewportStatusLeft;
+	float r=ViewportStatusRight;
+	float b=ViewportStatusBottom;
+	//float t=ViewportStatusTop;
+	float w=ViewportStatusWidth;
+	float h=ViewportStatusHeight;
 	
 	//Draw memory usage
 	LGL_GetFont().DrawString
@@ -654,27 +654,27 @@ DrawStatus()
 
 void
 VisualizerObj::
-SetViewPortVisuals
+SetViewportVisuals
 (
 	float	left,	float	right,
 	float	bottom,	float	top
 )
 {
-	ViewPortVisualsLeft=left;
-	ViewPortVisualsRight=right;
-	ViewPortVisualsBottom=bottom;
-	ViewPortVisualsTop=top;
-	ViewPortVisualsWidth=right-left;
-	ViewPortVisualsHeight=top-bottom;
+	ViewportVisualsLeft=left;
+	ViewportVisualsRight=right;
+	ViewportVisualsBottom=bottom;
+	ViewportVisualsTop=top;
+	ViewportVisualsWidth=right-left;
+	ViewportVisualsHeight=top-bottom;
 
-	//AccumulationNow->FrameBufferViewPort(left,right,bottom,top);
+	//AccumulationNow->FrameBufferViewport(left,right,bottom,top);
 }
 
 float
 VisualizerObj::
-GetViewPortRight()
+GetViewportRight()
 {
-	return(ViewPortVisualsRight);
+	return(ViewportVisualsRight);
 }
 
 void
@@ -685,7 +685,7 @@ ToggleFullScreen()
 	/*
 	if(FullScreen)
 	{
-		AccumulationNow->FrameBufferViewPort
+		AccumulationNow->FrameBufferViewport
 		(
 			0,1,
 			0,1
@@ -693,10 +693,10 @@ ToggleFullScreen()
 	}
 	else
 	{
-		AccumulationNow->FrameBufferViewPort
+		AccumulationNow->FrameBufferViewport
 		(
-			ViewPortVisualsLeft,	ViewPortVisualsRight,
-			ViewPortVisualsBottom,	ViewPortVisualsTop
+			ViewportVisualsLeft,	ViewportVisualsRight,
+			ViewportVisualsBottom,	ViewportVisualsTop
 		);
 	}
 	*/
@@ -1037,6 +1037,8 @@ DrawVideos
 	float bOrig=b;
 	float tOrig=t;
 	float hOrig=t-b;
+	float w=r-l;
+	float h=t-b;
 
 	int videoNow=which;
 	float bright = (overrideBrightness==-1.0f) ? VideoBrightness[videoNow] : overrideBrightness;
@@ -1045,8 +1047,8 @@ DrawVideos
 	{
 		/*
 		float projAR=
-			(LGL_WindowResolutionX()*(ViewPortVisualsRight-ViewPortVisualsLeft))/(float)
-			(LGL_WindowResolutionY()*(ViewPortVisualsTop-ViewPortVisualsBottom));
+			(LGL_WindowResolutionX()*(ViewportVisualsRight-ViewportVisualsLeft))/(float)
+			(LGL_WindowResolutionY()*(ViewportVisualsTop-ViewportVisualsBottom));
 
 		if(LGL_DisplayCount()>1)
 		{
@@ -1182,22 +1184,89 @@ DrawVideos
 			image->GetFrameNumber()!=-1
 		)
 		{
+			int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
+			int projW;
+			int projH;
+			if(LGL_DisplayCount()==1)
+			{
+				projW = ViewportVisualsWidth * LGL_DisplayResolutionX();
+				projH = ViewportVisualsHeight * LGL_DisplayResolutionY();
+			}
+			else
+			{
+				projW = LGL_DisplayResolutionX(projDisplay);
+				projH = LGL_DisplayResolutionY(projDisplay);
+			}
+			float projAR = projW/(float)projH;
 			float imageAR = image->GetWidth()/(float)image->GetHeight();
-			//float targetAR = w/h;
-			float midH = 0.5f*(b+t);
+			float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
+
+			float midX = 0.5f*(l+r);
+			float midY = 0.5f*(b+t);
+
 			float myL = l;
 			float myR = r;
-			float myB = midH - 0.5f*(myR-myL)/(imageAR/LGL_WindowAspectRatio());
-			float myT = midH + 0.5f*(myR-myL)/(imageAR/LGL_WindowAspectRatio());
-			if(myB<b)
+			float myB = b;
+			float myT = t;
+
+			if(tt->GetAspectRatioMode()==0)
 			{
-				float scaleFactor = (midH-b)/(midH-myB);
-				float midW = 0.5f*(l+r);
-				myL=midW-(midW-l)*scaleFactor;
-				myR=midW+(midW-l)*scaleFactor;
-				myB=b;
-				myT=t;
+				//Respect AR
+
+				//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
+
+				myL = midX - 0.5f * w * (imageAR/targetAR);
+				myR = midX + 0.5f * w * (imageAR/targetAR);
+				myB = midY - 0.5f * h;
+				myT = midY + 0.5f * h;
+
+				//Make sure we're not too wide
+				float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
+				float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
+				if(myL<targetLimitL)
+				{
+					float scaleFactor = (midX-targetLimitL)/(midX-myL);
+					myB = midY - 0.5f * h * scaleFactor;
+					myT = midY + 0.5f * h * scaleFactor;
+					myL = targetLimitL;
+					myR = targetLimitR;
+				}
+
+				//Make sure we're not too tall
+				float targetLimitB = midY - 0.5f * h * (targetAR/projAR);
+				float targetLimitT = midY + 0.5f * h * (targetAR/projAR);
+				if(myB<targetLimitB)
+				{
+					float scaleFactor = (midY-targetLimitB)/(midY-myB);
+					myL = midX - (midX-myL) * scaleFactor;
+					myR = midX + (myR-midX) * scaleFactor;
+					myB = targetLimitB;
+					myT = targetLimitT;
+				}
 			}
+			else if(tt->GetAspectRatioMode()==1)
+			{
+				//Fill (but respect projector AR)
+				//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
+				float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
+				float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
+
+				myL = targetLimitL;
+				myR = targetLimitR;
+				myB = b;
+				myT = t;
+
+				//Make sure we're not too wide
+				if(myL<l)
+				{
+					float scaleFactor = (midX-l)/(midX-myL);
+					myB = midY - 0.5f * h * scaleFactor;
+					myT = midY + 0.5f * h * scaleFactor;
+					myL = l;
+					myR = r;
+				}
+			}
+
 			image->DrawToScreen
 			(
 				myL,myR,myB,myT,

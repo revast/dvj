@@ -1973,30 +1973,18 @@ WaveformVideoBrightness
 		if((target & TARGET_BOTTOM))
 		{
 			//FIXME: Left / Right is asymmmetric, for Zebbler, for now... Shoudln't be, though..
-			if
-			(
-				LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_RIGHT_MOD_4) ||
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_4) ||
-				LGL_GetXponent()->GetButtonRelease(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_4)
-			)
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_RIGHT_MOD_4))
 			{
 				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_RIGHT_MOD_4);
-				bright = ((knob == -1.0f) ? 1.0f : knob) *
-					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_4) ? 0 : 1);
+				bright = ((knob == -1.0f) ? 1.0f : knob);
 			}
 		}
 		else if((target & TARGET_TOP))
 		{
-			if
-			(
-				LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_LEFT_MOD_1) ||
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_1) ||
-				LGL_GetXponent()->GetButtonRelease(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_1)
-			)
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_LEFT_MOD_1))
 			{
 				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_MOD_1);
-				bright = ((knob == -1.0f) ? 1.0f : knob) *
-					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_1) ? 0 : 1);
+				bright = ((knob == -1.0f) ? 1.0f : knob);
 			}
 		}
 	}
@@ -2080,6 +2068,31 @@ WaveformVideoFreqSenseMode
 	}
 
 	return(mode);
+}
+
+bool
+InputXponentObj::
+WaveformVideoAspectRatioModeNext
+(
+	unsigned int	target
+)	const
+{
+	float next=false;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			//FIXME: Left / Right is asymmmetric, for Zebbler, for now... Shoudln't be, though..
+			next = LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_4);
+		}
+		else if((target & TARGET_TOP))
+		{
+			next = LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_1);
+		}
+	}
+
+	return(next);
 }
 
 float

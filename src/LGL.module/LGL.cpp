@@ -1624,6 +1624,12 @@ printf("%i screens!\n",LGL.DisplayCount);
 
 		LGL.DisplayResolutionX[a] = mode.w;
 		LGL.DisplayResolutionY[a] = mode.h;
+/*
+if(a==1)
+{
+	LGL.DisplayResolutionY[a]/=6;
+}
+*/
 		LGL.DisplayRefreshRate[a] = mode.refresh_rate ? mode.refresh_rate : 60;
 
 printf("\tScreen[%i]: %i x %i\n",a,
@@ -1686,7 +1692,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 			LGL.DisplayCount > 1
 		)
 		{
-			LGL.DisplayResolutionY[a]-=70;	//OSX Dock
+			//LGL.DisplayResolutionY[a]-=70;	//OSX Dock
 		}
 #endif	//LGL_OSX
 		LGL.DisplayViewPortBottom[a]=(LGL.WindowResolutionY-LGL.DisplayResolutionY[a])/(float)LGL.WindowResolutionY;
@@ -3841,12 +3847,16 @@ LGL_WindowAspectRatio()
 }
 
 float
-LGL_DisplayAspectRatio()
+LGL_DisplayAspectRatio(int which)
 {
+	if(which<0 || which>=LGL_DisplayCount())
+	{
+		which=LGL_GetActiveDisplay();
+	}
 	return
 	(
-		LGL.DisplayResolutionX[LGL.DisplayNow]/(float)
-		LGL.DisplayResolutionY[LGL.DisplayNow]
+		LGL.DisplayResolutionX[which]/(float)
+		LGL.DisplayResolutionY[which]
 	);
 }
 

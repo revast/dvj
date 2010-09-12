@@ -42,7 +42,7 @@ public:
 	void				NextFrame(float secondsElapsed);
 	void				DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent);
 
-	void				SetViewPort
+	void				SetViewport
 					(
 						float	left,	float	right,
 						float	bottom,	float	top
@@ -58,7 +58,7 @@ public:
 	bool				GetRecording() const;
 	void				SetRecordingFailed();
 	
-	void				SetViewPortStatus
+	void				SetViewportStatus
 					(
 						float	left,	float	right,
 						float	bottom,	float	top
@@ -76,12 +76,12 @@ private:
 						float	visualizerZoomOutPercent
 					);
 
-	float				ViewPortLeft;
-	float				ViewPortRight;
-	float				ViewPortBottom;
-	float				ViewPortTop;
-	float				ViewPortWidth;
-	float				ViewPortHeight;
+	float				ViewportLeft;
+	float				ViewportRight;
+	float				ViewportBottom;
+	float				ViewportTop;
+	float				ViewportWidth;
+	float				ViewportHeight;
 	
 	TurntableObj*			Turntable[2];
 	int				Focus;
@@ -98,12 +98,12 @@ private:
 
 	VisualizerObj*			Visualizer;
 
-	float				ViewPortStatusLeft;
-	float				ViewPortStatusRight;
-	float				ViewPortStatusBottom;
-	float				ViewPortStatusTop;
-	float				ViewPortStatusWidth;
-	float				ViewPortStatusHeight;
+	float				ViewportStatusLeft;
+	float				ViewportStatusRight;
+	float				ViewportStatusBottom;
+	float				ViewportStatusTop;
+	float				ViewportStatusWidth;
+	float				ViewportStatusHeight;
 
 	bool				Recording;
 	bool				RecordingDetermined;

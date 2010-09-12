@@ -53,7 +53,7 @@ public:
 	void				DrawSpectrum(float left, float right, float bottom, float top, float glow);
 	void				DrawWholeTrack(float left, float right, float bottom, float top, float glow);
 
-	void				SetViewPort
+	void				SetViewport
 					(
 						float	left,	float	right,
 						float	bottom,	float	top
@@ -128,12 +128,12 @@ private:
 
 private:
 
-	float				ViewPortLeft;
-	float				ViewPortRight;
-	float				ViewPortBottom;
-	float				ViewPortTop;
-	float				ViewPortWidth;
-	float				ViewPortHeight;
+	float				ViewportLeft;
+	float				ViewportRight;
+	float				ViewportBottom;
+	float				ViewportTop;
+	float				ViewportWidth;
+	float				ViewportHeight;
 
 	bool				Focus;
 
@@ -328,9 +328,14 @@ static	LGL_Image*			LoopImage;
 static	bool				FileEverOpened;
 static	bool				SurroundMode;
 
+	int				AspectRatioMode;	//0: Respect AR
+								//1: Fill
+								//2: Tile
+
 public:
 
 static	bool				GetSurroundMode();
+	bool				GetAspectRatioMode();
 	void				SwapVideos();
 	void				SelectNewVideo(bool forceAmbient=false);
 	bool				BPMAvailable();

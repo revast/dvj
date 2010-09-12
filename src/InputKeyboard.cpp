@@ -1098,6 +1098,24 @@ WaveformVideoFreqSenseMode
 	return(mode);
 }
 
+bool
+InputKeyboardObj::
+WaveformVideoAspectRatioModeNext
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_KeyStroke(GetInputKeyboardWaveformVideoAspectRatioModeNextKey()))
+		{
+			return(true);
+		}
+	}
+
+	return(false);
+}
+
 float
 InputKeyboardObj::
 WaveformOscilloscopeBrightness

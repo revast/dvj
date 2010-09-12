@@ -1239,6 +1239,23 @@ WaveformVideoFreqSenseMode
 	return(mode);
 }
 
+bool
+InputObj::
+WaveformVideoAspectRatioModeNext
+(
+	unsigned int	target
+)	const
+{
+	bool next=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		next|=Children[a]->WaveformVideoAspectRatioModeNext(target);
+	}
+
+	return(next);
+}
+
 float
 InputObj::
 WaveformOscilloscopeBrightness

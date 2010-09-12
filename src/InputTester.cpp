@@ -855,9 +855,24 @@ WaveformVideoFreqSenseMode
 	if(currentAction == WAVEFORM_VIDEO_FREQ_SENSE_MODE)
 	{
 		mode = -2;
-		currentAction = 0;
 	}
 	return(mode);
+}
+
+bool
+InputTesterObj::
+WaveformVideoAspectRatioModeNext
+(
+	unsigned int	target
+)	const
+{
+	int currentAction = GetCurrentAction(target);
+	bool next=false;
+	if(currentAction == WAVEFORM_VIDEO_ASPECT_RATIO_MODE_NEXT)
+	{
+		next=true;
+	}
+	return(next);
 }
 
 float
