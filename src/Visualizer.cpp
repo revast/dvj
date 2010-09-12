@@ -672,6 +672,20 @@ SetViewportVisuals
 
 float
 VisualizerObj::
+GetViewportVisualsWidth()
+{
+	return(ViewportVisualsRight-ViewportVisualsLeft);
+}
+
+float
+VisualizerObj::
+GetViewportVisualsHeight()
+{
+	return(ViewportVisualsTop-ViewportVisualsBottom);
+}
+
+float
+VisualizerObj::
 GetViewportRight()
 {
 	return(ViewportVisualsRight);
