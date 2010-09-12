@@ -54,6 +54,8 @@ public:
 					float	left,	float	right,
 					float	bottom,	float	top
 				);
+	float			GetViewportVisualsWidth();
+	float			GetViewportVisualsHeight();
 	float			GetViewportRight();
 	void			ToggleFullScreen();
 

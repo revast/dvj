@@ -1624,12 +1624,14 @@ printf("%i screens!\n",LGL.DisplayCount);
 
 		LGL.DisplayResolutionX[a] = mode.w;
 		LGL.DisplayResolutionY[a] = mode.h;
+
 /*
 if(a==1)
 {
 	LGL.DisplayResolutionY[a]/=3;
 }
 */
+
 		LGL.DisplayRefreshRate[a] = mode.refresh_rate ? mode.refresh_rate : 60;
 
 printf("\tScreen[%i]: %i x %i\n",a,
