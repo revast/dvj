@@ -15,5 +15,5 @@ fftw
 libsamplerate
 yasm
 ffmpeg
-JACK
+jack-audio-connection-kit
 
