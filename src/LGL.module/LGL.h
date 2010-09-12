@@ -28,6 +28,8 @@
 
 #ifdef	LGL_LINUX
 
+#define __STDC_CONSTANT_MACROS
+
 #ifndef	LGL_OSX
 #define	LGL_LINUX_WIIMOTE
 #include <cwiid.h>
@@ -70,6 +72,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <math.h>
 #include <assert.h>
 
