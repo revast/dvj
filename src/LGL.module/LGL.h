@@ -28,7 +28,9 @@
 
 #ifdef	LGL_LINUX
 
+#ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS
+#endif
 
 #ifndef	LGL_OSX
 #define	LGL_LINUX_WIIMOTE
