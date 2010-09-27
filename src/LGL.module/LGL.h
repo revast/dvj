@@ -974,6 +974,8 @@ public:
 				bool inLinearInterpolation=true,
 				const char* name="RAM Image"
 			);
+	void		UpdatePixelBufferObjects();
+	void		DeletePixelBufferObjects();
 	void		FrameBufferUpdate();
 	void		FrameBufferViewPort
 			(
@@ -1023,8 +1025,8 @@ const	char*		GetPathShort() const;
 
 //private:
 
-	int		w;
-	int		h;
+	int		ImgW;
+	int		ImgH;
 	int		TexW;
 	int		TexH;
 
@@ -1033,6 +1035,7 @@ const	char*		GetPathShort() const;
 	bool		TextureGLMine;
 	GLuint		PixelBufferObjectFrontGL;
 	GLuint		PixelBufferObjectBackGL;
+	GLsizei		PixelBufferObjectSize;
 	bool		LinearInterpolation;
 
 	char		Path[1024];
@@ -1143,17 +1146,24 @@ public:
 				(
 					char*		videoPath,
 					unsigned char*	buffer,
+					int		bufferWidth,
+					int		bufferHeight,
 					unsigned int&	bufferBytes,
 					long		frameNumber
 				);
 	const char*		GetVideoPath() const;
 	unsigned char*		GetBuffer() const;
+	int			GetBufferWidth() const;
+	int			GetBufferHeight() const;
+	unsigned int		GetBufferBytes() const;
 	long			GetFrameNumber() const;
 
 private:
 
 	char			VideoPath[2048];
 	unsigned char*		Buffer;
+	int			BufferWidth;
+	int			BufferHeight;
 	unsigned int		BufferBytes;
 	long			FrameNumber;
 
@@ -1229,8 +1239,8 @@ private:
 	AVFrame*		FrameNative;
 	AVFrame*		FrameRGB;
 	unsigned char*		BufferRGB;
-	unsigned int		BufferWidth;
-	unsigned int		BufferHeight;
+	int			BufferWidth;
+	int			BufferHeight;
 	unsigned int		BufferBytes;
 	SwsContext*		SwsConvertContext;
 
