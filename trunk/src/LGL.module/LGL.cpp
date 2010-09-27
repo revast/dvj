@@ -7023,12 +7023,10 @@ UpdateTexture
 {
 	if(x!=ImgW)
 	{
-		//printf("x!=ImgW (%i vs %i)\n",x,ImgW);
 		ImgW=LGL_Min(x,TexW);
 	}
 	if(y!=ImgH)
 	{
-		//printf("y!=ImgH (%i vs %i)\n",y,ImgH);
 		ImgH=LGL_Min(y,TexH);
 	}
 	assert(bytesperpixel==3 || bytesperpixel==4);
@@ -7045,22 +7043,6 @@ UpdateTexture
 		sprintf(Path,"!%s",name);
 		sprintf(PathShort,"!%s",name);
 	}
-/*
-	if(PixelBufferObjectFrontGL==0)
-	{
-		GLsizei size = ImgW*ImgH*(AlphaChannel?4:3);
-		gl2GenBuffers(1,&PixelBufferObjectFrontGL);
-		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
-		gl2BufferData
-		(
-			GL_PIXEL_UNPACK_BUFFER,
-			(GLsizeiptr)(&size),
-			NULL,
-			GL_STREAM_DRAW
-		);
-		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
-	}
-*/
 
 	UpdatePixelBufferObjects();
 
@@ -8698,6 +8680,16 @@ printf("Calling UpdateTexture() w/ buffer frame %i (%0.16x) (%i) (%s)\n",
 	buffer->GetVideoPath());
 */
 
+/*
+int checksum = 0;
+unsigned char* buf = buffer->GetBuffer();
+for(int a=0;a<buffer->GetBufferBytes();a++)
+{
+	checksum+=buf[a];
+}
+printf("Checksum: %i\n",checksum);
+*/
+
 	Image->UpdateTexture
 	(
 		buffer->GetBufferWidth(),
@@ -9040,10 +9032,10 @@ printf("VidStream->codec->time_base = %i / %i (%.2f) (%.2f)\n",
 	FormatContext->streams[VideoStreamIndex]->codec->time_base.den,
 	FormatContext->streams[VideoStreamIndex]->codec->time_base.den/(float)
 	FormatContext->streams[VideoStreamIndex]->codec->time_base.num);
-	FPSTimestamp=CodecContext->time_base.den/(float)CodecContext->time_base.num;
 printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
 */
-	//FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
+	FPSTimestamp=CodecContext->time_base.den/(float)CodecContext->time_base.num;
+	FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
 
 	FrameNative=lgl_avcodec_alloc_frame();
 	FrameRGB=lgl_avcodec_alloc_frame();
