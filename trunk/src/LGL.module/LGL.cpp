@@ -1814,6 +1814,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		}
 		else
 		{
+			if(pulserunning) printf("Post-JackInit() error: Pulse running!\n");
 			LGL.AudioUsingJack=false;
 
 			//strcpy(audioDriver, "pulse");
@@ -5794,6 +5795,7 @@ LGL_Image
 	PixelBufferEnable=true;
 	PixelBufferObjectFrontGL=0;
 	PixelBufferObjectBackGL=0;
+	PixelBufferObjectSize=0;
 
 	if(loadToGLTexture)
 	{
@@ -5804,6 +5806,7 @@ LGL_Image
 			loadToExistantGLTextureX,
 			loadToExistantGLTextureY
 		);
+		DeletePixelBufferObjects();
 	}
 
 	FrameNumber=-1;
@@ -5868,6 +5871,7 @@ LGL_Image
 	PixelBufferEnable=true;
 	PixelBufferObjectFrontGL=0;
 	PixelBufferObjectBackGL=0;
+	PixelBufferObjectSize=0;
 
 	//Convert mySDL_Surface1 to the desired format for SDL_Surface2
 
@@ -5909,10 +5913,10 @@ LGL_Image
 		SurfaceSDL=NULL;
 	}
 
-	w=width;//SurfaceSDL->w;
-	h=height;//SurfaceSDL->h;
-	TexW=LGL_NextPowerOfTwo(w);
-	TexH=LGL_NextPowerOfTwo(h);
+	ImgW=width;//SurfaceSDL->w;
+	ImgH=height;//SurfaceSDL->h;
+	TexW=LGL_NextPowerOfTwo(ImgW);
+	TexH=LGL_NextPowerOfTwo(ImgH);
 
 	TextureGL=0;
 	TextureGLMine=true;
@@ -5922,13 +5926,14 @@ LGL_Image
 		LoadSurfaceToTexture(LinearInterpolation);
 		UpdateTexture
 		(
-			w,
-			h,
+			ImgW,
+			ImgH,
 			bytesperpixel,
 			data,
 			LinearInterpolation,
 			PathShort
 		);
+		DeletePixelBufferObjects();
 	}
 
 	//Delete temporary SDL_Surface
@@ -5985,6 +5990,7 @@ LGL_Image
 	PixelBufferEnable=true;
 	PixelBufferObjectFrontGL=0;
 	PixelBufferObjectBackGL=0;
+	PixelBufferObjectSize=0;
 
 	SurfaceSDL=NULL;
 
@@ -6177,32 +6183,32 @@ DrawToScreen
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				leftsubimage*(float)w/(float)TexW,
-				cysubimage*(float)h/(float)TexH
+				leftsubimage*(float)ImgW/(float)TexW,
+				cysubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(-width*.5,0);
 
 			glColor4f(r,g,b,a);
 			glTexCoord2f
 			(
-				cxsubimage*(float)w/(float)TexW,
-				cysubimage*(float)h/(float)TexH
+				cxsubimage*(float)ImgW/(float)TexW,
+				cysubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(0,0);
 			
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				cxsubimage*(float)w/(float)TexW,
-				rightsubimage*(float)h/(float)TexH
+				cxsubimage*(float)ImgW/(float)TexW,
+				rightsubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(0,-height*.5);
 			
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				leftsubimage*(float)w/(float)TexW,
-				topsubimage*(float)h/(float)TexH
+				leftsubimage*(float)ImgW/(float)TexW,
+				topsubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(-width*.5,-height*.5);
 			
@@ -6211,32 +6217,32 @@ DrawToScreen
 			glColor4f(r,g,b,a);
 			glTexCoord2f
 			(
-				cxsubimage*(float)w/(float)TexW,
-				cysubimage*(float)h/(float)TexH
+				cxsubimage*(float)ImgW/(float)TexW,
+				cysubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(0,0);
 			
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				rightsubimage*(float)w/(float)TexW,
-				cysubimage*(float)h/(float)TexH
+				rightsubimage*(float)ImgW/(float)TexW,
+				cysubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f( width*.5,0);
 			
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				rightsubimage*(float)w/(float)TexW,
-				topsubimage*(float)h/(float)TexH
+				rightsubimage*(float)ImgW/(float)TexW,
+				topsubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f( width*.5,-height*.5);
 			
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				cxsubimage*(float)w/(float)TexW,
-				topsubimage*(float)h/(float)TexH
+				cxsubimage*(float)ImgW/(float)TexW,
+				topsubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(0,-height*.5);
 			
@@ -6245,32 +6251,32 @@ DrawToScreen
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				leftsubimage*(float)w/(float)TexW,
-				bottomsubimage*(float)h/(float)TexH
+				leftsubimage*(float)ImgW/(float)TexW,
+				bottomsubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(-width*.5, height*.5);
 			
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				cxsubimage*(float)w/(float)TexW,
-				bottomsubimage*(float)h/(float)TexH
+				cxsubimage*(float)ImgW/(float)TexW,
+				bottomsubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(0, height*.5);
 			
 			glColor4f(r,g,b,a);
 			glTexCoord2f
 			(
-				cxsubimage*(float)w/(float)TexW,
-				cysubimage*(float)h/(float)TexH
+				cxsubimage*(float)ImgW/(float)TexW,
+				cysubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(0,0);
 			
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				leftsubimage*(float)w/(float)TexW,
-				cysubimage*(float)h/(float)TexH
+				leftsubimage*(float)ImgW/(float)TexW,
+				cysubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(-width*.5,0);
 			
@@ -6279,32 +6285,32 @@ DrawToScreen
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				cxsubimage*(float)w/(float)TexW,
-				bottomsubimage*(float)h/(float)TexH
+				cxsubimage*(float)ImgW/(float)TexW,
+				bottomsubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(0, height*.5);
 			
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				rightsubimage*(float)w/(float)TexW,
-				bottomsubimage*(float)h/(float)TexH
+				rightsubimage*(float)ImgW/(float)TexW,
+				bottomsubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f( width*.5, height*.5);
 			
 			glColor4f(0,0,0,0);
 			glTexCoord2f
 			(
-				rightsubimage*(float)w/(float)TexW,
-				cysubimage*(float)h/(float)TexH
+				rightsubimage*(float)ImgW/(float)TexW,
+				cysubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f( width*.5,0);
 			
 			glColor4f(r,g,b,a);
 			glTexCoord2f
 			(
-				cxsubimage*(float)w/(float)TexW,
-				cysubimage*(float)h/(float)TexH
+				cxsubimage*(float)ImgW/(float)TexW,
+				cysubimage*(float)ImgH/(float)TexH
 			);
 			glVertex2f(0,0);
 		}
@@ -6375,8 +6381,8 @@ DrawToScreen
 				glColor4f(r*u,g*u,b*u,a*u);
 				glTexCoord2f
 				(
-					0*(float)w/(float)TexW,
-					1*(float)h/(float)TexH
+					0*(float)ImgW/(float)TexW,
+					1*(float)ImgH/(float)TexH
 				);
 				glVertex2f(-width*.5,-height*.5);
 			}
@@ -6400,8 +6406,8 @@ DrawToScreen
 							glColor4f(0,0,0,0);
 							glTexCoord2f
 							(
-								0*(float)w/(float)TexW,
-								texY*(float)h/(float)TexH
+								0*(float)ImgW/(float)TexW,
+								texY*(float)ImgH/(float)TexH
 							);
 							glVertex2f(-width*.5,yInt0);
 						}
@@ -6414,8 +6420,8 @@ DrawToScreen
 							glColor4f(r,g,b,a);
 							glTexCoord2f
 							(
-								0*(float)w/(float)TexW,
-								texY*(float)h/(float)TexH
+								0*(float)ImgW/(float)TexW,
+								texY*(float)ImgH/(float)TexH
 							);
 							glVertex2f(-width*.5,yInt1);
 						}
@@ -6438,8 +6444,8 @@ DrawToScreen
 				glColor4f(r*u,g*u,b*u,a*u);
 				glTexCoord2f
 				(
-					0*(float)w/(float)TexW,
-					0*(float)h/(float)TexH
+					0*(float)ImgW/(float)TexW,
+					0*(float)ImgH/(float)TexH
 				);
 				glVertex2f(-width*.5,height*.5);
 			}
@@ -6464,8 +6470,8 @@ DrawToScreen
 							glColor4f(0,0,0,0);
 							glTexCoord2f
 							(
-								texX*(float)w/(float)TexW,
-								0*(float)h/(float)TexH
+								texX*(float)ImgW/(float)TexW,
+								0*(float)ImgH/(float)TexH
 							);
 							glVertex2f(xInt0,.5*height);
 						}
@@ -6478,8 +6484,8 @@ DrawToScreen
 							glColor4f(r,g,b,a);
 							glTexCoord2f
 							(
-								texX*(float)w/(float)TexW,
-								0*(float)h/(float)TexH
+								texX*(float)ImgW/(float)TexW,
+								0*(float)ImgH/(float)TexH
 							);
 							glVertex2f(xInt1,.5*height);
 						}
@@ -6502,8 +6508,8 @@ DrawToScreen
 				glColor4f(r*u,g*u,b*u,a*u);
 				glTexCoord2f
 				(
-					1*(float)w/(float)TexW,
-					0*(float)h/(float)TexH
+					1*(float)ImgW/(float)TexW,
+					0*(float)ImgH/(float)TexH
 				);
 				glVertex2f(width*.5,height*.5);
 			}
@@ -6527,8 +6533,8 @@ DrawToScreen
 							glColor4f(0,0,0,0);
 							glTexCoord2f
 							(
-								1*(float)w/(float)TexW,
-								texY*(float)h/(float)TexH
+								1*(float)ImgW/(float)TexW,
+								texY*(float)ImgH/(float)TexH
 							);
 							glVertex2f(width*.5,yInt0);
 						}
@@ -6541,8 +6547,8 @@ DrawToScreen
 							glColor4f(r,g,b,a);
 							glTexCoord2f
 							(
-								1*(float)w/(float)TexW,
-								texY*(float)h/(float)TexH
+								1*(float)ImgW/(float)TexW,
+								texY*(float)ImgH/(float)TexH
 							);
 							glVertex2f(width*.5,yInt1);
 						}
@@ -6565,8 +6571,8 @@ DrawToScreen
 				glColor4f(r*u,g*u,b*u,a*u);
 				glTexCoord2f
 				(
-					1*(float)w/(float)TexW,
-					1*(float)h/(float)TexH
+					1*(float)ImgW/(float)TexW,
+					1*(float)ImgH/(float)TexH
 				);
 				glVertex2f(width*.5,-height*.5);
 			}
@@ -6591,8 +6597,8 @@ DrawToScreen
 							glColor4f(0,0,0,0);
 							glTexCoord2f
 							(
-								texX*(float)w/(float)TexW,
-								1*(float)h/(float)TexH
+								texX*(float)ImgW/(float)TexW,
+								1*(float)ImgH/(float)TexH
 							);
 							glVertex2f(xInt0,-.5*height);
 						}
@@ -6605,8 +6611,8 @@ DrawToScreen
 							glColor4f(r,g,b,a);
 							glTexCoord2f
 							(
-								texX*(float)w/(float)TexW,
-								1*(float)h/(float)TexH
+								texX*(float)ImgW/(float)TexW,
+								1*(float)ImgH/(float)TexH
 							);
 							glVertex2f(xInt1,-.5*height);
 						}
@@ -6635,29 +6641,29 @@ DrawToScreen
 //#endif	//LGL_LINUX
 				glTexCoord2d
 				(
-					leftsubimage*(float)w/(float)TexW,
-					topsubimage*(float)h/(float)TexH
+					leftsubimage*(float)ImgW/(float)TexW,
+					topsubimage*(float)ImgH/(float)TexH
 				);
 				glVertex2d(-width*.5+d, height*.5);
 				
 				glTexCoord2d
 				(
-					rightsubimage*(float)w/(float)TexW,
-					topsubimage*(float)h/(float)TexH
+					rightsubimage*(float)ImgW/(float)TexW,
+					topsubimage*(float)ImgH/(float)TexH
 				);
 				glVertex2d(width*.5+d, height*.5);
 				
 				glTexCoord2d
 				(
-					rightsubimage*(float)w/(float)TexW,
-					bottomsubimage*(float)h/(float)TexH
+					rightsubimage*(float)ImgW/(float)TexW,
+					bottomsubimage*(float)ImgH/(float)TexH
 				);
 				glVertex2d(width*.5+d,-height*.5);
 				
 				glTexCoord2d
 				(
-					leftsubimage*(float)w/(float)TexW,
-					bottomsubimage*(float)h/(float)TexH
+					leftsubimage*(float)ImgW/(float)TexW,
+					bottomsubimage*(float)ImgH/(float)TexH
 				);
 				glVertex2d(-width*.5+d,-height*.5);
 			}
@@ -6675,29 +6681,29 @@ DrawToScreen
 				glNormal3f(0,0,-1);
 				glTexCoord2f
 				(
-					leftsubimage*(float)w/(float)TexW,
-					bottomsubimage*(float)h/(float)TexH
+					leftsubimage*(float)ImgW/(float)TexW,
+					bottomsubimage*(float)ImgH/(float)TexH
 				);
 				glVertex2f(-width*.5, height*.5);
 				
 				glTexCoord2f
 				(
-					rightsubimage*(float)(w-delta)/(float)TexW,
-					bottomsubimage*(float)h/(float)TexH
+					rightsubimage*(float)(ImgW-delta)/(float)TexW,
+					bottomsubimage*(float)ImgH/(float)TexH
 				);
 				glVertex2f( width*.5, height*.5);
 				
 				glTexCoord2f
 				(
-					rightsubimage*(float)(w-delta)/(float)TexW,
-					topsubimage*(float)(h-delta)/(float)TexH
+					rightsubimage*(float)(ImgW-delta)/(float)TexW,
+					topsubimage*(float)(ImgH-delta)/(float)TexH
 				);
 				glVertex2f( width*.5,-height*.5);
 				
 				glTexCoord2f
 				(
-					leftsubimage*(float)w/(float)TexW,
-					topsubimage*(float)(h-delta)/(float)TexH
+					leftsubimage*(float)ImgW/(float)TexW,
+					topsubimage*(float)(ImgH-delta)/(float)TexH
 				);
 				glVertex2f(-width*.5,-height*.5);
 			}
@@ -6790,16 +6796,16 @@ DrawToScreenAsLine
 			//Begin Right
 			glTexCoord2f
 			(
-				0*(float)w/(float)TexW,
-				1*(float)h/(float)TexH
+				0*(float)ImgW/(float)TexW,
+				1*(float)ImgH/(float)TexH
 			);
 			glVertex2f(LGL.LastImageDrawAsLineRightX,LGL.LastImageDrawAsLineRightY);
 			
 			//Begin Left
 			glTexCoord2f
 			(
-				1*(float)w/(float)TexW,
-				1*(float)h/(float)TexH
+				1*(float)ImgW/(float)TexW,
+				1*(float)ImgH/(float)TexH
 			);
 			glVertex2f(LGL.LastImageDrawAsLineLeftX,LGL.LastImageDrawAsLineLeftY);
 		}
@@ -6808,16 +6814,16 @@ DrawToScreenAsLine
 			//Begin Right
 			glTexCoord2f
 			(
-				0*(float)w/(float)TexW,
-				1*(float)h/(float)TexH
+				0*(float)ImgW/(float)TexW,
+				1*(float)ImgH/(float)TexH
 			);
 			glVertex2f(x1+NormX,y1+NormY);
 			
 			//Begin Left
 			glTexCoord2f
 			(
-				1*(float)w/(float)TexW,
-				1*(float)h/(float)TexH
+				1*(float)ImgW/(float)TexW,
+				1*(float)ImgH/(float)TexH
 			);
 			glVertex2f(x1-NormX,y1-NormY);
 		}
@@ -6825,8 +6831,8 @@ DrawToScreenAsLine
 		//End Left
 		glTexCoord2f
 		(
-			1*(float)w/(float)TexW,
-			0*(float)h/(float)TexH
+			1*(float)ImgW/(float)TexW,
+			0*(float)ImgH/(float)TexH
 		);
 		glVertex2f(x2-NormX,y2-NormY);
 		LGL.LastImageDrawAsLineLeftX=x2-NormX;
@@ -6835,8 +6841,8 @@ DrawToScreenAsLine
 		//End Right
 		glTexCoord2f
 		(
-			0*(float)w/(float)TexW,
-			0*(float)h/(float)TexH
+			0*(float)ImgW/(float)TexW,
+			0*(float)ImgH/(float)TexH
 		);
 		glVertex2f(x2+NormX,y2+NormY);
 		LGL.LastImageDrawAsLineRightX=x2+NormX;
@@ -6892,8 +6898,8 @@ LoadSurfaceToTexture
 				0,					//Level of Detail=0
 				0,					//X-Offset
 				0,					//Y-Offset
-				w,
-				h,
+				ImgW,
+				ImgH,
 				GL_RGBA,
 				GL_UNSIGNED_BYTE,
 				SurfaceSDL->pixels
@@ -6964,8 +6970,8 @@ LoadSurfaceToTexture
 				0,				//Level of Detail=0
 				loadToExistantGLTextureX,	//X-Offset
 				loadToExistantGLTextureY,	//Y-Offset
-				w,
-				h,
+				ImgW,
+				ImgH,
 				GL_RGBA,
 				GL_UNSIGNED_BYTE,
 				SurfaceSDL->pixels
@@ -6973,9 +6979,169 @@ LoadSurfaceToTexture
 		}
 	}
 
-	GLsizei size = w*h*(AlphaChannel?4:3);
-
 	if(PixelBufferEnable)
+	{
+		UpdatePixelBufferObjects();	
+	}
+	else
+	{
+		DeletePixelBufferObjects();
+	}
+}
+
+void
+LGL_Image::
+UnloadSurfaceFromTexture()
+{
+	if(TextureGL==0) return;
+	if(TextureGLMine==false)
+	{
+		TextureGL=0;
+		return;
+	}
+	else
+	{
+		glDeleteTextures(1,&(TextureGL));
+		TextureGL=0;
+		LGL.TexturePixels-=TexW*TexH;
+	}
+
+	DeletePixelBufferObjects();
+}
+
+void
+LGL_Image::
+UpdateTexture
+(
+	int		x,
+	int		y,
+	int		bytesperpixel,
+	unsigned char*	data,
+	bool		inLinearInterpolation,
+	const char*	name
+)
+{
+	if(x!=ImgW)
+	{
+		//printf("x!=ImgW (%i vs %i)\n",x,ImgW);
+		ImgW=LGL_Min(x,TexW);
+	}
+	if(y!=ImgH)
+	{
+		//printf("y!=ImgH (%i vs %i)\n",y,ImgH);
+		ImgH=LGL_Min(y,TexH);
+	}
+	assert(bytesperpixel==3 || bytesperpixel==4);
+	assert(data!=NULL);
+	LinearInterpolation=inLinearInterpolation;
+	assert(name);
+	if(name[0]=='!')
+	{
+		sprintf(Path,"%s",name);
+		sprintf(PathShort,"%s",name);
+	}
+	else
+	{
+		sprintf(Path,"!%s",name);
+		sprintf(PathShort,"!%s",name);
+	}
+/*
+	if(PixelBufferObjectFrontGL==0)
+	{
+		GLsizei size = ImgW*ImgH*(AlphaChannel?4:3);
+		gl2GenBuffers(1,&PixelBufferObjectFrontGL);
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
+		gl2BufferData
+		(
+			GL_PIXEL_UNPACK_BUFFER,
+			(GLsizeiptr)(&size),
+			NULL,
+			GL_STREAM_DRAW
+		);
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+	}
+*/
+
+	UpdatePixelBufferObjects();
+
+	bool pboReady = gl2IsBuffer(PixelBufferObjectFrontGL);
+
+	if(TextureGL==0)
+	{
+		//Though surface might be quite undefined at this point... Hmm...
+		LoadSurfaceToTexture(LinearInterpolation);
+	}
+
+	glBindTexture(GL_TEXTURE_2D,TextureGL);
+	if(pboReady)
+	{
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
+		gl2BufferData(GL_PIXEL_UNPACK_BUFFER, ImgW*ImgH*bytesperpixel, data, GL_STREAM_DRAW);
+	}
+	else
+	{
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+	}
+
+	glTexSubImage2D
+	(
+		GL_TEXTURE_2D,
+		0,			//Level of Detail=0
+		0,			//X-Offset
+		0,			//Y-Offset
+		ImgW,
+		ImgH,
+		bytesperpixel==3?GL_RGB:GL_BGRA,
+		GL_UNSIGNED_BYTE,
+		pboReady?0:data
+	);
+
+	/*
+	if(pboReady)
+	{
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
+		gl2BufferData(GL_PIXEL_UNPACK_BUFFER, ImgW*ImgH*bytesperpixel, 0, GL_STREAM_DRAW);
+		GLubyte* pbo = (GLubyte*)gl2MapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+		if(pbo)
+		{
+			memcpy(pbo,data,ImgW*ImgH*bytesperpixel);
+			gl2UnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+		}
+	}
+	*/
+
+	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+
+	//Swap
+	/*
+	GLuint tmp=PixelBufferObjectBackGL;
+	PixelBufferObjectBackGL=PixelBufferObjectFrontGL;
+	PixelBufferObjectFrontGL=tmp;
+	*/
+}
+
+void
+LGL_Image::
+UpdatePixelBufferObjects()
+{
+	if
+	(
+		ImgW<0 ||
+		ImgH<0
+	)
+	{
+		printf("Cannot create pixel buffer object with negative dimensions (%i x %i)!\n",ImgW,ImgH);
+		return;
+	}
+
+	GLsizei size = ImgW*ImgH*(AlphaChannel?4:3);
+
+	if(size>PixelBufferObjectSize)
+	{
+		DeletePixelBufferObjects();
+	}
+
+	if(PixelBufferObjectFrontGL==0)
 	{
 		//Make a Pixel Buffer Object
 		gl2GenBuffers(1,&(PixelBufferObjectFrontGL));
@@ -7000,142 +7166,23 @@ LoadSurfaceToTexture
 			GL_STREAM_DRAW
 		);
 		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+
+		PixelBufferObjectSize=size;
 	}
-	else
+}
+
+void
+LGL_Image::
+DeletePixelBufferObjects()
+{
+	if(PixelBufferObjectFrontGL>0)
 	{
+		gl2DeleteBuffers(1,&(PixelBufferObjectFrontGL));
+		gl2DeleteBuffers(1,&(PixelBufferObjectBackGL));
 		PixelBufferObjectFrontGL=0;
 		PixelBufferObjectBackGL=0;
+		PixelBufferObjectSize=0;
 	}
-}
-
-void
-LGL_Image::
-UnloadSurfaceFromTexture()
-{
-	if(TextureGL==0) return;
-	if(TextureGLMine==false)
-	{
-		TextureGL=0;
-		return;
-	}
-	else
-	{
-		glDeleteTextures(1,&(TextureGL));
-		TextureGL=0;
-		LGL.TexturePixels-=TexW*TexH;
-	}
-
-	//Delete Pixel Buffer Object
-	gl2DeleteBuffers(1,&(PixelBufferObjectFrontGL));
-	gl2DeleteBuffers(1,&(PixelBufferObjectBackGL));
-}
-
-void
-LGL_Image::
-UpdateTexture
-(
-	int		x,
-	int		y,
-	int		bytesperpixel,
-	unsigned char*	data,
-	bool		inLinearInterpolation,
-	const char*	name
-)
-{
-	if(x!=w)
-	{
-		//printf("x!=w (%i vs %i)\n",x,w);
-		w=LGL_Min(x,TexW);
-	}
-	if(y!=h)
-	{
-		//printf("y!=h (%i vs %i)\n",y,h);
-		h=LGL_Min(y,TexH);
-	}
-	assert(bytesperpixel==3 || bytesperpixel==4);
-	assert(data!=NULL);
-	LinearInterpolation=inLinearInterpolation;
-	assert(name);
-	if(name[0]=='!')
-	{
-		sprintf(Path,"%s",name);
-		sprintf(PathShort,"%s",name);
-	}
-	else
-	{
-		sprintf(Path,"!%s",name);
-		sprintf(PathShort,"!%s",name);
-	}
-/*
-	if(PixelBufferObjectFrontGL==0)
-	{
-		GLsizei size = w*h*(AlphaChannel?4:3);
-		gl2GenBuffers(1,&PixelBufferObjectFrontGL);
-		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
-		gl2BufferData
-		(
-			GL_PIXEL_UNPACK_BUFFER,
-			(GLsizeiptr)(&size),
-			NULL,
-			GL_STREAM_DRAW
-		);
-		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
-	}
-*/
-	bool pboReady = gl2IsBuffer(PixelBufferObjectFrontGL);
-
-	if(TextureGL==0)
-	{
-		//Though surface might be quite undefined at this point... Hmm...
-		LoadSurfaceToTexture(LinearInterpolation);
-	}
-
-	glBindTexture(GL_TEXTURE_2D,TextureGL);
-	if(pboReady)
-	{
-		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
-		gl2BufferData(GL_PIXEL_UNPACK_BUFFER, w*h*bytesperpixel, data, GL_STREAM_DRAW);
-	}
-	else
-	{
-		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
-	}
-
-	glTexSubImage2D
-	(
-		GL_TEXTURE_2D,
-		0,			//Level of Detail=0
-		0,			//X-Offset
-		0,			//Y-Offset
-		w,
-		h,
-		bytesperpixel==3?GL_RGB:GL_BGRA,
-		GL_UNSIGNED_BYTE,
-		pboReady?0:data
-	);
-
-	if(pboReady)
-	{
-		//gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
-		//gl2BufferData(GL_PIXEL_UNPACK_BUFFER, w*h*bytesperpixel, 0, GL_STREAM_DRAW);
-		/*
-		GLubyte* pbo = (GLubyte*)gl2MapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
-		if(pbo)
-		{
-			memcpy(pbo,data,w*h*bytesperpixel);
-			gl2UnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-		}
-		*/
-	}
-
-	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
-
-	//Swap
-	/*
-	GLuint tmp=PixelBufferObjectBackGL;
-	PixelBufferObjectBackGL=PixelBufferObjectFrontGL;
-	PixelBufferObjectFrontGL=tmp;
-	*/
 }
 
 void
@@ -7203,8 +7250,8 @@ FrameBufferViewPort
 	BottomInt=	(int)floor(bottom*LGL.WindowResolutionY);
 	WidthInt=	((int)ceil(right*LGL.WindowResolutionX))-LeftInt;
 	HeightInt=	((int)ceil(top*LGL.WindowResolutionY))-BottomInt;
-	w=WidthInt;
-	h=HeightInt;
+	ImgW=WidthInt;
+	ImgH=HeightInt;
 }
 
 void
@@ -7221,14 +7268,14 @@ int
 LGL_Image::
 GetWidth()
 {
-	return(w);
+	return(ImgW);
 }
 
 int
 LGL_Image::
 GetHeight()
 {
-	return(h);
+	return(ImgH);
 }
 
 const
@@ -7266,14 +7313,14 @@ GetPixelR
 	}
 	if
 	(
-		x>=0 && x<w &&
-		y>=0 && y<h
+		x>=0 && x<ImgW &&
+		y>=0 && y<ImgH
 	)
 	{
 		int Bpp=SurfaceSDL->format->BytesPerPixel;
 		return
 		(
-			((char*)SurfaceSDL->pixels)[(h-y)*w*Bpp + x*Bpp]/255.0
+			((char*)SurfaceSDL->pixels)[(ImgH-y)*ImgW*Bpp + x*Bpp]/255.0
 		);
 	}
 	else
@@ -7301,14 +7348,14 @@ GetPixelG
 	}
 	if
 	(
-		x>=0 && x<w &&
-		y>=0 && y<h
+		x>=0 && x<ImgW &&
+		y>=0 && y<ImgH
 	)
 	{
 		int Bpp=SurfaceSDL->format->BytesPerPixel;
 		return
 		(
-			((char*)SurfaceSDL->pixels)[(h-y)*w*Bpp + x*Bpp + 1]/255.0
+			((char*)SurfaceSDL->pixels)[(ImgH-y)*ImgW*Bpp + x*Bpp + 1]/255.0
 		);
 	}
 	else
@@ -7336,14 +7383,14 @@ GetPixelB
 	}
 	if
 	(
-		x>=0 && x<w &&
-		y>=0 && y<h
+		x>=0 && x<ImgW &&
+		y>=0 && y<ImgH
 	)
 	{
 		int Bpp=SurfaceSDL->format->BytesPerPixel;
 		return
 		(
-			((char*)SurfaceSDL->pixels)[(h-y)*w*Bpp + x*Bpp + 2]/255.0
+			((char*)SurfaceSDL->pixels)[(ImgH-y)*ImgW*Bpp + x*Bpp + 2]/255.0
 		);
 	}
 	else
@@ -7371,14 +7418,14 @@ GetPixelA
 	}
 	if
 	(
-		x>=0 && x<w &&
-		y>=0 && y<h
+		x>=0 && x<ImgW &&
+		y>=0 && y<ImgH
 	)
 	{
 		int Bpp=SurfaceSDL->format->BytesPerPixel;
 		return
 		(
-			((char*)SurfaceSDL->pixels)[(h-y)*w*Bpp + x*Bpp + 3]/255.0
+			((char*)SurfaceSDL->pixels)[(ImgH-y)*ImgW*Bpp + x*Bpp + 3]/255.0
 		);
 	}
 	else
@@ -7408,12 +7455,12 @@ SetPixelR
 	}
 	if
 	(
-		x>=0 && x<w &&
-		y>=0 && y<h
+		x>=0 && x<ImgW &&
+		y>=0 && y<ImgH
 	)
 	{
 		int Bpp=SurfaceSDL->format->BytesPerPixel;
-		((char*)SurfaceSDL->pixels)[(h-y)*w*Bpp + x*Bpp]=(int)floor(r*255.0);
+		((char*)SurfaceSDL->pixels)[(ImgH-y)*ImgW*Bpp + x*Bpp]=(int)floor(r*255.0);
 	}
 	else
 	{
@@ -7440,12 +7487,12 @@ SetPixelG
 	}
 	if
 	(
-		x>=0 && x<w &&
-		y>=0 && y<h
+		x>=0 && x<ImgW &&
+		y>=0 && y<ImgH
 	)
 	{
 		int Bpp=SurfaceSDL->format->BytesPerPixel;
-		((char*)SurfaceSDL->pixels)[(h-y)*w*Bpp + x*Bpp + 1]=(int)floor(g*255.0);
+		((char*)SurfaceSDL->pixels)[(ImgH-y)*ImgW*Bpp + x*Bpp + 1]=(int)floor(g*255.0);
 	}
 	else
 	{
@@ -7472,12 +7519,12 @@ SetPixelB
 	}
 	if
 	(
-		x>=0 && x<w &&
-		y>=0 && y<h
+		x>=0 && x<ImgW &&
+		y>=0 && y<ImgH
 	)
 	{
 		int Bpp=SurfaceSDL->format->BytesPerPixel;
-		((char*)SurfaceSDL->pixels)[(h-y)*w*Bpp + x*Bpp + 2]=(int)floor(b*255.0);
+		((char*)SurfaceSDL->pixels)[(ImgH-y)*ImgW*Bpp + x*Bpp + 2]=(int)floor(b*255.0);
 	}
 	else
 	{
@@ -7504,12 +7551,12 @@ SetPixelA
 	}
 	if
 	(
-		x>=0 && x<w &&
-		y>=0 && y<h
+		x>=0 && x<ImgW &&
+		y>=0 && y<ImgH
 	)
 	{
 		int Bpp=SurfaceSDL->format->BytesPerPixel;
-		((char*)SurfaceSDL->pixels)[(h-y)*w*Bpp + x*Bpp + 3]=(int)floor(a*255.0);
+		((char*)SurfaceSDL->pixels)[(ImgH-y)*ImgW*Bpp + x*Bpp + 3]=(int)floor(a*255.0);
 	}
 	else
 	{
@@ -7615,10 +7662,10 @@ FileLoad
 		assert(SurfaceSDL);
 	}
 
-	w=SurfaceSDL->w;
-	h=SurfaceSDL->h;
-	TexW=LGL_NextPowerOfTwo(w);
-	TexH=LGL_NextPowerOfTwo(h);
+	ImgW=SurfaceSDL->w;
+	ImgH=SurfaceSDL->h;
+	TexW=LGL_NextPowerOfTwo(ImgW);
+	TexH=LGL_NextPowerOfTwo(ImgH);
 
 	TextureGL=0;
 	FrameBufferImage=false;
@@ -8263,6 +8310,8 @@ SwapInNewBuffer
 (
 	char*		videoPath,
 	unsigned char*	buffer,
+	int		bufferWidth,
+	int		bufferHeight,
 	unsigned int&	bufferBytes,
 	long		frameNumber
 )
@@ -8271,6 +8320,8 @@ SwapInNewBuffer
 	unsigned char* bufferOld=Buffer;
 	unsigned int bufferBytesOld=BufferBytes;
 	Buffer=buffer;
+	BufferWidth=bufferWidth;
+	BufferHeight=bufferHeight;
 	BufferBytes=bufferBytes;
 	bufferBytes=bufferBytesOld;
 	FrameNumber=frameNumber;
@@ -8289,6 +8340,27 @@ lgl_FrameBuffer::
 GetBuffer()	const
 {
 	return(Buffer);
+}
+
+int
+lgl_FrameBuffer::
+GetBufferWidth()	const
+{
+	return(BufferWidth);
+}
+
+int
+lgl_FrameBuffer::
+GetBufferHeight()	const
+{
+	return(BufferHeight);
+}
+
+unsigned int
+lgl_FrameBuffer::
+GetBufferBytes()	const
+{
+	return(BufferBytes);
 }
 
 long
@@ -8389,13 +8461,15 @@ Init()
 	//Preallocate lgl_FrameBuffers
 	for(long int a=0;a<FrameBufferAddRadius+FrameBufferSubtractRadius;a++)
 	{
-		unsigned int bufferBytes=3*1920*480;
+		unsigned int bufferBytes=4*1920*480;//GetProjectorQuadrentResX()*GetProjectorQuadrentResY();
 		unsigned char* buffer=new uint8_t[bufferBytes];
 		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
 		unsigned char* oldie = frameBuffer->SwapInNewBuffer
 		(
 			NULL,
 			buffer,
+			1920,
+			480,
 			bufferBytes,
 			-9999-a
 		);
@@ -8604,17 +8678,36 @@ GetImage()
 	//Update Image
 	char name[1024];
 	sprintf(name,"%s",Path);
+	Image->SetVideoPath(path);
+
+	if
+	(
+		BufferWidth<0 ||
+		BufferHeight<0
+	)
+	{
+		Image->SetFrameNumber(-1);
+		return(Image);
+	}
+
+/*
+printf("Calling UpdateTexture() w/ buffer frame %i (%0.16x) (%i) (%s)\n",
+	buffer->GetFrameNumber(),
+	buffer->GetBuffer(),
+	buffer->GetBufferBytes(),
+	buffer->GetVideoPath());
+*/
+
 	Image->UpdateTexture
 	(
-		BufferWidth,
-		BufferHeight,
+		buffer->GetBufferWidth(),
+		buffer->GetBufferHeight(),
 		4,
 		buffer->GetBuffer(),
 		true,
 		name
 	);
 	Image->SetFrameNumber(buffer->GetFrameNumber());
-	Image->SetVideoPath(path);
 	FrameNumberDisplayed=buffer->GetFrameNumber();
 
 	if(FPSDisplayedTimer.SecondsSinceLastReset()>=1.0f)
@@ -8912,6 +9005,7 @@ MaybeLoadVideo()
 	FPS=
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(float)
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den;
+/*
 printf("FPS A = %i / %i (%.2f)\n",
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num,
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den,
@@ -8948,6 +9042,7 @@ printf("VidStream->codec->time_base = %i / %i (%.2f) (%.2f)\n",
 	FormatContext->streams[VideoStreamIndex]->codec->time_base.num);
 	FPSTimestamp=CodecContext->time_base.den/(float)CodecContext->time_base.num;
 printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
+*/
 	//FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
 
 	FrameNative=lgl_avcodec_alloc_frame();
@@ -9134,6 +9229,8 @@ MaybeDecodeImage()
 		(
 			Path,
 			BufferRGB,
+			BufferWidth,
+			BufferHeight,
 			BufferBytes,	//Changes...
 			frameNumberTarget
 		);
@@ -11042,8 +11139,8 @@ LGL_Font
 		{
 			Glyph[a]=new LGL_Image(path,false,true,TextureGL,x,y);/*{{{*//*}}}*/
 			GlyphTexLeft[a]=x;
-			GlyphTexRight[a]=x+Glyph[a]->w;
-			GlyphTexBottom[a]=y+Glyph[a]->h;
+			GlyphTexRight[a]=x+Glyph[a]->GetWidth();
+			GlyphTexBottom[a]=y+Glyph[a]->GetHeight();
 			GlyphTexTop[a]=y;
 			GlyphTexWidth[a]=GlyphTexRight[a]-GlyphTexLeft[a];
 			GlyphTexHeight[a]=GlyphTexBottom[a]-GlyphTexTop[a];
@@ -11191,7 +11288,7 @@ const	char	*string,
 	float* colorArray=lgl_GetFontBuffer(colorArraySize);
 
 	assert(Glyph[32]);
-	float glyph32h = Glyph[32]->h;
+	float glyph32h = Glyph[32]->GetHeight();
 	float& alpha = a;
 
 	bool fixedWidthOn=true;
@@ -11488,8 +11585,8 @@ GetWidthChar
 	}
 	return
 	(
-		height*(float)Glyph[(unsigned int)in]->w/(float)Glyph[(unsigned int)in]->h +
-		height*(float)1/(float)Glyph[(unsigned int)in]->h
+		height*(float)Glyph[(unsigned int)in]->GetWidth()/(float)Glyph[(unsigned int)in]->GetHeight() +
+		height*(float)1/(float)Glyph[(unsigned int)in]->GetHeight()
 	);
 }
 
