@@ -82,18 +82,7 @@ VisualizerObj()
 		random.clear();
 	}
 
-	for(int a=0;a<2;a++)
-	{
-		SoundsLoaded[a]=false;
-		Videos[a]=NULL;
-		VideoBrightness[a]=0.0f;
-		NoiseFactor[a]=1.0f;
-	}
 	VideoFPSDisplay=0.0f;
-	for(int a=0;a<4;a++)
-	{
-		FreqVideos[a]=NULL;
-	}
 
 	char tmp[2048];
 
@@ -159,21 +148,55 @@ void
 VisualizerObj::
 NextFrame
 (
-	float	secondsElapsed
+	float		secondsElapsed,
+	TurntableObj**	tts
 )
 {
 	//Frequency-sensitive video mixing
-	for(int tt=0;tt<2;tt++)
+	for(int t=0;t<2;t++)
 	{
-		LGL_VideoDecoder* vidL=FreqVideos[tt*2+0];
-		LGL_VideoDecoder* vidH=FreqVideos[tt*2+1];
-		for(int a=0;a<2;a++)
+		if(tts[t]->GetFreqSenseBrightnessPreview()>0.0f)
 		{
-			float speedFactor=(a==0) ? 1.0f : 4.0f;
-			LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
-			if(vid)
+			LGL_VideoDecoder* vidL=tts[t]->GetVideoLo();
+			LGL_VideoDecoder* vidH=tts[t]->GetVideoHi();
+
+			float volAve;
+			float volMax;
+			float freqFactor;
+			tts[t]->GetFreqMetaData(volAve,volMax,freqFactor);
+			float vol=LGL_Min(1.0f,volAve*2);
+
+			//See if we should time-jump in any of our vids
+			for(int a=0;a<2;a++)
 			{
-				vid->SetTime(vid->GetTime()+speedFactor*(1.0f/60.0f));
+				LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
+				if(vid)
+				{
+					float neoVol=vol;
+					float neoFreqFactor=freqFactor;
+					float oldFreqBrightness = vid->StoredBrightness;
+					float neoFreqBrightness = GetFreqBrightness((vid==vidH),neoFreqFactor,neoVol);
+					if
+					(
+						oldFreqBrightness>0.0f &&
+						neoFreqBrightness==0.0f
+					)
+					{
+						float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+						if(min<0.0f) min=0.0f;
+						float max=vid->GetLengthSeconds()-10.0f;
+						if(max<0.0f) max=vid->GetLengthSeconds();
+						vid->SetTime(LGL_RandFloat(min,max));
+					}
+					else
+					{
+						float speedFactor=
+							tts[t]->GetFinalSpeed()*
+							((vid==vidL) ? 1.0f : 4.0f);
+						vid->SetTime(vid->GetTime()+speedFactor*(1.0f/60.0f));
+					}
+					vid->StoredBrightness=neoFreqBrightness;
+				}
 			}
 		}
 	}
@@ -347,13 +370,12 @@ DrawVisuals
 	{
 		DrawVideos
 		(
-			false,
-			videoNow,
 			tts[videoNow],
 			l,
 			r,
 			b,
-			t
+			t,
+			false
 		);
 	}
 	
@@ -802,114 +824,6 @@ GetScrollTextEnabled()
 
 void
 VisualizerObj::
-SetVideos
-(
-	LGL_VideoDecoder*	video0,
-	float			videoBrightness0,
-	LGL_VideoDecoder*	video1,
-	float			videoBrightness1
-)
-{
-	Videos[0]=video0;
-	Videos[1]=video1;
-	VideoBrightness[0]=videoBrightness0;
-	VideoBrightness[1]=videoBrightness1;
-}
-
-void
-VisualizerObj::
-SetSoundsLoaded
-(
-	bool	loaded0,
-	bool	loaded1
-)
-{
-	SoundsLoaded[0]=loaded0;
-	SoundsLoaded[1]=loaded1;
-}
-
-LGL_VideoDecoder*
-VisualizerObj::
-GetVideo
-(
-	int	which
-)
-{
-	return(Videos[which]);
-}
-	
-void
-VisualizerObj::
-SetFrequencySensitiveVideos
-(
-	LGL_VideoDecoder* video0l, LGL_VideoDecoder* video0h, float volAve0, float volMax0, float freqFactor0, int mode0,
-	LGL_VideoDecoder* video1l, LGL_VideoDecoder* video1h, float volAve1, float volMax1, float freqFactor1, int mode1
-)
-{
-	FreqVideos[0]=video0l;
-	FreqVideos[1]=video0h;
-	FreqVideos[2]=video1l;
-	FreqVideos[3]=video1h;
-
-	float vol0=LGL_Min(1.0f,volAve0*2);
-	float vol1=LGL_Min(1.0f,volAve1*2);
-
-	//See if we should time-jump in any of our vids
-	for(int a=0;a<4;a++)
-	{
-		LGL_VideoDecoder* vid=FreqVideos[a];
-		if(vid)
-		{
-			bool getHi=a%2;
-			float oldVol=FreqVolume[a/2];
-			float neoVol=(a<2) ? vol0 : vol1;
-			float oldFreqFactor=FreqFreqFactor[a/2];
-			float neoFreqFactor=(a<2) ? freqFactor0 : freqFactor1;
-			if
-			(
-				GetFreqBrightness(getHi,oldFreqFactor,oldVol)>0.0f &&
-				GetFreqBrightness(getHi,neoFreqFactor,neoVol)==0.0f
-			)
-			{
-				float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
-				if(min<0.0f) min=0.0f;
-				float max=vid->GetLengthSeconds()-10.0f;
-				if(max<0.0f) max=vid->GetLengthSeconds();
-				vid->SetTime(LGL_RandFloat(min,max));
-			}
-		}
-	}
-
-	FreqVolume[0]=vol0;
-	FreqVolume[1]=vol1;
-
-	FreqFreqFactor[0]=freqFactor0;
-	FreqFreqFactor[1]=freqFactor1;
-
-	FreqMode[0]=mode0;
-	FreqMode[1]=mode1;
-}
-
-void
-VisualizerObj::
-SetFrequencySensitiveGainEQ
-(
-	float	gain0,	float	eqLo0,	float	eqHi0,
-	float	gain1,	float	eqLo1,	float	eqHi1
-)
-{
-	FreqGain[0]=gain0;
-	FreqGain[1]=gain1;
-
-	FreqEQLo[0]=eqLo0;
-	FreqEQLo[1]=eqLo1;
-	
-	FreqEQHi[0]=eqHi0;
-	FreqEQHi[1]=eqHi1;
-}
-
-void
-VisualizerObj::
 GetNextVideoPathRandom(char* path)
 {
 	if(VideoRandomQueue.empty())
@@ -1035,14 +949,12 @@ void
 VisualizerObj::
 DrawVideos
 (
-	bool		preview,
-	int		which,
 	TurntableObj*	tt,
 	float		l,
 	float		r,
 	float		b,
 	float		t,
-	float		overrideBrightness
+	bool		preview
 )
 {
 	float lOrig=l;
@@ -1054,8 +966,11 @@ DrawVideos
 	float w=r-l;
 	float h=t-b;
 
-	int videoNow=which;
-	float bright = (overrideBrightness==-1.0f) ? VideoBrightness[videoNow] : overrideBrightness;
+	float videoBright = preview ? tt->GetVideoBrightnessPreview() : tt->GetVideoBrightnessFinal();
+	float oscilloscopeBright = preview ? tt->GetOscilloscopeBrightnessPreview() : tt->GetOscilloscopeBrightnessFinal();
+	float freqSenseBright = preview ? tt->GetFreqSenseBrightnessPreview() : tt->GetFreqSenseBrightnessFinal();
+
+//if(preview) printf("Brights: %.2f, %.2f, %.2f\n",videoBright,oscilloscopeBright,freqSenseBright);
 
 	if(preview)
 	{
@@ -1090,26 +1005,29 @@ DrawVideos
 	//float w=r-l;
 	//float h=t-b;
 
-	bool somethingDrawn=false;
-
-	if(FreqMode[videoNow]==1)
+	if(freqSenseBright>0.0f)
 	{
-		/*
 		//Frequency-sensitive video mixing
 
-		LGL_VideoDecoder* vidL=FreqVideos[videoNow*2+0];
-		LGL_VideoDecoder* vidH=FreqVideos[videoNow*2+1];
+		LGL_VideoDecoder* vidL=tt->GetVideoLo();
+		LGL_VideoDecoder* vidH=tt->GetVideoHi();
+
+		float volAve;
+		float volMax;
+		float freqFactor;
+		tt->GetFreqMetaData(volAve,volMax,freqFactor);
+		volAve = LGL_Min(1.0f,volAve*2.0f);
 
 		for(int a=0;a<2;a++)
 		{
 			LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
 			if(vid)
 			{
-				float vol = LGL_Min(1,FreqVolume[videoNow]*FreqGain[videoNow]);
-				float multFreq = ((a==0) ? FreqEQLo[videoNow] : FreqEQHi[videoNow]);
-				float myFreqFactor=FreqFreqFactor[videoNow];
-				float bright = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
-				if(overrideBrightness==false) bright*=VideoBrightness[videoNow];
+				float vol = LGL_Min(1,volAve*tt->GetGain());
+				float multFreq = (vid==vidL) ? tt->GetEQLo() : tt->GetEQHi();
+				float myFreqFactor=freqFactor;
+				float br = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
+				br*=vid->StoredBrightness*freqSenseBright;
 
 				LGL_Image* image = vid->GetImage();//EIGHT_WAY ? !preview : preview);
 				{
@@ -1119,310 +1037,332 @@ DrawVideos
 						image->GetFrameNumber()!=-1
 					)
 					{
-						while(bright>0.0f)
+						while(br>0.0f)
 						{
 							image->DrawToScreen
 							(
 								l,r,b,t,
 								0,
-								bright,
-								bright,
-								bright,
+								br,
+								br,
+								br,
 								0.0f
 							);
-							bright-=1.0f;
+							br-=1.0f;
 						}
 					}
 				}
 			}
 		}
-		*/
 	}
-	else if(FreqMode[videoNow]==2)
+
+	if(oscilloscopeBright > 0.0f)
 	{
-		float coolR;
-		float coolG;
-		float coolB;
-		GetColorCool(coolR,coolG,coolB);
-
-		float warmR;
-		float warmG;
-		float warmB;
-		GetColorWarm(warmR,warmG,warmB);
-
-		float volAve;
-		float volMax;
-		float freqFactor;
-		LGL_AudioInMetadata(volAve,volMax,freqFactor);
-
-		float red=
-			(1.0f-freqFactor)*coolR+
-			(0.0f+freqFactor)*warmR;
-		float green=
-			(1.0f-freqFactor)*coolG+
-			(0.0f+freqFactor)*warmG;
-		float blue=
-			(1.0f-freqFactor)*coolB+
-			(0.0f+freqFactor)*warmB;
-
-		if(volMax>=0.99f)
+		//FIXME: This should be a single path for uniform oscilloscope rendering
+		if(tt->GetAudioInputMode())
 		{
-			red=1.0f;
-			green=0.0f;
-			blue=0.0f;
-		}
+			float coolR;
+			float coolG;
+			float coolB;
+			GetColorCool(coolR,coolG,coolB);
 
-		if
-		(
-			GetFreqBrightness(false,freqFactor,2*volAve*1.0f) ||
-			GetFreqBrightness(true,freqFactor,2*volAve*1.0f)
-		)
-		{
-			LGL_DrawAudioInWaveform
-			(
-				l,r,b,t,
-				red*bright,green*bright,blue*bright,0.0f,
-				3.0f,
-				true
-			);
-		}
+			float warmR;
+			float warmG;
+			float warmB;
+			GetColorWarm(warmR,warmG,warmB);
 
-		somethingDrawn=true;
-	}
-	else if(Videos[videoNow])
-	{
-		LGL_Image* image=Videos[videoNow]->GetImage();//EIGHT_WAY ? !preview : preview);
-		if
-		(
-			image!=NULL &&
-			image->GetFrameNumber()!=-1
-		)
-		{
-			int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
-			int projW;
-			int projH;
-			if(LGL_DisplayCount()==1)
+			float volAve;
+			float volMax;
+			float freqFactor;
+			LGL_AudioInMetadata(volAve,volMax,freqFactor);
+
+			float red=
+				(1.0f-freqFactor)*coolR+
+				(0.0f+freqFactor)*warmR;
+			float green=
+				(1.0f-freqFactor)*coolG+
+				(0.0f+freqFactor)*warmG;
+			float blue=
+				(1.0f-freqFactor)*coolB+
+				(0.0f+freqFactor)*warmB;
+
+			if(volMax>=0.99f)
 			{
-				projW = ViewportVisualsWidth * LGL_DisplayResolutionX();
-				projH = ViewportVisualsHeight * LGL_DisplayResolutionY();
-			}
-			else
-			{
-				projW = LGL_DisplayResolutionX(projDisplay);
-				projH = LGL_DisplayResolutionY(projDisplay);
-			}
-			float projAR = projW/(float)projH;
-			float imageAR = image->GetWidth()/(float)image->GetHeight();
-			float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
-
-			float midX = 0.5f*(l+r);
-			float midY = 0.5f*(b+t);
-
-			float myL = l;
-			float myR = r;
-			float myB = b;
-			float myT = t;
-
-			if(tt->GetAspectRatioMode()==0)
-			{
-				//Respect AR
-
-				//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
-
-				myL = midX - 0.5f * w * (imageAR/targetAR);
-				myR = midX + 0.5f * w * (imageAR/targetAR);
-				myB = midY - 0.5f * h;
-				myT = midY + 0.5f * h;
-
-				//Make sure we're not too wide
-				float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
-				float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
-				if(myL<targetLimitL)
-				{
-					float scaleFactor = (midX-targetLimitL)/(midX-myL);
-					myB = midY - 0.5f * h * scaleFactor;
-					myT = midY + 0.5f * h * scaleFactor;
-					myL = targetLimitL;
-					myR = targetLimitR;
-				}
-
-				//Make sure we're not too tall
-				float targetLimitB = midY - 0.5f * h * (targetAR/projAR);
-				float targetLimitT = midY + 0.5f * h * (targetAR/projAR);
-				if(myB<targetLimitB)
-				{
-					float scaleFactor = (midY-targetLimitB)/(midY-myB);
-					myL = midX - (midX-myL) * scaleFactor;
-					myR = midX + (myR-midX) * scaleFactor;
-					myB = targetLimitB;
-					myT = targetLimitT;
-				}
-			}
-			else if(tt->GetAspectRatioMode()==1)
-			{
-				//Fill (but respect projector AR)
-				//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
-				float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
-				float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
-
-				myL = targetLimitL;
-				myR = targetLimitR;
-				myB = b;
-				myT = t;
-
-				//Make sure we're not too wide
-				if(myL<l)
-				{
-					float scaleFactor = (midX-l)/(midX-myL);
-					myB = midY - 0.5f * h * scaleFactor;
-					myT = midY + 0.5f * h * scaleFactor;
-					myL = l;
-					myR = r;
-				}
-			}
-			else if(tt->GetAspectRatioMode()==2)
-			{
-				//Zebbler-tiling
-				//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
-				float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
-				float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
-
-				myL = targetLimitL;
-				myR = targetLimitR;
-				myB = b;
-				myT = t;
-
-				//Make sure we're not too wide
-				if(myL<l)
-				{
-					float scaleFactor = (midX-l)/(midX-myL);
-					myB = midY - 0.5f * h * scaleFactor;
-					myT = midY + 0.5f * h * scaleFactor;
-					myL = l;
-					myR = r;
-				}
-
-				//At this point we're filling the whole screen, so...
-				float myL13rd = myL + (1.0f/3.0f)*(myR-myL);
-				float myL23rd = myL + (2.0f/3.0f)*(myR-myL);
-				image->DrawToScreen
-				(
-					myL13rd,myL,
-					myB,myT,
-					0,
-					bright,
-					bright,
-					bright,
-					preview?1.0f:0.0f
-				);
-				image->DrawToScreen
-				(
-					myL13rd,myL23rd,
-					myB,myT,
-					0,
-					bright,
-					bright,
-					bright,
-					preview?1.0f:0.0f
-				);
-				image->DrawToScreen
-				(
-					myR,myL23rd,
-					myB,myT,
-					0,
-					bright,
-					bright,
-					bright,
-					preview?1.0f:0.0f
-				);
-			}
-
-			if(tt->GetAspectRatioMode()!=2)
-			{
-				image->DrawToScreen
-				(
-					myL,myR,myB,myT,
-					0,
-					bright,
-					bright,
-					bright,
-					preview?1.0f:0.0f
-				);
-			}
-
-			if(Videos[videoNow]->GetFPSMissed()>0)
-			{
-				VideoFPSDisplay=5.0f;
-			}
-			else
-			{
-				VideoFPSDisplay-=LGL_SecondsSinceLastFrame();
+				red=1.0f;
+				green=0.0f;
+				blue=0.0f;
 			}
 
 			if
 			(
-				preview &&
-				VideoFPSDisplay
+				GetFreqBrightness(false,freqFactor,2*volAve*1.0f) ||
+				GetFreqBrightness(true,freqFactor,2*volAve*1.0f)
 			)
 			{
-				LGL_GetFont().DrawString
+				LGL_DrawAudioInWaveform
 				(
-					lOrig+0.05f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
-					VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,
-					false,
-					0.75f,
-					"%i",
-					(int)(ceilf(Videos[videoNow]->GetFPS()))
+					l,r,b,t,
+					red*oscilloscopeBright,green*oscilloscopeBright,blue*oscilloscopeBright,0.0f,
+					3.0f,
+					true
 				);
-
-				float br=VideoFPSDisplay;
-				LGL_GetFont().DrawString
-				(
-					lOrig+0.05f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
-					br,br,br,br,
-					false,
-					0.75f,
-					"%i",
-					Videos[videoNow]->GetFPSDisplayed()
-				);
-
-				if(Videos[videoNow]->GetFPSMissed())
-				{
-					LGL_GetFont().DrawString
-					(
-						rOrig-0.3f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
-						br,0,0,br,
-						false,
-						0.75f,
-						"(%i)",
-						Videos[videoNow]->GetFPSMissed()
-					);
-				}
 			}
-			somethingDrawn=true;
-		}
-
-		bool videoReady = true;//Videos[videoNow]->GetImageDecodedSinceVideoChange();
-		if(videoReady)
-		{
-			NoiseFactor[videoNow]=LGL_Max(0.0f,NoiseFactor[videoNow]-4.0f*LGL_SecondsSinceLastFrame());
 		}
 		else
 		{
-			NoiseFactor[videoNow]=1.0f;
+			tt->DrawWave
+			(
+				l,r,b,t,
+				oscilloscopeBright,
+				preview
+			);
+		}
+	}
+	
+	if
+	(
+		videoBright > 0.0f &&
+		1//tt->GetAudioInputMode()==false
+	)
+	{
+		if(LGL_VideoDecoder* vid = tt->GetVideo())
+		{
+			LGL_Image* image=vid->GetImage();//EIGHT_WAY ? !preview : preview);
+			if
+			(
+				image!=NULL &&
+				image->GetFrameNumber()!=-1
+			)
+			{
+				int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
+				int projW;
+				int projH;
+				if(LGL_DisplayCount()==1)
+				{
+					projW = ViewportVisualsWidth * LGL_DisplayResolutionX();
+					projH = ViewportVisualsHeight * LGL_DisplayResolutionY();
+				}
+				else
+				{
+					projW = LGL_DisplayResolutionX(projDisplay);
+					projH = LGL_DisplayResolutionY(projDisplay);
+				}
+				float projAR = projW/(float)projH;
+				float imageAR = image->GetWidth()/(float)image->GetHeight();
+				float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
+
+				float midX = 0.5f*(l+r);
+				float midY = 0.5f*(b+t);
+
+				float myL = l;
+				float myR = r;
+				float myB = b;
+				float myT = t;
+
+				if(tt->GetAspectRatioMode()==0)
+				{
+					//Respect AR
+
+					//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
+
+					myL = midX - 0.5f * w * (imageAR/targetAR);
+					myR = midX + 0.5f * w * (imageAR/targetAR);
+					myB = midY - 0.5f * h;
+					myT = midY + 0.5f * h;
+
+					//Make sure we're not too wide
+					float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
+					float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
+					if(myL<targetLimitL)
+					{
+						float scaleFactor = (midX-targetLimitL)/(midX-myL);
+						myB = midY - 0.5f * h * scaleFactor;
+						myT = midY + 0.5f * h * scaleFactor;
+						myL = targetLimitL;
+						myR = targetLimitR;
+					}
+
+					//Make sure we're not too tall
+					float targetLimitB = midY - 0.5f * h * (targetAR/projAR);
+					float targetLimitT = midY + 0.5f * h * (targetAR/projAR);
+					if(myB<targetLimitB)
+					{
+						float scaleFactor = (midY-targetLimitB)/(midY-myB);
+						myL = midX - (midX-myL) * scaleFactor;
+						myR = midX + (myR-midX) * scaleFactor;
+						myB = targetLimitB;
+						myT = targetLimitT;
+					}
+				}
+				else if(tt->GetAspectRatioMode()==1)
+				{
+					//Fill (but respect projector AR)
+					//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
+					float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
+					float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
+
+					myL = targetLimitL;
+					myR = targetLimitR;
+					myB = b;
+					myT = t;
+
+					//Make sure we're not too wide
+					if(myL<l)
+					{
+						float scaleFactor = (midX-l)/(midX-myL);
+						myB = midY - 0.5f * h * scaleFactor;
+						myT = midY + 0.5f * h * scaleFactor;
+						myL = l;
+						myR = r;
+					}
+				}
+				else if(tt->GetAspectRatioMode()==2)
+				{
+					//Zebbler-tiling
+					//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
+					float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
+					float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
+
+					myL = targetLimitL;
+					myR = targetLimitR;
+					myB = b;
+					myT = t;
+
+					//Make sure we're not too wide
+					if(myL<l)
+					{
+						float scaleFactor = (midX-l)/(midX-myL);
+						myB = midY - 0.5f * h * scaleFactor;
+						myT = midY + 0.5f * h * scaleFactor;
+						myL = l;
+						myR = r;
+					}
+
+					//At this point we're filling the whole screen, so...
+					float myL13rd = myL + (1.0f/3.0f)*(myR-myL);
+					float myL23rd = myL + (2.0f/3.0f)*(myR-myL);
+					image->DrawToScreen
+					(
+						myL13rd,myL,
+						myB,myT,
+						0,
+						videoBright,
+						videoBright,
+						videoBright,
+						preview?1.0f:0.0f
+					);
+					image->DrawToScreen
+					(
+						myL13rd,myL23rd,
+						myB,myT,
+						0,
+						videoBright,
+						videoBright,
+						videoBright,
+						preview?1.0f:0.0f
+					);
+					image->DrawToScreen
+					(
+						myR,myL23rd,
+						myB,myT,
+						0,
+						videoBright,
+						videoBright,
+						videoBright,
+						preview?1.0f:0.0f
+					);
+				}
+
+				if(tt->GetAspectRatioMode()!=2)
+				{
+					image->DrawToScreen
+					(
+						myL,myR,myB,myT,
+						0,
+						videoBright,
+						videoBright,
+						videoBright,
+						preview?1.0f:0.0f
+					);
+				}
+
+				if(vid->GetFPSMissed()>0)
+				{
+					VideoFPSDisplay=5.0f;
+				}
+				else
+				{
+					VideoFPSDisplay-=LGL_SecondsSinceLastFrame();
+				}
+
+				if
+				(
+					preview &&
+					VideoFPSDisplay
+				)
+				{
+					LGL_GetFont().DrawString
+					(
+						lOrig+0.05f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
+						VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,
+						false,
+						0.75f,
+						"%i",
+						(int)(ceilf(vid->GetFPS()))
+					);
+
+					float br=VideoFPSDisplay;
+					LGL_GetFont().DrawString
+					(
+						lOrig+0.05f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
+						br,br,br,br,
+						false,
+						0.75f,
+						"%i",
+						vid->GetFPSDisplayed()
+					);
+
+					if(vid->GetFPSMissed())
+					{
+						LGL_GetFont().DrawString
+						(
+							rOrig-0.3f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
+							br,0,0,br,
+							false,
+							0.75f,
+							"(%i)",
+							vid->GetFPSMissed()
+						);
+					}
+				}
+			}
+
+			ForceVideoToBackOfRandomQueue(vid->GetPathShort());
 		}
 
-		if(NoiseFactor[videoNow]>0.0f)
+		const bool videoReady = true;//vid->GetImageDecodedSinceVideoChange();
+		float noiseFactorVideo = tt->GetNoiseFactorVideo();
+		if(videoReady)
+		{
+			noiseFactorVideo=LGL_Max(0.0f,noiseFactorVideo-4.0f*LGL_SecondsSinceLastFrame());
+		}
+		else
+		{
+			noiseFactorVideo=1.0f;
+		}
+		tt->SetNoiseFactorVideo(noiseFactorVideo);
+
+		if(noiseFactorVideo>0.0f)
 		{
 			int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_128_128-1);
 			NoiseImage[which]->DrawToScreen
 			(
 				l,r,b,t,
 				0,
-				NoiseFactor[videoNow]*bright,
-				NoiseFactor[videoNow]*bright,
-				NoiseFactor[videoNow]*bright,
-				NoiseFactor[videoNow]*bright
+				noiseFactorVideo*videoBright,
+				noiseFactorVideo*videoBright,
+				noiseFactorVideo*videoBright,
+				noiseFactorVideo*videoBright
 			);
 		}
 
@@ -1441,33 +1381,6 @@ DrawVideos
 			);
 		}
 		*/
-
-		ForceVideoToBackOfRandomQueue(Videos[videoNow]->GetPathShort());
-	}
-
-	float oscBright = tt->GetOscilloscopeBrightness();
-	if(oscBright==-1.0f && somethingDrawn==false)
-	{
-		oscBright=bright;
-	}
-	if(oscBright>0.0f)
-	{
-		tt->DrawWave
-		(
-			l,r,b,t,
-			oscBright,
-			preview
-		);
-	}
-
-	if(somethingDrawn==false)
-	{
-		tt->DrawWave
-		(
-			l,r,b,t,
-			bright,
-			preview
-		);
 	}
 }
 

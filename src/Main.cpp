@@ -371,7 +371,7 @@ void NextFrame()
 	Mixer->NextFrame(LGL_SecondsSinceLastFrame());
 
 	//Visuals
-	Visualizer->NextFrame(LGL_SecondsSinceLastFrame());
+	Visualizer->NextFrame(LGL_SecondsSinceLastFrame(),Mixer->GetTurntables());
 
 	if(LGL_MouseMotion())
 	{

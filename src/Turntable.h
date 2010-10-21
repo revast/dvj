@@ -62,9 +62,15 @@ public:
 	bool				GetFocus() const;
 	void				SetTurntableNumber(int num);
 	void				SetVisualizer(VisualizerObj* viz);
-	float				GetVisualBrightness();
-	float				GetVideoBrightness();
-	float				GetOscilloscopeBrightness();
+	float				GetVisualBrightnessPreview();
+	float				GetVisualBrightnessFinal();
+	float				GetVideoBrightnessPreview();
+	float				GetVideoBrightnessFinal();
+	float				GetOscilloscopeBrightnessPreview();
+	float				GetOscilloscopeBrightnessFinal();
+	float				GetFreqSenseBrightnessPreview();
+	float				GetFreqSenseBrightnessFinal();
+	bool				GetAudioInputMode();
 
 	void				SetMixerVolumeFront(float scalar);
 	void				SetMixerVolumeBack(float scalar);
@@ -79,6 +85,8 @@ public:
 
 	void				SetMixerEQ(float low, float mid, float high);
 	void				SetMixerNudge(float mixerNudge);
+	bool				GetMixerVideoMute();
+	void				SetMixerVideoMute(bool mixerVideoMute=true);
 
 	std::vector<char*>		GetTrackListFileUpdates();
 
@@ -115,6 +123,7 @@ const	char*				GetSoundPath();
 const	char*				GetSoundPathShort();
 
 	bool				GetPaused();
+	float				GetFinalSpeed();
 	bool				GetRecordScratch();
 	bool				GetSoundLoaded();
 	bool				GetSoundLoadedFully();
@@ -194,7 +203,8 @@ private:
 	float				Pitchbend;
 	bool				PitchbendLastSetBySlider;
 	float				Nudge;
-	float				NudgeFromMixer;
+	float				MixerNudge;
+	bool				MixerVideoMute;
 	float				FinalSpeed;
 	float				FinalSpeedLastFrame;
 	bool				RewindFF;
@@ -270,9 +280,10 @@ static	VisualizerObj*			Visualizer;
 	float				VideoSwitchInterval;
 	float				VideoOffsetSeconds;
 	float				VideoAdvanceRate;
-	int				VideoFrequencySensitiveMode;
 	float				VideoBrightness;
 	float				OscilloscopeBrightness;
+	float				FreqSenseBrightness;
+	bool				AudioInputMode;
 
 public:
 
@@ -353,6 +364,8 @@ static	bool				GetSurroundMode();
 	void				SetRespondToRapidSoloInvert(int soloChannel);
 	void				BlankFilterTextIfMode0();
 	void				FileSelectToString(const char* str);
+	float				GetNoiseFactorVideo();
+	void				SetNoiseFactorVideo(float noiseFactor);
 
 };
 

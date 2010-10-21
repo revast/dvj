@@ -566,7 +566,7 @@ TurntableObj
 	Channel=-1;
 	PauseMultiplier=0;
 	Nudge=0;
-	NudgeFromMixer=0;
+	MixerNudge=0;
 	FinalSpeed=0.0f;
 	FinalSpeedLastFrame=0.0f;
 	RewindFF=false;
@@ -615,13 +615,19 @@ TurntableObj
 	TrackListFileUpdates.clear();
 
 	VideoFront=new LGL_VideoDecoder(NULL);
+	VideoFront->SetFrameBufferAddRadius(GetVideoBufferFrames());
 	VideoBack=NULL;
-	VideoLo=NULL;
-	VideoHi=NULL;
+	VideoLo=new LGL_VideoDecoder(NULL);
+	VideoLo->SetFrameBufferAddRadius(GetVideoBufferFramesFreqSense());
+	VideoLo->SetFrameBufferAddBackwards(false);
+	VideoHi=new LGL_VideoDecoder(NULL);
+	VideoHi->SetFrameBufferAddRadius(GetVideoBufferFramesFreqSense());
+	VideoHi->SetFrameBufferAddBackwards(false);
 	VideoAdvanceRate=1.0f;
-	VideoFrequencySensitiveMode=0;
 	VideoBrightness=1.0f;
-	OscilloscopeBrightness=-1.0f;
+	OscilloscopeBrightness=0.0f;
+	FreqSenseBrightness=0.0f;
+	AudioInputMode=false;
 
 	ENTIRE_WAVE_ARRAY_COUNT=LGL_WindowResolutionX();
 
@@ -1104,9 +1110,9 @@ NextFrame
 						Sound->PrepareForDelete();
 						Mode=3;
 						BadFileFlash=1.0f;
-						if(GetVideo()!=NULL)
+						if(LGL_VideoDecoder* dec = GetVideo())
 						{
-							LGL_DrawLogWrite("!dvj::DeleteVideo|%s\n",GetVideo()->GetPath());
+							LGL_DrawLogWrite("!dvj::DeleteVideo|%s\n",dec->GetPath());
 						}
 						return;
 					}
@@ -1235,9 +1241,9 @@ NextFrame
 			Channel=-1;
 			Mode=3;
 			BadFileFlash=1.0f;
-			if(GetVideo()!=NULL)
+			if(LGL_VideoDecoder* dec = GetVideo())
 			{
-				LGL_DrawLogWrite("!dvj::DeleteVideo|%s\n",GetVideo()->GetPath());
+				LGL_DrawLogWrite("!dvj::DeleteVideo|%s\n",dec->GetPath());
 			}
 			return;
 		}
@@ -1277,7 +1283,7 @@ NextFrame
 			RecordSpeedAsZeroUntilZero=true;
 		}
 		RecordHoldLastFrame=recordHold;
-		if(VideoFrequencySensitiveMode==2)
+		if(0 && AudioInputMode)
 		{
 			rewindFFFactor=0.0f;
 			recordSpeed=0.0f;
@@ -1373,7 +1379,7 @@ NextFrame
 					driveSpeed+
 					recordSpeed+
 					Nudge+
-					NudgeFromMixer;
+					MixerNudge;
 			}
 			else
 			{
@@ -1410,7 +1416,7 @@ NextFrame
 		RapidSoloInvert = Input.WaveformRapidSoloInvert(target);
 
 		//Save Points
-		if(VideoFrequencySensitiveMode!=2)
+		if(AudioInputMode==false)
 		{
 			if(Input.WaveformSavePointPrev(target))
 			{
@@ -1619,7 +1625,7 @@ NextFrame
 		}
 
 		//Pitch
-		if(VideoFrequencySensitiveMode!=2)
+		if(AudioInputMode==false)
 		{
 			Nudge=Input.WaveformNudge(target);
 
@@ -1652,7 +1658,7 @@ NextFrame
 		//Glitch
 		if
 		(
-			VideoFrequencySensitiveMode!=2 &&
+			//AudioInputMode==false &&
 			Input.WaveformStutter(target)
 		)
 		{
@@ -1732,7 +1738,7 @@ NextFrame
 		if
 		(
 			BPMAvailable() &&
-			VideoFrequencySensitiveMode!=2
+			1 //AudioInputMode==false
 		)
 		{
 			//Looping with BPM
@@ -1861,7 +1867,7 @@ NextFrame
 		else if
 		(
 			BPMAvailable()==false &&
-			VideoFrequencySensitiveMode!=2
+			1 //AudioInputMode==false
 		)
 		{
 			//Looping without BPM
@@ -2021,44 +2027,27 @@ NextFrame
 		{
 			SelectNewVideo();
 		}
-		int mode=Input.WaveformVideoFreqSenseMode(target);
+
+		int mode=Input.WaveformAudioInputMode(target);
 		if(mode!=-1)
 		{
-			if(mode>=0)
+			if(mode==2)
 			{
-				VideoFrequencySensitiveMode=LGL_Clamp(0,mode,2);
+				AudioInputMode=!AudioInputMode;
 			}
-			if(mode==-10)
+			else
 			{
-				if(VideoFrequencySensitiveMode==0)
-				{
-					VideoFrequencySensitiveMode=1;
-				}
-				else
-				{
-					VideoFrequencySensitiveMode=0;
-				}
+				AudioInputMode=(mode==1);
 			}
-			if(mode==-2)
-			{
-				if(VideoFrequencySensitiveMode==2)
-				{
-					VideoFrequencySensitiveMode=1;
-				}
-				else
-				{
-					VideoFrequencySensitiveMode=2;
-				}
-			}
-			if(VideoFrequencySensitiveMode==2)
+			if(0 && AudioInputMode)
 			{
 				PauseMultiplier=0.0f;
 			}
 			SelectNewVideo();
 		}
 
-		bool modeNext = Input.WaveformVideoAspectRatioModeNext(target);
-		if(modeNext)
+		bool next = Input.WaveformVideoAspectRatioNext(target);
+		if(next)
 		{
 			AspectRatioMode=(AspectRatioMode+1)%3;
 		}
@@ -2073,6 +2062,25 @@ NextFrame
 		if(newBright!=-1.0f)
 		{
 			OscilloscopeBrightness=newBright;
+		}
+
+		newBright=Input.WaveformFreqSenseBrightness(target);
+		if(newBright!=-1.0f)
+		{
+			float tmp = FreqSenseBrightness;
+			FreqSenseBrightness=newBright;
+			if
+			(
+				tmp==0.0f &&
+				FreqSenseBrightness >= 0.0f &&
+				(
+					strcmp(VideoLo->GetPath(),"NULL")==0 ||
+					strcmp(VideoHi->GetPath(),"NULL")==0
+				)
+			)
+			{
+				SelectNewVideo();
+			}
 		}
 
 		float newRate=Input.WaveformVideoAdvanceRate(target);
@@ -2105,7 +2113,7 @@ NextFrame
 				PauseMultiplier=0;
 			}
 
-			FinalSpeed=PauseMultiplier*(Pitchbend+NudgeFromMixer)+Nudge;
+			FinalSpeed=PauseMultiplier*(Pitchbend+MixerNudge)+Nudge;
 		}
 
 		Sound->SetStickyEndpoints(Channel,endpointsSticky);
@@ -2118,7 +2126,7 @@ NextFrame
 		//Pause
 		if
 		(
-			VideoFrequencySensitiveMode!=2 &&
+			//AudioInputMode==false &&
 			Input.WaveformTogglePause(target)
 		)
 		{
@@ -2154,9 +2162,9 @@ NextFrame
 				Sound->PrepareForDelete();
 				Channel=-1;
 				Mode=3;
-				if(GetVideo()!=NULL)
+				if(LGL_VideoDecoder* dec = GetVideo())
 				{
-					LGL_DrawLogWrite("!dvj::DeleteVideo|%s\n",GetVideo()->GetPath());
+					LGL_DrawLogWrite("!dvj::DeleteVideo|%s\n",dec->GetPath());
 				}
 
 				char* update=new char[1024];
@@ -2191,6 +2199,8 @@ NextFrame
 			Sound->ReadyForDelete()
 		)
 		{
+			char oldSelection[2048];
+			strcpy(oldSelection,Sound->GetPathShort());
 			delete Sound;
 			Sound=NULL;
 			Channel=-1;
@@ -2208,7 +2218,18 @@ NextFrame
 				VideoBack->SetVideo(NULL);
 			}
 			Mode=0;
-			VideoFrequencySensitiveMode=0;
+			FilterTextMostRecent[0]='\0';
+			FilterText.SetString();
+			DatabaseFilter.SetPattern("");
+			DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+
+			FileTop=0;
+			FileSelectInt=0;
+			FileSelectFloat=0;
+
+			FileSelectToString(oldSelection);
+
+			AudioInputMode=false;
 			Mode0BackspaceTimer.Reset();
 			RecordScratch=false;
 			LuminScratch=false;
@@ -2627,7 +2648,7 @@ NextFrame
 			Pitchbend=1;
 			PitchbendLastSetBySlider=false;
 			Nudge=0;
-			NudgeFromMixer=0;
+			MixerNudge=0;
 			GlitchPure=false;
 			GlitchPureDuo=false;
 			GlitchDuo=false;
@@ -2988,6 +3009,11 @@ LGL_ClipRectEnable(ViewportLeft,ViewportRight,ViewportBottom,ViewportTop);
 		{
 			vol *= (1.0f-NoiseFactor);
 		}
+		if(AudioInputMode)
+		{
+			vol = 0.0f;
+		}
+
 		float volFront = VolumeInvertBinary ?
 			(MixerVolumeFront==0.0f ? 1.0f : 0.0f) :
 			MixerVolumeFront;
@@ -3226,28 +3252,19 @@ DrawFrame
 		{
 			Visualizer->DrawVideos
 			(
-				true,
-				Which,
 				this,
 				left,
 				right,
 				bottom,
 				top,
-				VideoBrightness
+				true
 			);
-			if(VideoFrequencySensitiveMode>0)
+			if(FreqSenseBrightness>0.0f)
 			{
 				float volAve;
 				float volMax;
 				float freqFactor;
-				if(VideoFrequencySensitiveMode==1)
-				{
-					GetFreqMetaData(volAve,volMax,freqFactor);
-				}
-				else if(VideoFrequencySensitiveMode==2)
-				{
-					LGL_AudioInMetadata(volAve,volMax,freqFactor);
-				}
+				GetFreqMetaData(volAve,volMax,freqFactor);
 
 				if
 				(
@@ -3535,7 +3552,6 @@ DrawFrame
 				videoSecondsBufferedLeft=VideoFront->GetSecondsBufferedLeft();
 				videoSecondsBufferedRight=VideoFront->GetSecondsBufferedRight();
 			}
-	if(videoSecondsBufferedRight > 10) printf("r: %.2f\n",videoSecondsBufferedRight);
 
 			LGL_DrawLogWrite
 			(
@@ -3603,13 +3619,14 @@ DrawFrame
 				SavePointUnsetNoisePercent[16],
 				SavePointUnsetNoisePercent[17]
 			);
+			LGL_VideoDecoder* dec = GetVideo();
 			LGL_DrawLogWrite
 			(
 				//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35   36   37 38   39 40 41   42   43 44 45  46
-				"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%i|%.3f|%.3f|%i|%.3f|%c|%s|%.2f|%.2f|%c|%c|.3f\n",
+				"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%c|%.3f|%.3f|%i|%.3f|%c|%s|%.2f|%.2f|%c|%c|.3f\n",
 				Which,							//01
 				Sound->IsLoaded() ? 'T' : 'F',				//02
-				GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
+				dec ? dec->GetPathShort() : NULL,			//03
 				(GlitchDuo || LuminScratch || GlitchPure) ? 'T' : 'F',	//04
 				GlitchBegin,						//05
 				GlitchLength,						//06
@@ -3641,7 +3658,7 @@ DrawFrame
 				EQFinal[1],						//32
 				EQFinal[2],						//33
 				LowRez ? 'T' : 'F',					//34
-				VideoFrequencySensitiveMode,				//35
+				AudioInputMode ? 'T' : 'F',				//35
 				Looping() ? LoopAlphaSeconds : -1.0f,			//36
 				Sound->GetWarpPointSecondsAlpha(Channel),		//37
 				QuantizePeriodMeasuresExponent,				//38
@@ -3662,7 +3679,7 @@ DrawFrame
 			(
 				Sound,							//01
 				Sound->IsLoaded(),					//02
-				GetVideo() ? GetVideo()->GetPathShort() : NULL,		//03
+				dec ? dec->GetPathShort() : NULL,			//03
 				GlitchDuo || LuminScratch || GlitchPure,		//04
 				GlitchBegin,						//05
 				GlitchLength,						//06
@@ -3705,7 +3722,7 @@ DrawFrame
 				CachedLengthSeconds,					//43
 				NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64],		//44
 				LoopImage,						//45
-				VideoFrequencySensitiveMode,				//46
+				AudioInputMode,						//46
 				Looping() ? LoopAlphaSeconds : -1.0f,			//47
 				Sound->GetWarpPointSecondsAlpha(Channel),		//48
 				QuantizePeriodMeasuresExponent,				//49
@@ -4048,8 +4065,20 @@ SetVisualizer
 
 float
 TurntableObj::
-GetVisualBrightness()
+GetVisualBrightnessPreview()
 {
+	return(1.0f);
+}
+
+float
+TurntableObj::
+GetVisualBrightnessFinal()
+{
+	if(MixerVideoMute)
+	{
+		return(0.0f);
+	}
+
 	bool muted=false;
 	if(GetBPM()>0)
 	{
@@ -4103,27 +4132,67 @@ GetVisualBrightness()
 
 float
 TurntableObj::
-GetVideoBrightness()
+GetVideoBrightnessPreview()
 {
 	return
 	(
-		GetVisualBrightness()*
+		GetVisualBrightnessPreview()*
 		VideoBrightness
 	);
 }
 
 float
 TurntableObj::
-GetOscilloscopeBrightness()
+GetVideoBrightnessFinal()
 {
 	return
 	(
-		(OscilloscopeBrightness == -1.0f) ?
-		-1.0f :
-		(
-			GetVisualBrightness()*
-			OscilloscopeBrightness
-		)
+		GetVisualBrightnessFinal()*
+		VideoBrightness
+	);
+}
+
+float
+TurntableObj::
+GetOscilloscopeBrightnessPreview()
+{
+	return
+	(
+		GetVisualBrightnessPreview()*
+		OscilloscopeBrightness
+	);
+}
+
+float
+TurntableObj::
+GetOscilloscopeBrightnessFinal()
+{
+	return
+	(
+		GetVisualBrightnessFinal()*
+		OscilloscopeBrightness
+	);
+}
+
+float
+TurntableObj::
+GetFreqSenseBrightnessPreview()
+{
+	return
+	(
+		GetVisualBrightnessPreview()*
+		FreqSenseBrightness
+	);
+}
+
+float
+TurntableObj::
+GetFreqSenseBrightnessFinal()
+{
+	return
+	(
+		GetVisualBrightnessFinal()*
+		FreqSenseBrightness
 	);
 }
 
@@ -4255,7 +4324,24 @@ SetMixerNudge
 	float	mixerNudge
 )
 {
-	NudgeFromMixer=mixerNudge;
+	MixerNudge=mixerNudge;
+}
+
+bool
+TurntableObj::
+GetMixerVideoMute()
+{
+	return(MixerVideoMute);
+}
+
+void
+TurntableObj::
+SetMixerVideoMute
+(
+	bool	mixerVideoMute
+)
+{
+	MixerVideoMute=mixerVideoMute;
 }
 
 std::vector<char*>
@@ -4281,14 +4367,23 @@ GetVideo()
 		return(NULL);
 	}
 
-	if(VideoFront!=NULL)
+	if
+	(
+		VideoEncoderPercent==-1.0f ||
+		VideoEncoderAudioOnly
+	)
 	{
-		return(VideoFront);
+		if(VideoFront!=NULL)
+		{
+			return(VideoFront);
+		}
+		else
+		{
+			return(VideoBack);
+		}
 	}
-	else
-	{
-		return(VideoBack);
-	}
+
+	return(NULL);
 }
 
 LGL_VideoDecoder*
@@ -4338,7 +4433,12 @@ GetVideoTimeSeconds()
 				LoopOmegaSeconds - LoopAlphaSeconds < 0.1f
 			)
 			{
-				float delta = (LGL_FramesSinceExecution()%4)/(float)GetVideo()->GetFPS();
+				float fps = 1.0f;
+				if(LGL_VideoDecoder* dec = GetVideo())
+				{
+					fps = dec->GetFPS();
+				}
+				float delta = (LGL_FramesSinceExecution()%4)/fps;
 				return
 				(
 					LoopAlphaSeconds + 
@@ -4399,26 +4499,33 @@ GetFreqMetaData
 	float&	freqFactor
 )
 {
-	if(Sound)
+	if(AudioInputMode)
 	{
-		return
-		(
-			Sound->GetMetadata
-			(
-				GetTimeSeconds(),
-				GetTimeSeconds()+1.0f/60.0f,
-				freqFactor,
-				volAve,
-				volMax
-			)
-		);
+		return(LGL_AudioInMetadata(volAve,volMax,freqFactor));
 	}
 	else
 	{
-		volAve=0.0f;
-		volMax=0.0f;
-		freqFactor=0.0f;
-		return(false);
+		if(Sound)
+		{
+			return
+			(
+				Sound->GetMetadata
+				(
+					GetTimeSeconds(),
+					GetTimeSeconds()+1.0f/60.0f,
+					freqFactor,
+					volAve,
+					volMax
+				)
+			);
+		}
+		else
+		{
+			volAve=0.0f;
+			volMax=0.0f;
+			freqFactor=0.0f;
+			return(false);
+		}
 	}
 }
 
@@ -4760,6 +4867,20 @@ GetPaused()
 	}
 }
 
+float
+TurntableObj::
+GetFinalSpeed()
+{
+	if(Sound==NULL)
+	{
+		return(0.0f);
+	}
+	else
+	{
+		return(FinalSpeed);
+	}
+}
+
 bool
 TurntableObj::
 GetRecordScratch()
@@ -4952,11 +5073,11 @@ UpdateSoundFreqResponse()
 	}
 }
 
-int
+bool
 TurntableObj::
-GetVideoFrequencySensitiveMode()
+GetAudioInputMode()
 {
-	return(VideoFrequencySensitiveMode);
+	return(AudioInputMode);
 }
 
 float
@@ -5032,34 +5153,20 @@ SelectNewVideo
 )
 {
 	char path[2048];
-	if(VideoFrequencySensitiveMode)
+	if(FreqSenseBrightness>0.0f)
 	{
 		//Change the freq-videos
 		Visualizer->GetNextVideoPathRandom(path);
-		if(VideoLo==NULL)
-		{
-			VideoLo=new LGL_VideoDecoder(path);
-			VideoLo->SetFrameBufferAddRadius(GetVideoBufferFrames());
-		}
-		else
-		{
-			VideoLo->SetVideo(path);
-		}
+		VideoLo->SetVideo(path);
 
 		Visualizer->GetNextVideoPathRandom(path);
-		if(VideoHi==NULL)
-		{
-			VideoHi=new LGL_VideoDecoder(path);
-			VideoHi->SetFrameBufferAddRadius(GetVideoBufferFrames());
-		}
-		else
-		{
-			VideoHi->SetVideo(path);
-		}
+printf("SV: %s\n",path);
+		VideoHi->SetVideo(path);
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoLo->GetPath());
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoHi->GetPath());
 	}
-	else if(VideoEncoderThread==NULL)
+
+	if(VideoEncoderThread==NULL)
 	{
 		//Change the normal videos
 		char videoFileName[1024];
@@ -5111,15 +5218,7 @@ SelectNewVideo
 				return;
 			}
 
-			if(VideoFront==NULL)
-			{
-				VideoFront=new LGL_VideoDecoder(videoFileName);
-				VideoFront->SetFrameBufferAddRadius(GetVideoBufferFrames());
-			}
-			else
-			{
-				VideoFront->SetVideo(videoFileName);
-			}
+			VideoFront->SetVideo(videoFileName);
 			VideoOffsetSeconds=0;
 		}
 		//assert(VideoBack);
@@ -5442,5 +5541,22 @@ FileSelectToString
 			break;
 		}
 	}
+}
+
+float
+TurntableObj::
+GetNoiseFactorVideo()
+{
+	return(NoiseFactorVideo);
+}
+
+void
+TurntableObj::
+SetNoiseFactorVideo
+(
+	float	noiseFactorVideo
+)
+{
+	NoiseFactorVideo = LGL_Clamp(0.0f,noiseFactorVideo,1.0f);
 }
 

@@ -69,6 +69,44 @@ NextFrame()
 			WaveformLoopAllDebumpLeft=true;
 		}
 
+		WaveformAudioInputModeToggleLeft=false;
+		if
+		(
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_HEADPHONES)==false
+		)
+		{
+			WaveformAudioInputModeDebumpLeft=false;
+		}
+		else if
+		(
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_HEADPHONES)==true &&
+			LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_LEFT_HEADPHONES)>=1.0f &&
+			WaveformAudioInputModeDebumpLeft==false
+		)
+		{
+			WaveformAudioInputModeToggleLeft=true;
+			WaveformAudioInputModeDebumpLeft=true;
+		}
+
+		WaveformAudioInputModeToggleRight=false;
+		if
+		(
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES)==false
+		)
+		{
+			WaveformAudioInputModeDebumpRight=false;
+		}
+		else if
+		(
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES)==true &&
+			LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES)>=1.0f &&
+			WaveformAudioInputModeDebumpRight==false
+		)
+		{
+			WaveformAudioInputModeToggleRight=true;
+			WaveformAudioInputModeDebumpRight=true;
+		}
+
 		if
 		(
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOOP_IN)==false &&
@@ -1944,15 +1982,11 @@ WaveformVideoSelect
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			select|=
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_RECORD) ||
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_FINGER);
+			select|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_MOD_POWER_2);
 		}
 		else if((target & TARGET_TOP))
 		{
-			select|=
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_RECORD) ||
-				LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_FINGER);
+			select|=LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_MOD_POWER_3);
 		}
 	}
 
@@ -2024,9 +2058,42 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
+float
+InputXponentObj::
+WaveformFreqSenseBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1.0f;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			//FIXME: Left / Right is asymmmetric, for Zebbler, for now... Shoudln't be, though..
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_RIGHT_MOD_2))
+			{
+				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_RIGHT_MOD_2);
+				brightness = ((knob == -1.0f) ? 1.0f : knob);
+			}
+		}
+		else if((target & TARGET_TOP))
+		{
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_LEFT_MOD_3))
+			{
+				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_MOD_3);
+				brightness = ((knob == -1.0f) ? 1.0f : knob);
+			}
+		}
+	}
+
+	return(brightness);
+}
+
 int
 InputXponentObj::
-WaveformVideoFreqSenseMode
+WaveformAudioInputMode
 (
 	unsigned int	target
 )	const
@@ -2037,30 +2104,14 @@ WaveformVideoFreqSenseMode
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES))
-			{
-				mode=-10;
-			}
-			else if
-			(
-				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES) &&
-				LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES)>=1.0f
-			)
+			if(WaveformAudioInputModeToggleRight)
 			{
 				mode=2;
 			}
 		}
 		else if((target & TARGET_TOP))
 		{
-			if(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_HEADPHONES))
-			{
-				mode=-10;
-			}
-			else if
-			(
-				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_HEADPHONES) &&
-				LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_LEFT_HEADPHONES)>=1.0f
-			)
+			if(WaveformAudioInputModeToggleLeft)
 			{
 				mode=2;
 			}
@@ -2072,7 +2123,7 @@ WaveformVideoFreqSenseMode
 
 bool
 InputXponentObj::
-WaveformVideoAspectRatioModeNext
+WaveformVideoAspectRatioNext
 (
 	unsigned int	target
 )	const

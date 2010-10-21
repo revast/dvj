@@ -91,6 +91,9 @@ GetFPSMax();
 int
 GetVideoBufferFrames();
 
+int
+GetVideoBufferFramesFreqSense();
+
 int	GetInputKeyboardFocusChangeKey();
 int	GetInputKeyboardFocusBottomKey();
 int	GetInputKeyboardFocusTopKey();
@@ -154,8 +157,8 @@ int	GetInputKeyboardWaveformLoopToggleKey();
 int	GetInputKeyboardWaveformLoopThenRecallKey();
 int	GetInputKeyboardWaveformAutoDivergeRecallKey();
 int	GetInputKeyboardWaveformVideoSelectKey();
-int	GetInputKeyboardWaveformVideoFreqSenseModeKey();
-int	GetInputKeyboardWaveformVideoAspectRatioModeNextKey();
+int	GetInputKeyboardWaveformAudioInputModeKey();
+int	GetInputKeyboardWaveformVideoAspectRatioNextKey();
 int	GetInputKeyboardWaveformSyncBPMKey();
 int	GetInputKeyboardRecordingStartKey();
 int	GetInputKeyboardFullScreenToggleKey();
@@ -231,8 +234,8 @@ typedef enum
 	WAVEFORM_LOOP_THEN_RECALL,
 	WAVEFORM_AUTO_DIVERGE_THEN_RECALL,
 	WAVEFORM_VIDEO_SELECT,
-	WAVEFORM_VIDEO_FREQ_SENSE_MODE,
-	WAVEFORM_VIDEO_ASPECT_RATIO_MODE_NEXT,
+	WAVEFORM_AUDIO_INPUT_MODE,
+	WAVEFORM_VIDEO_ASPECT_RATIO_NEXT,
 	WAVEFORM_SYNC_BPM,
 	RECORDING_START,
 	FULL_SCREEN_TOGGLE,

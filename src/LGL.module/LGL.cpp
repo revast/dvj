@@ -584,10 +584,12 @@ lgl_AudioOutCallbackJack
 		{
 			jack_input_buffer16[a*2+0] = (Sint16)(in_l[a]*((1<<16)-1));
 			jack_input_buffer16[a*2+1] = (Sint16)(in_r[a]*((1<<16)-1));
-/*			
-			out_fl[a]+=in_l[a];
-			out_fr[a]+=in_r[a];
-*/
+			const bool PASSTHRU = 0;
+			if(PASSTHRU)
+			{
+				out_fl[a]+=in_l[a];
+				out_fr[a]+=in_r[a];
+			}
 		}
 		lgl_AudioInCallbackJack(NULL,jack_input_buffer8,nframes*2*2);
 	}
@@ -6993,7 +6995,11 @@ void
 LGL_Image::
 UnloadSurfaceFromTexture()
 {
-	if(TextureGL==0) return;
+	if(TextureGL==0)
+	{
+		return;
+	}
+
 	if(TextureGLMine==false)
 	{
 		TextureGL=0;
@@ -7021,6 +7027,42 @@ UpdateTexture
 	const char*	name
 )
 {
+	if
+	(
+		x>TexW ||
+		x<TexW/2 ||
+		y>TexH ||
+		y<TexH/2
+	)
+	{
+		//FIXME: Must delete glTexture, and make a new one.
+		UnloadSurfaceFromTexture();
+		ImgW=x;
+		ImgH=y;
+		TexW=LGL_NextPowerOfTwo(ImgW);
+		TexH=LGL_NextPowerOfTwo(ImgH);
+
+		TextureGLMine=true;
+
+		glGenTextures(1,&(TextureGL));
+		glBindTexture(GL_TEXTURE_2D,TextureGL);
+		glTexImage2D
+		(
+			GL_TEXTURE_2D,
+			0,			//Level of Detail=0
+			GL_RGB,			//Internal Format
+			TexW,TexH,
+			0,			//Boarder=0
+			GL_RGB,
+			GL_UNSIGNED_BYTE,
+			NULL
+		);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	}
+
 	if(x!=ImgW)
 	{
 		ImgW=LGL_Min(x,TexW);
@@ -7256,6 +7298,20 @@ GetWidth()
 int
 LGL_Image::
 GetHeight()
+{
+	return(ImgH);
+}
+
+int
+LGL_Image::
+GetTexWidth()
+{
+	return(ImgW);
+}
+
+int
+LGL_Image::
+GetTexHeight()
 {
 	return(ImgH);
 }
@@ -8401,6 +8457,17 @@ LGL_VideoDecoder::
 	}
 
 	UnloadVideo();
+
+	for(unsigned int a=0;a<FrameBufferReady.size();a++)
+	{
+		delete FrameBufferReady[a];
+		FrameBufferReady[a]=NULL;
+	}
+	for(unsigned int a=0;a<FrameBufferRecycled.size();a++)
+	{
+		delete FrameBufferRecycled[a];
+		FrameBufferRecycled[a]=NULL;
+	}
 }
 
 void
@@ -8423,7 +8490,8 @@ Init()
 	FrameNumberNext=-1;
 	FrameNumberDisplayed=-1;
 
-	SetFrameBufferAddRadius(30);
+	SetFrameBufferAddBackwards(true);
+	SetFrameBufferAddRadius(2);
 
 	FormatContext=NULL;
 	CodecContext=NULL;
@@ -8439,35 +8507,53 @@ Init()
 
 	Image = NULL;
 	VideoOK=false;
+	StoredBrightness=0.0f;
 
 	//Preallocate lgl_FrameBuffers
+#if 0
+	const int width = 1920;
+	const int height = 1080;
+	unsigned int bufferBytes=4*width*height;//GetProjectorQuadrentResX()*GetProjectorQuadrentResY();
 	for(long int a=0;a<FrameBufferAddRadius+FrameBufferSubtractRadius;a++)
 	{
-		unsigned int bufferBytes=4*1920*480;//GetProjectorQuadrentResX()*GetProjectorQuadrentResY();
-		unsigned char* buffer=new uint8_t[bufferBytes];
-		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
-		unsigned char* oldie = frameBuffer->SwapInNewBuffer
-		(
-			NULL,
-			buffer,
-			1920,
-			480,
-			bufferBytes,
-			-9999-a
-		);
-		if(oldie)
+		try
 		{
-			delete oldie;
-			oldie=NULL;
+			unsigned char* buffer=new uint8_t[bufferBytes];
+			lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
+			unsigned char* oldie = frameBuffer->SwapInNewBuffer
+			(
+				NULL,
+				buffer,
+				width,
+				height,
+				bufferBytes,
+				-9999-a
+			);
+			if(oldie)
+			{
+				delete oldie;
+				oldie=NULL;
+			}
+			FrameBufferReady.push_back(frameBuffer);
 		}
-		FrameBufferReady.push_back(frameBuffer);
-		std::sort
-		(
-			FrameBufferReady.begin(),
-			FrameBufferReady.end(),
-			lgl_FrameBufferSortPredicate
-		);
+		catch(std::bad_alloc)
+		{
+			printf("LGL_VideoDecoder(): Caught bad_alloc exception\n");
+			break;
+		}
+		catch(std::exception)
+		{
+			printf("LGL_VideoDecoder(): Caught unknown exception\n");
+			break;
+		}
 	}
+	std::sort
+	(
+		FrameBufferReady.begin(),
+		FrameBufferReady.end(),
+		lgl_FrameBufferSortPredicate
+	);
+#endif
 
 	ThreadTerminate=false;
 	Thread=LGL_ThreadCreate(lgl_video_decoder_thread,this);
@@ -8572,8 +8658,8 @@ GetImage()
 	{
 		Image = new LGL_Image
 		(
-			1920,
-			1080,
+			512,//1920,
+			512,//1024,
 			4,
 			NULL,
 			true,
@@ -8863,6 +8949,16 @@ GetSecondsBufferedRight()
 	}
 
 	return(seconds);
+}
+
+void
+LGL_VideoDecoder::
+SetFrameBufferAddBackwards
+(
+	bool	addBackwards
+)
+{
+	FrameBufferAddBackwards=addBackwards;
 }
 
 void
@@ -9189,7 +9285,6 @@ MaybeDecodeImage()
 							FrameRGB->linesize
 						);
 					}
-
 					frameRead=true;
 				}
 			}
@@ -9509,6 +9604,11 @@ long
 LGL_VideoDecoder::
 GetNextFrameNumberToDecodeBackwards()
 {
+	if(FrameBufferAddBackwards==false)
+	{
+		return(-1);
+	}
+
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
 	if(frameNumberLength==0)
@@ -9804,7 +9904,7 @@ LGL_VideoEncoder
 		// prepare the header
 
 		// Set AVI format
-		DstOutputFormat = guess_format("avi", NULL, NULL);
+		DstOutputFormat = av_guess_format("avi", NULL, NULL);
 		DstOutputFormat->audio_codec = CODEC_ID_NONE;
 		DstOutputFormat->video_codec = DstCodec->id;
 
@@ -9939,7 +10039,7 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 			}
 
 			// Set format
-			DstMp3OutputFormat = guess_format("flac", NULL, NULL);
+			DstMp3OutputFormat = av_guess_format("flac", NULL, NULL);
 			if(DstMp3OutputFormat==NULL)
 			{
 				printf("LGL_VideoEncoder::LGL_VideoEncoder(): Couldn't find audio encoding format for '%s'\n",src);
@@ -10646,7 +10746,7 @@ LGL_AudioEncoder
 		}
 
 		// Set format
-		DstMp3OutputFormat = guess_format("flac", NULL, NULL);
+		DstMp3OutputFormat = av_guess_format("flac", NULL, NULL);
 		if(DstMp3OutputFormat==NULL)
 		{
 			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't find audio encoding format\n");

@@ -738,7 +738,7 @@ Turntable_DrawWaveform
 	float		cachedLengthSeconds,
 	LGL_Image*	noiseImage256x64,
 	LGL_Image*	loopImage,
-	int		freqSensitiveMode,
+	bool		audioInputMode,
 	float		warpPointSecondsStart,
 	float		warpPointSecondsTrigger,
 	int		loopExponent,
@@ -848,7 +848,7 @@ Turntable_DrawWaveform
 		pointTop+0.01f
 	);
 
-	if(freqSensitiveMode==2)
+	if(audioInputMode)
 	{
 		float volAve;
 		float volMax;
@@ -1032,10 +1032,12 @@ Turntable_DrawWaveform
 				);
 
 				zeroCrossingFactor=GetFreqBrightness(true,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak());
+				/*
 				if(freqSensitiveMode==1)
 				{
 					magnitudeAve*=(GetFreqBrightness(false,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak()) + zeroCrossingFactor > 0.0f) ? 1.0f : 0.0f;
 				}
+				*/
 
 				magnitudeAve*=volumeMultiplierNow*0.5f;
 				magnitudeMax*=volumeMultiplierNow*0.5f;
@@ -1526,7 +1528,7 @@ Turntable_DrawWaveform
 		percentLoaded = soundLengthSeconds/cachedLengthSeconds;
 	}
 
-	if(freqSensitiveMode!=2)
+	if(audioInputMode==false)
 	{
 		float noiseBottom=viewPortBottom;
 		float noiseTop=pointBottom;
@@ -1790,19 +1792,25 @@ Turntable_DrawWaveform
 	}
 
 	//Draw Text
-	char tmp[2048];
-	strcpy(tmp,soundName);
-	if(strstr(tmp,".mp3"))
+	char tmpStr[2048];
+	strcpy(tmpStr,soundName);
+	if(strstr(tmpStr,".mp3"))
 	{
-		strstr(tmp,".mp3")[0]='\0';
+		strstr(tmpStr,".mp3")[0]='\0';
 	}
-	if(strstr(tmp,".ogg"))
+	if(strstr(tmpStr,".ogg"))
 	{
-		strstr(tmp,".ogg")[0]='\0';
+		strstr(tmpStr,".ogg")[0]='\0';
 	}
-	if(freqSensitiveMode==2)
+	if(audioInputMode)
 	{
-		strcpy(tmp,"Audio Input");
+		strcpy
+		(
+			tmpStr,
+			LGL_AudioInAvailable() ?
+			"Audio Input" :
+			"Audio Input Unavailable"
+		);
 	}
 
 	float txtCenterX=centerX+0.25f*viewPortWidth;
@@ -1814,7 +1822,7 @@ Turntable_DrawWaveform
 	}
 
 	float fontHeight=0.05f*viewPortHeight;
-	float fontWidth=LGL_GetFont().GetWidthString(fontHeight,tmp);
+	float fontWidth=LGL_GetFont().GetWidthString(fontHeight,tmpStr);
 	fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
 
 	LGL_GetFont().DrawString
@@ -1824,19 +1832,19 @@ Turntable_DrawWaveform
 		fontHeight,
 		1,1,1,1,
 		true,.5f,
-		tmp
+		tmpStr
 	);
 
 	fontHeight=0.05f*viewPortHeight;
-	fontWidth=LGL_GetFont().GetWidthString(fontHeight,tmp);
+	fontWidth=LGL_GetFont().GetWidthString(fontHeight,tmpStr);
 	fontHeight=LGL_Min(fontHeight,fontHeight*0.45f*viewPortWidth/fontWidth);
 
 	if(videoPathShort && 0)
 	{
-		strcpy(tmp,videoPathShort);
-		if(strstr(tmp,".mp3"))
+		strcpy(tmpStr,videoPathShort);
+		if(strstr(tmpStr,".mp3"))
 		{
-			strstr(tmp,".mp3")[0]='\0';
+			strstr(tmpStr,".mp3")[0]='\0';
 		}
 
 		LGL_GetFont().DrawString
@@ -1846,11 +1854,10 @@ Turntable_DrawWaveform
 			fontHeight,
 			1,1,1,1,
 			true,.5f,
-			tmp
+			tmpStr
 		);
 	}
 
-	char temp[256];
 	/*
 	if
 	(
@@ -1858,14 +1865,14 @@ Turntable_DrawWaveform
 		grainStreamCrossfader==0.0f
 	)
 	{
-		sprintf(temp,"off");
+		sprintf(tmpStr,"off");
 	}
 	else
 	{
 		float num=
 			(1.0f-grainStreamCrossfader) * soundSpeed*100 +
 			(0.0f+grainStreamCrossfader) * 2.0f*joyAnalogueStatusLeftX*100;
-		sprintf(temp,"%.2f",num);
+		sprintf(tmpStr,"%.2f",num);
 	}
 	LGL_GetFont().DrawString
 	(
@@ -1883,13 +1890,13 @@ Turntable_DrawWaveform
 		viewPortHeight/15.0f,
 		1,1,1,1,
 		false,.5f,
-		temp
+		tmpStr
 	);
 	*/
 
 	float eqLeftEdge=0.0f;
 	float eqRightEdge=0.0f;
-	if(freqSensitiveMode!=2)
+	if(audioInputMode==false)
 	{
 		if(bpmAdjusted>0)
 		{
@@ -1963,11 +1970,11 @@ Turntable_DrawWaveform
 		float pbAbs=fabs((pbFloat-1)*100);
 		if(pbFloat>=1)
 		{
-			sprintf(temp,"+%.2f",pbAbs);
+			sprintf(tmpStr,"+%.2f",pbAbs);
 		}
 		else
 		{
-			sprintf(temp,"-%.2f",pbAbs);
+			sprintf(tmpStr,"-%.2f",pbAbs);
 		}
 		char tempNudge[1024];
 		if(nudge>0)
@@ -2001,7 +2008,7 @@ Turntable_DrawWaveform
 			1,1,1,1,
 			false,.5f,
 			"%s%s",
-			temp,
+			tmpStr,
 			tempNudge
 		);
 
@@ -2102,22 +2109,22 @@ Turntable_DrawWaveform
 		{
 			if(seconds<10)
 			{
-				sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
+				sprintf(tmpStr,"0%.0f:0%.2f",minutes,seconds);
 			}
 			else
 			{
-				sprintf(temp,"0%.0f:%.2f",minutes,seconds);
+				sprintf(tmpStr,"0%.0f:%.2f",minutes,seconds);
 			}
 		}
 		else
 		{
 			if(seconds<10)
 			{
-				sprintf(temp,"%.0f:0%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:0%.2f",minutes,seconds);
 			}
 			else
 			{
-				sprintf(temp,"%.0f:%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:%.2f",minutes,seconds);
 			}
 		}
 
@@ -2137,7 +2144,7 @@ Turntable_DrawWaveform
 			viewPortHeight/15.0f,
 			1,1,1,1,
 			false,.5f,
-			temp
+			tmpStr
 		);
 		*/
 		
@@ -2153,22 +2160,22 @@ Turntable_DrawWaveform
 		{
 			if(seconds<10)
 			{
-				sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
+				sprintf(tmpStr,"0%.0f:0%.2f",minutes,seconds);
 			}
 			else
 			{
-				sprintf(temp,"0%.0f:%.2f",minutes,seconds);
+				sprintf(tmpStr,"0%.0f:%.2f",minutes,seconds);
 			}
 		}
 		else
 		{
 			if(seconds<10)
 			{
-				sprintf(temp,"%.0f:0%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:0%.2f",minutes,seconds);
 			}
 			else
 			{
-				sprintf(temp,"%.0f:%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:%.2f",minutes,seconds);
 			}
 		}
 		/*
@@ -2193,7 +2200,7 @@ Turntable_DrawWaveform
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			false,.5f,
-			temp
+			tmpStr
 		);
 		
 		LGL_GetFont().DrawString
@@ -2220,22 +2227,22 @@ Turntable_DrawWaveform
 		{
 			if(seconds<10)
 			{
-				sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
+				sprintf(tmpStr,"0%.0f:0%.2f",minutes,seconds);
 			}
 			else
 			{
-				sprintf(temp,"0%.0f:%.2f",minutes,seconds);
+				sprintf(tmpStr,"0%.0f:%.2f",minutes,seconds);
 			}
 		}
 		else
 		{
 			if(seconds<10)
 			{
-				sprintf(temp,"%.0f:0%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:0%.2f",minutes,seconds);
 			}
 			else
 			{
-				sprintf(temp,"%.0f:%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:%.2f",minutes,seconds);
 			}
 		}
 		/*
@@ -2258,7 +2265,7 @@ Turntable_DrawWaveform
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			false,.5f,
-			temp
+			tmpStr
 		);
 
 		/*
@@ -2297,22 +2304,22 @@ Turntable_DrawWaveform
 		{
 			if(seconds<10)
 			{
-				sprintf(temp,"0%.0f:0%.2f",minutes,seconds);
+				sprintf(tmpStr,"0%.0f:0%.2f",minutes,seconds);
 			}
 			else
 			{
-				sprintf(temp,"0%.0f:%.2f",minutes,seconds);
+				sprintf(tmpStr,"0%.0f:%.2f",minutes,seconds);
 			}
 		}
 		else
 		{
 			if(seconds<10)
 			{
-				sprintf(temp,"%.0f:0%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:0%.2f",minutes,seconds);
 			}
 			else
 			{
-				sprintf(temp,"%.0f:%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:%.2f",minutes,seconds);
 			}
 		}
 		LGL_GetFont().DrawString
@@ -2333,7 +2340,7 @@ Turntable_DrawWaveform
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			false,.5f,
-			temp
+			tmpStr
 		);
 		*/
 

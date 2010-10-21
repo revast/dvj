@@ -747,9 +747,20 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
+float
+InputMouseObj::
+WaveformFreqSenseBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1;
+	return(brightness);
+}
+
 int
 InputMouseObj::
-WaveformVideoFreqSenseMode
+WaveformAudioInputMode
 (
 	unsigned int	target
 )	const
@@ -760,7 +771,7 @@ WaveformVideoFreqSenseMode
 
 bool
 InputMouseObj::
-WaveformVideoAspectRatioModeNext
+WaveformVideoAspectRatioNext
 (
 	unsigned int	target
 )	const

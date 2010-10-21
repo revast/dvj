@@ -1042,9 +1042,20 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
+float
+InputXsessionObj::
+WaveformFreqSenseBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1;
+	return(brightness);
+}
+
 int
 InputXsessionObj::
-WaveformVideoFreqSenseMode
+WaveformAudioInputMode
 (
 	unsigned int	target
 )	const
@@ -1055,7 +1066,7 @@ WaveformVideoFreqSenseMode
 
 bool
 InputXsessionObj::
-WaveformVideoAspectRatioModeNext
+WaveformVideoAspectRatioNext
 (
 	unsigned int	target
 )	const

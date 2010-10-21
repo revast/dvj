@@ -828,8 +828,24 @@ WaveformVideoBrightness
 	unsigned int	target
 )	const
 {
-	float bright=-1.0f;
-	return(bright);
+	int currentAction = GetCurrentAction(target);
+	if(currentAction == NOOP)
+	{
+		return(-1.0f);
+	}
+	else
+	{
+		float brightness = LGL_RandFloat(0.0f,1.0f);
+		if(LGL_RandFloat(0.0f,1.0f) < 0.1f)
+		{
+			brightness=0.0f;
+		}
+		else if(LGL_RandFloat(0.0f,1.0f) < 0.1f)
+		{
+			brightness=-1.0f;
+		}
+		return(brightness);
+	}
 }
 
 float
@@ -843,32 +859,59 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
+float
+InputTesterObj::
+WaveformFreqSenseBrightness
+(
+	unsigned int	target
+)	const
+{
+	int currentAction = GetCurrentAction(target);
+	if(currentAction == NOOP)
+	{
+		return(-1.0f);
+	}
+	else
+	{
+		float brightness = LGL_RandFloat(0.0f,1.0f);
+		if(LGL_RandFloat(0.0f,1.0f) < 0.1f)
+		{
+			brightness=0.0f;
+		}
+		else if(LGL_RandFloat(0.0f,1.0f) < 0.1f)
+		{
+			brightness=-1.0f;
+		}
+		return(brightness);
+	}
+}
+
 int
 InputTesterObj::
-WaveformVideoFreqSenseMode
+WaveformAudioInputMode
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
 	int mode = -1;
-	if(currentAction == WAVEFORM_VIDEO_FREQ_SENSE_MODE)
+	if(currentAction == WAVEFORM_AUDIO_INPUT_MODE)
 	{
-		mode = -2;
+		mode = LGL_RandInt(0,2);
 	}
 	return(mode);
 }
 
 bool
 InputTesterObj::
-WaveformVideoAspectRatioModeNext
+WaveformVideoAspectRatioNext
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
 	bool next=false;
-	if(currentAction == WAVEFORM_VIDEO_ASPECT_RATIO_MODE_NEXT)
+	if(currentAction == WAVEFORM_VIDEO_ASPECT_RATIO_NEXT)
 	{
 		next=true;
 	}
@@ -882,8 +925,24 @@ WaveformOscilloscopeBrightness
 	unsigned int	target
 )	const
 {
-	float bright=-1.0f;
-	return(bright);
+	int currentAction = GetCurrentAction(target);
+	if(currentAction == NOOP)
+	{
+		return(-1.0f);
+	}
+	else
+	{
+		float brightness = LGL_RandFloat(0.0f,1.0f);
+		if(LGL_RandFloat(0.0f,1.0f) < 0.1f)
+		{
+			brightness=0.0f;
+		}
+		else if(LGL_RandFloat(0.0f,1.0f) < 0.1f)
+		{
+			brightness=-1.0f;
+		}
+		return(brightness);
+	}
 }
 
 bool

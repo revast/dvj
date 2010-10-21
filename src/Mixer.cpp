@@ -772,109 +772,18 @@ NextFrame
 			if(Turntable[i]->GetVideo())
 			{
 				const float OFFSET = 2.0f/60.0f;	//Combat lag associated with projector scaling
-				Turntable[i]->GetVideo()->SetTime
-				(
-					Turntable[i]->GetVideoTimeSeconds() + OFFSET
-				);
-			}
-		}
-
-		float soloFactor[2];
-		soloFactor[0] = Turntable[0]->GetVideoSolo() && !Turntable[1]->GetVideoSolo();
-		soloFactor[1] = Turntable[1]->GetVideoSolo() && !Turntable[0]->GetVideoSolo();
-
-		float volAve[2];
-		float volMax[2];
-		float freqFactor[2];
-		float peak[2];
-		LGL_VideoDecoder* vidBack[2];
-		LGL_VideoDecoder* vidFront[2];
-		int mode[2];
-		float eqLo[2];
-		float eqHi[2];
-		float gain[2];
-
-		for(int a=0;a<2;a++)
-		{
-			Turntable[a]->GetFreqMetaData(volAve[a],volMax[a],freqFactor[a]);
-			peak[a]=Turntable[a]->GetVolumePeak();
-			vidBack[a]=Turntable[a]->GetVideoLo();
-			vidFront[a]=Turntable[a]->GetVideoHi();
-			volAve[a]=LGL_Min(1.0f,0.5f*(volAve[a]/peak[a]));
-			volMax[a]=LGL_Min(1.0f,0.5f*(volMax[a]/peak[a]));
-			mode[a]=Turntable[a]->GetVideoFrequencySensitiveMode();
-
-			if(mode[a]==2)
-			{
-				LGL_AudioInMetadata(volAve[a],volMax[a],freqFactor[a]);
-				eqLo[a]=Turntable[0]->GetEQLo();
-				eqHi[a]=Turntable[0]->GetEQHi();
-				gain[a]=Turntable[0]->GetGain();
-			}
-			else
-			{
-				eqLo[a]=1.0f;
-				eqHi[a]=1.0f;
-				gain[a]=1.0f;
-			}
-		}
-
-		Visualizer->SetFrequencySensitiveVideos
-		(
-			vidBack[0], vidFront[0], volAve[0], volMax[0], freqFactor[0], mode[0],
-			vidBack[1], vidFront[1], volAve[1], volMax[1], freqFactor[1], mode[1]
-		);
-		Visualizer->SetFrequencySensitiveGainEQ
-		(
-			gain[0],eqLo[0],eqHi[0],
-			gain[1],eqLo[1],eqHi[1]
-		);
-
-		float ttVideoBrightness[2];
-		for(int a=0;a<2;a++)
-		{
-			if(mode[a]==2)
-			{
-				ttVideoBrightness[a]=1;
-			}
-			else
-			{
-				int notA=(a==0) ? 1 : 0;
-				ttVideoBrightness[a]=
+				if(Turntable[i]->GetVideoBrightnessPreview()>0.0f)
+				{
+					Turntable[i]->GetVideo()->SetTime
 					(
-						LGL_AudioAvailable() ?
-						1 :
-						0
-					) *
-					(1.0f-soloFactor[notA]);
+						Turntable[i]->GetVideoTimeSeconds() + OFFSET
+					);
+				}
 			}
 		}
 
-		Visualizer->SetVideos
-		(
-			(Turntable[0]->VideoEncoderPercent==-1.0f || Turntable[0]->VideoEncoderAudioOnly) ? Turntable[0]->GetVideo() : NULL,
-			Turntable[0]->GetVideoBrightness()*ttVideoBrightness[0],
-			(Turntable[1]->VideoEncoderPercent==-1.0f || Turntable[1]->VideoEncoderAudioOnly) ? Turntable[1]->GetVideo() : NULL,
-			Turntable[1]->GetVideoBrightness()*ttVideoBrightness[1]
-		);
-
-		bool anythingLoading =
-		(
-			(
-				Turntable[0]->GetSoundLoaded() &&
-				Turntable[0]->GetSoundLoadedFully()==false
-			) ||
-			(
-				Turntable[1]->GetSoundLoaded() &&
-				Turntable[1]->GetSoundLoadedFully()==false
-			)
-		);
-
-		Visualizer->SetSoundsLoaded
-		(
-			!anythingLoading,
-			!anythingLoading
-		);
+		Turntable[1]->SetMixerVideoMute(Turntable[0]->GetVideoSolo() && !Turntable[1]->GetVideoSolo());
+		Turntable[0]->SetMixerVideoMute(Turntable[1]->GetVideoSolo() && !Turntable[0]->GetVideoSolo());
 	}
 }
 

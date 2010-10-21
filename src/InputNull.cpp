@@ -737,9 +737,20 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
+float
+InputNullObj::
+WaveformFreqSenseBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1;
+	return(brightness);
+}
+
 int
 InputNullObj::
-WaveformVideoFreqSenseMode
+WaveformAudioInputMode
 (
 	unsigned int	target
 )	const
@@ -750,7 +761,7 @@ WaveformVideoFreqSenseMode
 
 bool
 InputNullObj::
-WaveformVideoAspectRatioModeNext
+WaveformVideoAspectRatioNext
 (
 	unsigned int	target
 )	const

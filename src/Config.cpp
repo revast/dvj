@@ -97,6 +97,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"fpsMax=60\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"videoBufferFrames=20\n");
+		fprintf(fd,"videoBufferFramesFreqSense=5\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#3.2 MBps is highest quality for 1920x480@30fps.\n");
 		fprintf(fd,"#Generated files may be larger.\n");
@@ -657,6 +658,17 @@ GetVideoBufferFrames()
 	return(videoBufferFrames);
 }
 
+int
+GetVideoBufferFramesFreqSense()
+{
+	int videoBufferFramesFreqSense=dvjrcConfigFile->read<int>("videoBufferFramesFreqSense",5);
+	if(videoBufferFramesFreqSense<=2)
+	{
+		videoBufferFramesFreqSense=2;
+	}
+	return(videoBufferFramesFreqSense);
+}
+
 #define MAP_STRING_TO_SDLK(X) if(strcasecmp(str,#X)==0) return(X)
 
 int
@@ -987,10 +999,10 @@ PrepareKeyMap()
 		("waveformAutoDivergeThenRecall",	"LGL_KEY_M");
 	dvjKeyMap[WAVEFORM_VIDEO_SELECT].Set
 		("waveformVideoSelect",			"LGL_KEY_SPACE");
-	dvjKeyMap[WAVEFORM_VIDEO_FREQ_SENSE_MODE].Set
-		("waveformVideoFreqSenseMode",		"LGL_KEY_F12");
-	dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_MODE_NEXT].Set
-		("waveformVideoFreqSenseMode",		"LGL_KEY_SLASH");
+	dvjKeyMap[WAVEFORM_AUDIO_INPUT_MODE].Set
+		("waveformAudioInputMode",		"LGL_KEY_F12");
+	dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_NEXT].Set
+		("waveformVideoAspectRatioNext",	"LGL_KEY_SLASH");
 	dvjKeyMap[WAVEFORM_SYNC_BPM].Set
 		("waveformSyncBPM",			"LGL_KEY_BACKSLASH");
 	dvjKeyMap[RECORDING_START].Set
@@ -1179,10 +1191,10 @@ int GetInputKeyboardWaveformAutoDivergeRecallKey()
 	{ return(dvjKeyMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].ValueInt); }
 int GetInputKeyboardWaveformVideoSelectKey()
 	{ return(dvjKeyMap[WAVEFORM_VIDEO_SELECT].ValueInt); }
-int GetInputKeyboardWaveformVideoFreqSenseModeKey()
-	{ return(dvjKeyMap[WAVEFORM_VIDEO_FREQ_SENSE_MODE].ValueInt); }
-int GetInputKeyboardWaveformVideoAspectRatioModeNextKey()
-	{ return(dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_MODE_NEXT].ValueInt); }
+int GetInputKeyboardWaveformAudioInputModeKey()
+	{ return(dvjKeyMap[WAVEFORM_AUDIO_INPUT_MODE].ValueInt); }
+int GetInputKeyboardWaveformVideoAspectRatioNextKey()
+	{ return(dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_NEXT].ValueInt); }
 int GetInputKeyboardWaveformSyncBPMKey()
 	{ return(dvjKeyMap[WAVEFORM_SYNC_BPM].ValueInt); }
 int GetInputKeyboardRecordingStartKey()

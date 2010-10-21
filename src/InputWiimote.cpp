@@ -892,9 +892,20 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
+float
+InputWiimoteObj::
+WaveformFreqSenseBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1.0f;
+	return(brightness);
+}
+
 int
 InputWiimoteObj::
-WaveformVideoFreqSenseMode
+WaveformAudioInputMode
 (
 	unsigned int	target
 )	const
@@ -905,7 +916,7 @@ WaveformVideoFreqSenseMode
 
 bool
 InputWiimoteObj::
-WaveformVideoAspectRatioModeNext
+WaveformVideoAspectRatioNext
 (
 	unsigned int	target
 )	const
