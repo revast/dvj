@@ -1218,9 +1218,30 @@ WaveformVideoAdvanceRate
 	return(rate);
 }
 
+float
+InputObj::
+WaveformFreqSenseBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1.0f;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformFreqSenseBrightness(target);
+		if(candidate!=-1.0f)
+		{
+			brightness=candidate;
+		}
+	}
+
+	return(brightness);
+}
+
 int
 InputObj::
-WaveformVideoFreqSenseMode
+WaveformAudioInputMode
 (
 	unsigned int	target
 )	const
@@ -1229,7 +1250,7 @@ WaveformVideoFreqSenseMode
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		int candidate=Children[a]->WaveformVideoFreqSenseMode(target);
+		int candidate=Children[a]->WaveformAudioInputMode(target);
 		if(candidate!=-1)
 		{
 			mode=candidate;
@@ -1241,7 +1262,7 @@ WaveformVideoFreqSenseMode
 
 bool
 InputObj::
-WaveformVideoAspectRatioModeNext
+WaveformVideoAspectRatioNext
 (
 	unsigned int	target
 )	const
@@ -1250,7 +1271,7 @@ WaveformVideoAspectRatioModeNext
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		next|=Children[a]->WaveformVideoAspectRatioModeNext(target);
+		next|=Children[a]->WaveformVideoAspectRatioNext(target);
 	}
 
 	return(next);

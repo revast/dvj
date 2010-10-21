@@ -41,7 +41,11 @@ public:
 				VisualizerObj();
 				~VisualizerObj();
 
-	void			NextFrame(float secondsElapsed);
+	void			NextFrame
+				(
+					float secondsElapsed,
+					TurntableObj**	tts
+				);
 	void			DrawVisuals
 				(
 					bool		visualizerQuadrent,
@@ -64,23 +68,10 @@ public:
 	bool			GetScrollTextEnabled();
 
 	bool			IsVideoAvailable() const;
-	void			SetVideos
-				(
-					LGL_VideoDecoder* video0,	float videoBrightness0,
-					LGL_VideoDecoder* video1,	float videoBrightness1
-				);
-	void			SetSoundsLoaded(bool loaded0, bool loaded1);
-	LGL_VideoDecoder*	GetVideo(int which);
-	void			SetFrequencySensitiveVideos
-				(
-					LGL_VideoDecoder* video0l, LGL_VideoDecoder* video0h, float volAve0, float volMax0, float freqFactor0, int mode0,
-					LGL_VideoDecoder* video1l, LGL_VideoDecoder* video1h, float volAve1, float volMax1, float freqFactor1, int mode1
-				);
-	void			SetFrequencySensitiveGainEQ
-				(
-					float	gain0,	float	eqLo0,	float	eqHi0,
-					float	gain1,	float	eqLo1,	float	eqHi1
-				);
+	void			SetVisualBrightness(int which, float brightness);
+	void			SetVideoBrightness(int which, float brightness);
+	void			SetOscilloscopeBrightness(int which, float brightness);
+	void			SetFreqSenseBrightness(int which, float brightness);
 
 	void			GetNextVideoPathRandom(char* path);
 	void			ForceVideoToBackOfRandomQueue
@@ -117,31 +108,17 @@ private:
 	std::vector<char*>	ScrollTextAmbientFileQueue;
 	std::vector<char*>	ScrollTextAmbientFileQueueUsed;
 
-	bool			SoundsLoaded[2];
-
-	LGL_VideoDecoder*	Videos[2];
-	float			VideoBrightness[2];
 	float			VideoFPSDisplay;
-
-	int			FreqMode[2];
-	LGL_VideoDecoder*	FreqVideos[4];
-	float			FreqVolume[2];
-	float			FreqFreqFactor[2];
-	float			FreqGain[2];
-	float			FreqEQLo[2];
-	float			FreqEQHi[2];
 
 public:
 	void			DrawVideos
 				(
-					bool		preview,
-					int		which,
 					TurntableObj*	tt,
 					float		l,
 					float		r,
 					float		b,
 					float		t,
-					float		overrideBrightness=-1.0f
+					bool		preview
 				);
 
 private:
@@ -149,7 +126,6 @@ private:
 	std::vector<char*>	VideoRandomQueue;
 	unsigned int		VideoRandomGetCount;
 	
-	float			NoiseFactor[2];
 static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
 
 };

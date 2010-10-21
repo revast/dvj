@@ -1070,9 +1070,19 @@ WaveformVideoAdvanceRate
 	return(-1.0f);
 }
 
+float
+InputKeyboardObj::
+WaveformFreqSenseBrightness
+(
+	unsigned int	target
+)	const
+{
+	return(-1.0f);
+}
+
 int
 InputKeyboardObj::
-WaveformVideoFreqSenseMode
+WaveformAudioInputMode
 (
 	unsigned int	target
 )	const
@@ -1081,14 +1091,9 @@ WaveformVideoFreqSenseMode
 
 	if(target & TARGET_FOCUS)
 	{
-		if(0 && LGL_KeyStroke(GetInputKeyboardWaveformVideoFreqSenseModeKey()))
-		{
-			mode=-10;
-		}
 		if
 		(
-			LGL_KeyDown(GetInputKeyboardWaveformVideoFreqSenseModeKey()) &&
-			LGL_KeyTimer(GetInputKeyboardWaveformVideoFreqSenseModeKey())>=1.0f
+			LGL_KeyStroke(GetInputKeyboardWaveformAudioInputModeKey())
 		)
 		{
 			mode=2;
@@ -1100,14 +1105,14 @@ WaveformVideoFreqSenseMode
 
 bool
 InputKeyboardObj::
-WaveformVideoAspectRatioModeNext
+WaveformVideoAspectRatioNext
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		if(LGL_KeyStroke(GetInputKeyboardWaveformVideoAspectRatioModeNextKey()))
+		if(LGL_KeyStroke(GetInputKeyboardWaveformVideoAspectRatioNextKey()))
 		{
 			return(true);
 		}

@@ -101,7 +101,7 @@ enum
 	LGL_KEY_RETURN		= SDLK_RETURN,
 	LGL_KEY_PAUSE		= SDL_SCANCODE_PAUSE,
 	LGL_KEY_ESCAPE		= SDLK_ESCAPE,
-	LGL_KEY_SPACE		= SDL_SCANCODE_SPACE,
+	LGL_KEY_SPACE		= 32,//SDL_SCANCODE_SPACE,
 	LGL_KEY_EXCLAM		= SDL_SCANCODE_KP_EXCLAM,
 	LGL_KEY_QUOTEDBL	= SDLK_QUOTEDBL,
 	LGL_KEY_HASH		= SDLK_HASH,
@@ -989,6 +989,9 @@ public:
 	int		GetWidth();
 	int		GetHeight();
 	
+	int		GetTexWidth();
+	int		GetTexHeight();
+	
 const	char*		GetPath() const;
 const	char*		GetPathShort() const;
 
@@ -1193,6 +1196,7 @@ public:
 	LGL_Image*		GetImage();
 	float			GetSecondsBufferedLeft();
 	float			GetSecondsBufferedRight();
+	void			SetFrameBufferAddBackwards(bool addBackwards=true);
 	void			SetFrameBufferAddRadius(int frames);
 
 	//Thread Functions
@@ -1227,6 +1231,7 @@ private:
 	LGL_Semaphore		FrameBufferReadySemaphore;
 	std::vector<lgl_FrameBuffer*>
 				FrameBufferRecycled;
+	bool			FrameBufferAddBackwards;
 	int			FrameBufferAddRadius;
 	int			FrameBufferSubtractRadius;
 
@@ -1248,6 +1253,9 @@ private:
 
 	LGL_Image*		Image;
 	bool			VideoOK;
+
+public:
+	float			StoredBrightness;	//Hate this!
 
 private:
 

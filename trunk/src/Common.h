@@ -142,7 +142,7 @@ Turntable_DrawWaveform
 	float		cachedLengthSeconds,
 	LGL_Image*	noiseImage256x64,
 	LGL_Image*	loopImage,
-	int		freqSensitiveMode,
+	bool		audioInputMode,
 	float		warpPointSecondsStart,
 	float		warpPointSecondsTrigger,
 	int		loopExponent,
