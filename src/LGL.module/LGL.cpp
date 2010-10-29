@@ -80,6 +80,12 @@
 #include <Aliases.h>
 #endif	//LGL_OSX
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
 #ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
@@ -2341,9 +2347,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		}
 		else
 		{
-			LGL_MouseVisible(false);
 			LGL_VidCamCalibrate(NULL,.5);
-			LGL_MouseVisible(true);
 		}
 	}
 
@@ -18891,11 +18895,11 @@ LGL_MouseVisible
 {
 	if(visible)
 	{
-		SDL_ShowCursor(1);
+		SDL_ShowCursor(SDL_ENABLE);
 	}
 	else
 	{
-		SDL_ShowCursor(0);
+		SDL_ShowCursor(SDL_DISABLE);
 	}
 }
 
@@ -27811,6 +27815,84 @@ LGL_ScopeLock::
 GetLockObtained()
 {
 	return(LockObtained);
+}
+
+
+
+//LEDs
+
+void set_leds(char red, char green, char blue, const char* host, int& si) {
+	int idx, call;
+	struct sockaddr_in sock;
+	struct hostent *hp;
+
+	const int UDP_PORT = 6038;
+	const int packet_size = 536;
+	const int header_size = 21;
+	const unsigned char header[] = {4,1,220,74,1,0,1,1,0,0,0,0,0,0,0,0,255,255,255,255,0};
+	static unsigned char buffer[packet_size + 1];
+
+
+	if(si==-1)
+	{
+		//Initialize...
+		si = socket(AF_INET, SOCK_DGRAM, 0);
+		memcpy(buffer,header,header_size);
+	}
+
+	if (si < 0) fprintf(stderr, "Error creating socket");
+
+	hp = gethostbyname(host);
+	if (hp==0) fprintf(stderr, "Unknown host");
+
+	sock.sin_family = hp->h_addrtype;
+	sock.sin_port = htons(UDP_PORT);
+
+	memcpy((char *)&sock.sin_addr, (char *)hp->h_addr, hp->h_length);
+
+	/*
+	for (idx = 0; idx < header_size; idx++) {
+		buffer[idx] = header[idx];
+	}
+	*/
+	//memcpy(buffer,header,header_size);
+
+	for (idx = header_size; idx < packet_size; idx++) {
+		switch(idx % 3) {
+			case 0:
+				buffer[idx] = red;
+				break;
+			case 1:
+				buffer[idx] = green;
+				break;
+			case 2:
+				buffer[idx] = blue;
+				break;
+		}
+	}
+	call=sendto(si, buffer, 536, 0, (struct sockaddr*) &sock, sizeof(struct sockaddr_in));
+	//close(si);
+	if (call < 0) fprintf(stderr, "Failed to send");
+}
+
+void
+LGL_SetLEDs
+(
+	float	r,
+	float	g,
+	float	b
+)
+{
+	const char* hostname = "192.168.1.208";
+	static int si=-1;
+	set_leds
+	(
+		(char)(r*255),
+		(char)(g*255),
+		(char)(b*255),
+		hostname,
+		si
+	);
 }
 
 
