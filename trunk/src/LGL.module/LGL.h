@@ -3213,6 +3213,12 @@ private:
 
 
 
+//LEDs
+
+void		LGL_SetLEDs(float r, float g, float b);
+
+
+
 
 
 
