@@ -5160,7 +5160,6 @@ SelectNewVideo
 		VideoLo->SetVideo(path);
 
 		Visualizer->GetNextVideoPathRandom(path);
-printf("SV: %s\n",path);
 		VideoHi->SetVideo(path);
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoLo->GetPath());
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoHi->GetPath());
