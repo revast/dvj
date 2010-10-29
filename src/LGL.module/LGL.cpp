@@ -8565,9 +8565,26 @@ UnloadVideo()
 {
 	if(FormatContext)
 	{
-		lgl_av_close_input_file(FormatContext);
-		//NOT necessary: lgl_av_freep(FormatContext);
-		FormatContext=NULL;
+		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+		
+		if(CodecContext)
+		{
+			lgl_avcodec_close(CodecContext);
+			CodecContext=NULL;
+		}
+		
+		if(SwsConvertContext)
+		{
+			sws_freeContext(SwsConvertContext);
+			SwsConvertContext=NULL;
+		}
+		
+		if(FormatContext)
+		{
+			lgl_av_close_input_file(FormatContext);
+			//NOT necessary: lgl_av_freep(FormatContext);
+			FormatContext=NULL;
+		}
 	}
 }
 
@@ -9133,8 +9150,8 @@ printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
 	FPSTimestamp=CodecContext->time_base.den/(float)CodecContext->time_base.num;
 	FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
 
-	FrameNative=lgl_avcodec_alloc_frame();
-	FrameRGB=lgl_avcodec_alloc_frame();
+	if(FrameNative==NULL) FrameNative=lgl_avcodec_alloc_frame();
+	if(FrameRGB==NULL) FrameRGB=lgl_avcodec_alloc_frame();
 
 	if(FrameNative==NULL || FrameRGB==NULL)
 	{
