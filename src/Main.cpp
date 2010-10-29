@@ -618,122 +618,6 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	LGL_ClipRectDisable();
 }
 
-LGL_Image* logo=NULL;
-float loadScreenPercent=0.0f;
-
-void
-DrawLoadScreen()
-{
-	char loadScreenPath[2048];
-
-	//Try user-specified (defaults to ~/.dvj/data/image/loadscreen.png
-	GetLoadScreenPath(loadScreenPath);
-
-	if(LGL_FileExists(loadScreenPath)==false)
-	{
-		//Fall back on default, which might not exist...
-		strcpy(loadScreenPath,"data/image/loadscreen.png");
-	}
-
-
-	if(LGL_FileExists(loadScreenPath))
-	{
-		if(logo==NULL)
-		{
-			logo = new LGL_Image(loadScreenPath);
-		}
-		logo->DrawToScreen();
-	}
-	else
-	{
-		if(logo==NULL)
-		{
-			logo = new LGL_Image("data/image/logo.png");
-		}
-		float height=0.03f;
-		float aspect = LGL_DisplayAspectRatio();
-		logo->DrawToScreen
-		(
-			0.5f-0.5f*height,	0.5f+0.5f*height,
-			0.5f-0.5f*height*aspect,0.5f+0.5f*height*aspect
-		);
-		LGL_GetFont().DrawString
-		(
-			.5,.3,.02,
-			1,1,1,1,
-			true,
-			.75,
-			(loadScreenPercent<2.0f) ? "Initializing" : "Scanning library"
-		);
-	}
-
-	float pct=LGL_Min(1.0f,loadScreenPercent);
-	if(loadScreenPercent<2.0f)
-	{
-		LGL_GetFont().DrawString
-		(
-			.5f,.1f,.02f,
-			1,1,1,1,
-			true,
-			.75f,
-			"Wiring memory"
-		);
-		LGL_GetFont().DrawString
-		(
-			.5f,.1-0.03f,.015f,
-			1,1,1,1,
-			true,
-			.75,
-			"[ESC] skips (and risks framerate spikes)"
-		);
-	}
-
-	float coolR;
-	float coolG;
-	float coolB;
-	GetColorCool(coolR,coolG,coolB);
-	float warmR;
-	float warmG;
-	float warmB;
-	GetColorWarm(warmR,warmG,warmB);
-
-	float glow = 1.0f;	//GetGlowFromTime(LGL_FramesSinceExecution()/60.0f);
-	float brW = pct;
-	float brC = pct * (1.0f-brW);
-	if(loadScreenPercent!=2.0f)
-	{
-		LGL_DrawRectToScreen
-		(
-			0,pct/2.0f,
-			0,0.05f,
-			brC*coolR*glow + brW*warmR*glow,
-			brC*coolG*glow + brW*warmG*glow,
-			brC*coolB*glow + brW*warmB*glow,
-			1.0f
-		);
-		LGL_DrawRectToScreen
-		(
-			1.0f-pct/2.0f,1.0f,
-			0,0.05f,
-			brC*coolR*glow + brW*warmR*glow,
-			brC*coolG*glow + brW*warmG*glow,
-			brC*coolB*glow + brW*warmB*glow,
-			1.0f
-		);
-	}
-	if(loadScreenPercent<2.0f)
-	{
-		LGL_DrawLineToScreen
-		(
-			0.5f,0.0f,
-			0.5f,0.05f,
-			0,0,0,1,
-			1.0f
-		);
-	}
-	LGL_SwapBuffers();
-}
-
 float SwapOutOtherProgramsPercent=0.0f;
 bool SwapOutOtherProgramsFinished=false;
 
@@ -897,9 +781,14 @@ int main(int argc, char** argv)
 
 	VerifyMusicDir();
 
+	float loadScreenPercent=0.0f;
+
 	if(wireMemory)
 	{
-		DrawLoadScreen();
+		const char* line1 = NULL;
+		const char* line2 = "Wiring memory";
+		const char* line3 = "[ESC] skips (and risks framerate spikes)";
+		DrawLoadScreen(loadScreenPercent,line1,line2,line3);
 		SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
 		for(;;)
 		{
@@ -907,11 +796,10 @@ int main(int argc, char** argv)
 			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
 			{
 				SwapOutOtherProgramsFinished=true;
-				loadScreenPercent=2.0f;
 				break;
 			}
 			loadScreenPercent=powf(SwapOutOtherProgramsPercent,3);
-			DrawLoadScreen();
+			DrawLoadScreen(loadScreenPercent,line1,line2,line3);
 			LGL_DelaySeconds(1.0f/60.0f);
 
 			if(SwapOutOtherProgramsFinished)
@@ -922,12 +810,9 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	else
-	{
-		loadScreenPercent=2.0f;
-	}
 
-	DrawLoadScreen();
+	loadScreenPercent=0.0f;
+	DrawLoadScreen(loadScreenPercent,NULL,"Scanning library");
 
 	InitializeGlobals();
 
@@ -953,9 +838,6 @@ int main(int argc, char** argv)
 		ParticleSystemImage->GetPath(),
 		600			//Particles Per Second
 	);
-
-	DrawLoadScreen();
-	DrawLoadScreen();
 
 	for(;;)
 	{
@@ -1017,6 +899,7 @@ int main(int argc, char** argv)
 			LGL_DelaySeconds(1.0f/60.0f-LGL_SecondsSinceThisFrame());
 		}
 		*/
+		LGL_MouseVisible(false);
 		LGL_SwapBuffers();
 	}
 }

@@ -285,10 +285,44 @@ MatchesFilter
 
 //DatabaseObj
 
+int
+DatabaseRefreshThread
+(
+	void* ptr
+)
+{
+	DatabaseObj* db = (DatabaseObj*)ptr;
+
+	char refreshTarget[2048];
+	for(;;)
+	{
+		if(db->GetThreadRefreshTarget()[0]!='\0')
+		{
+			strcpy(refreshTarget,db->GetThreadRefreshTarget());
+			db->ClearThreadRefreshTarget();
+			db->Refresh_Internal(refreshTarget);
+		}
+		else
+		{
+			db->SetThreadCompletionPercent(1.0f);
+			break;
+		}
+	}
+
+	return(0);
+}
+
 DatabaseObj::
-DatabaseObj() : EntryDotDot("..")
+DatabaseObj() :
+	EntryDotDot(".."),
+	Semaphore("Database Semaphore")
 {
 	strcpy(MusicRoot,GetMusicRootPath());
+
+	Thread=NULL;
+	ThreadDieHint=false;
+	ThreadRefreshTarget[0]='\0';
+	ThreadCompletionPercent=0.0f;
 
 	Refresh();
 }
@@ -296,7 +330,11 @@ DatabaseObj() : EntryDotDot("..")
 DatabaseObj::
 ~DatabaseObj()
 {
-	//
+	ThreadDieHint=true;
+	LGL_ThreadWait(Thread);
+	Thread=NULL;
+
+	ClearDatabaseEntryList();
 }
 
 std::vector<DatabaseEntryObj*>
@@ -358,23 +396,120 @@ Refresh
 		subdirPath=MusicRoot;
 	}
 
+	strcpy(ThreadRefreshTarget,subdirPath);
+
+	if(Thread==NULL)
+	{
+		FilesProcessed=0;
+		ExpectedFilesProcessed=-1;
+		MostRecentFileScanned[0]='\0';
+
+		ThreadCompletionPercent=0.0f;
+		ThreadDieHint=false;
+		Thread=LGL_ThreadCreate(DatabaseRefreshThread,this);
+		char mostRecentFileScanned[2048];
+		mostRecentFileScanned[0]='\0';
+		char count[2048];
+		count[0]='\0';
+
+		for(;;)
+		{
+			float bright = LGL_Clamp
+			(
+				0.0f,
+				2.0f*(1.0f-MostRecentFileScannedTimer.SecondsSinceLastReset()),
+				1.0f
+			);
+			if(FilesProcessed>0 || ThreadCompletionPercent==1.0f)
+			{
+				GetMostRecentFileScanned(mostRecentFileScanned);
+				if(ExpectedFilesProcessed==-1)
+				{
+					//sprintf(count,"%i",FilesProcessed);
+					DrawLoadScreen
+					(
+						-1.0f,
+						NULL,//count,
+						"Scanning library",
+						mostRecentFileScanned,
+						bright
+					);
+				}
+				else
+				{
+					DrawLoadScreen
+					(
+						ThreadCompletionPercent,
+						NULL,//count,
+						"Scanning library",
+						mostRecentFileScanned,
+						bright
+					);
+				}
+			}
+
+			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
+			{
+				ThreadDieHint=true;
+				LGL_ThreadWait(Thread);
+				Thread=NULL;
+				exit(0);
+			}
+
+			if
+			(
+				ThreadCompletionPercent==1.0f &&
+				bright==0.0f
+			)
+			{
+				LGL_ThreadWait(Thread);
+				Thread=NULL;
+				break;
+			}
+		}
+	}
+}
+
+void
+DatabaseObj::
+Refresh_Internal
+(
+	const char*	subdirPath,
+	bool		recursing
+)
+{
+	if(ThreadDieHint)
+	{
+		return;
+	}
+
 	LGL_DirTree dirTree(subdirPath);
 	dirTree.WaitOnWorkerThread();
 
-	//Add files
-	for(unsigned int a=0;a<dirTree.GetFileCount();a++)
-	{
-		char path[2048];
-		sprintf(path,"%s/%s",subdirPath,dirTree.GetFileName(a));
+	char dbCachePath[2048];
+	sprintf(dbCachePath,"%s/.dvj/databaseCache.txt",LGL_GetHomeDir());
 
-		float bpm=0;
-		char pathMeta[2048];
-		sprintf(pathMeta,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),dirTree.GetFileName(a));
-		if(FILE* fd=fopen(pathMeta,"r"))
+	unsigned int volumesCount=0;
+
+	if(recursing==false)
+	{
+		ThreadCompletionPercent=0.0f;
+		FilesProcessed=0;
+		ExpectedFilesProcessed=-1;
+		ClearDatabaseEntryList();
+	
+		char dbCachePrevPath[2048];
+		dbCachePrevPath[0]='\0';
+		int dbCachePrevFileCount=0;
+		unsigned int dbCachePrevVolumeCount=0;
+
+		LGL_DirTree volumes("/Volumes");
+		volumes.WaitOnWorkerThread();
+		volumesCount=volumes.GetDirCount();
+
+		if(FILE* fd=fopen(dbCachePath,"r"))
 		{
 			FileInterfaceObj fi;
-			float bpmStart=-1;
-			float bpmEnd=-1;
 			for(;;)
 			{
 				fi.ReadLine(fd);
@@ -386,59 +521,138 @@ Refresh
 				{
 					continue;
 				}
-				if
-				(
-					strcasecmp(fi[0],"HomePoints")==0 ||
-					strcasecmp(fi[0],"SavePoints")==0
-				)
+				
+				if(strcasecmp(fi[0],"Path")==0)
 				{
-					if(fi.Size()!=19)
-					{
-						printf("DatbaseObj::LoadMetaData('%s'): Warning!\n",path);
-						printf("\tSavePoints has strange fi.size() of '%i' (Expecting 11)\n",fi.Size());
-					}
-					for(unsigned int a=0;a<fi.Size()-1 && a<2;a++)
-					{
-						if(a==0)
-						{
-							bpmStart=atof(fi[a+1]);
-						}
-						else if(a==1)
-						{
-							bpmEnd=atof(fi[a+1]);
-						}
-					}
+					strcpy(dbCachePrevPath,fi[1]);
 				}
-			}
-
-			if(bpmStart!=-1 && bpmEnd!=-1)
-			{
-				int bpmMin=100;
-				float p0=bpmStart;
-				float p1=bpmEnd;
-				float dp=p1-p0;
-				int measuresGuess=1;
-				float bpmGuess;
-				if(dp!=0)
+				else if(strcasecmp(fi[0],"FileCount")==0)
 				{
-					for(int a=0;a<10;a++)
-					{
-						bpmGuess=(4*measuresGuess)/(dp/60.0f);
-						if(bpmGuess>=bpmMin)
-						{
-							bpm=bpmGuess;
-							break;
-						}
-						measuresGuess*=2;
-					}
+					dbCachePrevFileCount=atoi(fi[1]);
+				}
+				else if(strcasecmp(fi[0],"VolumeCount")==0)
+				{
+					dbCachePrevVolumeCount=atoi(fi[1]);
 				}
 			}
 
 			fclose(fd);
-			fd=NULL;
+
+			if
+			(
+				strcasecmp(dbCachePrevPath,subdirPath)==0 &&
+				dbCachePrevFileCount!=0 &&
+				volumesCount==dbCachePrevVolumeCount
+			)
+			{
+				ExpectedFilesProcessed=dbCachePrevFileCount;
+			}
 		}
-		DatabaseEntryObj* ent = new DatabaseEntryObj(path,bpm);
-		DatabaseEntryList.push_back(ent);
+	}
+
+	//Add files
+	for(unsigned int a=0;a<dirTree.GetFileCount();a++)
+	{
+		if(ThreadDieHint)
+		{
+			return;
+		}
+
+		char path[2048];
+		sprintf(path,"%s/%s",subdirPath,dirTree.GetFileName(a));
+
+		SetMostRecentFileScanned(dirTree.GetFileName(a));
+
+		float bpm=0;
+		char pathMeta[2048];
+		sprintf(pathMeta,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),dirTree.GetFileName(a));
+
+		if(LGL_FileExists(pathMeta))
+		{
+			if(FILE* fd=fopen(pathMeta,"r"))
+			{
+				FileInterfaceObj fi;
+				float bpmStart=-1;
+				float bpmEnd=-1;
+				for(;;)
+				{
+					fi.ReadLine(fd);
+					if(feof(fd))
+					{
+						break;
+					}
+					if(fi.Size()==0)
+					{
+						continue;
+					}
+					if
+					(
+						strcasecmp(fi[0],"HomePoints")==0 ||
+						strcasecmp(fi[0],"SavePoints")==0
+					)
+					{
+						if(fi.Size()!=19)
+						{
+							printf("DatbaseObj::LoadMetaData('%s'): Warning!\n",path);
+							printf("\tSavePoints has strange fi.size() of '%i' (Expecting 11)\n",fi.Size());
+						}
+						for(unsigned int a=0;a<fi.Size()-1 && a<2;a++)
+						{
+							if(a==0)
+							{
+								bpmStart=atof(fi[a+1]);
+							}
+							else if(a==1)
+							{
+								bpmEnd=atof(fi[a+1]);
+							}
+						}
+					}
+				}
+
+				if(bpmStart!=-1 && bpmEnd!=-1)
+				{
+					int bpmMin=100;
+					float p0=bpmStart;
+					float p1=bpmEnd;
+					float dp=p1-p0;
+					int measuresGuess=1;
+					float bpmGuess;
+					if(dp!=0)
+					{
+						for(int a=0;a<10;a++)
+						{
+							bpmGuess=(4*measuresGuess)/(dp/60.0f);
+							if(bpmGuess>=bpmMin)
+							{
+								bpm=bpmGuess;
+								break;
+							}
+							measuresGuess*=2;
+						}
+					}
+				}
+
+				fclose(fd);
+				fd=NULL;
+			}
+			DatabaseEntryObj* ent = new DatabaseEntryObj(path,bpm);
+			DatabaseEntryList.push_back(ent);
+		}
+
+		FilesProcessed++;
+		if(ExpectedFilesProcessed!=-1)
+		{
+			ThreadCompletionPercent=FilesProcessed/(float)ExpectedFilesProcessed;
+			if(ThreadCompletionPercent >= 1.0f)
+			{
+				ThreadCompletionPercent=0.9999f;
+			}
+		}
+		else
+		{
+			ThreadCompletionPercent=-1.0f;
+		}
 	}
 
 	//Recurse on subdirs
@@ -454,8 +668,94 @@ Refresh
 			sprintf(path,"%s/%s",subdirPath,dirTree.GetDirName(a));
 			DatabaseEntryObj* ent = new DatabaseEntryObj(path);
 			DatabaseEntryList.push_back(ent);
-			Refresh(path);
+			Refresh_Internal(path,true);
 		}
 	}
+
+	if(recursing==false)
+	{
+		if(FILE* fd = fopen(dbCachePath,"w"))
+		{
+			fprintf(fd,"Path|%s\n",subdirPath);
+			fprintf(fd,"FileCount|%i\n",FilesProcessed);
+			fprintf(fd,"VolumeCount|%i\n",volumesCount);
+			fclose(fd);
+		}
+
+		FilesProcessed=0;
+	}
 }
+
+bool
+DatabaseObj::
+GetThreadDieHint()
+{
+	return(ThreadDieHint);
+}
+
+const char*
+DatabaseObj::
+GetThreadRefreshTarget()
+{
+	return(ThreadRefreshTarget);
+}
+
+void
+DatabaseObj::
+ClearThreadRefreshTarget()
+{
+	ThreadRefreshTarget[0]='\0';
+}
+
+void
+DatabaseObj::
+SetThreadCompletionPercent(float pct)
+{
+	ThreadCompletionPercent=pct;
+}
+
+void
+DatabaseObj::
+GetMostRecentFileScanned
+(
+	char*	dst
+)
+{
+	LGL_ScopeLock lock(Semaphore);
+	strcpy(dst,MostRecentFileScanned);
+}
+
+void
+DatabaseObj::
+SetMostRecentFileScanned
+(
+	const char*	src
+)
+{
+	if
+	(
+		MostRecentFileScannedTimer.SecondsSinceLastReset()>=1.0f ||
+		MostRecentFileScanned[0]=='\0'
+	)
+	{
+		LGL_ScopeLock lock(Semaphore);
+		strcpy(MostRecentFileScanned,src?src:"");
+		MostRecentFileScannedTimer.Reset();
+	}
+}
+
+void
+DatabaseObj::
+ClearDatabaseEntryList()
+{
+	for(unsigned int a=0;a<DatabaseEntryList.size();a++)
+	{
+		delete DatabaseEntryList[a];
+		DatabaseEntryList[a]=NULL;
+	}
+
+	DatabaseEntryList.clear();
+}
+
+
 

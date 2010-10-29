@@ -21,11 +21,24 @@
  *
  */
 
+#ifndef	_DVJ_COMMON_H_
+#define	_DVJ_COMMON_H_
+
 #define	EIGHT_WAY (0)
 #define	POINTER_PARTICLES_PER_SECOND (250)
 #define	WAVE_WIDTH_PERCENT (0.60f)
 
 #include "LGL.module/LGL.h"
+
+void
+DrawLoadScreen
+(
+	float		loadScreenPercent,
+	const char*	line1 = NULL,
+	const char*	line2 = NULL,
+	const char*	line3 = NULL,
+	float		line3Brightness = 1.0f
+);
 
 float
 GetGlowFromTime
@@ -171,4 +184,6 @@ GetFreqBrightness
 	float	freqFactor,
 	float	vol
 );
+
+#endif	//_DVJ_COMMON_H_
 
