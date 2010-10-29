@@ -28,6 +28,144 @@
 
 #define SAMPLE_RADIUS_MULTIPLIER (2.0f)
 
+LGL_Image* logo=NULL;
+
+void
+DrawLoadScreen
+(
+	float		loadScreenPercent,
+	const char*	line1,
+	const char*	line2,
+	const char*	line3,
+	float		line3Brightness
+)
+{
+	char loadScreenPath[2048];
+
+	//Try user-specified (defaults to ~/.dvj/data/image/loadscreen.png
+	GetLoadScreenPath(loadScreenPath);
+	if(LGL_FileExists(loadScreenPath)==false)
+	{
+		//Fall back on default, which might not exist...
+		strcpy(loadScreenPath,"data/image/loadscreen.png");
+	}
+
+	if(LGL_FileExists(loadScreenPath))
+	{
+		if(logo==NULL)
+		{
+			logo = new LGL_Image(loadScreenPath);
+		}
+		logo->DrawToScreen();
+	}
+	else
+	{
+		if(logo==NULL)
+		{
+			logo = new LGL_Image("data/image/logo.png");
+		}
+		float height=0.03f;
+		float aspect = LGL_DisplayAspectRatio();
+		logo->DrawToScreen
+		(
+			0.5f-0.5f*height,	0.5f+0.5f*height,
+			0.5f-0.5f*height*aspect,0.5f+0.5f*height*aspect
+		);
+		if(line1)
+		{
+			LGL_GetFont().DrawString
+			(
+				.5,.3,.02,
+				1,1,1,1,
+				true,
+				.75,
+				line1
+			);
+		}
+	}
+
+	float pct=LGL_Min(1.0f,loadScreenPercent);
+	if(line2)
+	{
+		float fontHeight=0.02f;
+		float fontWidth=LGL_GetFont().GetWidthString(fontHeight,line2);
+		float fontWidthMax=0.95f;
+		fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
+		LGL_GetFont().DrawString
+		(
+			.5f,.1f,fontHeight,
+			1,1,1,1,
+			true,
+			.75f,
+			line2
+		);
+	}
+	if(line3)
+	{
+		float fontHeight=0.015f;
+		float fontWidth=LGL_GetFont().GetWidthString(fontHeight,line3);
+		float fontWidthMax=0.95f;
+		fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
+		LGL_GetFont().DrawString
+		(
+			.5f,.1-0.03f,fontHeight,
+			line3Brightness,
+			line3Brightness,
+			line3Brightness,
+			line3Brightness,
+			true,
+			.75,
+			line3
+		);
+	}
+
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
+	float glow = 1.0f;	//GetGlowFromTime(LGL_FramesSinceExecution()/60.0f);
+	float brW = pct;
+	float brC = pct * (1.0f-brW);
+	if(loadScreenPercent>0.0f)
+	{
+		LGL_DrawRectToScreen
+		(
+			0,pct/2.0f,
+			0,0.05f,
+			brC*coolR*glow + brW*warmR*glow,
+			brC*coolG*glow + brW*warmG*glow,
+			brC*coolB*glow + brW*warmB*glow,
+			1.0f
+		);
+		LGL_DrawRectToScreen
+		(
+			1.0f-pct/2.0f,1.0f,
+			0,0.05f,
+			brC*coolR*glow + brW*warmR*glow,
+			brC*coolG*glow + brW*warmG*glow,
+			brC*coolB*glow + brW*warmB*glow,
+			1.0f
+		);
+	}
+	if(loadScreenPercent<1.0f)
+	{
+		LGL_DrawLineToScreen
+		(
+			0.5f,0.0f,
+			0.5f,0.05f,
+			0,0,0,1,
+			1.0f
+		);
+	}
+	LGL_SwapBuffers();
+	LGL_ProcessInput();
+}
+
 float
 GetGlowFromTime
 (
