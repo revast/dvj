@@ -103,7 +103,6 @@ VisualizerObj()
 		videoRandomDirTree.SetPath(videoPath);
 	}
 	videoRandomDirTree.WaitOnWorkerThread();
-	videoRandomDirTree.SetFilterText("avi");
 	strcpy(VideoRandomPath,videoRandomDirTree.GetPath());
 
 	for(unsigned int a=0;a<videoRandomDirTree.GetFilteredFileCount();a++)
