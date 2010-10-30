@@ -590,11 +590,18 @@ lgl_AudioOutCallbackJack
 		{
 			jack_input_buffer16[a*2+0] = (Sint16)(in_l[a]*((1<<16)-1));
 			jack_input_buffer16[a*2+1] = (Sint16)(in_r[a]*((1<<16)-1));
-			const bool PASSTHRU = 0;
+			const bool PASSTHRU = true;
 			if(PASSTHRU)
 			{
 				out_fl[a]+=in_l[a];
 				out_fr[a]+=in_r[a];
+				if(LGL.AudioSpec->channels==4)
+				{
+					jack_default_audio_sample_t* out_bl = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_output_port_bl,nframes);
+					jack_default_audio_sample_t* out_br = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_output_port_br,nframes);
+					out_bl[a]+=in_l[a];
+					out_br[a]+=in_r[a];
+				}
 			}
 		}
 		lgl_AudioInCallbackJack(NULL,jack_input_buffer8,nframes*2*2);
@@ -13708,6 +13715,38 @@ lgl_analyze_wave_segment
 	}
 
 	int samplesScanned=(int)(sampleLast-sampleFirst);
+
+	if(LGL_GetXponent())
+	{
+		float knobGain=LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_GAIN);
+		if(knobGain>=0.0f)
+		{
+			magnitudeTotal*=1.0f+7.0f*LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_GAIN);
+		}
+		float knobMid=LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_MID);
+		if(knobMid>=0.0f)
+		{
+			float val=1.0f;
+			if(knobMid==-1.0f)
+			{
+				val=1.0f;
+			}
+			else if(knobMid<0.5f)
+			{
+				val=knobMid*2.0f;
+			}
+			else if(knobMid==0.5f)
+			{
+				val=1.0f;
+			}
+			else if(knobMid>0.5f)
+			{
+				val=powf(knobMid*2.0f,3.0f);
+			}
+			zeroCrossings*=val;
+		}
+	}
+
 	magnitudeAve=(magnitudeTotal/samplesScanned)/(1<<15);
 	if(magnitudeAve>1.0f)
 	{
@@ -13731,7 +13770,7 @@ lgl_analyze_wave_segment
 		4.0f*(zeroCrossings-minZeroCrossings)/(2.0f*(samplesScanned-minZeroCrossings)),
 		1.0f
 	);
-	zeroCrossingFactor=sqrtf(zeroCrossingFactor);
+	zeroCrossingFactor=powf(zeroCrossingFactor,0.5f);
 
 	return(true);
 }
@@ -16626,6 +16665,12 @@ bool
 LGL_AudioUsingJack()
 {
 	return(LGL.AudioUsingJack);
+}
+
+bool
+LGL_AudioIsRealtime()
+{
+	return(LGL.AudioUsingJack && jack_client && jack_is_realtime(jack_client));
 }
 
 int

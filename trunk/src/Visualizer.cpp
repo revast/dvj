@@ -190,7 +190,7 @@ NextFrame
 					else
 					{
 						float speedFactor=
-							tts[t]->GetFinalSpeed()*
+							(tts[t]->GetAudioInputMode() ? 1.0f : tts[t]->GetFinalSpeed()) *
 							((vid==vidL) ? 1.0f : 4.0f);
 						vid->SetTime(vid->GetTime()+speedFactor*(1.0f/60.0f));
 					}
