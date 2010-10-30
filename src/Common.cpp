@@ -2872,13 +2872,13 @@ GetFreqBrightness
 	{
 		float minVol=0.2f;
 		float maxVol=0.5f;
-		float volMag=LGL_Clamp(0,(vol-minVol)/(maxVol-minVol),1);
+		float volMagNormalized=LGL_Clamp(0,(vol-minVol)/(maxVol-minVol),1);
 		float myFreqMag=1.0f-freqFactor;
 		float minFreqMag=0.35f;
 		freqMag=LGL_Clamp
 		(
 			0.0f,
-			volMag*(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
+			volMagNormalized*(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
 			1.0f
 		);
 	}
@@ -2886,7 +2886,7 @@ GetFreqBrightness
 	{
 		float minVol=0.25f;
 		float maxVol=0.5f;
-		float volMag=LGL_Clamp(0,(vol-minVol)/(maxVol-minVol),1);
+		float volMagNormalized=LGL_Clamp(0,(vol-minVol)/(maxVol-minVol),1);
 		float myFreqMag=0.0f+freqFactor;
 		float minFreqMag=0.2f;
 		freqMag=LGL_Clamp
@@ -2901,9 +2901,9 @@ GetFreqBrightness
 			freqMag*=freqMag;
 		}
 		freqMag/=2.0f;
-		freqMag*=volMag;
+		freqMag*=volMagNormalized;
 	}
-	float brightFactor = hi ? 4.0f : 0.25f;
+	float brightFactor = hi ? 4.0f : 0.5f;
 	float ret=freqMag*brightFactor;
 
 	if(hi)
@@ -2917,23 +2917,7 @@ GetFreqBrightness
 			ret=sqrtf(ret);
 		}
 	}
-/*
-if(hi)
-{
-	if(ret>0.0f)
-	{
-		if(ret>0.25f) printf("\t\t");
-		if(ret>0.5f) printf("\t\t");
-		if(ret>1.0f) printf("\t\t");
-		if(ret>2.0f) printf("\t\t");
-		printf("(%.2f,%.2f) => %.2f\n",freqFactor,vol,ret);
-	}
-	else
-	{
-		printf("\n");
-	}
-}
-*/
+
 	return(ret);
 }
 
