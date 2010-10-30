@@ -121,6 +121,10 @@ jack_get_tmpdir ()
 	char *pathcopy;
 	char *p;
 
+//printf("jack_get_tmpdir(): Alpha (%s)\n",jack_tmpdir);
+//This function can fail. Fuck that. What's wrong with the default tmpdir?
+return(0);
+
 	/* some implementations of popen(3) close a security loophole by
 	   resetting PATH for the exec'd command. since we *want* to
 	   use the user's PATH setting to locate jackd, we have to
@@ -128,12 +132,14 @@ jack_get_tmpdir ()
 	*/
 
 	if ((pathenv = getenv ("PATH")) == 0) {
+//printf("jack_get_tmpdir(): Fail 1\n");
 		return -1;
 	}
 
 	/* don't let strtok(3) mess with the real environment variable */
 
 	if ((pathcopy = strdup (pathenv)) == NULL) {
+//printf("jack_get_tmpdir(): Fail 2\n");
 		return -1;
 	}
 	p = strtok (pathcopy, ":");
@@ -159,12 +165,14 @@ jack_get_tmpdir ()
 	if (p == NULL) {
 		/* no command successfully started */
 		free (pathcopy);
+//printf("jack_get_tmpdir(): Fail 3\n");
 		return -1;
 	}
 
 	if (fgets (buf, sizeof (buf), in) == NULL) {
 		fclose (in);
 		free (pathcopy);
+//printf("jack_get_tmpdir(): Fail 4\n");
 		return -1;
 	}
 
@@ -174,11 +182,13 @@ jack_get_tmpdir ()
 		/* didn't get a whole line */
 		fclose (in);
 		free (pathcopy);
+//printf("jack_get_tmpdir(): Fail 5\n");
 		return -1;
 	}
 
 	if ((jack_tmpdir = (char *) malloc (len)) == NULL) {
 		free (pathcopy);
+//printf("jack_get_tmpdir(): Fail 6\n");
 		return -1;
 	}
 
@@ -188,6 +198,7 @@ jack_get_tmpdir ()
 	fclose (in);
 	free (pathcopy);
 
+//printf("jack_get_tmpdir(): Omega '%s'\n",jack_tmpdir);
 	return 0;
 }
 
@@ -988,6 +999,8 @@ jack_client_open_aux (const char *client_name,
 	jack_port_type_id_t ptid;
 	jack_status_t my_status;
 
+//printf("jack_client_open_aux(): Alpha\n");
+
 	jack_messagebuffer_init ();
 	
 	if (status == NULL)		/* no status from caller? */
@@ -998,6 +1011,7 @@ jack_client_open_aux (const char *client_name,
 	if ((options & ~JackOpenOptions)) {
 		*status |= (JackFailure|JackInvalidOption);
 		jack_messagebuffer_exit ();
+//printf("jack_client_open_aux(): Fail 1\n");
 		return NULL;
 	}
 
@@ -1010,6 +1024,7 @@ jack_client_open_aux (const char *client_name,
 	if (jack_get_tmpdir ()) {
 		*status |= JackFailure;
 		jack_messagebuffer_exit ();
+//printf("jack_client_open_aux(): Fail 2\n");
 		return NULL;
 	}
 
@@ -1021,6 +1036,7 @@ jack_client_open_aux (const char *client_name,
 	if (jack_request_client (ClientExternal, client_name, options, status,
 				 &va, &res, &req_fd)) {
 		jack_messagebuffer_exit ();
+//printf("jack_client_open_aux(): Fail 3\n");
 		return NULL;
 	}
 
@@ -1041,6 +1057,7 @@ jack_client_open_aux (const char *client_name,
 	if (jack_initialize_shm (va.server_name)) {
 		jack_error ("Unable to initialize shared memory.");
 		*status |= (JackFailure|JackShmFailure);
+//printf("jack_client_open_aux(): Fail 4\n");
 		goto fail;
 	}
 
@@ -1049,6 +1066,7 @@ jack_client_open_aux (const char *client_name,
 	if (jack_attach_shm (&client->engine_shm)) {
 		jack_error ("cannot attached engine control shared memory"
 			    " segment");
+//printf("jack_client_open_aux(): Fail 5\n");
 		goto fail;
 	}
 	
@@ -1062,6 +1080,7 @@ jack_client_open_aux (const char *client_name,
 	if (jack_attach_shm (&client->control_shm)) {
 		jack_error ("cannot attached client control shared memory"
 			    " segment");
+//printf("jack_client_open_aux(): Fail 6\n");
 		goto fail;
 	}
 	
@@ -1076,6 +1095,7 @@ jack_client_open_aux (const char *client_name,
 
 	client->n_port_types = client->engine->n_port_types;
 	if ((client->port_segment = (jack_shm_info_t *) malloc (sizeof (jack_shm_info_t) * client->n_port_types)) == NULL) {
+//printf("jack_client_open_aux(): Fail 7\n");
 		goto fail;
 	}
 	
@@ -1093,6 +1113,7 @@ jack_client_open_aux (const char *client_name,
 	client->deliver_arg = client;
 
 	if ((ev_fd = server_event_connect (client, va.server_name)) < 0) {
+//printf("jack_client_open_aux(): Fail 8\n");
 		goto fail;
 	}
 
@@ -1105,14 +1126,17 @@ jack_client_open_aux (const char *client_name,
         
 	if (task_get_bootstrap_port(client->clienttask, &client->bp)){
             jack_error ("Can't find bootstrap port");
+//printf("jack_client_open_aux(): Fail 9\n");
             goto fail;
         }
         
         if (allocate_mach_clientport(client, res.portnum) < 0) {
             jack_error("Can't allocate mach port");
+//printf("jack_client_open_aux(): Fail 10\n");
             goto fail; 
         }; 
 #endif /* JACK_USE_MACH_THREADS */
+//printf("jack_client_open_aux(): Omega OK\n");
  	return client;
 	
   fail:
@@ -1133,6 +1157,8 @@ jack_client_open_aux (const char *client_name,
 		close (ev_fd);
 	}
 	free (client);
+
+//printf("jack_client_open_aux(): Omega FAIL\n");
 
 	return NULL;
 }
