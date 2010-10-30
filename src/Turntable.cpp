@@ -4499,16 +4499,17 @@ GetFreqMetaData
 	float&	freqFactor
 )
 {
+	bool ret=false;
+	
 	if(AudioInputMode)
 	{
-		return(LGL_AudioInMetadata(volAve,volMax,freqFactor));
+		ret=LGL_AudioInMetadata(volAve,volMax,freqFactor);
 	}
 	else
 	{
 		if(Sound)
 		{
-			return
-			(
+			ret=
 				Sound->GetMetadata
 				(
 					GetTimeSeconds(),
@@ -4516,17 +4517,18 @@ GetFreqMetaData
 					freqFactor,
 					volAve,
 					volMax
-				)
-			);
+				);
 		}
 		else
 		{
 			volAve=0.0f;
 			volMax=0.0f;
 			freqFactor=0.0f;
-			return(false);
+			ret=false;
 		}
 	}
+
+	return(ret);
 }
 
 float

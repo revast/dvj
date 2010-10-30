@@ -2141,6 +2141,7 @@ bool		LGL_AudioAvailable();
 bool		LGL_AudioWasOnceAvailable();
 bool		LGL_AttemptAudioRevive();
 bool		LGL_AudioUsingJack();
+bool		LGL_AudioIsRealtime();
 int		LGL_AudioRate();
 int		LGL_AudioCallbackSamples();
 float		LGL_AudioSampleLeft(int sample);

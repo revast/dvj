@@ -2903,7 +2903,32 @@ GetFreqBrightness
 		freqMag/=2.0f;
 		freqMag*=volMagNormalized;
 	}
-	float brightFactor = hi ? 4.0f : 0.5f;
+	
+	float brightFactor;
+	if(hi)
+	{
+		brightFactor = 4.0f;
+		if(LGL_GetXponent())
+		{
+			float knobHigh = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_HIGH);
+			if(knobHigh!=-1.0f)
+			{
+				brightFactor = brightFactor*2.0f*knobHigh;
+			}
+		}
+	}
+	else
+	{
+		brightFactor = 0.5f;
+		if(LGL_GetXponent())
+		{
+			float knobLow = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_LOW);
+			if(knobLow!=-1.0f)
+			{
+				brightFactor = brightFactor*4.0f*knobLow;
+			}
+		}
+	}
 	float ret=freqMag*brightFactor;
 
 	if(hi)
@@ -2916,6 +2941,11 @@ GetFreqBrightness
 		{
 			ret=sqrtf(ret);
 		}
+	}
+
+	if(ret>2.0f)
+	{
+		ret=2.0f;
 	}
 
 	return(ret);
