@@ -417,12 +417,12 @@ CreateDotDVJTree()
 	}
 
 #ifdef	LGL_OSX
-	char applicationsDvj[2048];
-	sprintf(applicationsDvj,"%s/Applications/dvj",LGL_GetHomeDir());
-	if(LGL_DirectoryExists(applicationsDvj)==false)
+	char documentsDvj[2048];
+	sprintf(documentsDvj,"%s/Documents/dvj",LGL_GetHomeDir());
+	if(LGL_DirectoryExists(documentsDvj)==false)
 	{
 		char cmd[2048];
-		sprintf(cmd,"ln -s '%s' '%s'",dotDvj,applicationsDvj);
+		sprintf(cmd,"ln -s '%s' '%s'",dotDvj,documentsDvj);
 printf("Running cmd:\n\t'%s'\n",cmd);
 		system(cmd);
 	}

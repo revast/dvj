@@ -487,7 +487,7 @@ Refresh_Internal
 	dirTree.WaitOnWorkerThread();
 
 	char dbCachePath[2048];
-	sprintf(dbCachePath,"%s/.dvj/databaseCache.txt",LGL_GetHomeDir());
+	sprintf(dbCachePath,"%s/.dvj/cache/databaseCache.txt",LGL_GetHomeDir());
 
 	unsigned int volumesCount=0;
 
@@ -636,9 +636,10 @@ Refresh_Internal
 				fclose(fd);
 				fd=NULL;
 			}
-			DatabaseEntryObj* ent = new DatabaseEntryObj(path,bpm);
-			DatabaseEntryList.push_back(ent);
 		}
+
+		DatabaseEntryObj* ent = new DatabaseEntryObj(path,bpm);
+		DatabaseEntryList.push_back(ent);
 
 		FilesProcessed++;
 		if(ExpectedFilesProcessed!=-1)
