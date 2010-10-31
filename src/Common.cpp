@@ -648,6 +648,16 @@ Turntable_DrawDirTree
 			float fontWidthMax=viewPortWidth*0.9f;
 			fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
 
+			char fileNowSafe[2048];
+			strcpy(fileNowSafe,fileNow);
+			const int fileNowSafeLen = strlen(fileNowSafe);
+			for(int s=0;s<fileNowSafeLen;s++)
+			{
+				if(fileNowSafe[s]=='%')
+				{
+					fileNowSafe[s]=' ';
+				}
+			}
 			LGL_GetFont().DrawString
 			(
 				viewPortLeft+(.025f+0.05f)*viewPortWidth,
@@ -655,7 +665,7 @@ Turntable_DrawDirTree
 				fontHeight,
 				R,G,B,1,
 				false,0,
-				fileNow
+				fileNowSafe
 			);
 		}
 	}
@@ -1930,8 +1940,20 @@ Turntable_DrawWaveform
 	}
 
 	//Draw Text
+
+	char soundNameSafe[2048];
+	strcpy(soundNameSafe,soundName);
+	int soundNameSafeLen=strlen(soundNameSafe);
+	for(int s=0;s<soundNameSafeLen;s++)
+	{
+		if(soundNameSafe[s]=='%')
+		{
+			soundNameSafe[s]=' ';
+		}
+	}
+
 	char tmpStr[2048];
-	strcpy(tmpStr,soundName);
+	strcpy(tmpStr,soundNameSafe);
 	if(strstr(tmpStr,".mp3"))
 	{
 		strstr(tmpStr,".mp3")[0]='\0';
@@ -1980,9 +2002,9 @@ Turntable_DrawWaveform
 	if(videoPathShort && 0)
 	{
 		strcpy(tmpStr,videoPathShort);
-		if(strstr(tmpStr,".mp3"))
+		if(char* mp3 = strstr(tmpStr,".mp3"))
 		{
-			strstr(tmpStr,".mp3")[0]='\0';
+			mp3[0]='\0';
 		}
 
 		LGL_GetFont().DrawString
