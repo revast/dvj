@@ -350,6 +350,33 @@ CreateDotDVJTree()
 		LGL_DirectoryCreate(dvjCacheWaveArrayData);
 	}
 	
+	char dvjMusicRoot[2048];
+	sprintf(dvjMusicRoot,"%s/MusicRoot",dotDvj);
+	if(LGL_DirectoryExists(dvjMusicRoot)==false)
+	{
+		LGL_DirectoryCreate(dvjMusicRoot);
+	}
+
+	char dvjMusicRootDVJTutorials[2048];
+	sprintf(dvjMusicRootDVJTutorials,"%s/DVJ Tutorials",dvjMusicRoot);
+	if(LGL_DirectoryExists(dvjMusicRootDVJTutorials)==false)
+	{
+		LGL_DirectoryCreate(dvjMusicRootDVJTutorials);
+	}
+
+#ifdef	LGL_OSX
+	char dvjMusicRootITunes[2048];
+	sprintf(dvjMusicRootITunes,"%s/iTunes",dvjMusicRoot);
+	if(LGL_DirectoryExists(dvjMusicRootITunes)==false)
+	{
+		char iTunesPath[2048];
+		sprintf(iTunesPath,"%s/Music/iTunes/iTunes Music",LGL_GetHomeDir());
+		char cmd[2048];
+		sprintf(cmd,"ln -s '%s' '%s'",iTunesPath,dvjMusicRootITunes);
+		system(cmd);
+	}
+#endif	//LGL_OSX
+	
 	char dvjRecord[2048];
 	sprintf(dvjRecord,"%s/record",dotDvj);
 	if(LGL_DirectoryExists(dvjRecord)==false)
