@@ -3444,32 +3444,31 @@ DrawFrame
 		);
 */
 		
-		char temp[1024];
-		sprintf
-		(
-			temp,
-			"Decoding '%s'...",
-			SoundName
-		);
+		char SoundNameSafe[2048];
+		strcpy(SoundNameSafe,SoundName);
+		int SoundNameSafeLen=strlen(SoundNameSafe);
+		for(int s=0;s<SoundNameSafeLen;s++)
+		{
+			if(SoundNameSafe[s]=='%')
+			{
+				SoundNameSafe[s]=' ';
+			}
+		}
 		LGL_GetFont().DrawString
 		(
 			CenterX,ViewportBottom+ViewportHeight*.66,.015,
 			1,1,1,1,
 			true,.5,
-			temp
-		);
-		sprintf
-		(
-			temp,
-			"%.2f",
-			Sound->GetPercentLoadedSmooth()*100
+			"Decoding '%s'...",
+			SoundNameSafe
 		);
 		LGL_GetFont().DrawString
 		(
 			CenterX,ViewportBottom+ViewportHeight*.36,.015,
 			1,1,1,1,
 			true,.5,
-			temp
+			"%.2f",
+			Sound->GetPercentLoadedSmooth()*100
 		);
 
 		float minutes=0;
@@ -3479,6 +3478,8 @@ DrawFrame
 			minutes++;
 			seconds-=60;
 		}
+
+		char temp[2048];
 		if(seconds<10)
 		{
 			sprintf
