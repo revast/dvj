@@ -114,6 +114,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"colorWarmB=1.0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"audioInPassThru=0\n");
+		fprintf(fd,"wireMemory=0\n");
 		fprintf(fd,"\n");
 		fclose(fd);
 	}
@@ -288,19 +289,6 @@ CreateDotJackdrc()
 	}
 
 	return;
-
-	/*
-	char dotJackdrcPath[2048];
-	sprintf(dotJackdrcPath,"%s/.jackdrc",LGL_GetHomeDir());
-	if(LGL_FileExists(dotJackdrcPath)==false)
-	{
-		if(FILE* fd=fopen(dotJackdrcPath,"w"))
-		{
-			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p 512\n");
-			fclose(fd);
-		}
-	}
-	*/
 }
 
 void
@@ -661,6 +649,13 @@ GetFPSMax()
 {
 	int fpsMax=LGL_Clamp(1,dvjrcConfigFile->read<int>("fpsMax",60),60);
 	return(fpsMax);
+}
+
+bool
+GetWireMemory()
+{
+	int wire=LGL_Clamp(0,dvjrcConfigFile->read<int>("wireMemory",0),1);
+	return(wire!=0);
 }
 
 bool

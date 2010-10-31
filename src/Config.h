@@ -89,6 +89,9 @@ int
 GetFPSMax();
 
 bool
+GetWireMemory();
+
+bool
 GetAudioInPassThru();
 
 int
