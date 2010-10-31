@@ -113,6 +113,8 @@ CreateDefaultDVJRC
 		fprintf(fd,"colorWarmG=0.2\n");
 		fprintf(fd,"colorWarmB=1.0\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"audioInPassThru=0\n");
+		fprintf(fd,"\n");
 		fclose(fd);
 	}
 }
@@ -394,6 +396,20 @@ CreateDotDVJTree()
 	{
 		LGL_DirectoryCreate(dvjVideoRandom);
 	}
+	
+	char dvjVideoRandomLow[2048];
+	sprintf(dvjVideoRandomLow,"%s/low",dvjVideoRandom);
+	if(LGL_DirectoryExists(dvjVideoRandomLow)==false)
+	{
+		LGL_DirectoryCreate(dvjVideoRandomLow);
+	}
+	
+	char dvjVideoRandomHigh[2048];
+	sprintf(dvjVideoRandomHigh,"%s/high",dvjVideoRandom);
+	if(LGL_DirectoryExists(dvjVideoRandomHigh)==false)
+	{
+		LGL_DirectoryCreate(dvjVideoRandomHigh);
+	}
 
 	char dvjVideoTmp[2048];
 	sprintf(dvjVideoTmp,"%s/tmp",dvjVideo);
@@ -645,6 +661,13 @@ GetFPSMax()
 {
 	int fpsMax=LGL_Clamp(1,dvjrcConfigFile->read<int>("fpsMax",60),60);
 	return(fpsMax);
+}
+
+bool
+GetAudioInPassThru()
+{
+	int passThru=LGL_Clamp(0,dvjrcConfigFile->read<int>("audioInPassThru",0),1);
+	return(passThru!=0);
 }
 
 int

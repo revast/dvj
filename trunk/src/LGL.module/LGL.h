@@ -1541,6 +1541,12 @@ LGL_AudioOutAvailable();
 bool
 LGL_AudioInAvailable();
 
+void
+LGL_SetAudioInPassThru
+(
+	bool passThru=true
+);
+
 bool
 LGL_AudioOutDisconnected();
 

@@ -88,6 +88,9 @@ GetColorWarm
 int
 GetFPSMax();
 
+bool
+GetAudioInPassThru();
+
 int
 GetVideoBufferFrames();
 

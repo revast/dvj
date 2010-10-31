@@ -321,6 +321,7 @@ typedef struct
 	//AudioIn
 
 	bool			AudioInAvailable;
+	bool			AudioInPassThru;
 	bool			AudioOutDisconnected;
 	std::vector<LGL_AudioGrain*>
 				AudioInGrainListFixedSize;
@@ -590,8 +591,7 @@ lgl_AudioOutCallbackJack
 		{
 			jack_input_buffer16[a*2+0] = (Sint16)(in_l[a]*((1<<16)-1));
 			jack_input_buffer16[a*2+1] = (Sint16)(in_r[a]*((1<<16)-1));
-			const bool PASSTHRU = true;
-			if(PASSTHRU)
+			if(LGL.AudioInPassThru)
 			{
 				out_fl[a]+=in_l[a];
 				out_fr[a]+=in_r[a];
@@ -1057,6 +1057,7 @@ LGL_JackInit()
 
 	//AudioIn
 	LGL.AudioInAvailable=false;
+	LGL.AudioInPassThru=false;
 	const char** jack_ports_out = jack_get_ports(jack_client, NULL, NULL, JackPortIsPhysical|JackPortIsOutput);
 	int portCountOut=0;
 	if(jack_ports_out)
@@ -2735,6 +2736,15 @@ bool
 LGL_AudioInAvailable()
 {
 	return(LGL.AudioInAvailable);
+}
+
+void
+LGL_SetAudioInPassThru
+(
+	bool passThru
+)
+{
+	LGL.AudioInPassThru=passThru;
 }
 
 bool
@@ -12809,27 +12819,28 @@ DrawWaveform
 	float height=top-bottom;
 	float* pointsXY=new float[LengthSamples*2];
 	float peak=0.0f;
-	for(int z=0;z<LengthSamples;z++)
+
+	int samplesToDraw =
+		LGL_Min
+		(
+			LengthSamples,
+			256*((right-left)*1920.0f)/(LGL_DisplayResolutionX())
+		);
+	for(int z=0;z<samplesToDraw;z++)
 	{
-		pointsXY[2*z+0] = left+width*(z/(float)(LengthSamples-1));
+		pointsXY[2*z+0] = left+width*(z/(float)(samplesToDraw-1));
 		pointsXY[2*z+1] = bottom+height*WaveformMonoFloat[z];
 		if(pointsXY[2*z+1]>peak)
 		{
 			peak=pointsXY[2*z+1];
 		}
 	}
-	/*
-	if(LengthSamples>0)
-	{
-		pointsXY[2*(LengthSamples-1)]=right;
-	}
-	*/
 
 	//Draw
 	LGL_DrawLineStripToScreen
 	(
 		pointsXY,
-		LengthSamples,
+		samplesToDraw,
 		r,g,b,a,
 		thickness,
 		antialias

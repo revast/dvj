@@ -5158,10 +5158,10 @@ SelectNewVideo
 	if(FreqSenseBrightness>0.0f)
 	{
 		//Change the freq-videos
-		Visualizer->GetNextVideoPathRandom(path);
+		Visualizer->GetNextVideoPathRandomLow(path);
 		VideoLo->SetVideo(path);
 
-		Visualizer->GetNextVideoPathRandom(path);
+		Visualizer->GetNextVideoPathRandomHigh(path);
 		VideoHi->SetVideo(path);
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoLo->GetPath());
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoHi->GetPath());
@@ -5184,7 +5184,14 @@ SelectNewVideo
 		)
 		{
 			//Get next random video from Visualizer.
-			Visualizer->GetNextVideoPathRandom(path);
+			if(LGL_RandInt(0,1)==0)
+			{
+				Visualizer->GetNextVideoPathRandomLow(path);
+			}
+			else
+			{
+				Visualizer->GetNextVideoPathRandomHigh(path);
+			}
 
 			if(path[0]!='\0')
 			{

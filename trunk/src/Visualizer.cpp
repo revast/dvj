@@ -90,30 +90,49 @@ VisualizerObj()
 
 	char videoPath[2048];
 	sprintf(videoPath,"%s/.dvj/video",LGL_GetHomeDir());
-	char videoRandomPath[2048];
-	sprintf(videoRandomPath,"%s/random",videoPath);
+	sprintf(VideoRandomPath,"%s/random",videoPath);
+	sprintf(VideoRandomLowPath,"%s/low",VideoRandomPath);
+	sprintf(VideoRandomHighPath,"%s/high",VideoRandomPath);
 
-	LGL_DirTree videoRandomDirTree;
-	if(LGL_DirectoryExists(videoRandomPath))
+	for(int q=0;q<2;q++)
 	{
-		videoRandomDirTree.SetPath(videoRandomPath);
+		LGL_DirTree videoRandomDirTree;
+		videoRandomDirTree.SetPath(NULL);
+		char* pathNow = q==0 ? VideoRandomLowPath : VideoRandomHighPath;
+		if(LGL_DirectoryExists(pathNow))
+		{
+			videoRandomDirTree.SetPath(pathNow);
+			videoRandomDirTree.WaitOnWorkerThread();
+		}
+		if(videoRandomDirTree.GetFileCount()==0)
+		{
+			videoRandomDirTree.SetPath(NULL);
+			if(LGL_DirectoryExists(VideoRandomPath))
+			{
+				strcpy(pathNow,VideoRandomPath);
+				videoRandomDirTree.SetPath(VideoRandomPath);
+				videoRandomDirTree.WaitOnWorkerThread();
+			}
+		}
+		for(unsigned int a=0;a<videoRandomDirTree.GetFileCount();a++)
+		{
+			sprintf(tmp,"%s",videoRandomDirTree.GetFileName(a));
+			char* str=new char[strlen(tmp)+1];
+			strcpy(str,tmp);
+			if(q==0)
+			{
+				VideoRandomLowQueue.push_back(str);
+			}
+			else
+			{
+				VideoRandomHighQueue.push_back(str);
+			}
+		}
 	}
-	else if(LGL_DirectoryExists(videoPath))
-	{
-		videoRandomDirTree.SetPath(videoPath);
-	}
-	videoRandomDirTree.WaitOnWorkerThread();
-	strcpy(VideoRandomPath,videoRandomDirTree.GetPath());
 
-	for(unsigned int a=0;a<videoRandomDirTree.GetFilteredFileCount();a++)
-	{
-		sprintf(tmp,"%s",videoRandomDirTree.GetFilteredFileName(a));
-		char* str=new char[strlen(tmp)+1];
-		strcpy(str,tmp);
-		VideoRandomQueue.push_back(str);
-	}
+	random_shuffle(VideoRandomLowQueue.rbegin(),VideoRandomLowQueue.rend());
+	random_shuffle(VideoRandomHighQueue.rbegin(),VideoRandomHighQueue.rend());
 
-	random_shuffle(VideoRandomQueue.rbegin(),VideoRandomQueue.rend());
 	VideoRandomGetCount=0;
 
 	if(NOISE_IMAGE_INITIALIZED==false)
@@ -823,23 +842,50 @@ GetScrollTextEnabled()
 
 void
 VisualizerObj::
-GetNextVideoPathRandom(char* path)
+GetNextVideoPathRandomLow
+(
+	char*	path
+)
 {
-	if(VideoRandomQueue.empty())
+	GetNextVideoPathRandom(path,true);
+}
+
+void
+VisualizerObj::
+GetNextVideoPathRandomHigh
+(
+	char*	path
+)
+{
+	GetNextVideoPathRandom(path,false);
+}
+
+void
+VisualizerObj::
+GetNextVideoPathRandom
+(
+	char*	path,
+	bool	low
+)
+{
+	std::vector<char*>& queue = low ? VideoRandomLowQueue : VideoRandomHighQueue;
+	const char* videoPath=low ? VideoRandomLowPath : VideoRandomHighPath;
+printf("GNVPR(%i, %s): %i\n",low,path,(int)queue.size());
+	if(queue.empty())
 	{
 		path[0]='\0';
 		return;
 	}
 
-	sprintf(path,"%s/%s",VideoRandomPath,VideoRandomQueue[0]);
-	char* str=VideoRandomQueue[0];
-	VideoRandomQueue.erase((std::vector<char*>::iterator)(&(VideoRandomQueue[0])));
-	VideoRandomQueue.push_back(str);
+	sprintf(path,"%s/%s",videoPath,queue[0]);
+	char* str=queue[0];
+	queue.erase((std::vector<char*>::iterator)(&(queue[0])));
+	queue.push_back(str);
 
 	VideoRandomGetCount++;
-	if(VideoRandomGetCount==VideoRandomQueue.size())
+	if(VideoRandomGetCount==queue.size())
 	{
-		random_shuffle(VideoRandomQueue.rbegin(),VideoRandomQueue.rend());
+		random_shuffle(queue.rbegin(),queue.rend());
 		VideoRandomGetCount=0;
 	}
 }
@@ -860,23 +906,27 @@ ForceVideoToBackOfRandomQueue
 	}
 
 	//If we're drawing a video to the screen, then we want to put it at the end of the random list.
-	if
-	(
-		VideoRandomQueue.size()>1 &&
-		strcmp(pathShort,VideoRandomQueue[VideoRandomQueue.size()-1])!=0
-	)
+	for(int q=0;q<2;q++)
 	{
-		for(int a=VideoRandomQueue.size()-1;a>=0;a--)
+		std::vector<char*>& queue = (q==0) ? VideoRandomLowQueue : VideoRandomHighQueue;
+		if
+		(
+			queue.size()>1 &&
+			strcmp(pathShort,queue[queue.size()-1])!=0
+		)
 		{
-			if(strcmp(pathShort,VideoRandomQueue[a])==0)
+			for(int a=queue.size()-1;a>=0;a--)
 			{
-				char* tmp=VideoRandomQueue[a];
-				VideoRandomQueue.erase((std::vector<char*>::iterator)(&(VideoRandomQueue[a])));
-				VideoRandomQueue.push_back(tmp);
-				break;
+				if(strcmp(pathShort,queue[a])==0)
+				{
+					char* tmp=queue[a];
+					queue.erase((std::vector<char*>::iterator)(&(queue[a])));
+					queue.push_back(tmp);
+					break;
+				}
 			}
 		}
-	}	
+	}
 }
 
 void
@@ -884,8 +934,7 @@ VisualizerObj::
 PopulateCharStarBufferWithScrollTextFile
 (
 	std::vector<char*>&	buffer,
-	const
-	char*			path
+	const char*		path
 )
 {
 	if(path==NULL)
