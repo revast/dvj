@@ -717,7 +717,7 @@ int main(int argc, char** argv)
 	float drawFPSSpike=0.0f;
 	int resX=9999;
 	int resY=9999;
-	bool wireMemory=true;
+	bool wireMemory=GetWireMemory();;
 
 	for(int a=0;a<argc;a++)
 	{
