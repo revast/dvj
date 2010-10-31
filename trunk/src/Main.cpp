@@ -155,14 +155,27 @@ VerifyMusicDir()
 {
 	char musicDir[2048];
 	strcpy(musicDir,GetMusicRootPath());
-#ifndef	LGL_WIN32
+#ifdef LGL_OSX
+	if
+	(
+		LGL_DirectoryExists(musicDir)==false ||
+		LGL_FileExists(GetMusicRootConfigFilePath())==false
+	)
+	{
+		char homeDocumentsDvjMusicRoot[2048];
+		sprintf(homeDocumentsDvjMusicRoot,"%s/Documents/dvj/MusicRoot",LGL_GetHomeDir());
+		SetMusicRootPath(homeDocumentsDvjMusicRoot);
+	}
+
+	return;
+#endif	//LGL_OSX
+
 	while
 	(
 		LGL_DirectoryExists(musicDir)==false ||
 		LGL_FileExists(GetMusicRootConfigFilePath())==false
 	)
 	{
-		LGL_InputBuffer outputBuffer;
 		char dir[2048];
 		strcpy(dir,LGL_GetHomeDir());
 #ifdef	LGL_OSX
@@ -170,6 +183,8 @@ VerifyMusicDir()
 #else
 		strcat(dir,"/Music/");
 #endif	//LGL_OSX
+
+		LGL_InputBuffer outputBuffer;
 		outputBuffer.SetString(dir);
 		outputBuffer.GrabFocus();
 		for(;;)
@@ -212,7 +227,6 @@ VerifyMusicDir()
 			LGL_SwapBuffers();
 		}
 	}
-#endif	//LGL_WIN32
 }
 
 void WarnVsync()
