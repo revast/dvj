@@ -816,6 +816,8 @@ int main(int argc, char** argv)
 
 	InitializeGlobals();
 
+	LGL_SetAudioInPassThru(GetAudioInPassThru());
+
 	if(eeepc)
 	{
 		Mixer->SetLowRez(eeepc);

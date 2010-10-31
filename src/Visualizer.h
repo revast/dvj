@@ -73,7 +73,9 @@ public:
 	void			SetOscilloscopeBrightness(int which, float brightness);
 	void			SetFreqSenseBrightness(int which, float brightness);
 
-	void			GetNextVideoPathRandom(char* path);
+	void			GetNextVideoPathRandomLow(char* path);
+	void			GetNextVideoPathRandomHigh(char* path);
+	void			GetNextVideoPathRandom(char* path, bool low);
 	void			ForceVideoToBackOfRandomQueue
 				(
 					const
@@ -122,8 +124,11 @@ public:
 				);
 
 private:
-	char			VideoRandomPath[1024];
-	std::vector<char*>	VideoRandomQueue;
+	char			VideoRandomPath[2048];
+	char			VideoRandomLowPath[2048];
+	char			VideoRandomHighPath[2048];
+	std::vector<char*>	VideoRandomLowQueue;
+	std::vector<char*>	VideoRandomHighQueue;
 	unsigned int		VideoRandomGetCount;
 	
 static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
