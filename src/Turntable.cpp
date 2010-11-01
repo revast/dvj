@@ -1310,7 +1310,7 @@ NextFrame
 
 		if
 		(
-			VideoEncoderBeginSignal==0 ||
+			//VideoEncoderBeginSignal==0 ||
 			Sound->IsLoaded()
 		)
 		{
@@ -3147,6 +3147,18 @@ DrawFrame
 				VideoEncoderUnsupportedCodecName
 			);
 		}
+		LGL_VideoDecoder* vid = GetVideo();
+		LGL_Image* image = vid ? vid->GetImage() : NULL;
+		if
+		(
+			vid!=NULL &&
+			image!=NULL &&
+			image->GetFrameNumber()!=-1
+		)
+		{
+			VideoEncoderBeginSignal=1;
+		}
+
 		if(VideoEncoderBeginSignal==0)
 		{
 			LGL_GetFont().DrawString
