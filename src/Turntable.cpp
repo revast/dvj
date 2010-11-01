@@ -661,13 +661,31 @@ TurntableObj
 	strcpy(musicRoot,GetMusicRootPath());
 	DatabaseFilter.SetDir(musicRoot);
 	DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
-	FileTop=0;
+
+	int dirCount=0;
+	int fileCount=0;
 	for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
 	{
-		if(DatabaseFilteredEntries[a]->IsDir==false)
+		if(DatabaseFilteredEntries[a]->IsDir)
 		{
-			FileTop=a;
-			break;
+			dirCount++;
+		}
+		else
+		{
+			fileCount++;
+		}
+	}
+
+	FileTop=0;
+	if(dirCount<fileCount)
+	{
+		for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
+		{
+			if(DatabaseFilteredEntries[a]->IsDir==false)
+			{
+				FileTop=a;
+				break;
+			}
 		}
 	}
 	FileSelectInt=FileTop;
