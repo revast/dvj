@@ -150,9 +150,10 @@ private:
 						//1=Loading...
 						//2=Waveform
 	LGL_Sound*			Sound;
-	char				SoundName[1024];
-	char				SoundSrcPath[1024];
-	char				SoundSrcDir[1024];
+	char				SoundName[2048];
+	char				SoundSrcPath[2048];
+	char				SoundSrcPathShort[2048];
+	char				SoundSrcDir[2048];
 	Uint8*				SoundBuffer;
 	unsigned long			SoundBufferLength;
 	unsigned long			SoundBufferCurrentPageIndex;

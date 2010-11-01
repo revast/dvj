@@ -1074,6 +1074,7 @@ NextFrame
 				targetPath[0]!='\0'
 			)
 			{
+				strcpy(SoundSrcPathShort,DatabaseFilteredEntries[FileSelectInt]->PathShort);
 				char filename[2048];
 				sprintf
 				(
@@ -2218,7 +2219,7 @@ NextFrame
 		)
 		{
 			char oldSelection[2048];
-			strcpy(oldSelection,Sound->GetPathShort());
+			strcpy(oldSelection,SoundSrcPathShort);
 			delete Sound;
 			Sound=NULL;
 			Channel=-1;
