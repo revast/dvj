@@ -1199,7 +1199,7 @@ DrawVideos
 				}
 				float projAR = projW/(float)projH;
 				float imageAR = image->GetWidth()/(float)image->GetHeight();
-				if(LGL_DisplayCount()==1) projAR=imageAR;
+				if(LGL_DisplayCount()==1 && tt->GetAspectRatioMode()==0) projAR=imageAR;
 				float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
 
 				float midX = 0.5f*(l+r);
