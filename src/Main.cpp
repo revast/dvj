@@ -788,10 +788,6 @@ int main(int argc, char** argv)
 
 	LGL_MouseVisible(false);
 	LGL_SetFPSMax(GetFPSMax());
-	LGL_VideoEncoder::SetBitrateMaxMBps
-	(
-		GetCachedVideoAveBitrateMBps()
-	);
 
 	VerifyMusicDir();
 
