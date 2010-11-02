@@ -655,7 +655,7 @@ GetProjectorQuadrentResX()
 	int resX=dvjrcConfigFile->read<int>("projectorQuadrentResX",0);
 	if(resX<=0)
 	{
-		resX=LGL_DisplayResolutionX(0)/2;
+		resX=LGL_DisplayResolutionX(0);
 	}
 	return(resX);
 }

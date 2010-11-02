@@ -1213,7 +1213,7 @@ private:
 	char			PathNext[2048];
 	
 	float			FPS;
-	float			FPSTimestamp;
+	double			FPSTimestamp;
 	int			FPSDisplayed;
 	int			FPSMissed;
 	int			FPSDisplayedHitCounter;
@@ -1353,6 +1353,7 @@ static	float			BitrateMaxMBps;
 	AVFrame*		DstFrameBGRA;
 	uint8_t*		DstBufferBGRA;
 	AVPacket		DstPacket;
+	int64_t			DstPacketVideoPts;
 
 	char			DstMp3Path[2048];
 	AVOutputFormat*		DstMp3OutputFormat;

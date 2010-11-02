@@ -38,9 +38,11 @@ VisualizerObj()
 	BlueScreenOfDeath=new LGL_Image("data/image/bsod.png");
 
 	//AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
-
-	float left=0.0f;
-	float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
+	float resX=LGL_DisplayResolutionX(0);
+	float center = resX/2.0f;
+	float left=LGL_Max(0.0f,(center-0.5f*resX)/resX);
+	float right=LGL_Min(1.0f,(center+0.5f*resX)/resX);
+	//float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
 	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
 	float top=1.0f;
 
@@ -1197,6 +1199,7 @@ DrawVideos
 				}
 				float projAR = projW/(float)projH;
 				float imageAR = image->GetWidth()/(float)image->GetHeight();
+				if(LGL_DisplayCount()==1) projAR=imageAR;
 				float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
 
 				float midX = 0.5f*(l+r);
@@ -1400,6 +1403,7 @@ DrawVideos
 		}
 		tt->SetNoiseFactorVideo(noiseFactorVideo);
 
+noiseFactorVideo=0.0f;
 		if(noiseFactorVideo>0.0f)
 		{
 			int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_128_128-1);
