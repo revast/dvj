@@ -1249,7 +1249,7 @@ private:
 	int			BufferWidth;
 	int			BufferHeight;
 	unsigned int		BufferBytes;
-	SwsContext*		SwsConvertContext;
+	SwsContext*		SwsConvertContextBGRA;
 
 	LGL_Image*		Image;
 	bool			VideoOK;
@@ -1300,6 +1300,7 @@ public:
 	bool			IsMJPEG();
 	float			GetBitrateMaxMBps();
 static	void			SetBitrateMaxMBps(float max);
+	LGL_Image*		GetImage();
 
 private:
 
@@ -1334,7 +1335,8 @@ static	float			BitrateMaxMBps;
 
 	//Convert
 
-	SwsContext*		SwsConvertContext;
+	SwsContext*		SwsConvertContextYUV;
+	SwsContext*		SwsConvertContextBGRA;
 
 	//Dst
 
@@ -1346,7 +1348,10 @@ static	float			BitrateMaxMBps;
 	AVCodec*		DstCodec;
 	AVStream*		DstStream;
 	AVFrame*		DstFrameYUV;
-	uint8_t*		DstBuffer;
+	uint8_t*		DstBufferYUV;
+	LGL_Semaphore		DstFrameYUVSemaphore;
+	AVFrame*		DstFrameBGRA;
+	uint8_t*		DstBufferBGRA;
 	AVPacket		DstPacket;
 
 	char			DstMp3Path[2048];
@@ -1362,6 +1367,8 @@ static	float			BitrateMaxMBps;
 	int64_t			DstMp3BufferSrcPts;
 	int16_t*		DstMp3Buffer2;
 	AVPacket		DstMp3Packet;
+
+	LGL_Image*		Image;
 };
 
 class LGL_AudioEncoder

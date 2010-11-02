@@ -186,7 +186,7 @@ findVideoPath
 	if(LGL_VideoIsMJPEG(srcPath))
 	{
 		static LGL_Semaphore lnSym("lnSym");
-		LGL_ScopeLock scopeLock(lnSym);
+		LGL_ScopeLock lock(lnSym);
 		char soundSrcDir[2048];
 		strcpy(soundSrcDir,srcPath);
 		if(char* lastSlash = strrchr(soundSrcDir,'/'))
@@ -341,13 +341,18 @@ videoEncoderThread
 		//Video Encoding Loop
 		if(LGL_FileExists(encoderDst)==false || LGL_FileExists(encoderAudioDst)==false)
 		{
-			LGL_VideoEncoder* encoder = new LGL_VideoEncoder
-			(
-				encoderSrc,
-				encoderDstTmp,
-				encoderAudioDstTmp
-			);
-			encoder->SetBitrateMaxMBps(0.1f);
+			{
+				LGL_ScopeLock lock(tt->VideoEncoderSemaphore);
+				tt->VideoEncoder = new LGL_VideoEncoder
+				(
+					encoderSrc,
+					encoderDstTmp,
+					encoderAudioDstTmp
+				);
+			}
+
+			LGL_VideoEncoder* encoder = tt->VideoEncoder;
+			encoder->SetBitrateMaxMBps(GetCachedVideoAveBitrateMBps());
 			encoder->SetEncodeAudio(LGL_FileExists(encoderAudioDst)==false);
 			encoder->SetEncodeVideo(LGL_FileExists(encoderDst)==false);
 			if
@@ -485,8 +490,6 @@ if(encoder->GetEncodeVideo()) printf("Encoding Video! (%s)\n",encoderDst);
 				);
 				tt->VideoEncoderUnsupportedCodecTime=5.0f;
 			}
-
-			delete encoder;
 		}
 
 		if(strcmp(encoderSrc,tt->VideoEncoderPathSrc)==0)
@@ -522,7 +525,7 @@ TurntableObj
 	float	left,	float	right,
 	float	bottom,	float	top,
 	DatabaseObj* database
-)
+) :	VideoEncoderSemaphore("VideoEncoderSemaphore")
 {
 	Mode=0;
 
@@ -628,6 +631,9 @@ TurntableObj
 	OscilloscopeBrightness=0.0f;
 	FreqSenseBrightness=0.0f;
 	AudioInputMode=false;
+
+	VideoEncoder=NULL;
+	VideoEncoderThread=NULL;
 
 	ENTIRE_WAVE_ARRAY_COUNT=LGL_WindowResolutionX();
 
@@ -894,6 +900,11 @@ NextFrame
 		LGL_ThreadWait(VideoEncoderThread);
 		VideoEncoderThread=NULL;
 		VideoEncoderTerminateSignal=0;
+		{
+			LGL_ScopeLock lock(VideoEncoderSemaphore);
+			delete VideoEncoder;
+			VideoEncoder=NULL;
+		}
 	}
 
 	if(Mode==0)
@@ -3159,6 +3170,7 @@ DrawFrame
 		{
 			VideoEncoderBeginSignal=1;
 		}
+VideoEncoderBeginSignal=1;
 
 		if(VideoEncoderBeginSignal==0)
 		{
@@ -3223,6 +3235,29 @@ DrawFrame
 			VideoEncoderAudioOnly
 		)
 		{
+			if(VideoEncoderAudioOnly==false)
+			{
+				LGL_ScopeLock lock(VideoEncoderSemaphore);
+				if(VideoEncoder)
+				{
+					if(LGL_Image* img = VideoEncoder->GetImage())
+					{
+						img->DrawToScreen
+						(
+							left,
+							right,
+							bottom,
+							top,
+							0,
+							0.25f,
+							0.25f,
+							0.25f,
+							0.0f
+						);
+					}
+				}
+			}
+
 			LGL_GetFont().DrawString
 			(
 				centerX,bottom+0.90f*height,.015f,

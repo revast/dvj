@@ -288,6 +288,8 @@ static	VisualizerObj*			Visualizer;
 
 public:
 
+	LGL_VideoEncoder*		VideoEncoder;
+	LGL_Semaphore			VideoEncoderSemaphore;
 	SDL_Thread*			VideoEncoderThread;
 	float				VideoEncoderPercent;
 	float				VideoEncoderEtaSeconds;

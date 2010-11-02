@@ -959,6 +959,13 @@ gl2DeleteBuffers_Func gl2DeleteBuffers=NULL;
 bool
 LGL_JackInit()
 {
+	//Kill other instances of jack
+	{
+		char cmd[2048];
+		strcpy(cmd,"killall -9 jackd");
+		system(cmd);
+	}
+
 	LGL.AudioSpec->silence=0;
 	jack_options_t jack_options = JackNullOption;
 	jack_status_t status;
@@ -1011,6 +1018,13 @@ LGL_JackInit()
 	{
 		client_name = jack_get_client_name(jack_client);
 		printf("LGL_JackInit(): Unique name '%s' assigned...\n",client_name);
+	}
+
+	if(jack_get_sample_rate(jack_client)==0)
+	{
+		printf("LG_JackInit(): JACK init failed (Sample Rate is Zero)...\n");
+		jack_client_close(jack_client);
+		return(false);
 	}
 
 	//Tell JACK about our main callback
@@ -7028,9 +7042,12 @@ UnloadSurfaceFromTexture()
 	}
 	else
 	{
-		glDeleteTextures(1,&(TextureGL));
-		TextureGL=0;
-		LGL.TexturePixels-=TexW*TexH;
+		if(TextureGL!=0)
+		{
+			glDeleteTextures(1,&(TextureGL));
+			TextureGL=0;
+			LGL.TexturePixels-=TexW*TexH;
+		}
 	}
 
 	DeletePixelBufferObjects();
@@ -7743,8 +7760,11 @@ FileSave
 {
 	if(FrameBufferImage==false)
 	{
-		SDL_SaveBMP(SurfaceSDL, bmpFile);
-		return;
+		if(SurfaceSDL)
+		{
+			SDL_SaveBMP(SurfaceSDL, bmpFile);
+			return;
+		}
 	}
 
 //FIXME: LGL_Image::FileSave(): WidthInt must currently be a multiple of 4, for some stupid reason.
@@ -7779,22 +7799,29 @@ FileSave
 		exit(-1);
 	}
 
-	if(ReadFromFrontBuffer)
+	if(FrameBufferImage)
 	{
-		glReadBuffer(GL_FRONT_LEFT);
+		if(ReadFromFrontBuffer)
+		{
+			glReadBuffer(GL_FRONT_LEFT);
+		}
+		else
+		{
+			glReadBuffer(GL_BACK_LEFT);
+		}
+		glReadPixels
+		(
+			LeftInt, BottomInt,
+			WidthInt, HeightInt,
+			GL_RGB, GL_UNSIGNED_BYTE,
+			pixels
+		);
 	}
 	else
 	{
-		glReadBuffer(GL_BACK_LEFT);
+		//TODO
+		printf("LGL_Image::FileSave(): Failed! Must implement GL Texture path\n");
 	}
-
-	glReadPixels
-	(
-		LeftInt, BottomInt,
-		WidthInt, HeightInt,
-		GL_RGB, GL_UNSIGNED_BYTE,
-		pixels
-	);
 
 	for(i=0;i<HeightInt;i++)
 	{
@@ -8524,7 +8551,7 @@ Init()
 	BufferWidth=-1;
 	BufferHeight=-1;
 	BufferBytes=0;
-	SwsConvertContext=NULL;
+	SwsConvertContextBGRA=NULL;
 
 	Image = NULL;
 	VideoOK=false;
@@ -8594,10 +8621,10 @@ UnloadVideo()
 			CodecContext=NULL;
 		}
 		
-		if(SwsConvertContext)
+		if(SwsConvertContextBGRA)
 		{
-			sws_freeContext(SwsConvertContext);
-			SwsConvertContext=NULL;
+			sws_freeContext(SwsConvertContextBGRA);
+			SwsConvertContextBGRA=NULL;
 		}
 		
 		if(FormatContext)
@@ -9184,7 +9211,7 @@ printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
 	BufferWidth=CodecContext->width;
 	BufferHeight=CodecContext->height;
 
-	SwsConvertContext = sws_getContext
+	SwsConvertContextBGRA = sws_getContext
 	(
 		//src
 		BufferWidth,
@@ -9199,9 +9226,9 @@ printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
 		NULL,
 		NULL
 	);
-	if(SwsConvertContext==NULL)
+	if(SwsConvertContextBGRA==NULL)
 	{
-		printf("LGL_VideoDecoder::MaybeLoadVideo(): NULL SwsConvertContext for '%s'\n",Path);
+		printf("LGL_VideoDecoder::MaybeLoadVideo(): NULL SwsConvertContextBGRA for '%s'\n",Path);
 		return;
 	}
 	
@@ -9314,7 +9341,7 @@ MaybeDecodeImage()
 						);
 						sws_scale
 						(
-							SwsConvertContext,
+							SwsConvertContextBGRA,
 							FrameNative->data,
 							FrameNative->linesize,
 							0, 
@@ -9725,7 +9752,7 @@ LGL_VideoEncoder
 	const char*	src,
 	const char*	dstVideo,
 	const char*	dstAudio
-)
+) : 	DstFrameYUVSemaphore("DstFrameYUVSemaphore")
 {
 	strcpy(SrcPath,src);
 	strcpy(DstPath,dstVideo);
@@ -9746,7 +9773,8 @@ LGL_VideoEncoder
 	SrcPacketPosMax=0;
 	SrcPacket.pos=0;
 
-	SwsConvertContext=NULL;
+	SwsConvertContextYUV=NULL;
+	SwsConvertContextBGRA=NULL;
 
 	DstOutputFormat=NULL;
 	DstFormatContext=NULL;
@@ -9754,7 +9782,9 @@ LGL_VideoEncoder
 	DstCodec=NULL;
 	DstStream=NULL;
 	DstFrameYUV=NULL;
-	DstBuffer=NULL;
+	DstBufferYUV=NULL;
+	DstFrameBGRA=NULL;
+	DstBufferBGRA=NULL;
 
 	DstMp3OutputFormat=NULL;
 	DstMp3FormatContext=NULL;
@@ -9766,6 +9796,8 @@ LGL_VideoEncoder
 	DstMp3BufferSamplesIndex=0;
 	DstMp3BufferSamplesTotalBytes=0;
 	DstMp3Buffer2=NULL;
+
+	Image=NULL;
 
 	{
 		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
@@ -9961,6 +9993,7 @@ LGL_VideoEncoder
 		DstFormatContext->nb_streams = 1;
 
 		DstFrameYUV = lgl_avcodec_alloc_frame();
+		DstFrameBGRA = lgl_avcodec_alloc_frame();
 
 		DstCodecContext = DstStream->codec;
 		lgl_avcodec_get_context_defaults(DstCodecContext);
@@ -10026,7 +10059,7 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 			return;
 		}
 
-		SwsConvertContext = sws_getContext
+		SwsConvertContextYUV = sws_getContext
 		(
 			//src
 			SrcBufferWidth,
@@ -10041,9 +10074,32 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 			NULL,
 			NULL
 		);
-		if(SwsConvertContext==NULL)
+		if(SwsConvertContextYUV==NULL)
 		{
-			printf("LGL_VideoEncoder::LGL_VideoEncoder(): NULL SwsConvertContext for '%s'\n",src);
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): NULL SwsConvertContextYUV for '%s'\n",src);
+			printf("\tSrc Width/Height: %ix%i\n",SrcCodecContext->width,SrcCodecContext->height);
+			printf("\tSrc Format: %i\n",SrcCodecContext->pix_fmt);
+			return;
+		}
+
+		SwsConvertContextBGRA = sws_getContext
+		(
+			//src
+			DstCodecContext->width,
+			DstCodecContext->height,
+			DstCodecContext->pix_fmt,
+			//dst
+			DstCodecContext->width,
+			DstCodecContext->height,
+			PIX_FMT_BGRA,
+			SWS_FAST_BILINEAR,
+			NULL,
+			NULL,
+			NULL
+		);
+		if(SwsConvertContextBGRA==NULL)
+		{
+			printf("LGL_VideoEncoder::LGL_VideoEncoder(): NULL SwsConvertContextBGRA for '%s'\n",src);
 			printf("\tSrc Width/Height: %ix%i\n",SrcCodecContext->width,SrcCodecContext->height);
 			printf("\tSrc Format: %i\n",SrcCodecContext->pix_fmt);
 			return;
@@ -10060,8 +10116,24 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 			SrcBufferWidth,
 			SrcBufferHeight
 		);
+		avpicture_alloc
+		(
+			(AVPicture*)DstFrameBGRA,
+			PIX_FMT_BGRA,
+			SrcBufferWidth,
+			SrcBufferHeight
+		);
 
-		DstBuffer = (uint8_t*)lgl_av_mallocz(SrcBufferWidth*SrcBufferHeight*4);
+		DstBufferYUV = (uint8_t*)lgl_av_mallocz(SrcBufferWidth*SrcBufferHeight*4);
+		DstBufferBGRA = (uint8_t*)lgl_av_mallocz(SrcBufferWidth*SrcBufferHeight*4);
+		avpicture_fill
+		(
+			(AVPicture*)DstFrameBGRA,
+			DstBufferBGRA,
+			PIX_FMT_BGRA,
+			SrcBufferWidth,
+			SrcBufferHeight
+		);
 
 		//Mp3 output
 		if(SrcAudioStreamIndex!=-1)
@@ -10193,10 +10265,15 @@ LGL_VideoEncoder::
 		SrcFrame=NULL;
 	}
 
-	if(SwsConvertContext)
+	if(SwsConvertContextYUV)
 	{
-		sws_freeContext(SwsConvertContext);
-		SwsConvertContext=NULL;
+		sws_freeContext(SwsConvertContextYUV);
+		SwsConvertContextYUV=NULL;
+	}
+	if(SwsConvertContextBGRA)
+	{
+		sws_freeContext(SwsConvertContextBGRA);
+		SwsConvertContextBGRA=NULL;
 	}
 
 	//Dst
@@ -10252,9 +10329,17 @@ LGL_VideoEncoder::
 	{
 		lgl_av_freep(DstFrameYUV);
 	}
-	if(DstBuffer)
+	if(DstFrameBGRA)
 	{
-		lgl_av_freep(&DstBuffer);
+		lgl_av_freep(DstFrameBGRA);
+	}
+	if(DstBufferYUV)
+	{
+		lgl_av_freep(&DstBufferYUV);
+	}
+	if(DstBufferBGRA)
+	{
+		lgl_av_freep(&DstBufferBGRA);
 	}
 	if(DstMp3Buffer)
 	{
@@ -10267,6 +10352,12 @@ LGL_VideoEncoder::
 	if(DstMp3Buffer2)
 	{
 		lgl_av_freep(&DstMp3Buffer2);
+	}
+
+	if(Image)
+	{
+		delete Image;
+		Image=NULL;
 	}
 }
 
@@ -10382,18 +10473,21 @@ Encode
 				{
 					//Is this sws_scale line actually necessary...?
 					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
-					sws_scale
-					(
-						SwsConvertContext,
-						SrcFrame->data,
-						SrcFrame->linesize,
-						0, 
-						SrcBufferHeight,
-						DstFrameYUV->data,
-						DstFrameYUV->linesize
-					);
+					{
+						LGL_ScopeLock avCodecLock(DstFrameYUVSemaphore);
+						sws_scale
+						(
+							SwsConvertContextYUV,
+							SrcFrame->data,
+							SrcFrame->linesize,
+							0, 
+							SrcBufferHeight,
+							DstFrameYUV->data,
+							DstFrameYUV->linesize
+						);
+					}
 					DstFrameYUV->quality=1;	//Best
-					DstPacket.size = lgl_avcodec_encode_video(DstCodecContext, DstBuffer, SrcBufferWidth*SrcBufferHeight*4, DstFrameYUV);
+					DstPacket.size = lgl_avcodec_encode_video(DstCodecContext, DstBufferYUV, SrcBufferWidth*SrcBufferHeight*4, DstFrameYUV);
 				}
 
 				int64_t conversionFactorNum =
@@ -10409,7 +10503,7 @@ Encode
 
 				DstPacket.flags |= PKT_FLAG_KEY;
 				DstPacket.stream_index = 0;
-				DstPacket.data=DstBuffer;
+				DstPacket.data=DstBufferYUV;
 				DstPacket.duration=SrcPacket.duration;
 				{
 					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
@@ -10713,6 +10807,67 @@ SetBitrateMaxMBps
 )
 {
 	BitrateMaxMBps=LGL_Clamp(0.1f,max,100.0f);
+}
+
+LGL_Image*
+LGL_VideoEncoder::
+GetImage()
+{
+	//Ensure Image Exists
+	if(Image==NULL)
+	{
+		Image = new LGL_Image
+		(
+			512,//1920,
+			512,//1024,
+			4,
+			NULL,
+			true,
+			"Empty LGL_VideoEncoder"
+		);
+		Image->SetVideoPath(SrcPath);
+	}
+
+	{
+		LGL_ScopeLock lock(DstFrameYUVSemaphore);
+		if(DstFrameYUV->quality==1)
+		{
+			sws_scale
+			(
+				SwsConvertContextBGRA,
+				DstFrameYUV->data,
+				DstFrameYUV->linesize,
+				0, 
+				SrcBufferHeight,
+				DstFrameBGRA->data,
+				DstFrameBGRA->linesize
+			);
+		}
+	}
+
+	//Update Image
+	if
+	(
+		SrcBufferWidth<0 ||
+		SrcBufferHeight<0
+	)
+	{
+		Image->SetFrameNumber(-1);
+		return(Image);
+	}
+
+	Image->UpdateTexture
+	(
+		SrcBufferWidth,
+		SrcBufferHeight,
+		4,
+		DstBufferBGRA,
+		true,
+		SrcPath
+	);
+	Image->SetFrameNumber(1);
+
+	return(Image);
 }
 
 //LGL_AudioEncoder
