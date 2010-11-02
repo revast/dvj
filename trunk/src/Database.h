@@ -98,6 +98,9 @@ private:
 	char	MusicRoot[2048];
 	std::vector<DatabaseEntryObj*>
 		DatabaseEntryList;
+
+	std::vector<char*>
+		MetadataEntryList;
 	
 	DatabaseEntryObj
 		EntryDotDot;

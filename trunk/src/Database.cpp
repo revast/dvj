@@ -391,6 +391,26 @@ Refresh
 	const char*	subdirPath
 )
 {
+	//Update MetadataEntryList
+	{
+		for(unsigned int a=0;a<MetadataEntryList.size();a++)
+		{
+			delete MetadataEntryList[a];
+		}
+		MetadataEntryList.clear();
+		
+		char pathMeta[2048];
+		sprintf(pathMeta,"%s/.dvj/metadata",LGL_GetHomeDir());
+		LGL_DirTree metadataDirtree;
+		metadataDirtree.SetPath(pathMeta);
+		metadataDirtree.WaitOnWorkerThread();
+		for(unsigned int a=0;a<metadataDirtree.GetFileCount();a++)
+		{
+			char* newb = new char[strlen(metadataDirtree.GetFileName(a))+1];
+			strcpy(newb,metadataDirtree.GetFileName(a));
+			MetadataEntryList.push_back(newb);
+		}
+	}
 	if(subdirPath==NULL)
 	{
 		subdirPath=MusicRoot;
@@ -561,13 +581,24 @@ Refresh_Internal
 		char path[2048];
 		sprintf(path,"%s/%s",subdirPath,dirTree.GetFileName(a));
 
-		SetMostRecentFileScanned(dirTree.GetFileName(a));
+		SetMostRecentFileScanned((a==0) ? " " : dirTree.GetFileName(a));
 
 		float bpm=0;
+		const char* dirTreeGetFileName = dirTree.GetFileName(a);
 		char pathMeta[2048];
-		sprintf(pathMeta,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),dirTree.GetFileName(a));
+		sprintf(pathMeta,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),dirTreeGetFileName);
 
-		if(LGL_FileExists(pathMeta))
+		bool metaExists=false;
+		for(unsigned int m=0;m<MetadataEntryList.size();m++)
+		{
+			if(strcmp(dirTree.GetFileName(a),MetadataEntryList[m])==0)
+			{
+				metaExists=true;
+				break;
+			}
+		}
+
+		if(metaExists)//LGL_FileExists(pathMeta))
 		{
 			if(FILE* fd=fopen(pathMeta,"r"))
 			{
