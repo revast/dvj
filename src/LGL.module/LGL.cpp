@@ -8527,7 +8527,7 @@ Init()
 	PathNext[0]='\0';
 
 	FPS=0.0f;
-	FPSTimestamp=0.0f;
+	FPSTimestamp=0.0;
 	FPSDisplayed=0;
 	FPSMissed=0;
 	FPSDisplayedHitCounter=0;
@@ -9195,7 +9195,7 @@ printf("VidStream->codec->time_base = %i / %i (%.2f) (%.2f)\n",
 	FormatContext->streams[VideoStreamIndex]->codec->time_base.num);
 printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
 */
-	FPSTimestamp=CodecContext->time_base.den/(float)CodecContext->time_base.num;
+	FPSTimestamp=CodecContext->time_base.den/(double)CodecContext->time_base.num;
 	FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
 
 	if(FrameNative==NULL) FrameNative=lgl_avcodec_alloc_frame();
@@ -9804,6 +9804,7 @@ LGL_VideoEncoder
 		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
 
 		lgl_av_init_packet(&DstPacket);
+		DstPacketVideoPts=0;
 		lgl_av_init_packet(&DstMp3Packet);
 
 		//Open file
@@ -10497,19 +10498,37 @@ Encode
 						DstStream->time_base.num;
 				//float conversionFactorVal = (float)(conversionFactorNum/(float)conversionFactorDen);
 
-				int64_t candidatePTS = SrcPacket.pts * conversionFactorNum/conversionFactorDen;
-				if(DstPacket.pts<candidatePTS)
+				int64_t dtsPrev=DstPacket.dts;
+				int64_t ptsPrev=DstPacket.pts;
+				int64_t candidatePTS = (SrcPacket.pts * conversionFactorNum)/conversionFactorDen;
+				int64_t candidateDTS = (SrcPacket.dts * conversionFactorNum)/conversionFactorDen;
+				if(candidatePTS>ptsPrev)
 				{
 					DstPacket.pts=candidatePTS;
 				}
 				else
 				{
-					//This seems like it could be insufficient...
 					DstPacket.pts++;
 				}
-
+				if(candidateDTS>dtsPrev)
+				{
+					DstPacket.dts=candidateDTS;
+				}
+				else
+				{
+					DstPacket.dts++;
+				}
+				/*
+				if(0 && candidatePTS>DstPacket.pts)
+				{
+					DstPacket.pts=candidatePTS;
+				}
+				else
+				{
+					DstPacket.pts++;
+				}
 				DstPacket.dts = DstPacket.pts - 1;
-				if(DstPacket.dts<0) DstPacket.dts=0;
+				*/
 
 				DstPacket.flags |= PKT_FLAG_KEY;
 				DstPacket.stream_index = 0;
@@ -10729,9 +10748,8 @@ FlushAudioBuffer
 				DstStream->time_base.num;
 		//float conversionFactorVal = (float)(conversionFactorNum/(float)conversionFactorDen);
 
-		DstPacket.pts = DstMp3BufferSrcPts * conversionFactorNum/conversionFactorDen;
-		DstPacket.dts = DstPacket.pts - 1;
-		if(DstPacket.dts<0) DstPacket.dts=0;
+		DstMp3Packet.pts = DstMp3BufferSrcPts * conversionFactorNum/conversionFactorDen;
+		DstMp3Packet.dts = DstMp3Packet.pts - 1;
 		DstMp3BufferSrcPts=0;
 
 		DstMp3Packet.flags |= PKT_FLAG_KEY;

@@ -3170,7 +3170,7 @@ DrawFrame
 		{
 			VideoEncoderBeginSignal=1;
 		}
-VideoEncoderBeginSignal=1;
+//VideoEncoderBeginSignal=1;
 
 		if(VideoEncoderBeginSignal==0)
 		{
