@@ -10497,7 +10497,17 @@ Encode
 						DstStream->time_base.num;
 				//float conversionFactorVal = (float)(conversionFactorNum/(float)conversionFactorDen);
 
-				DstPacket.pts = SrcPacket.pts * conversionFactorNum/conversionFactorDen;
+				int64_t candidatePTS = SrcPacket.pts * conversionFactorNum/conversionFactorDen;
+				if(DstPacket.pts<candidatePTS)
+				{
+					DstPacket.pts=candidatePTS;
+				}
+				else
+				{
+					//This seems like it could be insufficient...
+					DstPacket.pts++;
+				}
+
 				DstPacket.dts = DstPacket.pts - 1;
 				if(DstPacket.dts<0) DstPacket.dts=0;
 
