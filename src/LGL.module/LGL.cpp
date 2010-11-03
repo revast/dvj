@@ -16193,6 +16193,11 @@ GetMetadata
 	magnitudeAve=0.0f;
 	magnitudeMax=0.0f;
 
+	if(MetadataVolumePeak==0.0f)
+	{
+		return(false);
+	}
+
 	float lengthSeconds=GetLengthSeconds();
 	float secondsDelta = secondsEnd-secondsBegin;
 	if(IsLoaded())
@@ -16432,6 +16437,7 @@ LoadToMemory()
 		BufferLength=lengthSeconds*Hz*2*2;
 		if(BufferLength>BufferLengthTotal) BufferLength=BufferLengthTotal;
 		bzero(Buffer,BufferLength);
+		MetadataVolumePeak=0.0f;
 	}
 	else
 	{
