@@ -4741,6 +4741,12 @@ LoadAllCachedData()
 {
 	//Initialize to default values
 	EntireWaveArrayFillIndex=0;
+	for(int a=0;a<ENTIRE_WAVE_ARRAY_COUNT_MAX;a++)
+	{
+		EntireWaveArrayMagnitudeAve[a]=0.0f;
+		EntireWaveArrayMagnitudeMax[a]=0.0f;
+		EntireWaveArrayFreqFactor[a]=0.0f;
+	}
 	CachedLengthSeconds=0.0f;
 	CachedVolumePeak=0.0f;
 
@@ -4787,8 +4793,7 @@ LoadWaveArrayData()
 		return;
 	}
 
-	FILE* fd=fopen(waveArrayDataPath,"rb");
-	if(fd)
+	if(FILE* fd=fopen(waveArrayDataPath,"rb"))
 	{
 		fread(EntireWaveArrayMagnitudeAve,sizeof(float),ENTIRE_WAVE_ARRAY_COUNT,fd);
 		fread(EntireWaveArrayMagnitudeMax,sizeof(float),ENTIRE_WAVE_ARRAY_COUNT,fd);
