@@ -586,12 +586,14 @@ Refresh_Internal
 		float bpm=0;
 		const char* dirTreeGetFileName = dirTree.GetFileName(a);
 		char pathMeta[2048];
-		sprintf(pathMeta,"%s/.dvj/metadata/%s.dvj-metadata.txt",LGL_GetHomeDir(),dirTreeGetFileName);
+		char pathMetaShort[2048];
+		sprintf(pathMetaShort,"%s.dvj-metadata.txt",dirTreeGetFileName);
+		sprintf(pathMeta,"%s/.dvj/metadata/%s",LGL_GetHomeDir(),pathMetaShort);
 
 		bool metaExists=false;
 		for(unsigned int m=0;m<MetadataEntryList.size();m++)
 		{
-			if(strcmp(dirTree.GetFileName(a),MetadataEntryList[m])==0)
+			if(strcmp(pathMetaShort,MetadataEntryList[m])==0)
 			{
 				metaExists=true;
 				break;
