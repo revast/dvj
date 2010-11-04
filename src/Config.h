@@ -48,6 +48,9 @@ GetLoadScreenPath
 	char*	loadScreenPath
 );
 
+bool
+GetDVJSessionRecordAudio();
+
 const char*
 GetDVJSessionFlacPath();
 

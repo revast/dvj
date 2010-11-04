@@ -87,7 +87,8 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"loadScreenPath=~/.dvj/data/image/loadscreen.png\n");
 		fprintf(fd,"\n");
-		fprintf(fd,"dvjSessionFlacPath=~/Desktop/dvj_session.flac\n");
+		fprintf(fd,"dvjSessionRecordAudio=1\n");
+		fprintf(fd,"dvjSessionFlacPath=~/.dvj/record\n");
 		fprintf(fd,"dvjSessionTracklistPath=~/Desktop/dvj_session_tracklist.txt\n");
 		fprintf(fd,"dvjSessionDrawLogPath=~/Desktop/dvj_session_drawlog.txt\n");
 		fprintf(fd,"\n");
@@ -538,6 +539,13 @@ GetLoadScreenPath
 	strcpy(loadScreenPath,defaultLoadScreenPath);
 }
 
+bool
+GetDVJSessionRecordAudio()
+{
+	int record=LGL_Clamp(0,dvjrcConfigFile->read<int>("dvjSessionRecordAudio",0),1);
+	return(record==1);
+}
+
 const char*
 GetDVJSessionFlacPath()
 {
@@ -552,6 +560,7 @@ GetDVJSessionFlacPath()
 			sprintf(tmp,"%s/%s",LGL_GetHomeDir(),&(dvjSessionFlacPath[2]));
 			strcpy(dvjSessionFlacPath,tmp);
 		}
+		strcat(dvjSessionFlacPath,"/dvj_session.flac");
 	}
 
 	return(dvjSessionFlacPath);

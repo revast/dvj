@@ -10195,8 +10195,7 @@ printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext-
 				2;
 			DstMp3CodecContext->sample_fmt=SAMPLE_FMT_S16;
 
-lgl_av_log_set_level(AV_LOG_WARNING);	//QUIET, ERROR, WARNING, INFO, VERBOSE, DEBUG
-printf("\n\n\nHere we go...\n");
+			lgl_av_log_set_level(AV_LOG_WARNING);	//QUIET, ERROR, WARNING, INFO, VERBOSE, DEBUG
 			int openResult=-1;
 			{
 				openResult = lgl_avcodec_open(DstMp3CodecContext, DstMp3Codec);
@@ -11012,6 +11011,7 @@ LGL_AudioEncoder
 		DstMp3CodecContext->sample_rate=LGL.AudioSpec->freq;
 		DstMp3CodecContext->time_base = (AVRational){1,DstMp3CodecContext->sample_rate};
 		DstMp3CodecContext->channels=surroundMode ? 4 : 2;
+		DstMp3CodecContext->sample_fmt=SAMPLE_FMT_S16;
 
 		int openResult=-1;
 		{

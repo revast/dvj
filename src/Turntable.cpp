@@ -2661,12 +2661,13 @@ NextFrame
 				//Start recording!
 				char path[2048];
 				strcpy(path,GetDVJSessionFlacPath());
-				/*
-				LGL_RecordDVJToFileStart(path,SurroundMode);
-				LGL_DrawLogStart(GetDVJSessionDrawLogPath());
-				*/
+				if(GetDVJSessionRecordAudio())
 				{
-					/*
+					LGL_RecordDVJToFileStart(path,SurroundMode);
+				}
+				/*
+				LGL_DrawLogStart(GetDVJSessionDrawLogPath());
+				{
 					char drawLogPath[2048];
 					sprintf(drawLogPath,"%s/drawlog.txt",recordPath);
 
@@ -2682,8 +2683,8 @@ NextFrame
 						recordPath,
 						LGL_DateAndTimeOfDayOfExecution()
 					);
-					*/
 				}
+				*/
 			}
 			/*
 			if(LGL_AudioChannels()==2)
