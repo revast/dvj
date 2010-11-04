@@ -97,7 +97,9 @@ findCachedPath
 		return;
 	}
 
-	sprintf(foundPath,"%s/%s/%s.%s",soundSrcDir,GetDvjCacheDirName(),soundName,extension);
+	const char* dvjCacheDirName = GetDvjCacheDirName();
+
+	sprintf(foundPath,"%s/%s/%s.%s",soundSrcDir,dvjCacheDirName,soundName,extension);
 	if(LGL_FileExists(foundPath))
 	{
 		//Found /home/id/mp3/dvj_cache/hajnal.mov.mjpeg.avi
@@ -117,7 +119,7 @@ findCachedPath
 		strcmp(extension,"flac")==0
 	)
 	{
-		sprintf(foundPath,"%s/%s/%s",soundSrcDir,GetDvjCacheDirName(),soundName);
+		sprintf(foundPath,"%s/%s/%s",soundSrcDir,dvjCacheDirName,soundName);
 		sprintf(strstr(foundPath,".mjpeg.avi"),".%s",extension);
 		if(LGL_FileExists(foundPath))
 		{
@@ -257,6 +259,8 @@ videoEncoderThread
 		encoderSrcDir[0]='\0';
 	}
 
+	const char* dvjCacheDirName = GetDvjCacheDirName();
+
 	if
 	(
 		encoderSrc[0]!='\0' &&
@@ -266,7 +270,14 @@ videoEncoderThread
 		//We've been requested to encode a video. Joy!
 
 		char videoPath[2048];
-		sprintf(videoPath,"%s/%s",encoderSrcDir,GetDvjCacheDirName());
+		if(strstr(encoderSrcDir,"iTunes"))
+		{
+			sprintf(videoPath,"%s/.dvj/video/tracks",LGL_GetHomeDir());
+		}
+		else
+		{
+			sprintf(videoPath,"%s/%s",encoderSrcDir,dvjCacheDirName);
+		}
 		char videoTmpPath[2048];
 		sprintf(videoTmpPath,"%s/tmp",videoPath);
 
@@ -364,9 +375,9 @@ videoEncoderThread
 				)
 			)
 			{
-printf("Encoding!\n");
-if(encoder->GetEncodeAudio()) printf("Encoding Audio! (%s)\n",encoderAudioDst);
-if(encoder->GetEncodeVideo()) printf("Encoding Video! (%s)\n",encoderDst);
+//printf("Encoding!\n");
+//if(encoder->GetEncodeAudio()) printf("Encoding Audio! (%s)\n",encoderAudioDst);
+//if(encoder->GetEncodeVideo()) printf("Encoding Video! (%s)\n",encoderDst);
 				tt->VideoEncoderAudioOnly = encoder->GetEncodeVideo()==false && encoder->GetEncodeAudio()==true;
 				LGL_Timer timer;
 				LGL_Timer timerUpdateEta;
@@ -420,8 +431,6 @@ if(encoder->GetEncodeVideo()) printf("Encoding Video! (%s)\n",encoderDst);
 						);
 						if(encoder->GetEncodeVideo())
 						{
-							LGL_FileDirMove(encoderDstTmp,encoderDst);
-
 							char targetPath[2048];
 							sprintf
 							(
@@ -432,21 +441,28 @@ if(encoder->GetEncodeVideo()) printf("Encoding Video! (%s)\n",encoderDst);
 							);
 							LGL_FileDelete(targetPath);	//For stale symlinks...
 
-							char cmd[2048];
-							sprintf
-							(
-								cmd,
-								"ln -s '%s' '%s'",
-								encoderDst,
-								targetPath
-							);
-							system(cmd);
+							LGL_FileDirMove(encoderDstTmp,encoderDst);
+
+							if(strcmp(encoderDst,targetPath)==0)
+							{
+								//
+							}
+							else
+							{
+								char cmd[2048];
+								sprintf
+								(
+									cmd,
+									"ln -s '%s' '%s'",
+									encoderDst,
+									targetPath
+								);
+								system(cmd);
+							}
 						}
 						if(encoder->GetEncodeAudio())
 						{
 							//Audio too!
-							LGL_FileDirMove(encoderAudioDstTmp,encoderAudioDst);
-
 							char targetPath[2048];
 							sprintf
 							(
@@ -458,15 +474,24 @@ if(encoder->GetEncodeVideo()) printf("Encoding Video! (%s)\n",encoderDst);
 							);
 							LGL_FileDelete(targetPath);	//For stale symlinks...
 
-							char cmd[2048];
-							sprintf
-							(
-								cmd,
-								"ln -s '%s' '%s'",
-								encoderAudioDst,
-								targetPath
-							);
-							system(cmd);
+							LGL_FileDirMove(encoderAudioDstTmp,encoderAudioDst);
+
+							if(strcmp(encoderAudioDst,targetPath)==0)
+							{
+								//
+							}
+							else
+							{
+								char cmd[2048];
+								sprintf
+								(
+									cmd,
+									"ln -s '%s' '%s'",
+									encoderAudioDst,
+									targetPath
+								);
+								system(cmd);
+							}
 						}
 						break;
 					}

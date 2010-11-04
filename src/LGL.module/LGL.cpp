@@ -9806,6 +9806,8 @@ LGL_VideoEncoder
 		lgl_av_init_packet(&DstPacket);
 		DstPacketVideoPts=0;
 		lgl_av_init_packet(&DstMp3Packet);
+		DstMp3Packet.dts=0;
+		DstMp3Packet.pts=1;
 
 		//Open file
 		AVFormatContext* fc=NULL;
@@ -10340,6 +10342,7 @@ LGL_VideoEncoder::
 	}
 	if(DstBufferBGRA)
 	{
+		//Causes malloc_error_break() to be called... But why?!
 		lgl_av_freep(&DstBufferBGRA);
 	}
 	if(DstMp3Buffer)
@@ -10518,17 +10521,6 @@ Encode
 				{
 					DstPacket.dts++;
 				}
-				/*
-				if(0 && candidatePTS>DstPacket.pts)
-				{
-					DstPacket.pts=candidatePTS;
-				}
-				else
-				{
-					DstPacket.pts++;
-				}
-				DstPacket.dts = DstPacket.pts - 1;
-				*/
 
 				DstPacket.flags |= PKT_FLAG_KEY;
 				DstPacket.stream_index = 0;
@@ -10748,8 +10740,29 @@ FlushAudioBuffer
 				DstStream->time_base.num;
 		//float conversionFactorVal = (float)(conversionFactorNum/(float)conversionFactorDen);
 
-		DstMp3Packet.pts = DstMp3BufferSrcPts * conversionFactorNum/conversionFactorDen;
+		DstMp3Packet.pts = (DstMp3BufferSrcPts * conversionFactorNum)/conversionFactorDen;
 		DstMp3Packet.dts = DstMp3Packet.pts - 1;
+				int64_t dtsPrev=DstMp3Packet.dts;
+				int64_t ptsPrev=DstMp3Packet.pts;
+				int64_t candidatePTS = (DstMp3BufferSrcPts * conversionFactorNum)/conversionFactorDen;
+				int64_t candidateDTS = ((DstMp3BufferSrcPts * conversionFactorNum)/conversionFactorDen) - 1;
+				if(candidatePTS>ptsPrev)
+				{
+					DstMp3Packet.pts=candidatePTS;
+				}
+				else
+				{
+					DstMp3Packet.pts++;
+				}
+				if(candidateDTS>dtsPrev)
+				{
+					DstMp3Packet.dts=candidateDTS;
+				}
+				else
+				{
+					DstMp3Packet.dts++;
+				}
+
 		DstMp3BufferSrcPts=0;
 
 		DstMp3Packet.flags |= PKT_FLAG_KEY;
