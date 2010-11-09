@@ -321,6 +321,7 @@ DatabaseObj() :
 
 	Thread=NULL;
 	ThreadDieHint=false;
+	SkipMetadataHint=false;
 	ThreadRefreshTarget[0]='\0';
 	ThreadCompletionPercent=0.0f;
 
@@ -331,6 +332,7 @@ DatabaseObj::
 ~DatabaseObj()
 {
 	ThreadDieHint=true;
+	SkipMetadataHint=true;
 	LGL_ThreadWait(Thread);
 	Thread=NULL;
 
@@ -426,6 +428,7 @@ Refresh
 
 		ThreadCompletionPercent=0.0f;
 		ThreadDieHint=false;
+		SkipMetadataHint=false;
 		Thread=LGL_ThreadCreate(DatabaseRefreshThread,this);
 		char mostRecentFileScanned[2048];
 		mostRecentFileScanned[0]='\0';
@@ -470,10 +473,11 @@ Refresh
 
 			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
 			{
-				ThreadDieHint=true;
+				//ThreadDieHint=true;
+				SkipMetadataHint=true;
 				LGL_ThreadWait(Thread);
 				Thread=NULL;
-				exit(0);
+				//exit(0);
 			}
 
 			if
@@ -591,12 +595,15 @@ Refresh_Internal
 		sprintf(pathMeta,"%s/.dvj/metadata/%s",LGL_GetHomeDir(),pathMetaShort);
 
 		bool metaExists=false;
-		for(unsigned int m=0;m<MetadataEntryList.size();m++)
+		if(SkipMetadataHint==false)
 		{
-			if(strcmp(pathMetaShort,MetadataEntryList[m])==0)
+			for(unsigned int m=0;m<MetadataEntryList.size();m++)
 			{
-				metaExists=true;
-				break;
+				if(strcmp(pathMetaShort,MetadataEntryList[m])==0)
+				{
+					metaExists=true;
+					break;
+				}
 			}
 		}
 
