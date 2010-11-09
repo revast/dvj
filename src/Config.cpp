@@ -116,6 +116,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"audioInPassThru=0\n");
 		fprintf(fd,"wireMemory=0\n");
+		fprintf(fd,"escDuringScanExits=0\n");
 		fprintf(fd,"\n");
 		fclose(fd);
 	}
@@ -692,6 +693,13 @@ GetWireMemory()
 {
 	int wire=LGL_Clamp(0,dvjrcConfigFile->read<int>("wireMemory",0),1);
 	return(wire!=0);
+}
+
+bool
+GetEscDuringScanExits()
+{
+	int exits=LGL_Clamp(0,dvjrcConfigFile->read<int>("escDuringScanExits",1),1);
+	return(exits!=0);
 }
 
 bool
