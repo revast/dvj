@@ -116,7 +116,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"audioInPassThru=0\n");
 		fprintf(fd,"wireMemory=0\n");
-		fprintf(fd,"escDuringScanExits=0\n");
+		fprintf(fd,"escDuringScanExits=1\n");
 		fprintf(fd,"\n");
 		fclose(fd);
 	}
