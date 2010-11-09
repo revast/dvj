@@ -108,6 +108,7 @@ private:
 	SDL_Thread*
 		Thread;
 	bool	ThreadDieHint;
+	bool	SkipMetadataHint;
 	char	ThreadRefreshTarget[2048];
 	float	ThreadCompletionPercent;
 	
