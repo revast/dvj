@@ -473,11 +473,18 @@ Refresh
 
 			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
 			{
-				//ThreadDieHint=true;
+				bool die=GetEscDuringScanExits();
+				if(die)
+				{
+					ThreadDieHint=true;
+				}
 				SkipMetadataHint=true;
 				LGL_ThreadWait(Thread);
 				Thread=NULL;
-				//exit(0);
+				if(die)
+				{
+					exit(0);
+				}
 			}
 
 			if

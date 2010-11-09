@@ -95,6 +95,9 @@ bool
 GetWireMemory();
 
 bool
+GetEscDuringScanExits();
+
+bool
 GetAudioInPassThru();
 
 int
