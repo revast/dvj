@@ -287,6 +287,30 @@ FileRefresh
 	return(refresh);
 }
 
+int
+InputObj::
+FileIndexHighlight
+(
+	unsigned int	target
+)	const
+{
+	int highlight=-1;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		int val=Children[a]->FileIndexHighlight(target);
+		if(val != -1)
+		{
+			highlight = val;
+			break;
+		}
+	}
+
+	return(highlight);
+}
+
+
+
 //Mode 1: Decoding...
 
 bool

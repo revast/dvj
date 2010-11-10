@@ -872,7 +872,6 @@ GetNextVideoPathRandom
 {
 	std::vector<char*>& queue = low ? VideoRandomLowQueue : VideoRandomHighQueue;
 	const char* videoPath=low ? VideoRandomLowPath : VideoRandomHighPath;
-printf("GNVPR(%i, %s): %i\n",low,path,(int)queue.size());
 	if(queue.empty())
 	{
 		path[0]='\0';

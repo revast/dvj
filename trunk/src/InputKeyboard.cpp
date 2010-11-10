@@ -335,6 +335,10 @@ WaveformPitchbendDelta
 			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaDownFastKey()) ? -RATE_FAST*LGL_SecondsSinceLastFrame() : 0) +
 			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaUpFastKey()) ? RATE_FAST*LGL_SecondsSinceLastFrame() : 0)
 		);
+		if(LGL_KeyDown(LGL_KEY_SHIFT))
+		{
+			delta*=0.05f;
+		}
 	}
 
 	return(delta);

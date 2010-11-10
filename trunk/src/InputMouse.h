@@ -26,6 +26,25 @@
 
 #include "Input.h"
 
+typedef enum
+{
+	DRAG_TARGET_NULL = 0,
+	DRAG_TARGET_WAVEFORM,
+	DRAG_TARGET_XFADER_LEFT,
+	DRAG_TARGET_XFADER_RIGHT,
+	DRAG_TARGET_EQ_LOW,
+	DRAG_TARGET_EQ_MID,
+	DRAG_TARGET_EQ_HIGH,
+	DRAG_TARGET_VIS_VIDEO,
+	DRAG_TARGET_VIS_OSCILLOSCOPE,
+	DRAG_TARGET_VIS_FREQSENSE,
+	DRAG_TARGET_COUNT
+} DVJ_DragTarget;
+
+class InputMouseObj;
+
+InputMouseObj& GetInputMouse();
+
 class InputMouseObj : public InputObj
 {
 
@@ -57,6 +76,7 @@ virtual	float	FileScroll			(unsigned int target)	const;	//How many file to scrol
 virtual	int	FileSelect			(unsigned int target)	const;	//Enter the directory or open the file
 virtual bool	FileMarkUnopened		(unsigned int target)	const;	//Don't display that the current file has been opened
 virtual	bool	FileRefresh			(unsigned int target)	const;	//Rescan current folder
+virtual int	FileIndexHighlight		(unsigned int target)	const;	//Highlight an entry
 
 	//Mode 1: Decoding...
 
@@ -120,6 +140,38 @@ virtual	bool	WaveformVideoAspectRatioNext	(unsigned int target)	const;	//Advance
 virtual	float	WaveformOscilloscopeBrightness	(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
+
+private:
+
+	int	FocusNow;
+	int	FocusNext;
+	int	FileIndexHighlightNow;
+	int	FileIndexHighlightNext;
+	int	FileSelectNow;
+	int	FileSelectNext;
+	bool	WaveformVideoAspectRatioNextNow;
+	bool	WaveformVideoAspectRatioNextNext;
+	bool	WaveformVideoSelectNow;
+	bool	WaveformVideoSelectNext;
+
+	DVJ_DragTarget
+		DragTarget;
+	float	DragFloat;
+	float	DragFloatNext;
+
+public:
+
+	void	SetFocusNext(int next);
+	void	SetFileIndexHighlightNext(int next);
+	void	SetFileSelectNext();
+	void	SetWaveformVideoAspectRatioNextNext();
+	void	SetWaveformVideoSelectNext();
+
+	DVJ_DragTarget
+		GetDragTarget() const;
+	
+	void	SetDragTarget(DVJ_DragTarget dragTarget);
+	void	SetDragFloatNext(float dragFloat);
 
 };
 

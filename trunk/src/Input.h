@@ -70,6 +70,7 @@ virtual	float	FileScroll			(unsigned int target)	const;	//How many file to scrol
 virtual	int	FileSelect			(unsigned int target)	const;	//Enter the directory or open the file
 virtual bool	FileMarkUnopened		(unsigned int target)	const;	//Don't display that the current file has been opened
 virtual	bool	FileRefresh			(unsigned int target)	const;	//Rescan current folder
+virtual int	FileIndexHighlight		(unsigned int target)	const;	//Highlight an entry
 
 	//Mode 1: Decoding...
 
