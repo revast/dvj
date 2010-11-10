@@ -23,10 +23,29 @@
 
 #include "InputMouse.h"
 
+InputMouseObj&
+GetInputMouse()
+{
+	static InputMouseObj inputMouse;
+	return(inputMouse);
+}
+
 InputMouseObj::
 InputMouseObj()
 {
-	//
+	FocusNow=-1;
+	FocusNext=-1;
+	FileIndexHighlightNow=-1;
+	FileIndexHighlightNext=-1;
+	FileSelectNow=0;
+	FileSelectNext=0;
+	WaveformVideoAspectRatioNextNow=false;
+	WaveformVideoAspectRatioNextNext=false;
+	WaveformVideoSelectNow=false;
+	WaveformVideoSelectNext=false;
+	DragTarget=DRAG_TARGET_NULL;
+	DragFloat=-1.0f;
+	DragFloatNext=-1.0f;
 }
 
 InputMouseObj::
@@ -41,7 +60,29 @@ void
 InputMouseObj::
 NextFrame()
 {
-	//
+	FocusNow=FocusNext;
+	FocusNext=-1;
+
+	FileIndexHighlightNow=FileIndexHighlightNext;
+	FileIndexHighlightNext=-1;
+
+	FileSelectNow=FileSelectNext;
+	FileSelectNext=0;
+
+	WaveformVideoAspectRatioNextNow=WaveformVideoAspectRatioNextNext;
+	WaveformVideoAspectRatioNextNext=false;
+
+	WaveformVideoSelectNow=WaveformVideoSelectNext;
+	WaveformVideoSelectNext=false;
+
+	if(LGL_MouseRelease(LGL_MOUSE_LEFT))
+	{
+		DragTarget=DRAG_TARGET_NULL;
+		DragFloatNext=-1.0f;
+	}
+
+	DragFloat=DragFloatNext;
+	DragFloatNext=-1.0f;
 }
 
 //Global Input
@@ -58,7 +99,7 @@ bool
 InputMouseObj::
 FocusBottom()	const
 {
-	bool bottom=false;
+	bool bottom=(FocusNow==1);
 	return(bottom);
 }
 
@@ -66,7 +107,7 @@ bool
 InputMouseObj::
 FocusTop()	const
 {
-	bool top=false;
+	bool top=(FocusNow==0);
 	return(top);
 }
 
@@ -74,8 +115,14 @@ float
 InputMouseObj::
 XfaderSpeakers()	const
 {
-	float xfade=-1.0f;
-	return(xfade);
+	if(DragTarget==DRAG_TARGET_XFADER_LEFT)
+	{
+		return(DragFloat);
+	}
+	else
+	{
+		return(-1.0f);
+	}
 }
 
 float
@@ -90,8 +137,14 @@ float
 InputMouseObj::
 XfaderHeadphones()	const
 {
-	float xfade=-1.0f;
-	return(xfade);
+	if(DragTarget==DRAG_TARGET_XFADER_RIGHT)
+	{
+		return(DragFloat);
+	}
+	else
+	{
+		return(-1.0f);
+	}
 }
 
 float
@@ -146,8 +199,14 @@ FileSelect
 	unsigned int	target
 )	const
 {
-	int choose=0;
-	return(choose);
+	if(target & TARGET_FOCUS)
+	{
+		return(FileSelectNow);
+	}
+	else
+	{
+		return(0);
+	}
 }
 
 bool
@@ -170,6 +229,24 @@ FileRefresh
 {
 	bool refresh=false;
 	return(refresh);
+}
+
+int
+InputMouseObj::
+FileIndexHighlight
+(
+	unsigned int	target
+)	const
+{
+	//FIXME
+	if(target & TARGET_FOCUS)
+	{
+		return(FileIndexHighlightNow);
+	}
+	else
+	{
+		return(-1);
+	}
 }
 
 //Mode 1: Decoding...
@@ -249,8 +326,15 @@ WaveformEQLow
 	unsigned int	target
 )	const
 {
-	float low=-1.0f;
-	return(low);
+	if(target & TARGET_FOCUS)
+	{
+		if(DragTarget==DRAG_TARGET_EQ_LOW)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
 }
 
 float
@@ -282,8 +366,15 @@ WaveformEQMid
 	unsigned int	target
 )	const
 {
-	float mid=-1.0f;
-	return(mid);
+	if(target & TARGET_FOCUS)
+	{
+		if(DragTarget==DRAG_TARGET_EQ_MID)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
 }
 
 float
@@ -315,8 +406,15 @@ WaveformEQHigh
 	unsigned int	target
 )	const
 {
-	float high=-1.0f;
-	return(high);
+	if(target & TARGET_FOCUS)
+	{
+		if(DragTarget==DRAG_TARGET_EQ_HIGH)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
 }
 
 float
@@ -457,8 +555,14 @@ WaveformRecordHold
 	unsigned int	target
 )	const
 {
-	bool hold=false;
-	return(hold);
+	if(target & TARGET_FOCUS)
+	{
+		return(DragTarget==DRAG_TARGET_WAVEFORM);
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 float
@@ -469,6 +573,10 @@ WaveformRecordSpeed
 )	const
 {
 	float speed=0.0f;
+	if(WaveformRecordHold(target))
+	{
+		speed=LGL_MouseDX()*-175.0f;
+	}
 	return(speed);
 }
 
@@ -721,8 +829,14 @@ WaveformVideoSelect
 	unsigned int	target
 )	const
 {
-	bool select=false;
-	return(select);
+	if(target & TARGET_FOCUS)
+	{
+		return(WaveformVideoSelectNow);
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 float
@@ -732,8 +846,15 @@ WaveformVideoBrightness
 	unsigned int	target
 )	const
 {
-	float bright=-1.0f;
-	return(bright);
+	if(target & TARGET_FOCUS)
+	{
+		if(DragTarget==DRAG_TARGET_VIS_VIDEO)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
 }
 
 float
@@ -754,8 +875,15 @@ WaveformFreqSenseBrightness
 	unsigned int	target
 )	const
 {
-	float brightness=-1;
-	return(brightness);
+	if(target & TARGET_FOCUS)
+	{
+		if(DragTarget==DRAG_TARGET_VIS_FREQSENSE)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
 }
 
 int
@@ -776,8 +904,14 @@ WaveformVideoAspectRatioNext
 	unsigned int	target
 )	const
 {
-	bool next=false;
-	return(next);
+	if(target & TARGET_FOCUS)
+	{
+		return(WaveformVideoAspectRatioNextNow);
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 float
@@ -787,6 +921,14 @@ WaveformOscilloscopeBrightness
 	unsigned int	target
 )	const
 {
+	if(target & TARGET_FOCUS)
+	{
+		if(DragTarget==DRAG_TARGET_VIS_OSCILLOSCOPE)
+		{
+			return(DragFloat);
+		}
+	}
+
 	return(-1.0f);
 }
 
@@ -809,7 +951,8 @@ WaveformPointerScratch
 )	const
 {
 	float targetX=-1.0f;
-	
+
+	/*
 	if(target & TARGET_FOCUS)
 	{
 		if(LGL_MouseDown(LGL_MOUSE_LEFT))
@@ -817,7 +960,83 @@ WaveformPointerScratch
 			targetX=LGL_MouseX();
 		}
 	}
+	*/
 
 	return(targetX);
+}
+
+void
+InputMouseObj::
+SetFocusNext
+(
+	int	next
+)
+{
+	if
+	(
+		LGL_MouseDown(LGL_MOUSE_LEFT)==false &&
+		LGL_MouseDown(LGL_MOUSE_RIGHT)==false
+	)
+	{
+		FocusNext=next;
+	}
+}
+
+void
+InputMouseObj::
+SetFileIndexHighlightNext
+(
+	int	next
+)
+{
+	FileIndexHighlightNext=next;
+}
+
+void
+InputMouseObj::
+SetFileSelectNext()
+{
+	FileSelectNext=1;
+}
+
+void
+InputMouseObj::
+SetWaveformVideoAspectRatioNextNext()
+{
+	WaveformVideoAspectRatioNextNext=true;
+}
+
+void
+InputMouseObj::
+SetWaveformVideoSelectNext()
+{
+	WaveformVideoSelectNext=true;
+}
+
+DVJ_DragTarget
+InputMouseObj::
+GetDragTarget()	const
+{
+	return(DragTarget);
+}
+
+void
+InputMouseObj::
+SetDragTarget
+(
+	DVJ_DragTarget	dragTarget
+)
+{
+	DragTarget=dragTarget;
+}
+
+void
+InputMouseObj::
+SetDragFloatNext
+(
+	float	dragFloat
+)
+{
+	DragFloatNext=dragFloat;
 }
 

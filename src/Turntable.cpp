@@ -54,6 +54,12 @@ findCachedPath
 	const char*	extension
 )
 {
+	if(LGL_FileExtensionIsImage(srcPath))
+	{
+		strcpy(foundPath,srcPath);
+		return;
+	}
+
 	//Comments assume srcPath is /home/id/mp3/hajnal.mov, extension is mjpeg.avi
 
 	strcpy(foundPath,srcPath);
@@ -820,9 +826,6 @@ NextFrame
 
 #ifdef	LGL_OSX
 	//Apple doesn't allow us to mlockall().
-	//FUCK YOU APPLE
-	//FUCK YOU APPLE
-	//FUCK YOU APPLE
 	//As such, we must loop on each page in our soundbuffer,
 	//to ensure it remains in active memory... UGH.
 	//TODO: Does mlock() work? I doubt it...
@@ -845,6 +848,20 @@ NextFrame
 		SoundBufferCurrentPageIndex=0;
 	}
 #endif	//LGL_OSX
+
+	if
+	(
+		LGL_MouseX()>=ViewportLeft &&
+		LGL_MouseX()<=ViewportRight &&
+		LGL_MouseY()>=ViewportBottom &&
+		LGL_MouseY()<=ViewportTop
+	)
+	{
+		if(LGL_MouseMotion())
+		{
+			GetInputMouse().SetFocusNext(Which);
+		}
+	}
 
 	if(MetaDataSavedThisFrame)
 	{
@@ -1248,6 +1265,27 @@ NextFrame
 		if(0 && Input.FileRefresh(target))
 		{
 			//
+		}
+
+		if
+		(
+			LGL_MouseX()>=ViewportLeft &&
+			LGL_MouseX()<=ViewportRight &&
+			LGL_MouseY()>=ViewportBottom &&
+			LGL_MouseY()<=ViewportTop
+		)
+		{
+			if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+			{
+				GetInputMouse().SetFileSelectNext();
+			}
+		}
+
+		int tmp=Input.FileIndexHighlight(target);
+		if(tmp!=-1)
+		{
+			FileSelectFloat=FileTop+tmp;
+			FileSelectInt=FileTop+tmp;
 		}
 
 		FileSelectFloat=
@@ -3342,6 +3380,27 @@ DrawFrame
 		}
 		else
 		{
+			if
+			(
+				LGL_MouseX()>=left &&
+				LGL_MouseX()<=right &&
+				LGL_MouseY()>=bottom &&
+				LGL_MouseY()<=top
+			)
+			{
+				if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+				{
+					if(LGL_KeyDown(LGL_KEY_SHIFT)==false)
+					{
+						GetInputMouse().SetWaveformVideoAspectRatioNextNext();
+					}
+					else
+					{
+						GetInputMouse().SetWaveformVideoSelectNext();
+					}
+				}
+			}
+
 			Visualizer->DrawVideos
 			(
 				this,
@@ -3508,6 +3567,7 @@ DrawFrame
 		LGL_DrawLogPause();
 		Turntable_DrawDirTree
 		(
+			Which,
 			LGL_SecondsSinceExecution()*Focus,
 			FilterText.GetString(),
 			drawDirPath,
@@ -3715,8 +3775,8 @@ DrawFrame
 			LGL_VideoDecoder* dec = GetVideo();
 			LGL_DrawLogWrite
 			(
-				//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35   36   37 38   39 40 41   42   43 44 45  46
-				"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%c|%.3f|%.3f|%i|%.3f|%c|%s|%.2f|%.2f|%c|%c|.3f\n",
+				//   01 02 03 04   05   06   07   08   09   10   11   12   13   14   15   16   17   18   19 20   21   22   23   24 25 26 27   28   29   30   31   32   33 34 35   36   37 38   39 40 41   42   43 44 45  46   47   48   49
+				"dtt|%i|%c|%s|%c|%.0f|%.0f|%.0f|%.0f|%.5f|%.5f|%.3f|%.0f|%.3f|%.3f|%.4f|%.4f|%.4f|%.4f|%.3f|%.4f|%c|%.3f|%.2f|%.3f|%i|%i|%i|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%c|%c|%.3f|%.3f|%i|%.3f|%c|%s|%.2f|%.2f|%c|%c|%.3f|%.3f|%.3f|%.3f\n",
 				Which,							//01
 				Sound->IsLoaded() ? 'T' : 'F',				//02
 				dec ? dec->GetPathShort() : NULL,			//03
@@ -3762,7 +3822,10 @@ DrawFrame
 				videoSecondsBufferedRight,				//43
 				(Which==Master) ? 'T' : 'F',				//44
 				(RapidVolumeInvert) ? 'T' : 'F',			//45
-				GetBeginningOfCurrentMeasureSeconds()			//46
+				GetBeginningOfCurrentMeasureSeconds(),			//46
+				VideoBrightness,					//47
+				OscilloscopeBrightness,					//48
+				FreqSenseBrightness					//49
 			);
 			
 			bool waveArrayFilledBefore=(EntireWaveArrayFillIndex==ENTIRE_WAVE_ARRAY_COUNT);
@@ -3826,7 +3889,10 @@ DrawFrame
 				videoSecondsBufferedRight,				//54
 				Which==Master,						//55
 				RapidVolumeInvert,					//56
-				GetBeginningOfCurrentMeasureSeconds()			//57
+				GetBeginningOfCurrentMeasureSeconds(),			//57
+				VideoBrightness,					//58
+				OscilloscopeBrightness,					//59
+				FreqSenseBrightness					//60
 			);
 			LGL_DrawLogPause(false);
 		

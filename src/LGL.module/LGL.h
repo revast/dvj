@@ -210,8 +210,9 @@ enum
 	LGL_KEY_NUMLOCK		= SDLK_NUMLOCK,
 	LGL_KEY_CAPSLOCK	= SDL_SCANCODE_CAPSLOCK,
 	LGL_KEY_SCROLLLOCK	= SDL_SCANCODE_SCROLLLOCK,
-	LGL_KEY_RSHIFT		= SDL_SCANCODE_RSHIFT,
-	LGL_KEY_LSHIFT		= SDL_SCANCODE_LSHIFT,
+	LGL_KEY_SHIFT		= 500,
+	LGL_KEY_RSHIFT		= 485,//SDL_SCANCODE_RSHIFT,
+	LGL_KEY_LSHIFT		= 481,//SDL_SCANCODE_LSHIFT,
 	LGL_KEY_RCTRL		= SDL_SCANCODE_RCTRL,
 	LGL_KEY_LCTRL		= SDL_SCANCODE_LCTRL,
 	LGL_KEY_RALT		= SDL_SCANCODE_RALT,
@@ -1251,6 +1252,7 @@ private:
 	unsigned int		BufferBytes;
 	SwsContext*		SwsConvertContextBGRA;
 
+	bool			IsImage;
 	LGL_Image*		Image;
 	bool			VideoOK;
 
@@ -3003,6 +3005,8 @@ double		LGL_FileLengthBytes(const char* file);
 bool		LGL_FirstFileMoreRecentlyModified(const char* firstFile, const char* secondFile);
 char*		LGL_MD5sum(const char* file, char* output);	//output must be at least char[32]
 bool		LGL_FileExtension(const char* filename, const char* extension);
+bool		LGL_FileExtensionIsAudio(const char* filename);
+bool		LGL_FileExtensionIsImage(const char* filename);
 void		LGL_SimplifyPath(char* simplePath, const char* complexPath);
 const char*	LGL_GetUsername();
 const char*	LGL_GetHomeDir();

@@ -315,6 +315,7 @@ typedef struct
 	bool			AudioMasterToHeadphones;
 	char			AudioEncoderPath[2048];
 	LGL_AudioEncoder*	AudioEncoder;
+	LGL_Semaphore*		AudioEncoderSemaphore;
 	LGL_Timer		AudioOutCallbackTimer;
 	LGL_Timer		AudioOutReconnectTimer;
 
@@ -1779,6 +1780,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 
 	LGL.AudioEncoderPath[0]='\0';
 	LGL.AudioEncoder=NULL;
+	LGL.AudioEncoderSemaphore=NULL;
 
 	LGL.AudioSpec->freq=44100;
 	LGL.AudioSpec->format=AUDIO_S16;
@@ -2557,6 +2559,13 @@ LGL_Exit()
 	if(LGL.WriteFileAsyncThread)
 	{
 		LGL_ThreadWait(LGL.WriteFileAsyncThread);
+	}
+	if(LGL.AudioEncoder)
+	{
+		LGL.AudioQuitting=true;
+		LGL_DelayMS(100);	//HACK
+		delete LGL.AudioEncoder;
+		LGL.AudioEncoder=NULL;
 	}
 	exit(0);
 }
@@ -8553,7 +8562,8 @@ Init()
 	BufferBytes=0;
 	SwsConvertContextBGRA=NULL;
 
-	Image = NULL;
+	IsImage=false;
+	Image=NULL;
 	VideoOK=false;
 	StoredBrightness=0.0f;
 
@@ -8718,6 +8728,26 @@ LGL_Image*
 LGL_VideoDecoder::
 GetImage()
 {
+	if(IsImage)
+	{
+		if(Image)
+		{
+			if(strcmp(Image->GetPath(),Path)!=0)
+			{
+				delete Image;
+				Image=NULL;
+			}
+		}
+
+		if(Image==NULL)
+		{
+			Image=new LGL_Image(Path);
+		}
+		
+		Image->SetFrameNumber(0);
+		return(Image);
+	}
+
 	//Ensure Image Exists
 	if(Image==NULL)
 	{
@@ -9085,6 +9115,13 @@ MaybeLoadVideo()
 
 	UnloadVideo();
 	VideoOK=false;
+	IsImage=false;
+
+	if(LGL_FileExtensionIsImage(Path))
+	{
+		IsImage=true;
+		return;
+	}
 
 	LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 
@@ -11096,7 +11133,13 @@ Encode
 	long		bytes
 )
 {
-	if(Valid==false)
+	LGL_ScopeLock lock(LGL.AudioEncoderSemaphore);
+
+	if
+	(
+		Valid==false ||
+		DestructHint
+	)
 	{
 		return;
 	}
@@ -11186,7 +11229,11 @@ ThreadFunc()
 	{
 		FlushBuffer();
 		LGL_DelayMS(5);
-		if(DestructHint)
+		if
+		(
+			DestructHint ||
+			LGL.AudioQuitting
+		)
 		{
 			return;
 		}
@@ -11200,6 +11247,8 @@ FlushBuffer
 	bool	force
 )
 {
+	LGL_ScopeLock(LGL.AudioEncoderSemaphore);
+
 	//Circular buffer to fixed buffer
 	long circularBufferHead=CircularBufferHead;
 	while(CircularBufferTail!=circularBufferHead)
@@ -11287,10 +11336,8 @@ LGL_VideoIsMJPEG
 
 	if
 	(
-		LGL_FileExtension(path,"mp3") ||
-		LGL_FileExtension(path,"ogg") ||
-		LGL_FileExtension(path,"flac") ||
-		LGL_FileExtension(path,"wav")
+		LGL_FileExtensionIsAudio(path) ||
+		LGL_FileExtensionIsImage(path)
 	)
 	{
 		return(false);
@@ -17136,6 +17183,7 @@ LGL_RecordDVJToFileStart
 	{
 		//Actually start recording
 		strcpy(LGL.AudioEncoderPath,path);
+		LGL.AudioEncoderSemaphore = new LGL_Semaphore("AudioEncoderSemaphore");
 		LGL.AudioEncoder = new LGL_AudioEncoder
 		(
 			LGL.AudioEncoderPath,
@@ -17305,7 +17353,7 @@ LGL_ProcessInput()
 
 			if(event.key.keysym.sym != 0)
 			{
-//printf("KeyDown: %i\n",event.key.keysym.sym);
+//printf("KeyDown: %i (%i, %i)\n",event.key.keysym.sym, LGL_KEY_LSHIFT, LGL_KEY_RSHIFT);
 				LGL.KeyStroke[event.key.keysym.sym]=LGL.KeyDown[event.key.keysym.sym]==false;
 				LGL.KeyDown[event.key.keysym.sym]=true;
 				if(LGL.KeyStroke[event.key.keysym.sym])
@@ -19006,6 +19054,16 @@ LGL_KeyDown
 )
 {
 	if(lgl_KeySanityCheck(key)==false) return(false);
+
+	if(key==LGL_KEY_SHIFT)
+	{
+		return
+		(
+			LGL_KeyDown(LGL_KEY_LSHIFT) ||
+			LGL_KeyDown(LGL_KEY_RSHIFT)
+		);
+	}
+
 	return(LGL.KeyDown[key]);
 }
 
@@ -19016,6 +19074,16 @@ LGL_KeyStroke
 )
 {
 	if(lgl_KeySanityCheck(key)==false) return(false);
+	
+	if(key==LGL_KEY_SHIFT)
+	{
+		return
+		(
+			LGL_KeyStroke(LGL_KEY_LSHIFT) ||
+			LGL_KeyStroke(LGL_KEY_RSHIFT)
+		);
+	}
+
 	return(LGL.KeyStroke[key]);
 }
 
@@ -19026,6 +19094,16 @@ LGL_KeyRelease
 )
 {
 	if(lgl_KeySanityCheck(key)==false) return(false);
+	
+	if(key==LGL_KEY_SHIFT)
+	{
+		return
+		(
+			LGL_KeyRelease(LGL_KEY_LSHIFT) ||
+			LGL_KeyRelease(LGL_KEY_RSHIFT)
+		);
+	}
+
 	return(LGL.KeyRelease[key]);
 }
 
@@ -19036,6 +19114,19 @@ LGL_KeyTimer
 )
 {
 	if(lgl_KeySanityCheck(key)==false) return(0.0f);
+	
+	if(key==LGL_KEY_SHIFT)
+	{
+		return
+		(
+			LGL_Max
+			(
+				LGL_KeyTimer(LGL_KEY_LSHIFT),
+				LGL_KeyTimer(LGL_KEY_RSHIFT)
+			)
+		);
+	}
+
 	return(LGL.KeyTimer[key].SecondsSinceLastReset());
 }
 
@@ -25900,6 +25991,37 @@ LGL_FileExtension
 	return(true);
 }
 
+bool
+LGL_FileExtensionIsAudio
+(
+	const char* path
+)
+{
+	return
+	(
+		LGL_FileExtension(path,"mp3") ||
+		LGL_FileExtension(path,"ogg") ||
+		LGL_FileExtension(path,"flac") ||
+		LGL_FileExtension(path,"wav")
+	);
+}
+
+bool
+LGL_FileExtensionIsImage
+(
+	const char*	path
+)
+{
+	return
+	(
+		LGL_FileExtension(path,"jpg") ||
+		LGL_FileExtension(path,"jpeg") || 
+		LGL_FileExtension(path,"png")  ||
+		LGL_FileExtension(path,"bmp") ||
+		LGL_FileExtension(path,"gif")
+	);
+}
+
 void
 LGL_SimplifyPath
 (
@@ -29547,16 +29669,19 @@ LGL_ShutDown()
 	LGL.AudioQuitting=true;
 //printf("LockAudio() 5\n");
 
-	if(LGL.AudioUsingJack==false)
 	{
-		SDL_LockAudio();
-	}
-	{
-		LGL.AudioAvailable=false;
-	}
-	if(LGL.AudioUsingJack==false)
-	{
-		SDL_UnlockAudio();
+		LGL_ScopeLock(LGL.AudioEncoderSemaphore);
+		if(LGL.AudioUsingJack==false)
+		{
+			SDL_LockAudio();
+		}
+		{
+			LGL.AudioAvailable=false;
+		}
+		if(LGL.AudioUsingJack==false)
+		{
+			SDL_UnlockAudio();
+		}
 	}
 
 	if(LGL.AudioStreamListSemaphore!=NULL)
@@ -29570,8 +29695,6 @@ LGL_ShutDown()
 		LGL.Font=NULL;
 	}
 
-	delete LGL.AudioEncoder;
-
 	if(LGL.AudioUsingJack)
 	{
 		jack_client_close(jack_client);
@@ -29580,6 +29703,9 @@ LGL_ShutDown()
 	{
 		SDL_CloseAudio();
 	}
+
+	delete LGL.AudioEncoder;
+
 	SDLNet_Quit();
 
 	if(LGL.DrawLogFD!=0)

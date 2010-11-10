@@ -92,6 +92,7 @@ Mixer_DrawLevels
 void
 Turntable_DrawDirTree
 (
+	int		which,
 	float		time,
 	const char*	filterText,
 	const char*	path,
@@ -166,7 +167,10 @@ Turntable_DrawWaveform
 	float		videoSecondsBufferedRight,
 	bool		isMaster,
 	bool		rapidVolumeInvertSelf,
-	float		beginningOfCurrentMeasureSeconds
+	float		beginningOfCurrentMeasureSeconds,
+	float		videoBrightness,
+	float		oscilloscopeBrightness,
+	float		freqSenseBrightness
 );
 
 void

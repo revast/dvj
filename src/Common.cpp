@@ -297,6 +297,57 @@ Mixer_DrawGlowLinesTurntables
 	//float viewPortWidth = viewPortRight - viewPortLeft;
 	float viewPortHeight = viewPortTop - viewPortBottom;
 
+	const float crossFadeSliderWidth=0.025f;
+
+	for(int a=0;a<2;a++)
+	{
+		const float cfLeft = (a==0) ? 0 : (1.0f-crossFadeSliderWidth);
+		const float cfRight = (a==0) ? crossFadeSliderWidth : 1.0f;
+		const float cfBottom=viewPortBottom;
+		const float cfTop=viewPortTop;
+		if
+		(
+			LGL_MouseX()>=cfLeft &&
+			LGL_MouseX()<=cfRight &&
+			LGL_MouseY()>=cfBottom &&
+			LGL_MouseY()<=cfTop
+		)
+		{
+			if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+			{
+				GetInputMouse().SetDragTarget
+				(
+					(a==0) ?
+					DRAG_TARGET_XFADER_LEFT :
+					DRAG_TARGET_XFADER_RIGHT
+				);
+			}
+		}
+
+		if
+		(
+			LGL_MouseMotion() &&
+			GetInputMouse().GetDragTarget() ==
+			(
+				(a==0) ?
+				DRAG_TARGET_XFADER_LEFT :
+				DRAG_TARGET_XFADER_RIGHT
+			)
+		)
+		{
+			GetInputMouse().SetDragFloatNext
+			(
+				LGL_Clamp
+				(
+					0.0f,
+					(LGL_MouseY()-cfBottom)/
+					(cfTop-cfBottom),
+					1.0f
+				)
+			);
+		}
+	}
+
 	for(float a=1;a<7;a++)
 	{
 		float br=glow*a/7.0f;
@@ -320,14 +371,14 @@ Mixer_DrawGlowLinesTurntables
 			LGL_DrawLineToScreen
 			(
 				0,crossFadeSliderLeft*viewPortTop,
-				.025,crossFadeSliderLeft*viewPortTop,
+				0+crossFadeSliderWidth,crossFadeSliderLeft*viewPortTop,
 				warmR*br,warmG*br,warmB*br,br,
 				zz*(7-a),
 				false
 			);
 			LGL_DrawLineToScreen
 			(
-				0.975,crossFadeSliderRight*viewPortTop,
+				1.0f-crossFadeSliderWidth,crossFadeSliderRight*viewPortTop,
 				1,crossFadeSliderRight*viewPortTop,
 				warmR*br,warmG*br,warmB*br,br,
 				zz*(7-a),
@@ -540,6 +591,7 @@ Mixer_DrawLevels
 void
 Turntable_DrawDirTree
 (
+	int		which,
 	float		time,
 	const char*	filterText,
 	const char*	path,
@@ -609,6 +661,25 @@ Turntable_DrawDirTree
 
 		if(strlen(fileNow)>0)
 		{
+			float rectLeft=viewPortLeft;
+			float rectRight=viewPortRight;
+			float rectBottom=viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight;
+			float rectTop=viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight+viewPortHeight/15.0f+.04f*viewPortHeight;
+
+			if
+			(
+				LGL_MouseX()>=rectLeft &&
+				LGL_MouseX()<=rectRight &&
+				LGL_MouseY()>=rectBottom &&
+				LGL_MouseY()<=rectTop
+			)
+			{
+				if(LGL_MouseMotion())
+				{
+					GetInputMouse().SetFileIndexHighlightNext(b);
+				}
+			}
+
 			if(b==fileSelectInt)
 			{
 				float R=
@@ -619,9 +690,8 @@ Turntable_DrawDirTree
 				float A=.5f;
 				LGL_DrawRectToScreen
 				(
-					viewPortLeft,viewPortRight,
-					viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight,
-					viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight+viewPortHeight/15.0f+.04f*viewPortHeight,
+					rectLeft,rectRight,
+					rectBottom,rectTop,
 					R,G,B,A
 				);
 			}
@@ -897,7 +967,10 @@ Turntable_DrawWaveform
 	float		videoSecondsBufferedRight,
 	bool		isMaster,
 	bool		rapidVolumeInvertSelf,
-	float		beginningOfCurrentMeasureSeconds
+	float		beginningOfCurrentMeasureSeconds,
+	float		videoBrightness,
+	float		oscilloscopeBrightness,
+	float		freqSenseBrightness
 )
 {
 	float coolR;
@@ -995,6 +1068,20 @@ Turntable_DrawWaveform
 		pointBottom,
 		pointTop+0.01f
 	);
+
+	if
+	(
+		LGL_MouseX()>=wavLeft &&
+		LGL_MouseX()<=wavRight &&
+		LGL_MouseY()>=pointBottom &&
+		LGL_MouseY()<=pointTop
+	)
+	{
+		if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+		{
+			GetInputMouse().SetDragTarget(DRAG_TARGET_WAVEFORM);
+		}
+	}
 
 	if(audioInputMode)
 	{
@@ -2054,8 +2141,15 @@ Turntable_DrawWaveform
 	);
 	*/
 
-	float eqLeftEdge=0.0f;
-	float eqRightEdge=0.0f;
+	float sliderB;
+	float sliderT;
+
+	float lft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.0075f;
+	float wth=(viewPortWidth*0.25f)/16.0f;
+	float bot=viewPortBottom+0.24f*viewPortHeight;
+	float top=bot+0.075f*viewPortHeight;
+	float spc=wth*0.75f;
+
 	if(audioInputMode==false)
 	{
 		if(bpmAdjusted>0)
@@ -2522,13 +2616,6 @@ Turntable_DrawWaveform
 			mySavePointSet[a]=savePointSetBitfield & (1<<a);
 		}
 
-		//float lft=pointLeft+0.15f*viewPortWidth;
-		float lft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.0075f;
-		float wth=(viewPortWidth*0.25f)/16.0f;
-		//float bot=(viewPortBottom+(0.015f*viewPortHeight);
-		float bot=viewPortBottom+0.24f*viewPortHeight;
-		float top=bot+0.075f*viewPortHeight;
-		float spc=wth*0.75f;
 		for(int i=0;i<12;i++)
 		{
 			int thickness;
@@ -2559,11 +2646,6 @@ Turntable_DrawWaveform
 				thickness
 			);
 
-			if(i==1)
-			{
-				eqLeftEdge=lft+i*wth;
-			}
-
 			//Right
 			LGL_DrawLineToScreen
 			(
@@ -2572,11 +2654,6 @@ Turntable_DrawWaveform
 				r,g,b,1,
 				thickness
 			);
-
-			if(i==11)
-			{
-				eqRightEdge=lft+i*wth+spc;
-			}
 
 			//Bottom
 			LGL_DrawLineToScreen
@@ -2666,6 +2743,9 @@ Turntable_DrawWaveform
 				);
 			}
 		}
+		
+		sliderB=viewPortBottom+(0.5f-0.075f/2.0f)*viewPortHeight+spc*(-1);
+		sliderT=viewPortBottom+(0.5f+0.075f/2.0f)*viewPortHeight+spc*(2.5f);
 	}
 
 	//Draw EQ
@@ -2674,24 +2754,85 @@ Turntable_DrawWaveform
 	eq[0]=0.5f*eq0;
 	eq[1]=0.5f*eq1;
 	eq[2]=0.5f*eq2;
-	for(int f=0;f<3;f++)
+
+	char letters[12];
+	for(int l=0;l<12;l++)
 	{
-		//Vert
-		/*
-		float spc=viewPortWidth*0.0125f;
-		float wth=viewPortWidth*0.015f;
-		float lft=viewPortLeft+0.925f*viewPortWidth+f*(wth+spc);
-		float bot=(viewPortBottom+0.145f*viewPortHeight);
-		float top=(viewPortBottom+0.855f*viewPortHeight);
-		*/
-	
-		//Horiz
-		float spc=viewPortWidth*0.025f;
-		//float lft=viewPortLeft+0.525f*viewPortWidth+f*(wth+spc);
-		float lft=eqLeftEdge;//0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.025;
-		float wth=eqRightEdge-lft;//viewPortWidth*0.17f;
-		float bot=viewPortBottom+(0.5f-0.075f/2.0f)*viewPortHeight+spc*(f-1);
-		float top=viewPortBottom+(0.5f+0.075f/2.0f)*viewPortHeight+spc*(f-1);
+		letters[l]='\0';
+	}
+	letters[0]='L';
+	letters[1]='M';
+	letters[2]='H';
+	letters[9]='V';
+	letters[10]='O';
+	letters[11]='F';
+
+	DVJ_DragTarget dragTargets[12];
+	for(int l=0;l<12;l++)
+	{
+		dragTargets[l]=DRAG_TARGET_NULL;
+	}
+	dragTargets[0]=DRAG_TARGET_EQ_LOW;
+	dragTargets[1]=DRAG_TARGET_EQ_MID;
+	dragTargets[2]=DRAG_TARGET_EQ_HIGH;
+	dragTargets[9]=DRAG_TARGET_VIS_VIDEO;
+	dragTargets[10]=DRAG_TARGET_VIS_OSCILLOSCOPE;
+	dragTargets[11]=DRAG_TARGET_VIS_FREQSENSE;
+
+	float levels[12];
+	for(int l=0;l<12;l++)
+	{
+		levels[l]=0.0f;
+	}
+	levels[0]=eq[0];
+	levels[1]=eq[1];
+	levels[2]=eq[2];
+	levels[9]=videoBrightness;
+	levels[10]=oscilloscopeBrightness;
+	levels[11]=freqSenseBrightness;
+
+	for(int f=0;f<12;f++)
+	{
+		if(dragTargets[f]==DRAG_TARGET_NULL)
+		{
+			continue;
+		}
+
+		float sliderL=lft+f*wth;
+		float sliderR=sliderL+spc;
+
+		//Mouse Input
+		{
+			DVJ_DragTarget dragTargetNow=dragTargets[f];
+
+			float dragFloat=LGL_Clamp
+			(
+				0.0f,
+				(LGL_MouseY()-sliderB)/(sliderT-sliderB),
+				1.0f
+			);
+
+			if
+			(
+				LGL_MouseStroke(LGL_MOUSE_LEFT) &&
+				LGL_MouseX()>=sliderL &&
+				LGL_MouseX()<=sliderR &&
+				LGL_MouseY()>=sliderB &&
+				LGL_MouseY()<=sliderT
+			)
+			{
+				GetInputMouse().SetDragTarget(dragTargetNow);
+				GetInputMouse().SetDragFloatNext(dragFloat);
+			}
+
+			if(GetInputMouse().GetDragTarget()==dragTargetNow)
+			{
+				if(LGL_MouseMotion())
+				{
+					GetInputMouse().SetDragFloatNext(dragFloat);
+				}
+			}
+		}
 
 		int thickness;
 		float r;
@@ -2699,19 +2840,20 @@ Turntable_DrawWaveform
 		float b;
 
 		thickness=1;
-		r=1.0f;
-		g=1.0f;
-		b=1.0f;
+		r=coolR*1.0f;
+		g=coolG*1.0f;
+		b=coolB*1.0f;
 
 		LGL_DrawRectToScreen
 		(	
-			lft,
-			lft+wth,
-			bot,top,
+			sliderL,
+			sliderR,
+			sliderB,
+			sliderT,
 			0,0,0,1
 		);
 
-		float warmScale=eq[f];
+		float warmScale=levels[f];
 		float barR=
 			(1.0f-warmScale)*coolR+
 			(0.0f+warmScale)*warmR;
@@ -2724,12 +2866,10 @@ Turntable_DrawWaveform
 
 		LGL_DrawRectToScreen
 		(
-			//Vert
-			//lft,lft+wth,
-			//bot,bot+eq[f]*(top-bot),
-			//Horiz
-			lft,lft+eq[f]*wth,
-			bot,top,
+			sliderL,
+			sliderR,
+			sliderB,
+			sliderB+levels[f]*(sliderT-sliderB),
 			barR,
 			barG,
 			barB,
@@ -2739,8 +2879,8 @@ Turntable_DrawWaveform
 		//Left
 		LGL_DrawLineToScreen
 		(
-			lft,bot,
-			lft,top,
+			sliderL,sliderB,
+			sliderL,sliderT,
 			r,g,b,1,
 			thickness
 		);
@@ -2748,8 +2888,8 @@ Turntable_DrawWaveform
 		//Right
 		LGL_DrawLineToScreen
 		(
-			lft+wth,bot,
-			lft+wth,top,
+			sliderR,sliderB,
+			sliderR,sliderT,
 			r,g,b,1,
 			thickness
 		);
@@ -2757,8 +2897,8 @@ Turntable_DrawWaveform
 		//Bottom
 		LGL_DrawLineToScreen
 		(
-			lft,bot,
-			lft+wth,bot,
+			sliderL,sliderB,
+			sliderR,sliderB,
 			r,g,b,1,
 			thickness
 		);
@@ -2766,35 +2906,22 @@ Turntable_DrawWaveform
 		//Top
 		LGL_DrawLineToScreen
 		(
-			lft,top,
-			lft+wth,top,
+			sliderL,sliderT,
+			sliderR,sliderT,
 			r,g,b,1,
 			thickness
 		);
 
-		char str[8];
-
-		if(f==0)
-		{
-			strcpy(str,"L");
-		}
-		else if(f==1)
-		{
-			strcpy(str,"M");
-		}
-		else //if(f==2)
-		{
-			strcpy(str,"H");
-		}
 		LGL_GetFont().DrawString
 		(
-			lft-0.0125f,
-			bot+0.5f*(top-bot)-0.025f*viewPortHeight,
+			sliderL+0.5f*spc,
+			sliderB-0.075f*viewPortHeight,
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			true,
 			0.75f,
-			str
+			"%c",
+			letters[f]
 		);
 	}
 }

@@ -113,7 +113,7 @@ void InitializeGlobals()
 {
 	Input.AddChild(new InputNullObj);
 	Input.AddChild(new InputKeyboardObj);
-	Input.AddChild(new InputMouseObj);
+	Input.AddChild(&GetInputMouse());
 	Input.AddChild(new InputXponentObj);
 	Input.AddChild(new InputXsessionObj);
 	Input.AddChild(new InputWiimoteObj);
