@@ -539,16 +539,6 @@ WaveformRewindFF
 )	const
 {
 	float rewindff=0.0f;
-	
-	if(target & TARGET_FOCUS)
-	{
-		if(LGL_MouseDown(LGL_MOUSE_RIGHT))
-		{
-			float val = 16.0f*(LGL_MouseX()-0.5f);
-			rewindff=(powf(2.0f,fabsf(val))-1.0f)*LGL_Sign(val);
-		}
-	}
-
 	return(rewindff);
 }
 
