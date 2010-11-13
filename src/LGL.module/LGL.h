@@ -1198,6 +1198,7 @@ public:
 	float			GetSecondsBufferedLeft();
 	float			GetSecondsBufferedRight();
 	void			SetFrameBufferAddBackwards(bool addBackwards=true);
+	int			GetFrameBufferAddRadius() const;
 	void			SetFrameBufferAddRadius(int frames);
 
 	//Thread Functions
@@ -2157,6 +2158,7 @@ bool		LGL_AudioAvailable();
 bool		LGL_AudioWasOnceAvailable();
 bool		LGL_AttemptAudioRevive();
 bool		LGL_AudioUsingJack();
+bool		LGL_AudioJackXrun();
 bool		LGL_AudioIsRealtime();
 int		LGL_AudioRate();
 int		LGL_AudioCallbackSamples();
