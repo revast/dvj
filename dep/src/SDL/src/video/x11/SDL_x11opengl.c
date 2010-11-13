@@ -81,6 +81,8 @@
 static void X11_GL_InitExtensions(_THIS);
 
 /* Typedef for the GL 3.0 context creation function */
+/*
+//id: Already defined here on OSX /usr/X11R6/include/GL/glxext.h:548
 typedef GLXContext(*PFNGLXCREATECONTEXTATTRIBSARBPROC) (Display * dpy,
                                                         GLXFBConfig config,
                                                         GLXContext
@@ -88,6 +90,7 @@ typedef GLXContext(*PFNGLXCREATECONTEXTATTRIBSARBPROC) (Display * dpy,
                                                         Bool direct,
                                                         const int
                                                         *attrib_list);
+*/
 
 int
 X11_GL_LoadLibrary(_THIS, const char *path)
