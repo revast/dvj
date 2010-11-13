@@ -28,6 +28,33 @@
 
 #include <vector>
 
+typedef enum
+{
+	GUI_TARGET_NULL = 0,
+	GUI_TARGET_WAVEFORM,
+	GUI_TARGET_XFADER_LEFT,
+	GUI_TARGET_XFADER_RIGHT,
+	GUI_TARGET_EQ_LOW,
+	GUI_TARGET_EQ_MID,
+	GUI_TARGET_EQ_HIGH,
+	GUI_TARGET_VIS_VIDEO,
+	GUI_TARGET_VIS_OSCILLOSCOPE,
+	GUI_TARGET_VIS_FREQSENSE,
+	GUI_TARGET_SAVEPOINT_BPM_ALPHA,
+	GUI_TARGET_SAVEPOINT_BPM_OMEGA,
+	GUI_TARGET_SAVEPOINT_0,
+	GUI_TARGET_SAVEPOINT_1,
+	GUI_TARGET_SAVEPOINT_2,
+	GUI_TARGET_SAVEPOINT_3,
+	GUI_TARGET_SAVEPOINT_4,
+	GUI_TARGET_SAVEPOINT_5,
+	GUI_TARGET_SAVEPOINT_6,
+	GUI_TARGET_SAVEPOINT_7,
+	GUI_TARGET_SAVEPOINT_8,
+	GUI_TARGET_SAVEPOINT_9,
+	GUI_TARGET_COUNT
+} DVJ_GuiTarget;
+
 class InputObj;
 
 extern InputObj Input;
@@ -127,11 +154,15 @@ virtual	bool	WaveformLoopThenRecallActive	(unsigned int target)	const;	//Loops, 
 virtual int	WaveformAutoDivergeRecall	(unsigned int target)	const;	//When done diverging, jump to where we would have otherwise been, had we not diverged
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
+virtual	float	WaveformVideoBrightnessDelta	(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual	float	WaveformFreqSenseBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
+virtual	float	WaveformFreqSenseBrightnessDelta(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	int	WaveformAudioInputMode		(unsigned int target)	const;	//Set audio input mode
 virtual	bool	WaveformVideoAspectRatioNext	(unsigned int target)	const;	//Advance to next aspect ratio mode
 virtual	float	WaveformOscilloscopeBrightness	(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader
+virtual	float	WaveformOscilloscopeBrightnessDelta
+						(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
 

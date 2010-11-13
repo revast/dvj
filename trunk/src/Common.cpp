@@ -313,13 +313,19 @@ Mixer_DrawGlowLinesTurntables
 			LGL_MouseY()<=cfTop
 		)
 		{
+			GetInputMouse().SetHoverTarget
+			(
+				(a==0) ?
+				GUI_TARGET_XFADER_LEFT :
+				GUI_TARGET_XFADER_RIGHT
+			);
 			if(LGL_MouseStroke(LGL_MOUSE_LEFT))
 			{
 				GetInputMouse().SetDragTarget
 				(
 					(a==0) ?
-					DRAG_TARGET_XFADER_LEFT :
-					DRAG_TARGET_XFADER_RIGHT
+					GUI_TARGET_XFADER_LEFT :
+					GUI_TARGET_XFADER_RIGHT
 				);
 			}
 		}
@@ -330,8 +336,8 @@ Mixer_DrawGlowLinesTurntables
 			GetInputMouse().GetDragTarget() ==
 			(
 				(a==0) ?
-				DRAG_TARGET_XFADER_LEFT :
-				DRAG_TARGET_XFADER_RIGHT
+				GUI_TARGET_XFADER_LEFT :
+				GUI_TARGET_XFADER_RIGHT
 			)
 		)
 		{
@@ -1077,9 +1083,10 @@ Turntable_DrawWaveform
 		LGL_MouseY()<=pointTop
 	)
 	{
+		GetInputMouse().SetHoverTarget(GUI_TARGET_WAVEFORM);
 		if(LGL_MouseStroke(LGL_MOUSE_LEFT))
 		{
-			GetInputMouse().SetDragTarget(DRAG_TARGET_WAVEFORM);
+			GetInputMouse().SetDragTarget(GUI_TARGET_WAVEFORM);
 		}
 	}
 
@@ -2637,11 +2644,76 @@ Turntable_DrawWaveform
 				b=coolB;
 			}
 
+			float myL=lft+i*wth;
+			float myR=lft+i*wth+spc;
+			float myB=bot;
+			float myT=top;
+
+			if
+			(
+				LGL_MouseX()>=myL &&
+				LGL_MouseX()<=myR &&
+				LGL_MouseY()>=myB-0.005f &&
+				LGL_MouseY()<=myT
+			)
+			{
+				DVJ_GuiTarget target=GUI_TARGET_NULL;
+				if(i==0)
+				{
+					target=GUI_TARGET_SAVEPOINT_BPM_ALPHA;
+				}
+				else if(i==1)
+				{
+					target=GUI_TARGET_SAVEPOINT_BPM_OMEGA;
+				}
+				else if(i==2)
+				{
+					target=GUI_TARGET_SAVEPOINT_0;
+				}
+				else if(i==3)
+				{
+					target=GUI_TARGET_SAVEPOINT_1;
+				}
+				else if(i==4)
+				{
+					target=GUI_TARGET_SAVEPOINT_2;
+				}
+				else if(i==5)
+				{
+					target=GUI_TARGET_SAVEPOINT_3;
+				}
+				else if(i==6)
+				{
+					target=GUI_TARGET_SAVEPOINT_4;
+				}
+				else if(i==7)
+				{
+					target=GUI_TARGET_SAVEPOINT_5;
+				}
+				else if(i==8)
+				{
+					target=GUI_TARGET_SAVEPOINT_6;
+				}
+				else if(i==9)
+				{
+					target=GUI_TARGET_SAVEPOINT_7;
+				}
+				else if(i==10)
+				{
+					target=GUI_TARGET_SAVEPOINT_8;
+				}
+				else if(i==11)
+				{
+					target=GUI_TARGET_SAVEPOINT_9;
+				}
+				GetInputMouse().SetHoverTarget(target);
+			}
+
 			//Left
 			LGL_DrawLineToScreen
 			(
-				lft+i*wth,bot,
-				lft+i*wth,top,
+				myL,myB,
+				myL,myT,
 				r,g,b,1,
 				thickness
 			);
@@ -2649,8 +2721,8 @@ Turntable_DrawWaveform
 			//Right
 			LGL_DrawLineToScreen
 			(
-				lft+i*wth+spc,bot,
-				lft+i*wth+spc,top,
+				myR,myB,
+				myR,myT,
 				r,g,b,1,
 				thickness
 			);
@@ -2658,8 +2730,8 @@ Turntable_DrawWaveform
 			//Bottom
 			LGL_DrawLineToScreen
 			(
-				lft+i*wth,bot,
-				lft+i*wth+spc,bot,
+				myL,myB,
+				myR,myB,
 				r,g,b,1,
 				thickness
 			);
@@ -2667,8 +2739,8 @@ Turntable_DrawWaveform
 			//Top
 			LGL_DrawLineToScreen
 			(
-				lft+i*wth,top,
-				lft+i*wth+spc,top,
+				myL,myT,
+				myR,myT,
 				r,g,b,1,
 				thickness
 			);
@@ -2677,8 +2749,8 @@ Turntable_DrawWaveform
 
 			LGL_DrawRectToScreen
 			(
-				lft+i*wth,lft+i*wth+spc,
-				bot,top,
+				myL,myR,
+				myB,myT,
 				mySavePointSet[i]*coolR,
 				mySavePointSet[i]*coolG,
 				mySavePointSet[i]*coolB,
@@ -2767,17 +2839,17 @@ Turntable_DrawWaveform
 	letters[10]='O';
 	letters[11]='F';
 
-	DVJ_DragTarget dragTargets[12];
+	DVJ_GuiTarget dragTargets[12];
 	for(int l=0;l<12;l++)
 	{
-		dragTargets[l]=DRAG_TARGET_NULL;
+		dragTargets[l]=GUI_TARGET_NULL;
 	}
-	dragTargets[0]=DRAG_TARGET_EQ_LOW;
-	dragTargets[1]=DRAG_TARGET_EQ_MID;
-	dragTargets[2]=DRAG_TARGET_EQ_HIGH;
-	dragTargets[9]=DRAG_TARGET_VIS_VIDEO;
-	dragTargets[10]=DRAG_TARGET_VIS_OSCILLOSCOPE;
-	dragTargets[11]=DRAG_TARGET_VIS_FREQSENSE;
+	dragTargets[0]=GUI_TARGET_EQ_LOW;
+	dragTargets[1]=GUI_TARGET_EQ_MID;
+	dragTargets[2]=GUI_TARGET_EQ_HIGH;
+	dragTargets[9]=GUI_TARGET_VIS_VIDEO;
+	dragTargets[10]=GUI_TARGET_VIS_OSCILLOSCOPE;
+	dragTargets[11]=GUI_TARGET_VIS_FREQSENSE;
 
 	float levels[12];
 	for(int l=0;l<12;l++)
@@ -2793,7 +2865,7 @@ Turntable_DrawWaveform
 
 	for(int f=0;f<12;f++)
 	{
-		if(dragTargets[f]==DRAG_TARGET_NULL)
+		if(dragTargets[f]==GUI_TARGET_NULL)
 		{
 			continue;
 		}
@@ -2803,7 +2875,7 @@ Turntable_DrawWaveform
 
 		//Mouse Input
 		{
-			DVJ_DragTarget dragTargetNow=dragTargets[f];
+			DVJ_GuiTarget guiTargetNow=dragTargets[f];
 
 			float dragFloat=LGL_Clamp
 			(
@@ -2814,18 +2886,21 @@ Turntable_DrawWaveform
 
 			if
 			(
-				LGL_MouseStroke(LGL_MOUSE_LEFT) &&
 				LGL_MouseX()>=sliderL &&
 				LGL_MouseX()<=sliderR &&
 				LGL_MouseY()>=sliderB &&
 				LGL_MouseY()<=sliderT
 			)
 			{
-				GetInputMouse().SetDragTarget(dragTargetNow);
-				GetInputMouse().SetDragFloatNext(dragFloat);
+				GetInputMouse().SetHoverTarget(guiTargetNow);
+				if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+				{
+					GetInputMouse().SetDragTarget(guiTargetNow);
+					GetInputMouse().SetDragFloatNext(dragFloat);
+				}
 			}
 
-			if(GetInputMouse().GetDragTarget()==dragTargetNow)
+			if(GetInputMouse().GetDragTarget()==guiTargetNow)
 			{
 				if(LGL_MouseMotion())
 				{

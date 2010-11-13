@@ -2214,6 +2214,21 @@ bool		LGL_MouseRelease(int button);
 void		LGL_MouseVisible(bool visible);
 void		LGL_MouseWarp(float x, float y);
 
+//MultiTouch
+
+float		LGL_MultiTouchX();
+float		LGL_MultiTouchY();
+float		LGL_MultiTouchDX();
+float		LGL_MultiTouchDY();
+float		LGL_MultiTouchDXTotal();
+float		LGL_MultiTouchDYTotal();
+float		LGL_MultiTouchRotate();
+float		LGL_MultiTouchPinch();
+bool		LGL_MultiTouchMotion();
+int		LGL_MultiTouchFingerCount();
+int		LGL_MultiTouchFingerCountDelta();
+
+
 //Joystick (Playstation 2)
 
 #define		LGL_JOY_XAXIS		0

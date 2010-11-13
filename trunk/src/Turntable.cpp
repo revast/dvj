@@ -2150,14 +2150,38 @@ NextFrame
 		{
 			VideoBrightness=newBright;
 		}
+		VideoBrightness=LGL_Clamp
+		(
+			0.0f,
+			VideoBrightness+Input.WaveformVideoBrightnessDelta(target),
+			1.0f
+		);
 
 		newBright=Input.WaveformOscilloscopeBrightness(target);
 		if(newBright!=-1.0f)
 		{
 			OscilloscopeBrightness=newBright;
 		}
+		OscilloscopeBrightness=LGL_Clamp
+		(
+			0.0f,
+			OscilloscopeBrightness+Input.WaveformOscilloscopeBrightnessDelta(target),
+			1.0f
+		);
 
 		newBright=Input.WaveformFreqSenseBrightness(target);
+		if(newBright==-1.0f)
+		{
+			if(Input.WaveformFreqSenseBrightnessDelta(target)!=0.0f)
+			{
+				newBright=LGL_Clamp
+				(
+					0.0f,
+					FreqSenseBrightness+Input.WaveformFreqSenseBrightnessDelta(target),
+					1.0f
+				);
+			}
+		}
 		if(newBright!=-1.0f)
 		{
 			float tmp = FreqSenseBrightness;

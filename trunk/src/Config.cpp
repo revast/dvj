@@ -988,23 +988,23 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_UP_FAST].Set
 		("waveformPitchbendDeltaUpFast",	"LGL_KEY_PAGEUP");
 	dvjKeyMap[WAVEFORM_EQ_LOW_DELTA_DOWN].Set
-		("waveformEQLowDeltaDown",		"LGL_KEY_Z");
+		("waveformEQLowDeltaDown",		"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_EQ_LOW_DELTA_UP].Set
-		("waveformEQLowDeltaUp",		"LGL_KEY_X");
+		("waveformEQLowDeltaUp",		"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_EQ_LOW_KILL].Set
-		("waveformEQLowKill",			"LGL_KEY_C");
+		("waveformEQLowKill",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_EQ_MID_DELTA_DOWN].Set
-		("waveformEQMidDeltaDown",		"LGL_KEY_A");
+		("waveformEQMidDeltaDown",		"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_EQ_MID_DELTA_UP].Set
-		("waveformEQMidDeltaUp",		"LGL_KEY_S");
+		("waveformEQMidDeltaUp",		"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_EQ_MID_KILL].Set
-		("waveformEQMidKill",			"LGL_KEY_D");
+		("waveformEQMidKill",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_EQ_HIGH_DELTA_DOWN].Set
-		("waveformEQHiDeltaDown",		"LGL_KEY_Q");
+		("waveformEQHiDeltaDown",		"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_EQ_HIGH_DELTA_UP].Set
-		("waveformEQHiDeltaUp",			"LGL_KEY_W");
+		("waveformEQHiDeltaUp",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_EQ_HIGH_KILL].Set
-		("waveformEQHiKill",			"LGL_KEY_E");
+		("waveformEQHiKill",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_GAIN_DELTA_DOWN].Set
 		("waveformGainDeltaDown",		"LGL_KEY_MINUS");
 	dvjKeyMap[WAVEFORM_GAIN_DELTA_UP].Set
@@ -1012,7 +1012,7 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_GAIN_KILL].Set
 		("waveformGainKill",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_VOLUME_INVERT].Set
-		("waveformVolumeInvert",		"LGL_KEY_PERIOD");
+		("waveformVolumeInvert",		"LGL_KEY_SPACE");
 	dvjKeyMap[WAVEFORM_RAPID_VOLUME_INVERT].Set
 		("waveformRapidVolumeInvert",		"LGL_KEY_I");
 	dvjKeyMap[WAVEFORM_RAPID_SOLO_INVERT].Set
@@ -1060,7 +1060,7 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].Set
 		("waveformAutoDivergeThenRecall",	"LGL_KEY_M");
 	dvjKeyMap[WAVEFORM_VIDEO_SELECT].Set
-		("waveformVideoSelect",			"LGL_KEY_SPACE");
+		("waveformVideoSelect",			"LGL_KEY_PERIOD");
 	dvjKeyMap[WAVEFORM_AUDIO_INPUT_MODE].Set
 		("waveformAudioInputMode",		"LGL_KEY_F12");
 	dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_NEXT].Set

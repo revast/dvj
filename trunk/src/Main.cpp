@@ -114,6 +114,7 @@ void InitializeGlobals()
 	Input.AddChild(new InputNullObj);
 	Input.AddChild(new InputKeyboardObj);
 	Input.AddChild(&GetInputMouse());
+	Input.AddChild(&GetInputMultiTouch());
 	Input.AddChild(new InputXponentObj);
 	Input.AddChild(new InputXsessionObj);
 	Input.AddChild(new InputWiimoteObj);

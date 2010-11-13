@@ -1,6 +1,6 @@
 /*
  *
- * InputMouse.h - Input abstraction object
+ * InputMultiTouch.h - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,22 +21,22 @@
  *
  */
 
-#ifndef	_INPUT_MOUSE_H_
-#define	_INPUT_MOUSE_H_
+#ifndef	_INPUT_MULTITOUCH_H_
+#define	_INPUT_MULTITOUCH_H_
 
 #include "Input.h"
 
-class InputMouseObj;
+class InputMultiTouchObj;
 
-InputMouseObj& GetInputMouse();
+InputMultiTouchObj& GetInputMultiTouch();
 
-class InputMouseObj : public InputObj
+class InputMultiTouchObj : public InputObj
 {
 
 public:
 
-		InputMouseObj();
-virtual		~InputMouseObj();
+		InputMultiTouchObj();
+virtual		~InputMultiTouchObj();
 
 	//Core
 
@@ -61,7 +61,6 @@ virtual	float	FileScroll			(unsigned int target)	const;	//How many file to scrol
 virtual	int	FileSelect			(unsigned int target)	const;	//Enter the directory or open the file
 virtual bool	FileMarkUnopened		(unsigned int target)	const;	//Don't display that the current file has been opened
 virtual	bool	FileRefresh			(unsigned int target)	const;	//Rescan current folder
-virtual int	FileIndexHighlight		(unsigned int target)	const;	//Highlight an entry
 
 	//Mode 1: Decoding...
 
@@ -118,54 +117,19 @@ virtual	bool	WaveformLoopThenRecallActive	(unsigned int target)	const;	//Loops, 
 virtual int	WaveformAutoDivergeRecall	(unsigned int target)	const;	//When done diverging, jump to where we would have otherwise been, had we not diverged
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
+virtual	float	WaveformVideoBrightnessDelta	(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual	float	WaveformFreqSenseBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
+virtual	float	WaveformFreqSenseBrightnessDelta(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	int	WaveformAudioInputMode		(unsigned int target)	const;	//Set audio input mode
 virtual	bool	WaveformVideoAspectRatioNext	(unsigned int target)	const;	//Advance to next aspect ratio mode
 virtual	float	WaveformOscilloscopeBrightness	(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader
+virtual	float	WaveformOscilloscopeBrightnessDelta
+						(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
 
-private:
-
-	int	FocusNow;
-	int	FocusNext;
-	int	FileIndexHighlightNow;
-	int	FileIndexHighlightNext;
-	int	FileSelectNow;
-	int	FileSelectNext;
-	bool	WaveformVideoAspectRatioNextNow;
-	bool	WaveformVideoAspectRatioNextNext;
-	bool	WaveformVideoSelectNow;
-	bool	WaveformVideoSelectNext;
-
-	DVJ_GuiTarget
-		HoverTarget;
-	DVJ_GuiTarget
-		HoverTargetNext;
-	DVJ_GuiTarget
-		DragTarget;
-	float	DragFloat;
-	float	DragFloatNext;
-
-public:
-
-	void	SetFocusNext(int next);
-	void	SetFileIndexHighlightNext(int next);
-	void	SetFileSelectNext();
-	void	SetWaveformVideoAspectRatioNextNext();
-	void	SetWaveformVideoSelectNext();
-
-	DVJ_GuiTarget
-		GetDragTarget() const;
-	DVJ_GuiTarget
-		GetHoverTarget() const;
-	
-	void	SetHoverTarget(DVJ_GuiTarget hoverTarget);
-	void	SetDragTarget(DVJ_GuiTarget dragTarget);
-	void	SetDragFloatNext(float dragFloat);
-
 };
 
-#endif	//_INPUT_MOUSE_H_
+#endif	//_INPUT_MULTITOUCH_H_
 
