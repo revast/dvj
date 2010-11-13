@@ -1223,6 +1223,23 @@ WaveformVideoBrightness
 
 float
 InputObj::
+WaveformVideoBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		delta+=Children[a]->WaveformVideoBrightnessDelta(target);
+	}
+
+	return(delta);
+}
+
+float
+InputObj::
 WaveformVideoAdvanceRate
 (
 	unsigned int	target
@@ -1261,6 +1278,23 @@ WaveformFreqSenseBrightness
 	}
 
 	return(brightness);
+}
+
+float
+InputObj::
+WaveformFreqSenseBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		delta+=Children[a]->WaveformFreqSenseBrightnessDelta(target);
+	}
+
+	return(delta);
 }
 
 int
@@ -1320,6 +1354,23 @@ WaveformOscilloscopeBrightness
 	}
 
 	return(bright);
+}
+
+float
+InputObj::
+WaveformOscilloscopeBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		delta+=Children[a]->WaveformOscilloscopeBrightnessDelta(target);
+	}
+
+	return(delta);
 }
 
 bool

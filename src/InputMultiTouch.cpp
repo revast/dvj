@@ -1,6 +1,6 @@
 /*
  *
- * InputMouse.cpp - Input abstraction object
+ * InputMultiTouch.cpp - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,36 +21,27 @@
  *
  */
 
+#include "InputMultiTouch.h"
+
 #include "InputMouse.h"
 
-InputMouseObj&
-GetInputMouse()
+#define	KNOB_SCALAR	(4.0f)
+
+InputMultiTouchObj&
+GetInputMultiTouch()
 {
-	static InputMouseObj inputMouse;
-	return(inputMouse);
+	static InputMultiTouchObj inputMultiTouch;
+	return(inputMultiTouch);
 }
 
-InputMouseObj::
-InputMouseObj()
+InputMultiTouchObj::
+InputMultiTouchObj()
 {
-	FocusNow=-1;
-	FocusNext=-1;
-	FileIndexHighlightNow=-1;
-	FileIndexHighlightNext=-1;
-	FileSelectNow=0;
-	FileSelectNext=0;
-	WaveformVideoAspectRatioNextNow=false;
-	WaveformVideoAspectRatioNextNext=false;
-	WaveformVideoSelectNow=false;
-	WaveformVideoSelectNext=false;
-	HoverTarget=GUI_TARGET_NULL;
-	DragTarget=GUI_TARGET_NULL;
-	DragFloat=-1.0f;
-	DragFloatNext=-1.0f;
+	//
 }
 
-InputMouseObj::
-~InputMouseObj()
+InputMultiTouchObj::
+~InputMultiTouchObj()
 {
 	//
 }
@@ -58,41 +49,16 @@ InputMouseObj::
 //Core
 
 void
-InputMouseObj::
+InputMultiTouchObj::
 NextFrame()
 {
-	FocusNow=FocusNext;
-	FocusNext=-1;
-
-	FileIndexHighlightNow=FileIndexHighlightNext;
-	FileIndexHighlightNext=-1;
-
-	FileSelectNow=FileSelectNext;
-	FileSelectNext=0;
-
-	WaveformVideoAspectRatioNextNow=WaveformVideoAspectRatioNextNext;
-	WaveformVideoAspectRatioNextNext=false;
-
-	WaveformVideoSelectNow=WaveformVideoSelectNext;
-	WaveformVideoSelectNext=false;
-
-	HoverTarget=HoverTargetNext;
-	HoverTargetNext=GUI_TARGET_NULL;
-
-	if(LGL_MouseRelease(LGL_MOUSE_LEFT))
-	{
-		DragTarget=GUI_TARGET_NULL;
-		DragFloatNext=-1.0f;
-	}
-
-	DragFloat=DragFloatNext;
-	DragFloatNext=-1.0f;
+	//
 }
 
 //Global Input
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 FocusChange()	const
 {
 	bool change=false;
@@ -100,121 +66,121 @@ FocusChange()	const
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 FocusBottom()	const
 {
-	bool bottom=(FocusNow==1);
+	bool bottom=false;
 	return(bottom);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 FocusTop()	const
 {
-	bool top=(FocusNow==0);
+	bool top=false;
 	return(top);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 XfaderSpeakers()	const
 {
-	if(DragTarget==GUI_TARGET_XFADER_LEFT)
-	{
-		return(DragFloat);
-	}
-	else
-	{
-		return(-1.0f);
-	}
+	float xfade=-1.0f;
+	return(xfade);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 XfaderSpeakersDelta()	const
 {
 	float delta=0.0f;
+	if(GetInputMouse().GetHoverTarget()==GUI_TARGET_XFADER_LEFT)
+	{
+		delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+	}
 	return(delta);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 XfaderHeadphones()	const
 {
-	if(DragTarget==GUI_TARGET_XFADER_RIGHT)
-	{
-		return(DragFloat);
-	}
-	else
-	{
-		return(-1.0f);
-	}
+	float xfade=-1.0f;
+	return(xfade);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 XfaderHeadphonesDelta()	const
 {
 	float delta=0.0f;
+	if(GetInputMouse().GetHoverTarget()==GUI_TARGET_XFADER_RIGHT)
+	{
+		delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+	}
 	return(delta);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 SyncTopToBottom()	const
 {
 	bool sync=false;
 	return(sync);
 }
 
-bool
-InputMouseObj::
-SyncBottomToTop()	const
-{
-	bool sync=false;
-	return(sync);
-}
-
 int
-InputMouseObj::
+InputMultiTouchObj::
 MasterToHeadphones()	const
 {
 	int to=-1;
 	return(to);
 }
 
+bool
+InputMultiTouchObj::
+SyncBottomToTop()	const
+{
+	bool sync=false;
+	return(sync);
+}
+
 //Mode 0: File Selection
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 FileScroll
 (
 	unsigned int	target
 )	const
 {
 	float scroll=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_NULL)
+		{
+			if(LGL_MultiTouchFingerCount()>=2)
+			{
+				scroll=LGL_MultiTouchDY()*-250.0f;
+			}
+		}
+	}
 	return(scroll);
 }
 
 int
-InputMouseObj::
+InputMultiTouchObj::
 FileSelect
 (
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
-	{
-		return(FileSelectNow);
-	}
-	else
-	{
-		return(0);
-	}
+	int choose=0;
+	return(choose);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 FileMarkUnopened
 (
 	unsigned int	target
@@ -225,7 +191,7 @@ FileMarkUnopened
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 FileRefresh
 (
 	unsigned int	target
@@ -235,28 +201,10 @@ FileRefresh
 	return(refresh);
 }
 
-int
-InputMouseObj::
-FileIndexHighlight
-(
-	unsigned int	target
-)	const
-{
-	//FIXME
-	if(target & TARGET_FOCUS)
-	{
-		return(FileIndexHighlightNow);
-	}
-	else
-	{
-		return(-1);
-	}
-}
-
 //Mode 1: Decoding...
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 DecodeAbort
 (
 	unsigned int	target
@@ -269,7 +217,7 @@ DecodeAbort
 //Mode 2: Waveform
 
 int
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEject
 (
 	unsigned int	target
@@ -280,7 +228,7 @@ WaveformEject
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformTogglePause
 (
 	unsigned int	target
@@ -291,18 +239,31 @@ WaveformTogglePause
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformNudge
 (
 	unsigned int	target
 )	const
 {
 	float nudge=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM)
+		{
+			if(LGL_MultiTouchFingerCount()>=2)
+			{
+				if(fabsf(LGL_MultiTouchDXTotal())>2*fabsf(LGL_MultiTouchDYTotal()))
+				{
+					nudge=LGL_MultiTouchDX()*10.0f;
+				}
+			}
+		}
+	}
 	return(nudge);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformPitchbend
 (
 	unsigned int	target
@@ -313,47 +274,60 @@ WaveformPitchbend
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformPitchbendDelta
 (
 	unsigned int	target
 )	const
 {
 	float delta=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM)
+		{
+			if(LGL_MultiTouchFingerCount()>=2)
+			{
+				if(fabsf(LGL_MultiTouchDYTotal())>2*fabsf(LGL_MultiTouchDXTotal()))
+				{
+					delta=LGL_MultiTouchDY()/60.0f;
+				}
+			}
+		}
+	}
 	return(delta);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEQLow
 (
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
-	{
-		if(DragTarget==GUI_TARGET_EQ_LOW)
-		{
-			return(DragFloat);
-		}
-	}
-
-	return(-1.0f);
+	float low=-1.0f;
+	return(low);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEQLowDelta
 (
 	unsigned int	target
 )	const
 {
 	float delta=0.0f;
+	if(target && TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_LOW)
+		{
+			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+		}
+	}
 	return(delta);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEQLowKill
 (
 	unsigned int	target
@@ -364,36 +338,36 @@ WaveformEQLowKill
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEQMid
 (
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
-	{
-		if(DragTarget==GUI_TARGET_EQ_MID)
-		{
-			return(DragFloat);
-		}
-	}
-
-	return(-1.0f);
+	float mid=-1.0f;
+	return(mid);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEQMidDelta
 (
 	unsigned int	target
 )	const
 {
 	float delta=0.0f;
+	if(target && TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_MID)
+		{
+			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+		}
+	}
 	return(delta);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEQMidKill
 (
 	unsigned int	target
@@ -404,36 +378,36 @@ WaveformEQMidKill
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEQHigh
 (
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
-	{
-		if(DragTarget==GUI_TARGET_EQ_HIGH)
-		{
-			return(DragFloat);
-		}
-	}
-
-	return(-1.0f);
+	float high=-1.0f;
+	return(high);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEQHighDelta
 (
 	unsigned int	target
 )	const
 {
 	float delta=0.0f;
+	if(target && TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_HIGH)
+		{
+			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+		}
+	}
 	return(delta);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformEQHighKill
 (
 	unsigned int	target
@@ -444,7 +418,7 @@ WaveformEQHighKill
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformGain
 (
 	unsigned int	target
@@ -455,7 +429,7 @@ WaveformGain
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformGainDelta
 (
 	unsigned int	target
@@ -466,7 +440,7 @@ WaveformGainDelta
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformGainKill
 (
 	unsigned int	target
@@ -477,7 +451,7 @@ WaveformGainKill
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformVolumeSlider
 (
 	unsigned int	target
@@ -488,7 +462,7 @@ WaveformVolumeSlider
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformVolumeInvert
 (
 	unsigned int	target
@@ -499,7 +473,7 @@ WaveformVolumeInvert
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformRapidVolumeInvert
 (
 	unsigned int	target
@@ -510,7 +484,7 @@ WaveformRapidVolumeInvert
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformRapidSoloInvert
 (
 	unsigned int	target
@@ -521,7 +495,7 @@ WaveformRapidSoloInvert
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformVolumeSolo
 (
 	unsigned int	target
@@ -532,60 +506,60 @@ WaveformVolumeSolo
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformRewindFF
 (
 	unsigned int	target
 )	const
 {
 	float rewindff=0.0f;
-	
-	if(target & TARGET_FOCUS)
-	{
-		if(LGL_MouseDown(LGL_MOUSE_RIGHT))
-		{
-			float val = 16.0f*(LGL_MouseX()-0.5f);
-			rewindff=(powf(2.0f,fabsf(val))-1.0f)*LGL_Sign(val);
-		}
-	}
-
 	return(rewindff);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformRecordHold
 (
 	unsigned int	target
 )	const
 {
+	bool hold=false;
 	if(target & TARGET_FOCUS)
 	{
-		return(DragTarget==GUI_TARGET_WAVEFORM);
+		if(LGL_KeyDown(LGL_KEY_SHIFT))
+		{
+			if(LGL_MultiTouchFingerCount()>=2)
+			{
+				hold=true;
+			}
+		}
 	}
-	else
-	{
-		return(false);
-	}
+	return(hold);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformRecordSpeed
 (
 	unsigned int	target
 )	const
 {
 	float speed=0.0f;
-	if(WaveformRecordHold(target))
+	if(target & TARGET_FOCUS)
 	{
-		speed=LGL_MouseDX()*-175.0f;
+		if(LGL_KeyDown(LGL_KEY_SHIFT))
+		{
+			if(LGL_MultiTouchFingerCount()>=2)
+			{
+				speed=LGL_MultiTouchDX()*50.0f;
+			}
+		}
 	}
 	return(speed);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformStutter
 (
 	unsigned int	target
@@ -596,7 +570,7 @@ WaveformStutter
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformStutterPitch
 (
 	unsigned int	target
@@ -607,7 +581,7 @@ WaveformStutterPitch
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformStutterSpeed
 (
 	unsigned int	target
@@ -618,7 +592,7 @@ WaveformStutterSpeed
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointPrev
 (
 	unsigned int	target
@@ -629,7 +603,7 @@ WaveformSavePointPrev
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointNext
 (
 	unsigned int	target
@@ -640,72 +614,18 @@ WaveformSavePointNext
 }
 
 int
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointPick
 (
 	unsigned int	target
 )	const
 {
 	int pick=-9999;
-	if(target & TARGET_FOCUS)
-	{
-		if(LGL_MouseStroke(LGL_MOUSE_LEFT))
-		{
-			if(HoverTarget==GUI_TARGET_SAVEPOINT_BPM_ALPHA)
-			{
-				pick=-2;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_BPM_OMEGA)
-			{
-				pick=-1;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_0)
-			{
-				pick=0;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_1)
-			{
-				pick=1;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_2)
-			{
-				pick=2;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_3)
-			{
-				pick=3;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_4)
-			{
-				pick=4;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_5)
-			{
-				pick=5;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_6)
-			{
-				pick=6;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_7)
-			{
-				pick=7;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_8)
-			{
-				pick=8;
-			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_9)
-			{
-				pick=9;
-			}
-		}
-	}
 	return(pick);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointSet
 (
 	unsigned int	target
@@ -716,7 +636,7 @@ WaveformSavePointSet
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointUnsetPercent
 (
 	unsigned int	target
@@ -727,7 +647,7 @@ WaveformSavePointUnsetPercent
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointShift
 (
 	unsigned int	target
@@ -738,7 +658,7 @@ WaveformSavePointShift
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointShiftAll
 (
 	unsigned int	target
@@ -749,7 +669,7 @@ WaveformSavePointShiftAll
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointShiftAllHere
 (
 	unsigned int	target
@@ -760,7 +680,7 @@ WaveformSavePointShiftAllHere
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointJumpNow
 (
 	unsigned int	target
@@ -771,7 +691,7 @@ WaveformSavePointJumpNow
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSavePointJumpAtMeasure
 (
 	unsigned int	target
@@ -782,7 +702,7 @@ WaveformSavePointJumpAtMeasure
 }
 
 int
-InputMouseObj::
+InputMultiTouchObj::
 WaveformLoopMeasuresExponent
 (
 	unsigned int	target
@@ -793,7 +713,7 @@ WaveformLoopMeasuresExponent
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformLoopMeasuresHalf
 (
 	unsigned int	target
@@ -804,7 +724,7 @@ WaveformLoopMeasuresHalf
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformLoopMeasuresDouble
 (
 	unsigned int	target
@@ -815,7 +735,7 @@ WaveformLoopMeasuresDouble
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformLoopSecondsLess
 (
 	unsigned int	target
@@ -826,7 +746,7 @@ WaveformLoopSecondsLess
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformLoopSecondsMore
 (
 	unsigned int	target
@@ -835,9 +755,8 @@ WaveformLoopSecondsMore
 	bool more=false;
 	return(more);
 }
-
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformLoopAll
 (
 	unsigned int	target
@@ -847,8 +766,9 @@ WaveformLoopAll
 	return(all);
 }
 
+
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformLoopToggle
 (
 	unsigned int	target
@@ -859,7 +779,7 @@ WaveformLoopToggle
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformLoopThenRecallActive
 (
 	unsigned int	target
@@ -870,7 +790,7 @@ WaveformLoopThenRecallActive
 }
 
 int
-InputMouseObj::
+InputMultiTouchObj::
 WaveformAutoDivergeRecall
 (
 	unsigned int	target
@@ -881,42 +801,47 @@ WaveformAutoDivergeRecall
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformVideoSelect
 (
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
-	{
-		return(WaveformVideoSelectNow);
-	}
-	else
-	{
-		return(false);
-	}
+	bool select=false;
+	return(select);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformVideoBrightness
 (
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
-	{
-		if(DragTarget==GUI_TARGET_VIS_VIDEO)
-		{
-			return(DragFloat);
-		}
-	}
-
-	return(-1.0f);
+	float bright=-1.0f;
+	return(bright);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
+WaveformVideoBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_VIS_VIDEO)
+		{
+			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+		}
+	}
+	return(delta);
+}
+
+float
+InputMultiTouchObj::
 WaveformVideoAdvanceRate
 (
 	unsigned int	target
@@ -927,25 +852,36 @@ WaveformVideoAdvanceRate
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformFreqSenseBrightness
 (
 	unsigned int	target
 )	const
 {
+	float brightness=-1;
+	return(brightness);
+}
+
+float
+InputMultiTouchObj::
+WaveformFreqSenseBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(DragTarget==GUI_TARGET_VIS_FREQSENSE)
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_VIS_FREQSENSE)
 		{
-			return(DragFloat);
+			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
 		}
 	}
-
-	return(-1.0f);
+	return(delta);
 }
 
 int
-InputMouseObj::
+InputMultiTouchObj::
 WaveformAudioInputMode
 (
 	unsigned int	target
@@ -956,42 +892,47 @@ WaveformAudioInputMode
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformVideoAspectRatioNext
 (
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
-	{
-		return(WaveformVideoAspectRatioNextNow);
-	}
-	else
-	{
-		return(false);
-	}
+	bool next=false;
+	return(next);
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformOscilloscopeBrightness
 (
 	unsigned int	target
 )	const
 {
+	float brightness=-1.0f;
+	return(brightness);
+}
+
+float
+InputMultiTouchObj::
+WaveformOscilloscopeBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(DragTarget==GUI_TARGET_VIS_OSCILLOSCOPE)
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_VIS_OSCILLOSCOPE)
 		{
-			return(DragFloat);
+			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
 		}
 	}
-
-	return(-1.0f);
+	return(delta);
 }
 
 bool
-InputMouseObj::
+InputMultiTouchObj::
 WaveformSyncBPM
 (
 	unsigned int	target
@@ -1002,116 +943,13 @@ WaveformSyncBPM
 }
 
 float
-InputMouseObj::
+InputMultiTouchObj::
 WaveformPointerScratch
 (
 	unsigned int	target
 )	const
 {
 	float targetX=-1.0f;
-
-	/*
-	if(target & TARGET_FOCUS)
-	{
-		if(LGL_MouseDown(LGL_MOUSE_LEFT))
-		{
-			targetX=LGL_MouseX();
-		}
-	}
-	*/
-
 	return(targetX);
-}
-
-void
-InputMouseObj::
-SetFocusNext
-(
-	int	next
-)
-{
-	if
-	(
-		LGL_MouseDown(LGL_MOUSE_LEFT)==false &&
-		LGL_MouseDown(LGL_MOUSE_RIGHT)==false
-	)
-	{
-		FocusNext=next;
-	}
-}
-
-void
-InputMouseObj::
-SetFileIndexHighlightNext
-(
-	int	next
-)
-{
-	FileIndexHighlightNext=next;
-}
-
-void
-InputMouseObj::
-SetFileSelectNext()
-{
-	FileSelectNext=1;
-}
-
-void
-InputMouseObj::
-SetWaveformVideoAspectRatioNextNext()
-{
-	WaveformVideoAspectRatioNextNext=true;
-}
-
-void
-InputMouseObj::
-SetWaveformVideoSelectNext()
-{
-	WaveformVideoSelectNext=true;
-}
-
-DVJ_GuiTarget
-InputMouseObj::
-GetHoverTarget()	const
-{
-	return(HoverTarget);
-}
-
-DVJ_GuiTarget
-InputMouseObj::
-GetDragTarget()	const
-{
-	return(DragTarget);
-}
-
-void
-InputMouseObj::
-SetHoverTarget
-(
-	DVJ_GuiTarget	hoverTarget
-)
-{
-	HoverTargetNext=hoverTarget;
-}
-
-void
-InputMouseObj::
-SetDragTarget
-(
-	DVJ_GuiTarget	dragTarget
-)
-{
-	DragTarget=dragTarget;
-}
-
-void
-InputMouseObj::
-SetDragFloatNext
-(
-	float	dragFloat
-)
-{
-	DragFloatNext=dragFloat;
 }
 

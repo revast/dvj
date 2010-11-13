@@ -352,6 +352,20 @@ typedef struct
 	bool			MouseStroke[3];
 	bool			MouseRelease[3];
 
+	//MultiTouch
+
+	int			MultiTouchID;
+	float			MultiTouchX;
+	float			MultiTouchY;
+	float			MultiTouchDX;
+	float			MultiTouchDY;
+	float			MultiTouchXFirst;
+	float			MultiTouchYFirst;
+	float			MultiTouchRotate;
+	float			MultiTouchPinch;
+	int			MultiTouchFingerCount;
+	int			MultiTouchFingerCountDelta;
+
 	//Joystick
 	
 	int			JoyNumber;
@@ -1592,6 +1606,18 @@ LGL_Init
 		LGL.MouseStroke[a]=false;
 		LGL.MouseRelease[a]=false;
 	}
+
+	LGL.MultiTouchID=0;
+	LGL.MultiTouchX=-1.0f;
+	LGL.MultiTouchY=-1.0f;
+	LGL.MultiTouchDX=0.0f;
+	LGL.MultiTouchDY=0.0f;
+	LGL.MultiTouchXFirst=-1.0f;
+	LGL.MultiTouchYFirst=-1.0f;
+	LGL.MultiTouchRotate=0.0f;
+	LGL.MultiTouchPinch=0.0f;
+	LGL.MultiTouchFingerCount=0;
+	LGL.MultiTouchFingerCountDelta=0;
 
 	LGL.RecordMovie=false;
 	LGL.RecordMovieFPS=60;
@@ -17312,6 +17338,36 @@ LGL_ProcessInput()
 		}
 	}
 
+	//Reset MultiTouch State
+
+	float multiTouchXPrev=LGL.MultiTouchX;
+	float multiTouchYPrev=LGL.MultiTouchY;
+	int multiTouchFingerCountPrev=LGL.MultiTouchFingerCount;
+
+	LGL.MultiTouchDX=0.0f;
+	LGL.MultiTouchDY=0.0f;
+	LGL.MultiTouchRotate=0.0f;
+	LGL.MultiTouchPinch=0.0f;
+	LGL.MultiTouchFingerCountDelta=0;
+	if(SDL_Touch* touch = SDL_GetTouch(LGL.MultiTouchID))
+	{
+		LGL.MultiTouchFingerCount=touch->num_fingers;
+		LGL.MultiTouchFingerCountDelta=LGL.MultiTouchFingerCount-multiTouchFingerCountPrev;
+		if
+		(
+			multiTouchFingerCountPrev>=2 &&
+			LGL.MultiTouchFingerCount<2
+		)
+		{
+			LGL.MultiTouchX=-1.0f;
+			LGL.MultiTouchY=-1.0f;
+			LGL.MultiTouchXFirst=LGL.MultiTouchX;
+			LGL.MultiTouchYFirst=LGL.MultiTouchY;
+		}
+	}
+
+
+
 	//Reset Joystick State
 	
 	for(a=0;a<4;a++)
@@ -17517,6 +17573,29 @@ LGL_ProcessInput()
 				LGL.MouseDown[LGL_MOUSE_RIGHT]=false;
 				LGL.MouseRelease[LGL_MOUSE_RIGHT]=true;
 			}
+		}
+
+		//MultiTouch
+
+		if(event.type==SDL_MULTIGESTURE)
+		{
+			LGL.MultiTouchID=event.mgesture.touchId;
+			if(multiTouchXPrev!=-1.0f)
+			{
+				LGL.MultiTouchDX=event.mgesture.x-multiTouchXPrev;
+				LGL.MultiTouchDY=(1.0f-event.mgesture.y)-multiTouchYPrev;
+			}
+			LGL.MultiTouchX=event.mgesture.x;
+			LGL.MultiTouchY=(1.0f-event.mgesture.y);
+			if(multiTouchXPrev==-1.0f)
+			{
+				LGL.MultiTouchXFirst=LGL.MultiTouchX;
+				LGL.MultiTouchYFirst=LGL.MultiTouchY;
+			}
+			LGL.MultiTouchRotate=event.mgesture.dTheta;
+			LGL.MultiTouchPinch=event.mgesture.dDist;
+			LGL.MultiTouchFingerCount=event.mgesture.numFingers;
+			LGL.MultiTouchFingerCountDelta=event.mgesture.numFingers-multiTouchFingerCountPrev;
 		}
 
 		//Joysticks
@@ -19268,6 +19347,80 @@ LGL_MouseWarp
 	LGL.MouseDY=x-LGL.MouseY;
 	LGL.MouseX=x;
 	LGL.MouseY=y;
+}
+
+//MultiTouch
+
+float
+LGL_MultiTouchX()
+{
+	return(LGL.MultiTouchX);
+}
+
+float
+LGL_MultiTouchY()
+{
+	return(LGL.MultiTouchY);
+}
+
+float
+LGL_MultiTouchDX()
+{
+	return(LGL.MultiTouchDX);
+}
+
+float
+LGL_MultiTouchDY()
+{
+	return(LGL.MultiTouchDY);
+}
+
+float
+LGL_MultiTouchDXTotal()
+{
+	return(LGL.MultiTouchX-LGL.MultiTouchXFirst);
+}
+
+float
+LGL_MultiTouchDYTotal()
+{
+	return(LGL.MultiTouchY-LGL.MultiTouchYFirst);
+}
+
+float
+LGL_MultiTouchRotate()
+{
+	return(LGL.MultiTouchRotate);
+}
+
+float
+LGL_MultiTouchPinch()
+{
+	return(LGL.MultiTouchPinch);
+}
+
+bool
+LGL_MultiTouchMotion()
+{
+	return
+	(
+		LGL_MultiTouchDX()!=0.0f ||
+		LGL_MultiTouchDY()!=0.0f ||
+		LGL_MultiTouchRotate()!=0.0f ||
+		LGL_MultiTouchPinch()!=0.0f
+	);
+}
+
+int
+LGL_MultiTouchFingerCount()
+{
+	return(LGL.MultiTouchFingerCount);
+}
+
+int
+LGL_MultiTouchFingerCountDelta()
+{
+	return(LGL.MultiTouchFingerCountDelta);
 }
 
 //Joystick
