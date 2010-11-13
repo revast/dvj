@@ -819,6 +819,12 @@ NextFrame
 	float	secondsElapsed
 )
 {
+	if(LGL_AudioJackXrun())
+	{
+		VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()/2);
+		printf("New Radius: %i\n",VideoFront->GetFrameBufferAddRadius());
+	}
+
 	unsigned int target =
 		(Focus ? TARGET_FOCUS : 0) |
 		((Which==0) ? TARGET_TOP : TARGET_BOTTOM);

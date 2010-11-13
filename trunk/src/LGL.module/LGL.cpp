@@ -291,6 +291,8 @@ typedef struct
 	bool			AudioQuitting;
 
 	bool			AudioUsingJack;
+	bool			AudioJackXrunBack;
+	bool			AudioJackXrunFront;
 
 	SDL_AudioSpec*		AudioSpec;
 	LGL_SoundChannel	SoundChannel[LGL_SOUND_CHANNEL_NUMBER];
@@ -514,6 +516,7 @@ lgl_AudioOutCallbackJackXrun
 	{
 		printf("[%.2f] Jack xrun... %.5fms\n",LGL_SecondsSinceExecution(),delayedUsecs/1000.0f);
 	}
+	LGL.AudioJackXrunBack=true;
 	return(0);
 }
 
@@ -1580,6 +1583,8 @@ LGL_Init
 	LGL.AudioWasOnceAvailable=false;
 	LGL.AudioQuitting=false;
 	LGL.AudioUsingJack=true;
+	LGL.AudioJackXrunBack=false;
+	LGL.AudioJackXrunFront=false;
 
 	int a;
 	for(a=0;a<512;a++)
@@ -1853,7 +1858,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 #endif	//LGL_OSX
 #endif	//LGL_LINUX
 
-		if(LGL.AudioUsingJack==false)
+		if(1 || LGL.AudioUsingJack==false)
 		{
 			LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
 		}
@@ -3327,6 +3332,16 @@ LGL_SwapBuffers()
 	else
 	{
 		LGL.AudioOutDisconnected=false;
+	}
+
+	if(LGL.AudioJackXrunBack)
+	{
+		LGL.AudioJackXrunFront=true;
+		LGL.AudioJackXrunBack=false;
+	}
+	else
+	{
+		LGL.AudioJackXrunFront=false;
 	}
 
 	if(LGL.AudioBufferPos>=1024)
@@ -9082,6 +9097,13 @@ SetFrameBufferAddBackwards
 	FrameBufferAddBackwards=addBackwards;
 }
 
+int
+LGL_VideoDecoder::
+GetFrameBufferAddRadius()	const
+{
+	return(FrameBufferAddRadius);
+}
+
 void
 LGL_VideoDecoder::
 SetFrameBufferAddRadius
@@ -9090,7 +9112,7 @@ SetFrameBufferAddRadius
 )
 {
 	FrameBufferAddRadius=LGL_Max(2,frames);
-	FrameBufferSubtractRadius=(int)(FrameBufferAddRadius*1.5f);;
+	FrameBufferSubtractRadius=(int)(FrameBufferAddRadius*1.0f);;
 }
 
 void
@@ -9496,6 +9518,8 @@ MaybeRecycleBuffers()
 	long frameNumberPredict=frameNumberTarget;
 	frameNumberPredict = frameNumberPredict % frameNumberLength;
 
+	unsigned int totalBuffers=FrameBufferRecycled.size()+FrameBufferReady.size();
+
 	for(unsigned int a=0;a<FrameBufferReady.size();a++)
 	{
 		if
@@ -9510,7 +9534,15 @@ MaybeRecycleBuffers()
 			)
 		)
 		{
-			FrameBufferRecycled.push_back(FrameBufferReady[a]);
+			if(totalBuffers>FrameBufferAddRadius+FrameBufferSubtractRadius+4)
+			{
+				delete FrameBufferReady[a];
+				totalBuffers--;
+			}
+			else
+			{
+				FrameBufferRecycled.push_back(FrameBufferReady[a]);
+			}
 			FrameBufferReady.erase
 			(
 				(std::vector<lgl_FrameBuffer*>::iterator)
@@ -16951,6 +16983,12 @@ bool
 LGL_AudioUsingJack()
 {
 	return(LGL.AudioUsingJack);
+}
+
+bool
+LGL_AudioJackXrun()
+{
+	return(LGL.AudioJackXrunFront);
 }
 
 bool
@@ -28082,7 +28120,7 @@ LGL_ThreadSetPriority
 	}
 	else
 	{
-		//printf("Set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
+		printf("Set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
 	}
 
 	/*
@@ -28612,7 +28650,7 @@ lgl_AudioOutCallbackGenerator
 	int	len8
 )
 {
-	if(LGL.AudioUsingJack==false)
+	if(1 || LGL.AudioUsingJack==false)
 	{
 		if(soundRealtimePrioritySet==false)
 		{
