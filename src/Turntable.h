@@ -285,6 +285,7 @@ static	VisualizerObj*			Visualizer;
 	float				OscilloscopeBrightness;
 	float				FreqSenseBrightness;
 	bool				AudioInputMode;
+	LGL_Timer			VideoFrontRadiusIncreaseDelayTimer;
 
 public:
 
