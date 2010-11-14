@@ -328,6 +328,7 @@ DrawVisuals
 	}
 
 	//Warn on low memory
+	if(LGL_GetActiveDisplay()==0)
 	{
 		LowMemoryWarningScalar-=1.0f/60.0f;
 		if(LowMemoryWarningScalar<0) LowMemoryWarningScalar=0.0f;

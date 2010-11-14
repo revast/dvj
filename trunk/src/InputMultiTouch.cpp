@@ -37,7 +37,7 @@ GetInputMultiTouch()
 InputMultiTouchObj::
 InputMultiTouchObj()
 {
-	//
+	LoopMeasuresDelta=0;
 }
 
 InputMultiTouchObj::
@@ -52,7 +52,34 @@ void
 InputMultiTouchObj::
 NextFrame()
 {
-	//
+	if(LoopMeasuresDelta==0)
+	{
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_LOOP_MEASURES)
+		{
+			if(LGL_MultiTouchFingerCount()>=2)
+			{
+				if(LGL_MultiTouchDYTotal()>0.1f)
+				{
+					LoopMeasuresDelta=1;
+				}
+				else if(LGL_MultiTouchDYTotal()<-0.1f)
+				{
+					LoopMeasuresDelta=-1;
+				}
+			}
+		}
+	}
+	else if(LoopMeasuresDelta==-2)
+	{
+		if(LGL_MultiTouchFingerCount()==0)
+		{
+			LoopMeasuresDelta=0;
+		}
+	}
+	else	//1,-1
+	{
+		LoopMeasuresDelta=-2;
+	}
 }
 
 //Global Input
@@ -96,7 +123,7 @@ XfaderSpeakersDelta()	const
 	float delta=0.0f;
 	if(GetInputMouse().GetHoverTarget()==GUI_TARGET_XFADER_LEFT)
 	{
-		delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+		delta=LGL_MultiTouchDY2()*KNOB_SCALAR*0.5f;
 	}
 	return(delta);
 }
@@ -116,7 +143,7 @@ XfaderHeadphonesDelta()	const
 	float delta=0.0f;
 	if(GetInputMouse().GetHoverTarget()==GUI_TARGET_XFADER_RIGHT)
 	{
-		delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+		delta=LGL_MultiTouchDY2()*KNOB_SCALAR*0.5f;
 	}
 	return(delta);
 }
@@ -161,7 +188,7 @@ FileScroll
 		{
 			if(LGL_MultiTouchFingerCount()>=2)
 			{
-				scroll=LGL_MultiTouchDY()*-250.0f;
+				scroll=LGL_MultiTouchDY2()*-250.0f;
 			}
 		}
 	}
@@ -250,11 +277,11 @@ WaveformNudge
 	{
 		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM)
 		{
-			if(LGL_MultiTouchFingerCount()>=2)
+			if(LGL_MultiTouchFingerCount()==2)
 			{
-				if(fabsf(LGL_MultiTouchDXTotal())>2*fabsf(LGL_MultiTouchDYTotal()))
+				if(LGL_KeyDown(LGL_KEY_SHIFT)==false)
 				{
-					nudge=LGL_MultiTouchDX()*10.0f;
+					nudge=LGL_MultiTouchDX2()*10.0f;
 				}
 			}
 		}
@@ -283,15 +310,23 @@ WaveformPitchbendDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM)
+		if
+		(
+			(
+				GetInputMouse().GetHoverTarget()==GUI_TARGET_BPM_PITCH &&
+				LGL_MultiTouchFingerCount()>=2
+			) ||
+			(
+				GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM &&
+				LGL_MultiTouchFingerCount()==3
+			)
+		)
 		{
-			if(LGL_MultiTouchFingerCount()>=2)
-			{
-				if(fabsf(LGL_MultiTouchDYTotal())>2*fabsf(LGL_MultiTouchDXTotal()))
-				{
-					delta=LGL_MultiTouchDY()/60.0f;
-				}
-			}
+			delta=LGL_MultiTouchDY2()/60.0f;
+			delta*=10000.0f;
+			delta=powf(delta,2.0f);
+			delta/=10000.0f;
+			if(LGL_MultiTouchDY2()<0.0f) delta*=-1.0f;
 		}
 	}
 	return(delta);
@@ -316,11 +351,11 @@ WaveformEQLowDelta
 )	const
 {
 	float delta=0.0f;
-	if(target && TARGET_FOCUS)
+	if(target & TARGET_FOCUS)
 	{
 		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_LOW)
 		{
-			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
 	}
 	return(delta);
@@ -356,11 +391,11 @@ WaveformEQMidDelta
 )	const
 {
 	float delta=0.0f;
-	if(target && TARGET_FOCUS)
+	if(target & TARGET_FOCUS)
 	{
 		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_MID)
 		{
-			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
 	}
 	return(delta);
@@ -396,11 +431,11 @@ WaveformEQHighDelta
 )	const
 {
 	float delta=0.0f;
-	if(target && TARGET_FOCUS)
+	if(target & TARGET_FOCUS)
 	{
 		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_HIGH)
 		{
-			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
 	}
 	return(delta);
@@ -436,11 +471,11 @@ WaveformGainDelta
 )	const
 {
 	float delta=0.0f;
-	if(target && TARGET_FOCUS)
+	if(target & TARGET_FOCUS)
 	{
 		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_GAIN)
 		{
-			delta=LGL_MultiTouchDY()*KNOB_SCALAR*2.0f;
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
 	}
 	return(delta);
@@ -519,8 +554,21 @@ WaveformRewindFF
 	unsigned int	target
 )	const
 {
-	float rewindff=0.0f;
-	return(rewindff);
+	float speed=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_KeyDown(LGL_KEY_SHIFT))
+		{
+			if(GetInputMouse().GetHoverTarget()==GUI_TARGET_ENTIRE_WAVEFORM)
+			{
+				if(LGL_MultiTouchFingerCount()>=2)
+				{
+					speed=LGL_MultiTouchDXTotal()*100.0f;
+				}
+			}
+		}
+	}
+	return(speed);
 }
 
 bool
@@ -535,9 +583,12 @@ WaveformRecordHold
 	{
 		if(LGL_KeyDown(LGL_KEY_SHIFT))
 		{
-			if(LGL_MultiTouchFingerCount()>=2)
+			if(GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM)
 			{
-				hold=true;
+				if(LGL_MultiTouchFingerCount()>=2)
+				{
+					hold=true;
+				}
 			}
 		}
 	}
@@ -556,9 +607,12 @@ WaveformRecordSpeed
 	{
 		if(LGL_KeyDown(LGL_KEY_SHIFT))
 		{
-			if(LGL_MultiTouchFingerCount()>=2)
+			if(GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM)
 			{
-				speed=LGL_MultiTouchDX()*50.0f;
+				if(LGL_MultiTouchFingerCount()>=2)
+				{
+					speed=LGL_MultiTouchDX2()*50.0f;
+				}
 			}
 		}
 	}
@@ -661,6 +715,16 @@ WaveformSavePointShift
 )	const
 {
 	float shift=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverOnSelectedSavePoint())
+		{
+			if(LGL_MultiTouchFingerCount()==2)
+			{
+				shift=0.15f*LGL_MultiTouchDX2();
+			}
+		}
+	}
 	return(shift);
 }
 
@@ -672,6 +736,16 @@ WaveformSavePointShiftAll
 )	const
 {
 	float shift=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverInSavePoints())
+		{
+			if(LGL_MultiTouchFingerCount()==3)
+			{
+				shift=0.15f*LGL_MultiTouchDX2();
+			}
+		}
+	}
 	return(shift);
 }
 
@@ -727,6 +801,13 @@ WaveformLoopMeasuresHalf
 )	const
 {
 	bool half=false;
+	if(target & TARGET_FOCUS)
+	{
+		if(LoopMeasuresDelta==-1)
+		{
+			half=true;
+		}
+	}
 	return(half);
 }
 
@@ -738,6 +819,13 @@ WaveformLoopMeasuresDouble
 )	const
 {
 	bool twoX=false;
+	if(target & TARGET_FOCUS)
+	{
+		if(LoopMeasuresDelta==1)
+		{
+			twoX=true;
+		}
+	}
 	return(twoX);
 }
 
@@ -841,7 +929,7 @@ WaveformVideoBrightnessDelta
 	{
 		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_VIS_VIDEO)
 		{
-			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
 	}
 	return(delta);
@@ -881,7 +969,7 @@ WaveformFreqSenseBrightnessDelta
 	{
 		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_VIS_FREQSENSE)
 		{
-			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
 	}
 	return(delta);
@@ -932,7 +1020,7 @@ WaveformOscilloscopeBrightnessDelta
 	{
 		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_VIS_OSCILLOSCOPE)
 		{
-			delta=LGL_MultiTouchDY()*KNOB_SCALAR;
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
 	}
 	return(delta);

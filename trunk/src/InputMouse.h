@@ -107,6 +107,7 @@ virtual	float	WaveformSavePointShiftAll	(unsigned int target)	const;	//Shift all
 virtual	bool	WaveformSavePointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
 virtual	bool	WaveformSavePointJumpNow	(unsigned int target)	const;	//Jump to current save point
 virtual	bool	WaveformSavePointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
+virtual float	WaveformJumpToPercent		(unsigned int target)	const;	//Jump to a percent of the track's duration
 virtual	int	WaveformLoopMeasuresExponent	(unsigned int target)	const;	//Loop 2^n measures. If disabled, enable. Else, disable if equal.
 virtual	bool	WaveformLoopMeasuresHalf	(unsigned int target)	const;	//Loop half as many measures
 virtual	bool	WaveformLoopMeasuresDouble	(unsigned int target)	const;	//Loop twice as many measures
@@ -140,6 +141,19 @@ private:
 	bool	WaveformVideoSelectNext;
 	bool	WaveformLoopToggleNow;
 	bool	WaveformLoopToggleNext;
+	bool	HoverOnSelectedSavePointNow;
+	bool	HoverOnSelectedSavePointNext;
+	bool	HoverInSavePointsNow;
+	bool	HoverInSavePointsNext;
+
+	float	EntireWaveformScrubberLength;
+	float	EntireWaveformScrubberPosAlpha;
+	float	EntireWaveformScrubberSpeed;
+	float	EntireWaveformScrubberForceNow;
+	float	EntireWaveformScrubberForceNext;
+
+	LGL_Timer
+		EntireWaveformScrubberTimer;
 
 	DVJ_GuiTarget
 		HoverTarget;
@@ -158,6 +172,15 @@ public:
 	void	SetWaveformVideoAspectRatioNextNext();
 	void	SetWaveformVideoSelectNext();
 	void	SetWaveformLoopToggleNext();
+	bool	GetHoverOnSelectedSavePoint();
+	void	SetHoverOnSelectedSavePoint();
+	bool	GetHoverInSavePoints();
+	void	SetHoverInSavePoints();
+
+	void	EntireWaveformScrubberAlpha(float length, float posNow, float speed);
+	void	EntireWaveformScrubberOmega();
+	bool	GetEntireWaveformScrubberDelta();
+	void	SetEntireWaveformScrubberForceNext(float pct);
 
 	DVJ_GuiTarget
 		GetDragTarget() const;

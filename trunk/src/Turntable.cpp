@@ -1742,6 +1742,72 @@ printf("Unset!\n");
 					}
 				}
 			}
+
+			candidate = Input.WaveformJumpToPercent(target);
+			if(candidate!=-1.0f)
+			{
+				if(Sound->IsLoaded())
+				{
+					candidate=LGL_Clamp(0.0f,candidate,1.0f);
+					float candidateSeconds=Sound->GetLengthSeconds()*candidate;
+					double jumpAlphaSeconds=Sound->GetPositionSeconds(Channel);
+					double jumpOmegaSeconds=candidateSeconds;
+					if(BPMAvailable() && PauseMultiplier!=0.0f)
+					{
+						double currentMeasureStart=GetBeginningOfCurrentMeasureSeconds();
+						double candidateMeasureStart=GetBeginningOfArbitraryMeasureSeconds(candidateSeconds);
+						double quantizePeriodSeconds=GetQuantizePeriodSeconds();
+
+						jumpAlphaSeconds=currentMeasureStart;
+						jumpOmegaSeconds=candidateMeasureStart;
+						for(;;)
+						{
+							float posSeconds = Sound->GetPositionSeconds(Channel);
+							if(jumpAlphaSeconds < posSeconds)
+							{
+								jumpAlphaSeconds += quantizePeriodSeconds;
+								jumpOmegaSeconds += quantizePeriodSeconds;
+							}
+							else
+							{
+								break;
+							}
+						}
+
+						/*
+						double beatStart=GetBPMFirstMeasureSeconds();
+						double measureLength=GetMeasureLengthSeconds();
+						double percent=GetPercentOfCurrentMeasure();
+						if(beatStart<candidateSeconds)
+						{
+							double measureNow=beatStart;
+							while(measureNow+measureLength<candidateSeconds)
+							{
+								measureNow+=measureLength;
+							}
+							candidateSeconds=measureNow+percent*measureLength;
+						}
+						*/
+					}
+					//Sound->SetPositionSeconds(Channel,candidateSeconds);
+
+					if
+					(
+						jumpAlphaSeconds>=0.0f &&
+						jumpOmegaSeconds>=0.0f &&
+						jumpOmegaSeconds<=Sound->GetLengthSeconds()-5.0f
+					)
+					{
+						Sound->SetWarpPoint
+						(
+							Channel,
+							jumpAlphaSeconds,
+							jumpOmegaSeconds,
+							false
+						);
+					}
+				}
+			}
 		}
 
 		//Pitch
@@ -3943,7 +4009,8 @@ DrawFrame
 				GetBeginningOfCurrentMeasureSeconds(),			//57
 				VideoBrightness,					//58
 				OscilloscopeBrightness,					//59
-				FreqSenseBrightness					//60
+				FreqSenseBrightness,					//60
+				Channel							//61
 			);
 			LGL_DrawLogPause(false);
 		
@@ -5527,6 +5594,27 @@ GetBPMFirstBeatSeconds()
 
 float
 TurntableObj::
+GetBPMFirstMeasureSeconds()
+{
+	if(BPMAvailable())
+	{
+		double firstBeatSeconds = GetBPMFirstBeatSeconds();
+		double deltaMeasure = GetMeasureLengthSeconds();
+		double candidate = firstBeatSeconds;
+		while(candidate - deltaMeasure > 0)
+		{
+			candidate -= deltaMeasure;
+		}
+		return(candidate);
+	}
+	else
+	{
+		return(0.0f);
+	}
+}
+
+float
+TurntableObj::
 GetBPMLastMeasureSeconds()
 {
 	if(BPMAvailable())
@@ -5603,7 +5691,7 @@ GetBeatThisFrame
 		return(false);
 	}
 
-	double startBeat = GetBPMFirstBeatSeconds();
+	double startBeat = GetBPMFirstMeasureSeconds();
 	double deltaBeat = fractionOfBeat * (60.0/(double)GetBPM());
 	double windowStart = SecondsLast;
 	double windowEnd = SecondsNow;
@@ -5664,6 +5752,17 @@ GetBeginningOfCurrentMeasureSeconds
 	float	measureMultiplier
 )
 {
+	return(GetBeginningOfArbitraryMeasureSeconds(SecondsNow,measureMultiplier));
+}
+
+double
+TurntableObj::
+GetBeginningOfArbitraryMeasureSeconds
+(
+	float	seconds,
+	float	measureMultiplier
+)
+{
 	if
 	(
 		BPMAvailable()==false ||
@@ -5675,21 +5774,21 @@ GetBeginningOfCurrentMeasureSeconds
 	
 	double deltaMeasure = measureMultiplier*GetMeasureLengthSeconds();
 
-	double candidate = GetBPMFirstBeatSeconds();
-	if(candidate==SecondsNow)
+	double candidate = GetBPMFirstMeasureSeconds();
+	if(candidate==seconds)
 	{
 		//Huzzah!
 	}
-	else if(candidate < SecondsNow)
+	else if(candidate < seconds)
 	{
-		while(candidate+deltaMeasure<SecondsNow)
+		while(candidate+deltaMeasure<seconds)
 		{
 			candidate+=deltaMeasure;
 		}
 	}
 	else
 	{
-		while(candidate-0.01f>SecondsNow)
+		while(candidate-0.01f>seconds)
 		{
 			candidate-=deltaMeasure;
 		}

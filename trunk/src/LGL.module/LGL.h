@@ -214,7 +214,7 @@ enum
 	LGL_KEY_RSHIFT		= 485,//SDL_SCANCODE_RSHIFT,
 	LGL_KEY_LSHIFT		= 481,//SDL_SCANCODE_LSHIFT,
 	LGL_KEY_RCTRL		= SDL_SCANCODE_RCTRL,
-	LGL_KEY_LCTRL		= SDL_SCANCODE_LCTRL,
+	LGL_KEY_LCTRL		= 480,//SDL_SCANCODE_LCTRL,
 	LGL_KEY_RALT		= SDL_SCANCODE_RALT,
 	LGL_KEY_LALT		= SDL_SCANCODE_LALT,
 	LGL_KEY_MODE		= SDL_SCANCODE_MODE,
@@ -2222,6 +2222,8 @@ float		LGL_MultiTouchX();
 float		LGL_MultiTouchY();
 float		LGL_MultiTouchDX();
 float		LGL_MultiTouchDY();
+float		LGL_MultiTouchDX2();
+float		LGL_MultiTouchDY2();
 float		LGL_MultiTouchDXTotal();
 float		LGL_MultiTouchDYTotal();
 float		LGL_MultiTouchRotate();

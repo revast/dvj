@@ -986,9 +986,9 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_NUDGE_RIGHT_1].Set
 		("waveformNudgeRight1",			"LGL_KEY_RIGHT");
 	dvjKeyMap[WAVEFORM_NUDGE_LEFT_2].Set
-		("waveformNudgeLeft2",			"LGL_KEY_R");
+		("waveformNudgeLeft2",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_NUDGE_RIGHT_2].Set
-		("waveformNudgeRight2",			"LGL_KEY_Y");
+		("waveformNudgeRight2",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW].Set
 		("waveformPitchbendDeltaDownSlow",	"LGL_KEY_DOWN");
 	dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_UP_SLOW].Set
@@ -1048,9 +1048,9 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_SAVEPOINT_UNSET].Set
 		("waveformSavePointUnset",		"LGL_KEY_G");
 	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_LEFT].Set
-		("waveformSavePointShiftLeft",		"LGL_KEY_V");
+		("waveformSavePointShiftLeft",		"LGL_KEY_R");
 	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_RIGHT].Set
-		("waveformSavePointShiftRight",		"LGL_KEY_N");
+		("waveformSavePointShiftRight",		"LGL_KEY_Y");
 	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_LEFT].Set
 		("waveformSavePointShiftAllLeft",	"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_RIGHT].Set

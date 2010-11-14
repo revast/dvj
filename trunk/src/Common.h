@@ -170,7 +170,8 @@ Turntable_DrawWaveform
 	float		beginningOfCurrentMeasureSeconds,
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
-	float		freqSenseBrightness
+	float		freqSenseBrightness,
+	int		channel
 );
 
 void
