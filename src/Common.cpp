@@ -2148,9 +2148,6 @@ Turntable_DrawWaveform
 	);
 	*/
 
-	float sliderB;
-	float sliderT;
-
 	float lft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.0075f;
 	float wth=(viewPortWidth*0.25f)/16.0f;
 	float bot=viewPortBottom+0.24f*viewPortHeight;
@@ -2275,15 +2272,34 @@ Turntable_DrawWaveform
 
 		float lb=warpPointSecondsStart>=0.0f ? 1.0f : 0.25f;
 
-		loopImage->DrawToScreen
-		(
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.115f,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.124f,
-			viewPortBottom+.80f*viewPortHeight+0.005f*viewPortHeight,
-			viewPortBottom+.80f*viewPortHeight+0.06f*viewPortHeight,
-			0,
-			lb,lb,lb,1.0f
-		);
+		//Looping
+		{
+			float loopL=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.112f;
+			float loopR=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.127f;
+			float loopB=viewPortBottom+.80f*viewPortHeight-0.010f*viewPortHeight;
+			float loopT=viewPortBottom+.80f*viewPortHeight+0.075f*viewPortHeight;
+			loopImage->DrawToScreen
+			(
+				loopL,loopR,
+				loopB,loopT,
+				0,
+				lb,lb,lb,1.0f
+			);
+
+			if
+			(
+				LGL_MouseX()>=loopL &&
+				LGL_MouseX()<=loopR &&
+				LGL_MouseY()>=loopB &&
+				LGL_MouseY()<=loopT
+			)
+			{
+				if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+				{
+					GetInputMouse().SetWaveformLoopToggleNext();
+				}
+			}
+		}
 
 		char loopStr[2048];
 		if(bpmAdjusted>0)
@@ -2814,15 +2830,66 @@ Turntable_DrawWaveform
 					str
 				);
 			}
-		}
-		
-		sliderB=viewPortBottom+(0.5f-0.075f/2.0f)*viewPortHeight+spc*(-1);
-		sliderT=viewPortBottom+(0.5f+0.075f/2.0f)*viewPortHeight+spc*(2.5f);
+		}	
 	}
 
-	//Draw EQ
+	Turntable_DrawSliders
+	(
+		viewPortLeft,
+		viewPortRight,
+		viewPortBottom,
+		viewPortTop,
+		eq0,
+		eq1,
+		eq2,
+		volumeMultiplierNow,
+		videoBrightness,
+		oscilloscopeBrightness,
+		freqSenseBrightness
+	);
+}
 
+void
+Turntable_DrawSliders
+(
+	float		viewPortLeft,
+	float		viewPortRight,
+	float		viewPortBottom,
+	float		viewPortTop,
+	float		eq0,
+	float		eq1,
+	float		eq2,
+	float		gain,
+	float		videoBrightness,
+	float		oscilloscopeBrightness,
+	float		freqSenseBrightness
+)
+{
+	float viewPortWidth = viewPortRight - viewPortLeft;
+	float viewPortHeight = viewPortTop - viewPortBottom;
+
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
+	float lft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.0075f;
+	float wth=(viewPortWidth*0.25f)/16.0f;
+	//float bot=viewPortBottom+0.24f*viewPortHeight;
+	//float top=bot+0.075f*viewPortHeight;
+	float spc=wth*0.75f;
 	float eq[3];
+	
+	float sliderB=viewPortBottom+(0.5f-0.075f/2.0f)*viewPortHeight+spc*(-1);
+	float sliderT=viewPortBottom+(0.5f+0.075f/2.0f)*viewPortHeight+spc*(2.5f);
+
+	float textB=sliderB-0.075f*viewPortHeight;
+	
 	eq[0]=0.5f*eq0;
 	eq[1]=0.5f*eq1;
 	eq[2]=0.5f*eq2;
@@ -2835,6 +2902,7 @@ Turntable_DrawWaveform
 	letters[0]='L';
 	letters[1]='M';
 	letters[2]='H';
+	letters[3]='G';
 	letters[9]='V';
 	letters[10]='O';
 	letters[11]='F';
@@ -2847,6 +2915,7 @@ Turntable_DrawWaveform
 	dragTargets[0]=GUI_TARGET_EQ_LOW;
 	dragTargets[1]=GUI_TARGET_EQ_MID;
 	dragTargets[2]=GUI_TARGET_EQ_HIGH;
+	dragTargets[3]=GUI_TARGET_EQ_GAIN;
 	dragTargets[9]=GUI_TARGET_VIS_VIDEO;
 	dragTargets[10]=GUI_TARGET_VIS_OSCILLOSCOPE;
 	dragTargets[11]=GUI_TARGET_VIS_FREQSENSE;
@@ -2859,6 +2928,7 @@ Turntable_DrawWaveform
 	levels[0]=eq[0];
 	levels[1]=eq[1];
 	levels[2]=eq[2];
+	levels[3]=LGL_Clamp(0.0f,gain*0.5f,1.0f);
 	levels[9]=videoBrightness;
 	levels[10]=oscilloscopeBrightness;
 	levels[11]=freqSenseBrightness;
@@ -2883,6 +2953,17 @@ Turntable_DrawWaveform
 				(LGL_MouseY()-sliderB)/(sliderT-sliderB),
 				1.0f
 			);
+			
+			if
+			(
+				LGL_MouseX()>=sliderL &&
+				LGL_MouseX()<=sliderR &&
+				LGL_MouseY()>=textB &&
+				LGL_MouseY()<=sliderT
+			)
+			{
+				GetInputMouse().SetHoverTarget(guiTargetNow);
+			}
 
 			if
 			(
@@ -2892,7 +2973,6 @@ Turntable_DrawWaveform
 				LGL_MouseY()<=sliderT
 			)
 			{
-				GetInputMouse().SetHoverTarget(guiTargetNow);
 				if(LGL_MouseStroke(LGL_MOUSE_LEFT))
 				{
 					GetInputMouse().SetDragTarget(guiTargetNow);
@@ -2990,7 +3070,7 @@ Turntable_DrawWaveform
 		LGL_GetFont().DrawString
 		(
 			sliderL+0.5f*spc,
-			sliderB-0.075f*viewPortHeight,
+			textB,
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			true,

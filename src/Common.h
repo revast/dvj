@@ -174,6 +174,22 @@ Turntable_DrawWaveform
 );
 
 void
+Turntable_DrawSliders
+(
+	float		viewPortLeft,
+	float		viewPortRight,
+	float		viewPortBottom,
+	float		viewPortTop,
+	float		eq0,
+	float		eq1,
+	float		eq2,
+	float		gain,
+	float		videoBrightness,
+	float		oscilloscopeBrightness,
+	float		freqSenseBrightness
+);
+
+void
 Visualizer_DrawWaveform
 (
 	float*	waveformSamples,

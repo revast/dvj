@@ -125,6 +125,7 @@ private:
 		WaveformSavePointUnsetTimer;
 
 	bool	WaveformLoopAllDebump;
+	bool	WaveformAudioInputModeDebounce;
 };
 
 #endif	//_INPUT_KEYBOARD_H_

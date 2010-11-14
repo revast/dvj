@@ -97,7 +97,6 @@ private:
 
 	//LGL_Image*		AccumulationNow;
 
-	LGL_Image*		NoSound;
 	LGL_Image*		BlueScreenOfDeath;
 
 	std::vector<char*>	ScrollTextBuffer;
