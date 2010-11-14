@@ -831,6 +831,19 @@ NextFrame
 			VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()-1);
 		}
 	}
+	else if(LGL_RamFreeMB()>200)
+	{
+		if(VideoFrontRadiusIncreaseDelayTimer.SecondsSinceLastReset()>0.5f)
+		{
+			int radiusDesired = GetVideoBufferFrames();
+			int radiusNow = VideoFront->GetFrameBufferAddRadius();
+			if(radiusNow<radiusDesired)
+			{
+				VideoFront->SetFrameBufferAddRadius(radiusNow+1);
+				VideoFrontRadiusIncreaseDelayTimer.Reset();
+			}
+		}
+	}
 
 	unsigned int target =
 		(Focus ? TARGET_FOCUS : 0) |
