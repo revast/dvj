@@ -3044,6 +3044,10 @@ void		LGL_DirectoryListDelete(std::vector<char*>& list);
 
 //Misc
 
+int64_t		LGL_RamFreeB();
+int		LGL_RamFreeMB();
+int64_t		LGL_MemoryUsedByThisB();
+int		LGL_MemoryUsedByThisMB();
 float		LGL_MemoryFreePercent();
 bool		LGL_BatteryChargeDraining();
 float		LGL_BatteryChargePercent();

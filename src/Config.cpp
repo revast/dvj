@@ -64,9 +64,9 @@ ConfigInit()
 	dvjSessionTracklistPath[0]='\0';
 	dvjSessionDrawLogPath[0]='\0';
 
+	LoadDVJRC();
 	CreateDotJackdrc();
 	CreateDotDVJTree();
-	LoadDVJRC();
 	LoadMusicRootPath();
 	LoadKeyboardInput();
 }
@@ -96,9 +96,10 @@ CreateDefaultDVJRC
 		fprintf(fd,"#projectorQuadrentResY=0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"fpsMax=60\n");
+		fprintf(fd,"audioSamplePeriod=512\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"videoBufferFrames=20\n");
-		fprintf(fd,"videoBufferFramesFreqSense=5\n");
+		fprintf(fd,"videoBufferFramesFreqSense=2\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#3.2 MBps is highest quality for 1920x480@30fps.\n");
 		fprintf(fd,"#Generated files may be larger.\n");
@@ -115,7 +116,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"colorWarmB=1.0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"audioInPassThru=0\n");
-		fprintf(fd,"wireMemory=0\n");
+		fprintf(fd,"wireMemory=1\n");
 		fprintf(fd,"escDuringScanExits=1\n");
 		fprintf(fd,"\n");
 		fclose(fd);
@@ -276,16 +277,18 @@ CreateDotJackdrc()
 		LGL_FileDelete(dotJackdrcPath);
 	}
 
+	int samplePeriod=GetAudioSamplePeriod();
+
 	if(FILE* fd = fopen(dotJackdrcPath,"w"))
 	{
 		if(aggregate)
 		{
 			//Don't be tempted to put ~:Aggregate:0 below in quotes. This will fail.
-			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p 512 -d ~:Aggregate:0 -c 6 -i 2 -o 4\n");
+			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p %i -d ~:Aggregate:0 -c 6 -i 2 -o 4\n",samplePeriod);
 		}
 		else
 		{
-			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p 512\n");
+			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p %i\n",samplePeriod);
 		}
 		fclose(fd);
 	}
@@ -686,6 +689,13 @@ GetFPSMax()
 {
 	int fpsMax=LGL_Clamp(1,dvjrcConfigFile->read<int>("fpsMax",60),60);
 	return(fpsMax);
+}
+
+int
+GetAudioSamplePeriod()
+{
+	int period=LGL_Clamp(32,dvjrcConfigFile->read<int>("audioSamplePeriod",512),2048);
+	return(period);
 }
 
 bool
