@@ -21,6 +21,10 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
+
+//dvj
+#define _DARWIN_C_SOURCE
+
 #include <fcntl.h>
 #if HAVE_SETMODE
 #include <io.h>
@@ -72,6 +76,10 @@ static int file_open(URLContext *h, const char *filename, int flags)
     fd = open(filename, access, 0666);
     if (fd == -1)
         return AVERROR(errno);
+
+//dvj
+fcntl(fd,F_NOCACHE,1);
+
     h->priv_data = (void *) (intptr_t) fd;
     return 0;
 }
