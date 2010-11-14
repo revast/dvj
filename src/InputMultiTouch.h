@@ -129,6 +129,10 @@ virtual	float	WaveformOscilloscopeBrightnessDelta
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
 
+private:
+
+	int LoopMeasuresDelta;
+
 };
 
 #endif	//_INPUT_MULTITOUCH_H_

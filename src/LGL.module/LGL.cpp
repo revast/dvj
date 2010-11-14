@@ -1723,17 +1723,25 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		inWindowResolutionY==9999
 	)
 	{
-		LGL.WindowFullscreen=true;
-		LGL.WindowResolutionX=0;
-		LGL.WindowResolutionY=0;
-		for(int a=0;a<LGL.DisplayCount;a++)
+		if(LGL.DisplayCount==1)
 		{
-			LGL.WindowResolutionX+=LGL.DisplayResolutionX[a];
-			LGL.WindowResolutionY=LGL_Max
-			(
-				LGL.WindowResolutionY,
-				LGL.DisplayResolutionY[a]
-			);
+			LGL.WindowResolutionX=LGL_DisplayResolutionX();
+			LGL.WindowResolutionY=LGL_DisplayResolutionY()-100;
+		}
+		else
+		{
+			LGL.WindowFullscreen=true;
+			LGL.WindowResolutionX=0;
+			LGL.WindowResolutionY=0;
+			for(int a=0;a<LGL.DisplayCount;a++)
+			{
+				LGL.WindowResolutionX+=LGL.DisplayResolutionX[a];
+				LGL.WindowResolutionY=LGL_Max
+				(
+					LGL.WindowResolutionY,
+					LGL.DisplayResolutionY[a]
+				);
+			}
 		}
 	}
 	else
@@ -16573,7 +16581,7 @@ LoadToMemory()
 		}
 	    
 		int cyclesNow=0;
-		int cyclesMax=8;
+		int cyclesMax=64;
 		int delayMS=1;
 
 		//Don't be tempted to make this a member variable... Alignment issues!
@@ -16731,7 +16739,7 @@ LoadToMemory()
 				else
 				{
 					//Thread priority only applies to CPU... Don't hog the HDD!
-					LGL_DelayMS(5);
+					LGL_DelayMS(delayMS);
 					break;
 				}
 
@@ -17453,7 +17461,7 @@ LGL_ProcessInput()
 
 			if(event.key.keysym.sym != 0)
 			{
-//printf("KeyDown: %i (%i, %i)\n",event.key.keysym.sym, LGL_KEY_LSHIFT, LGL_KEY_RSHIFT);
+//printf("KeyDown: %i (%i, %i)\n",event.key.keysym.sym, LGL_KEY_LCTRL, LGL_KEY_RSHIFT);
 				LGL.KeyStroke[event.key.keysym.sym]=LGL.KeyDown[event.key.keysym.sym]==false;
 				LGL.KeyDown[event.key.keysym.sym]=true;
 				if(LGL.KeyStroke[event.key.keysym.sym])
@@ -19414,9 +19422,53 @@ LGL_MultiTouchDX()
 }
 
 float
+LGL_MultiTouchDX2()
+{
+	float x = LGL_MultiTouchDX();
+	float y = LGL_MultiTouchDY();
+	if(fabsf(y)>fabsf(x))
+	{
+		y*=x/y;
+	}
+	float result=sqrtf
+	(
+		powf(x,2.0f)+
+		powf(y,2.0f)
+	);
+	if(LGL_MultiTouchDX()<0.0f)
+	{
+		result*=-1.0f;
+	}
+
+	return(result);
+}
+
+float
 LGL_MultiTouchDY()
 {
 	return(LGL.MultiTouchDY);
+}
+
+float
+LGL_MultiTouchDY2()
+{
+	float x = LGL_MultiTouchDX();
+	float y = LGL_MultiTouchDY();
+	if(fabsf(x)>fabsf(y))
+	{
+		x*=y/x;
+	}
+	float result=sqrtf
+	(
+		powf(x,2.0f)+
+		powf(y,2.0f)
+	);
+	if(LGL_MultiTouchDY()<0.0f)
+	{
+		result*=-1.0f;
+	}
+
+	return(result);
 }
 
 float

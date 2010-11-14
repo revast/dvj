@@ -45,6 +45,15 @@ InputMouseObj()
 	WaveformVideoSelectNext=false;
 	WaveformLoopToggleNow=false;
 	WaveformLoopToggleNext=false;
+	HoverOnSelectedSavePointNow=false;
+	HoverOnSelectedSavePointNext=false;
+	HoverInSavePointsNow=false;
+	HoverInSavePointsNext=false;
+	EntireWaveformScrubberLength=-1.0f;
+	EntireWaveformScrubberPosAlpha=-1.0f;
+	EntireWaveformScrubberSpeed=-1.0f;
+	EntireWaveformScrubberForceNow=-1.0f;
+	EntireWaveformScrubberForceNext=-1.0f;
 	HoverTarget=GUI_TARGET_NULL;
 	DragTarget=GUI_TARGET_NULL;
 	DragFloat=-1.0f;
@@ -81,9 +90,18 @@ NextFrame()
 	WaveformLoopToggleNow=WaveformLoopToggleNext;
 	WaveformLoopToggleNext=false;
 
+	HoverOnSelectedSavePointNow=HoverOnSelectedSavePointNext;
+	HoverOnSelectedSavePointNext=false;
+
+	HoverInSavePointsNow=HoverInSavePointsNext;
+	HoverInSavePointsNext=false;
+
+	EntireWaveformScrubberForceNow=EntireWaveformScrubberForceNext;
+	EntireWaveformScrubberForceNext=-1.0f;
+
 	HoverTarget=HoverTargetNext;
 	HoverTargetNext=GUI_TARGET_NULL;
-
+	
 	if(LGL_MouseRelease(LGL_MOUSE_LEFT))
 	{
 		DragTarget=GUI_TARGET_NULL;
@@ -786,6 +804,31 @@ WaveformSavePointJumpAtMeasure
 	return(jump);
 }
 
+float
+InputMouseObj::
+WaveformJumpToPercent
+(
+	unsigned int	target
+)	const
+{
+	float percent=-1.0f;
+
+	if(target & TARGET_FOCUS)
+	{
+		if(DragTarget==GUI_TARGET_ENTIRE_WAVEFORM)
+		{
+			percent=DragFloat;
+		}
+
+		if(EntireWaveformScrubberForceNow!=-1.0f)
+		{
+			percent=EntireWaveformScrubberForceNow;
+		}
+	}
+
+	return(percent);
+}
+
 int
 InputMouseObj::
 WaveformLoopMeasuresExponent
@@ -1044,7 +1087,8 @@ SetFocusNext
 	if
 	(
 		LGL_MouseDown(LGL_MOUSE_LEFT)==false &&
-		LGL_MouseDown(LGL_MOUSE_RIGHT)==false
+		LGL_MouseDown(LGL_MOUSE_RIGHT)==false &&
+		LGL_KeyDown(LGL_KEY_LCTRL)==false
 	)
 	{
 		FocusNext=next;
@@ -1087,6 +1131,110 @@ InputMouseObj::
 SetWaveformLoopToggleNext()
 {
 	WaveformLoopToggleNext=true;
+}
+
+bool
+InputMouseObj::
+GetHoverOnSelectedSavePoint()
+{
+	return(HoverOnSelectedSavePointNow);
+}
+
+void
+InputMouseObj::
+SetHoverOnSelectedSavePoint()
+{
+	HoverOnSelectedSavePointNext=true;;
+}
+
+bool
+InputMouseObj::
+GetHoverInSavePoints()
+{
+	return(HoverInSavePointsNow);
+}
+
+void
+InputMouseObj::
+SetHoverInSavePoints()
+{
+	HoverInSavePointsNext=true;;
+}
+
+void
+InputMouseObj::
+EntireWaveformScrubberAlpha
+(
+	float	length,
+	float	posNow,
+	float	speed
+)
+{
+	if
+	(
+		EntireWaveformScrubberLength==-1.0f &&
+		EntireWaveformScrubberPosAlpha==-1.0f &&
+		EntireWaveformScrubberSpeed==-1.0f
+	)
+	{
+		EntireWaveformScrubberLength=length;
+		EntireWaveformScrubberPosAlpha=posNow;
+		EntireWaveformScrubberSpeed=speed;
+		EntireWaveformScrubberTimer.Reset();
+	}
+}
+
+void
+InputMouseObj::
+EntireWaveformScrubberOmega()
+{
+	if
+	(
+		EntireWaveformScrubberLength!=-1.0f &&
+		EntireWaveformScrubberPosAlpha!=-1.0f &&
+		EntireWaveformScrubberSpeed!=-1.0f
+	)
+	{
+		EntireWaveformScrubberForceNext=
+		(
+			EntireWaveformScrubberPosAlpha+
+			(
+				EntireWaveformScrubberTimer.SecondsSinceLastReset()*
+				EntireWaveformScrubberSpeed
+			)
+		) / EntireWaveformScrubberLength;
+	}
+
+	EntireWaveformScrubberLength=-1.0f;
+	EntireWaveformScrubberPosAlpha=-1.0f;
+	EntireWaveformScrubberSpeed=-1.0f;
+}
+
+bool
+InputMouseObj::
+GetEntireWaveformScrubberDelta()
+{
+	return
+	(
+		EntireWaveformScrubberLength!=-1.0f ||
+		EntireWaveformScrubberPosAlpha!=-1.0f ||
+		EntireWaveformScrubberSpeed!=-1.0f ||
+		EntireWaveformScrubberForceNow!=-1.0f ||
+		EntireWaveformScrubberForceNext!=-1.0f
+	);
+}
+
+void
+InputMouseObj::
+SetEntireWaveformScrubberForceNext
+(
+	float pct
+)
+{
+	if(GetEntireWaveformScrubberDelta())
+	{
+		EntireWaveformScrubberForceNext=LGL_Clamp(0.0f,pct,1.0f);
+	}
 }
 
 DVJ_GuiTarget

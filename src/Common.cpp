@@ -976,7 +976,8 @@ Turntable_DrawWaveform
 	float		beginningOfCurrentMeasureSeconds,
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
-	float		freqSenseBrightness
+	float		freqSenseBrightness,
+	int		channel
 )
 {
 	float coolR;
@@ -1845,6 +1846,67 @@ Turntable_DrawWaveform
 			float waveBottom=viewPortBottom;
 			float waveTop=pointBottom;
 			float waveHeight=waveTop-waveBottom;
+			float waveLeft=viewPortLeft;
+			float waveRight=viewPortRight;
+
+			if
+			(
+				LGL_MouseX()>=waveLeft &&
+				LGL_MouseX()<=waveRight &&
+				LGL_MouseY()>=waveBottom &&
+				LGL_MouseY()<=waveTop
+			)
+			{
+				GetInputMouse().SetHoverTarget(GUI_TARGET_ENTIRE_WAVEFORM);
+				if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+				{
+					GetInputMouse().SetDragTarget(GUI_TARGET_ENTIRE_WAVEFORM);
+				}
+			}
+			if(GetInputMouse().GetDragTarget()==GUI_TARGET_ENTIRE_WAVEFORM)
+			{
+				if
+				(
+					LGL_MouseMotion() ||
+					LGL_MouseStroke(LGL_MOUSE_LEFT)
+				)
+				{
+					GetInputMouse().SetDragFloatNext
+					(
+						(LGL_MouseX()-waveLeft)/(waveRight-waveLeft)
+					);
+				}
+			}
+
+			if(LGL_KeyDown(LGL_KEY_LCTRL))
+			{
+				if(warpPointSecondsTrigger<0.0f)
+				{
+					bool alphaDone=false;
+					if(GetInputMouse().GetEntireWaveformScrubberDelta()==false)
+					{
+						GetInputMouse().EntireWaveformScrubberAlpha(soundLengthSeconds,sound->GetPositionSeconds(channel),soundSpeed);
+						alphaDone=true;
+					}
+					if(LGL_MouseMotion() || alphaDone)
+					{
+						float next = LGL_Clamp
+						(
+							0.0f,
+							(LGL_MouseX()-waveLeft)/(waveRight-waveLeft),
+							1.0f
+						);
+						GetInputMouse().SetEntireWaveformScrubberForceNext
+						(
+							next
+						);
+					}
+				}
+			}
+			if(LGL_KeyRelease(LGL_KEY_LCTRL))
+			{
+				GetInputMouse().EntireWaveformScrubberOmega();
+			}
 
 			for(int a=0;a<entireWaveArrayFillIndex;a++)
 			{
@@ -2156,12 +2218,28 @@ Turntable_DrawWaveform
 
 	if(audioInputMode==false)
 	{
+		float bpmPitchL = 0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f;
+		float bpmPitchR = 0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.100f;
+		float bpmPitchB = viewPortBottom+.70f*viewPortHeight;
+		float bpmPitchT = viewPortBottom+0.85f*viewPortHeight;
+
+		if
+		(
+			LGL_MouseX()>=bpmPitchL &&
+			LGL_MouseX()<=bpmPitchR &&
+			LGL_MouseY()>=bpmPitchB-0.01f &&
+			LGL_MouseY()<=bpmPitchT+0.01f
+		)
+		{
+			GetInputMouse().SetHoverTarget(GUI_TARGET_BPM_PITCH);
+		}
+
 		if(bpmAdjusted>0)
 		{
 			LGL_GetFont().DrawString
 			(
 				//viewPortLeft+.02f*viewPortWidth,
-				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
+				bpmPitchL,
 				viewPortBottom+.80f*viewPortHeight,
 				0.05f*viewPortHeight,
 				1,1,1,1,
@@ -2234,6 +2312,11 @@ Turntable_DrawWaveform
 		{
 			sprintf(tmpStr,"-%.2f",pbAbs);
 		}
+		if(strstr(tmpStr,"0.00"))
+		{
+			strcpy(tmpStr,"+0.00");
+		}
+
 		char tempNudge[1024];
 		if(nudge>0)
 		{
@@ -2250,8 +2333,8 @@ Turntable_DrawWaveform
 		LGL_GetFont().DrawString
 		(
 			//viewPortLeft+.02f*viewPortWidth,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-			viewPortBottom+.70f*viewPortHeight,
+			bpmPitchL,
+			bpmPitchB,
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			false,.5f,
@@ -2261,7 +2344,7 @@ Turntable_DrawWaveform
 		(
 			//viewPortLeft+.125f*viewPortWidth,
 			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.06f,
-			viewPortBottom+.70f*viewPortHeight,
+			bpmPitchB,
 			0.05f*viewPortHeight,
 			1,1,1,1,
 			false,.5f,
@@ -2285,6 +2368,17 @@ Turntable_DrawWaveform
 				0,
 				lb,lb,lb,1.0f
 			);
+
+			if
+			(
+				LGL_MouseX()>=loopL &&
+				LGL_MouseX()<=viewPortRight &&
+				LGL_MouseY()>=loopB &&
+				LGL_MouseY()<=loopT
+			)
+			{
+				GetInputMouse().SetHoverTarget(GUI_TARGET_LOOP_MEASURES);
+			}
 
 			if
 			(
@@ -2639,6 +2733,17 @@ Turntable_DrawWaveform
 			mySavePointSet[a]=savePointSetBitfield & (1<<a);
 		}
 
+		if
+		(
+			LGL_MouseX()>=lft &&
+			LGL_MouseX()<=lft+11*wth+spc &&
+			LGL_MouseY()>=bot &&
+			LGL_MouseY()<=top
+		)
+		{
+			GetInputMouse().SetHoverInSavePoints();
+		}
+
 		for(int i=0;i<12;i++)
 		{
 			int thickness;
@@ -2723,6 +2828,10 @@ Turntable_DrawWaveform
 					target=GUI_TARGET_SAVEPOINT_9;
 				}
 				GetInputMouse().SetHoverTarget(target);
+				if(i==savePointIndex)
+				{
+					GetInputMouse().SetHoverOnSelectedSavePoint();
+				}
 			}
 
 			//Left

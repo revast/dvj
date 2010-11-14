@@ -1022,6 +1022,28 @@ WaveformSavePointJumpAtMeasure
 	return(jump);
 }
 
+float
+InputObj::
+WaveformJumpToPercent
+(
+	unsigned int	target
+)	const
+{
+	float jump=-1.0f;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformJumpToPercent(target);
+		if(candidate!=-1.0f)
+		{
+			jump=candidate;
+			break;
+		}
+	}
+
+	return(jump);
+}
+
 int
 InputObj::
 WaveformLoopMeasuresExponent

@@ -32,6 +32,7 @@ typedef enum
 {
 	GUI_TARGET_NULL = 0,
 	GUI_TARGET_WAVEFORM,
+	GUI_TARGET_ENTIRE_WAVEFORM,
 	GUI_TARGET_XFADER_LEFT,
 	GUI_TARGET_XFADER_RIGHT,
 	GUI_TARGET_EQ_LOW,
@@ -53,6 +54,8 @@ typedef enum
 	GUI_TARGET_SAVEPOINT_7,
 	GUI_TARGET_SAVEPOINT_8,
 	GUI_TARGET_SAVEPOINT_9,
+	GUI_TARGET_LOOP_MEASURES,
+	GUI_TARGET_BPM_PITCH,
 	GUI_TARGET_COUNT
 } DVJ_GuiTarget;
 
@@ -144,6 +147,7 @@ virtual	float	WaveformSavePointShiftAll	(unsigned int target)	const;	//Shift all
 virtual	bool	WaveformSavePointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
 virtual	bool	WaveformSavePointJumpNow	(unsigned int target)	const;	//Jump to current save point
 virtual	bool	WaveformSavePointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
+virtual float	WaveformJumpToPercent		(unsigned int target)	const;	//Jump to a percent of the track's duration
 virtual	int	WaveformLoopMeasuresExponent	(unsigned int target)	const;	//Loop 2^n measures. If disabled, enable. Else, disable if equal.
 virtual	bool	WaveformLoopMeasuresHalf	(unsigned int target)	const;	//Loop half as many measures
 virtual	bool	WaveformLoopMeasuresDouble	(unsigned int target)	const;	//Loop twice as many measures
