@@ -1052,6 +1052,16 @@ WaveformSyncBPM
 )	const
 {
 	bool sync=false;
+	if(target & TARGET_FOCUS)
+	{
+		if(HoverTarget == GUI_TARGET_BPM_PITCH)
+		{
+			if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+			{
+				sync=true;
+			}
+		}
+	}
 	return(sync);
 }
 
