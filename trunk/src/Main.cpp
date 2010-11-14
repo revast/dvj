@@ -803,7 +803,6 @@ int main(int argc, char** argv)
 		SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
 		for(;;)
 		{
-			LGL_ProcessInput();
 			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
 			{
 				SwapOutOtherProgramsFinished=true;
