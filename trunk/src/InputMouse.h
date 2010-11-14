@@ -138,6 +138,8 @@ private:
 	bool	WaveformVideoAspectRatioNextNext;
 	bool	WaveformVideoSelectNow;
 	bool	WaveformVideoSelectNext;
+	bool	WaveformLoopToggleNow;
+	bool	WaveformLoopToggleNext;
 
 	DVJ_GuiTarget
 		HoverTarget;
@@ -155,6 +157,7 @@ public:
 	void	SetFileSelectNext();
 	void	SetWaveformVideoAspectRatioNextNext();
 	void	SetWaveformVideoSelectNext();
+	void	SetWaveformLoopToggleNext();
 
 	DVJ_GuiTarget
 		GetDragTarget() const;

@@ -436,6 +436,13 @@ WaveformGainDelta
 )	const
 {
 	float delta=0.0f;
+	if(target && TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_GAIN)
+		{
+			delta=LGL_MultiTouchDY()*KNOB_SCALAR*2.0f;
+		}
+	}
 	return(delta);
 }
 

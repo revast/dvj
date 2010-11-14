@@ -288,7 +288,7 @@ CreateDotJackdrc()
 		}
 		else
 		{
-			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p %i\n",samplePeriod);
+			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p %i -i 2\n",samplePeriod);
 		}
 		fclose(fd);
 	}
@@ -1028,7 +1028,7 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_RAPID_SOLO_INVERT].Set
 		("waveformRapidSoloInvert",		"LGL_KEY_U");
 	dvjKeyMap[WAVEFORM_VOLUME_SOLO].Set
-		("waveformVolumeSolo",			"LGL_KEY_COMMA");
+		("waveformVolumeSolo",			"LGL_KEY_UNKNOWN");
 	dvjKeyMap[WAVEFORM_REWIND].Set
 		("waveformRewind",			"LGL_KEY_LEFTBRACKET");
 	dvjKeyMap[WAVEFORM_FF].Set
@@ -1072,7 +1072,7 @@ PrepareKeyMap()
 	dvjKeyMap[WAVEFORM_VIDEO_SELECT].Set
 		("waveformVideoSelect",			"LGL_KEY_PERIOD");
 	dvjKeyMap[WAVEFORM_AUDIO_INPUT_MODE].Set
-		("waveformAudioInputMode",		"LGL_KEY_F12");
+		("waveformAudioInputMode",		"LGL_KEY_F11");
 	dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_NEXT].Set
 		("waveformVideoAspectRatioNext",	"LGL_KEY_SLASH");
 	dvjKeyMap[WAVEFORM_SYNC_BPM].Set

@@ -43,6 +43,8 @@ InputMouseObj()
 	WaveformVideoAspectRatioNextNext=false;
 	WaveformVideoSelectNow=false;
 	WaveformVideoSelectNext=false;
+	WaveformLoopToggleNow=false;
+	WaveformLoopToggleNext=false;
 	HoverTarget=GUI_TARGET_NULL;
 	DragTarget=GUI_TARGET_NULL;
 	DragFloat=-1.0f;
@@ -75,6 +77,9 @@ NextFrame()
 
 	WaveformVideoSelectNow=WaveformVideoSelectNext;
 	WaveformVideoSelectNext=false;
+	
+	WaveformLoopToggleNow=WaveformLoopToggleNext;
+	WaveformLoopToggleNext=false;
 
 	HoverTarget=HoverTargetNext;
 	HoverTargetNext=GUI_TARGET_NULL;
@@ -450,8 +455,18 @@ WaveformGain
 	unsigned int	target
 )	const
 {
-	float gain=-1.0f;
-	return(gain);
+	if(target & TARGET_FOCUS)
+	{
+		if(DragTarget==GUI_TARGET_EQ_GAIN)
+		{
+			if(DragFloat!=-1.0f)
+			{
+				return(DragFloat*2.0f);
+			}
+		}
+	}
+
+	return(-1.0f);
 }
 
 float
@@ -844,8 +859,14 @@ WaveformLoopToggle
 	unsigned int	target
 )	const
 {
-	bool toggle=false;
-	return(toggle);
+	if(target & TARGET_FOCUS)
+	{
+		return(WaveformLoopToggleNow);
+	}
+	else
+	{
+		return(false);
+	}
 }
 
 bool
@@ -1059,6 +1080,13 @@ InputMouseObj::
 SetWaveformVideoSelectNext()
 {
 	WaveformVideoSelectNext=true;
+}
+
+void
+InputMouseObj::
+SetWaveformLoopToggleNext()
+{
+	WaveformLoopToggleNext=true;
 }
 
 DVJ_GuiTarget
