@@ -34,7 +34,6 @@ LGL_Image* VisualizerObj::NoiseImage[NOISE_IMAGE_COUNT_128_128];
 VisualizerObj::
 VisualizerObj()
 {
-	NoSound=new LGL_Image("data/image/nosound.png");
 	BlueScreenOfDeath=new LGL_Image("data/image/bsod.png");
 
 	//AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
@@ -159,7 +158,6 @@ VisualizerObj()
 VisualizerObj::
 ~VisualizerObj()
 {
-	delete	NoSound;
 	delete	BlueScreenOfDeath;
 	//delete	AccumulationNow;
 	//TODO: Take care of scroll text buffers
@@ -412,6 +410,7 @@ DrawVisuals
 		}
 		else
 		{
+			/*
 			NoSound->DrawToScreen
 			(
 				l,r,
@@ -419,6 +418,7 @@ DrawVisuals
 				0,
 				1,1,1,1
 			);
+			*/
 		}
 	}
 
