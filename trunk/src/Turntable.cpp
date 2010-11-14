@@ -822,7 +822,14 @@ NextFrame
 	if(LGL_AudioJackXrun())
 	{
 		VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()/2);
-		printf("New Radius: %i\n",VideoFront->GetFrameBufferAddRadius());
+	}
+
+	if(LGL_RamFreeMB()<100)
+	{
+		if(VideoFront->GetFrameBufferAddRadius()>2)
+		{
+			VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()-1);
+		}
 	}
 
 	unsigned int target =
@@ -1562,6 +1569,7 @@ NextFrame
 			)
 			{
 				//Unset Save Point
+printf("Unset!\n");
 				SavePointSeconds[SavePointIndex]=-1.0f;
 				SavePointUnsetFlashPercent[SavePointIndex]=1.0f;
 				SaveMetaData();

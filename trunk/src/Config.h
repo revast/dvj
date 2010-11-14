@@ -91,6 +91,9 @@ GetColorWarm
 int
 GetFPSMax();
 
+int
+GetAudioSamplePeriod();
+
 bool
 GetWireMemory();
 

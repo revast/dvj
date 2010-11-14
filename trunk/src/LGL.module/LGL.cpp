@@ -74,10 +74,16 @@
 #endif //LGL_LINUX_VIDCAM
 
 #ifdef	LGL_OSX
+#include <Aliases.h>
 #include <mach/mach_init.h>
 #include <mach/thread_policy.h>
 #include <mach/thread_act.h>
-#include <Aliases.h>
+#include <mach/vm_statistics.h>
+#include <mach/mach_types.h> 
+#include <mach/mach_host.h>
+#include <mach/task.h>
+#include <mach/task_info.h>
+
 #endif	//LGL_OSX
 
 #include <sys/types.h>
@@ -26576,6 +26582,66 @@ LGL_WriteFileAsyncQueueCount()
 
 //Memory
 
+int64_t
+LGL_RamFreeB()
+{
+#ifdef	LGL_OSX
+	vm_size_t page_size;
+	mach_port_t mach_port;
+	mach_msg_type_number_t count;
+	vm_statistics_data_t vm_stats;
+
+	mach_port = mach_host_self();
+	count = sizeof(vm_stats) / sizeof(natural_t);
+	if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
+	    KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, 
+					    (host_info_t)&vm_stats, &count))
+	{
+	    int64_t myFreeMemory = ((int64_t)vm_stats.free_count * (int64_t)page_size);
+	    return(myFreeMemory);
+
+/*
+	    used_memory = ((int64_t)vm_stats.active_count + 
+			   (int64_t)vm_stats.inactive_count + 
+			   (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
+*/
+	}
+#endif	//LGL_OSX
+	return(1024*1024*1024);
+}
+
+int
+LGL_RamFreeMB()
+{
+	return((int)(LGL_RamFreeB()/((int64_t)(1024*1024))));
+}
+
+int64_t
+LGL_MemoryUsedByThisB()
+{
+#ifdef	LGL_OSX
+	struct task_basic_info t_info;
+	mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
+
+	if (KERN_SUCCESS != task_info(mach_task_self(),
+				      TASK_BASIC_INFO, (task_info_t)&t_info, 
+				      &t_info_count))
+	{
+	    return(1024*1024*1024);
+	}
+
+	// resident size is in t_info.resident_size;
+	return(t_info.virtual_size);
+#endif
+	return(1024*1024*1024);
+}
+
+int
+LGL_MemoryUsedByThisMB()
+{
+	return((int)(LGL_MemoryUsedByThisB()/((int64_t)(1024*1024))));
+}
+
 //Misc
 
 float
@@ -28120,7 +28186,7 @@ LGL_ThreadSetPriority
 	}
 	else
 	{
-		printf("Set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
+		//printf("Set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
 	}
 
 	/*
