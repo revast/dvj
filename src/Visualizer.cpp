@@ -333,7 +333,7 @@ DrawVisuals
 	{
 		LowMemoryWarningScalar-=1.0f/60.0f;
 		if(LowMemoryWarningScalar<0) LowMemoryWarningScalar=0.0f;
-		if(LGL_RamFreeMB()<75 || LGL_KeyStroke(LGL_KEY_A))
+		if(LGL_RamFreeMB()<75)
 		{
 			LowMemoryWarningScalar=5.0f;
 		}
@@ -349,7 +349,8 @@ DrawVisuals
 				bri,0,0,bri,
 				false,
 				0.75f*bri,
-				"LOW MEMORY"
+				"LOW MEMORY: %iMB",
+				LGL_RamFreeMB()
 			);
 			LGL_GetFont().DrawString
 			(
