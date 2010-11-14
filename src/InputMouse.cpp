@@ -569,7 +569,7 @@ WaveformRecordSpeed
 	float speed=0.0f;
 	if(WaveformRecordHold(target))
 	{
-		speed=LGL_MouseDX()*-175.0f;
+		speed=LGL_MouseDX()*175.0f;
 	}
 	return(speed);
 }
