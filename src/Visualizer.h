@@ -130,6 +130,7 @@ private:
 	std::vector<char*>	VideoRandomLowQueue;
 	std::vector<char*>	VideoRandomHighQueue;
 	unsigned int		VideoRandomGetCount;
+	float			LowMemoryWarningScalar;
 	
 static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
 

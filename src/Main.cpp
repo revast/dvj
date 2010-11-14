@@ -797,8 +797,8 @@ int main(int argc, char** argv)
 	if(wireMemory)
 	{
 		const char* line1 = NULL;
-		const char* line2 = "Wiring memory";
-		const char* line3 = "[ESC] skips (and risks framerate spikes)";
+		const char* line2 = "Obtaining memory";
+		const char* line3 = "[ESC] skips (and risks audio/video skippage)";
 		DrawLoadScreen(loadScreenPercent,line1,line2,line3);
 		SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
 		for(;;)

@@ -85,6 +85,7 @@ VisualizerObj()
 	}
 
 	VideoFPSDisplay=0.0f;
+	LowMemoryWarningScalar=0.0f;
 
 	char tmp[2048];
 
@@ -326,6 +327,41 @@ DrawVisuals
 	else
 	{
 		LGL_ClipRectEnable(l,r,b,t);
+	}
+
+	//Warn on low memory
+	{
+		LowMemoryWarningScalar-=1.0f/60.0f;
+		if(LowMemoryWarningScalar<0) LowMemoryWarningScalar=0.0f;
+		if(LGL_RamFreeMB()<75 || LGL_KeyStroke(LGL_KEY_A))
+		{
+			LowMemoryWarningScalar=5.0f;
+		}
+
+		if(LowMemoryWarningScalar>0)
+		{
+			float bri=LGL_Min(LowMemoryWarningScalar,1.0f);
+			LGL_GetFont().DrawString
+			(
+				l+0.025f*w,
+				b+0.90f*h,
+				h*0.04f,
+				bri,0,0,bri,
+				false,
+				0.75f*bri,
+				"LOW MEMORY"
+			);
+			LGL_GetFont().DrawString
+			(
+				l+0.025f*w,
+				b+0.825f*h,
+				h*0.04f,
+				bri,0,0,bri,
+				false,
+				0.75f*bri,
+				"Audio might skip"
+			);
+		}
 	}
 
 	if(LGL_AudioAvailable())
