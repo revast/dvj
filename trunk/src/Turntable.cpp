@@ -3362,7 +3362,7 @@ DrawFrame
 		}
 //VideoEncoderBeginSignal=1;
 
-		if(VideoEncoderBeginSignal==0)
+		if(Sound->IsLoaded()==false)
 		{
 			LGL_GetFont().DrawString
 			(
