@@ -344,6 +344,7 @@ DrawVisuals
 			if(LowMemoryTimer.SecondsSinceLastReset()>1.0f)
 			{
 				LowMemoryMB=LGL_RamFreeMB();
+				LowMemoryTimer.Reset();
 			}
 			LGL_GetFont().DrawString
 			(
