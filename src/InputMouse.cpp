@@ -110,6 +110,11 @@ NextFrame()
 
 	DragFloat=DragFloatNext;
 	DragFloatNext=-1.0f;
+
+	if(LGL_MouseMotion())
+	{
+		MouseMotionTimer.Reset();
+	}
 }
 
 //Global Input
@@ -735,6 +740,19 @@ WaveformSavePointSet
 )	const
 {
 	bool set=false;
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_KeyDown(LGL_KEY_SHIFT))
+		{
+			if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+			{
+				if(HoverOnSelectedSavePointNow)
+				{
+					set=true;
+				}
+			}
+		}
+	}
 	return(set);
 }
 
@@ -746,6 +764,28 @@ WaveformSavePointUnsetPercent
 )	const
 {
 	float percent=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_KeyDown(LGL_KEY_SHIFT))
+		{
+			if(LGL_MouseDown(LGL_MOUSE_LEFT))
+			{
+				if(HoverOnSelectedSavePointNow)
+				{
+					percent = LGL_Clamp
+					(
+						0.0f,
+						LGL_Min
+						(
+							LGL_MouseTimer(LGL_MOUSE_LEFT),
+							MouseMotionTimer.SecondsSinceLastReset()
+						),
+						1.0f
+					);
+				}
+			}
+		}
+	}
 	return(percent);
 }
 
@@ -1056,7 +1096,7 @@ WaveformSyncBPM
 	{
 		if(HoverTarget == GUI_TARGET_BPM_PITCH)
 		{
-			if(LGL_MouseStroke(LGL_MOUSE_LEFT))
+			if(LGL_MouseDown(LGL_MOUSE_LEFT))
 			{
 				sync=true;
 			}

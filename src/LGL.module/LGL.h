@@ -1044,8 +1044,8 @@ const	char*		GetPathShort() const;
 	GLsizei		PixelBufferObjectSize;
 	bool		LinearInterpolation;
 
-	char		Path[1024];
-	char		PathShort[1024];
+	char		Path[2048];
+	char		PathShort[2048];
 
 	bool		AlphaChannel;
 	bool		PixelBufferEnable;
@@ -2215,6 +2215,7 @@ bool		LGL_MouseMotion();
 bool		LGL_MouseDown(int button);
 bool		LGL_MouseStroke(int button);
 bool		LGL_MouseRelease(int button);
+float		LGL_MouseTimer(int button);
 
 void		LGL_MouseVisible(bool visible);
 void		LGL_MouseWarp(float x, float y);
