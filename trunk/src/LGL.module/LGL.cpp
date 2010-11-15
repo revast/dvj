@@ -202,6 +202,7 @@ typedef struct
 	double			WarpPointSecondsAlpha;
 	double			WarpPointSecondsOmega;
 	bool			WarpPointLoop;
+	bool			WarpPointLock;
 
 	SRC_STATE*		SampleRateConverter[4];
 	float			SampleRateConverterBuffer[4][SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES];
@@ -681,6 +682,7 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].WarpPointSecondsAlpha=-1.0f;
 	LGL.SoundChannel[a].WarpPointSecondsOmega=-1.0f;
 	LGL.SoundChannel[a].WarpPointLoop=false;
+	LGL.SoundChannel[a].WarpPointLock=false;
 	LGL.SoundChannel[a].VolumeFrontLeftDesired=1.0f;
 	LGL.SoundChannel[a].VolumeFrontRightDesired=1.0f;
 	LGL.SoundChannel[a].VolumeBackLeftDesired=1.0f;
@@ -15225,6 +15227,7 @@ Play
 		LGL.SoundChannel[available].WarpPointSecondsAlpha=-1.0f;
 		LGL.SoundChannel[available].WarpPointSecondsOmega=-1.0f;
 		LGL.SoundChannel[available].WarpPointLoop=false;
+		LGL.SoundChannel[available].WarpPointLock=false;
 		LGL.SoundChannel[available].SampleRateConverterBufferValidSamples=0;
 		LGL.SoundChannel[available].SampleRateConverterBufferCurrentSamplesIndex=0;
 		LGL.SoundChannel[available].SampleRateConverterBufferStartSamples=0;
@@ -15951,6 +15954,36 @@ if(channel<0)
 
 bool
 LGL_Sound::
+GetWarpPointIsLoop
+(
+	int	channel
+)
+{
+if(channel<0)
+{
+	printf("LGL_Sound::GetWarpPointIsLoop(): WARNING! channel < 0\n");
+	return(false);
+}
+	return(LGL.SoundChannel[channel].WarpPointLoop);
+}
+
+bool
+LGL_Sound::
+GetWarpPointIsLocked
+(
+	int	channel
+)
+{
+if(channel<0)
+{
+	printf("LGL_Sound::GetWarpPointIsLocked(): WARNING! channel < 0\n");
+	return(false);
+}
+	return(LGL.SoundChannel[channel].WarpPointLock);
+}
+
+bool
+LGL_Sound::
 SetWarpPoint
 (
 	int	channel
@@ -15961,9 +15994,13 @@ if(channel<0)
 	printf("LGL_Sound::SetWarpPoint(1): WARNING! channel < 0\n");
 	return(false);
 }
-	LGL.SoundChannel[channel].WarpPointSecondsAlpha=-1.0f;
-	LGL.SoundChannel[channel].WarpPointSecondsOmega=-1.0f;
-	LGL.SoundChannel[channel].WarpPointLoop=false;
+
+	if(LGL.SoundChannel[channel].WarpPointLock==false)
+	{
+		LGL.SoundChannel[channel].WarpPointSecondsAlpha=-1.0f;
+		LGL.SoundChannel[channel].WarpPointSecondsOmega=-1.0f;
+		LGL.SoundChannel[channel].WarpPointLoop=false;
+	}
 
 	return(true);
 }
@@ -15975,7 +16012,8 @@ SetWarpPoint
 	int	channel,
 	double	alphaSeconds,
 	double	omegaSeconds,
-	bool	loop
+	bool	loop,
+	bool	lock
 )
 {
 if(channel<0)
@@ -15983,10 +16021,14 @@ if(channel<0)
 	printf("LGL_Sound::SetWarpPoint(3): WARNING! channel < 0\n");
 	return(false);
 }
-	LGL.SoundChannel[channel].WarpPointSecondsAlpha=alphaSeconds;
-	LGL.SoundChannel[channel].WarpPointSecondsOmega=omegaSeconds;
-	LGL.SoundChannel[channel].WarpPointLoop=loop;
-	
+	if(LGL.SoundChannel[channel].WarpPointLock==false)
+	{
+		LGL.SoundChannel[channel].WarpPointSecondsAlpha=alphaSeconds;
+		LGL.SoundChannel[channel].WarpPointSecondsOmega=omegaSeconds;
+		LGL.SoundChannel[channel].WarpPointLoop=loop;
+		LGL.SoundChannel[channel].WarpPointLock=lock;
+	}
+
 	return(true);
 }
 
@@ -15998,6 +16040,16 @@ GetWarpPointSecondsAlpha
 )
 {
 	return(LGL.SoundChannel[channel].WarpPointSecondsAlpha);
+}
+
+float
+LGL_Sound::
+GetWarpPointSecondsOmega
+(
+	int	channel
+)
+{
+	return(LGL.SoundChannel[channel].WarpPointSecondsOmega);
 }
 
 void
@@ -29010,6 +29062,7 @@ lgl_AudioOutCallbackGenerator
 					{
 						sc->WarpPointSecondsAlpha=-1.0f;
 						sc->WarpPointSecondsOmega=-1.0f;
+						sc->WarpPointLock=false;
 					}
 				}
 				else if

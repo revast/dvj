@@ -1748,6 +1748,13 @@ printf("Unset!\n");
 			{
 				if(Sound->IsLoaded())
 				{
+					bool lockWarp=false;
+					if(candidate>1.0f)
+					{
+						lockWarp=true;
+						ClearRecallOrigin();
+						candidate-=1.0f;
+					}
 					candidate=LGL_Clamp(0.0f,candidate,1.0f);
 					float candidateSeconds=Sound->GetLengthSeconds()*candidate;
 					double jumpAlphaSeconds=Sound->GetPositionSeconds(Channel);
@@ -1803,7 +1810,8 @@ printf("Unset!\n");
 							Channel,
 							jumpAlphaSeconds,
 							jumpOmegaSeconds,
-							false
+							false,
+							lockWarp
 						);
 					}
 				}
@@ -1902,6 +1910,7 @@ printf("Unset!\n");
 		LoopThenRecallActive =
 		(
 			Input.WaveformLoopThenRecallActive(target) &&
+			Sound->GetWarpPointIsLocked(Channel)==false &&
 			RapidVolumeInvert==false
 		);
 
@@ -3822,6 +3831,26 @@ DrawFrame
 				videoSecondsBufferedLeft=VideoFront->GetSecondsBufferedLeft();
 				videoSecondsBufferedRight=VideoFront->GetSecondsBufferedRight();
 			}
+				
+			float recallPos=-1.0f;
+
+			if
+			(
+				Sound->GetWarpPointIsSet(Channel) &&
+				Sound->GetWarpPointIsLoop(Channel)==false &&
+				Sound->GetWarpPointIsLocked(Channel)
+			)
+			{
+				recallPos=Sound->GetWarpPointSecondsOmega(Channel) +
+					(
+						Sound->GetPositionSeconds(Channel) -
+						Sound->GetWarpPointSecondsAlpha(Channel)
+					);
+			}
+			if(GetFocus() && GetInputMouse().GetEntireWaveformScrubberDelta())
+			{
+				recallPos=GetInputMouse().GetEntireWaveformScrubberRecallPercent()*Sound->GetLengthSeconds();
+			}
 
 			LGL_DrawLogWrite
 			(
@@ -4010,7 +4039,8 @@ DrawFrame
 				VideoBrightness,					//58
 				OscilloscopeBrightness,					//59
 				FreqSenseBrightness,					//60
-				Channel							//61
+				Channel,						//61
+				recallPos						//62
 			);
 			LGL_DrawLogPause(false);
 		

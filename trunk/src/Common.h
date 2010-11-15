@@ -171,7 +171,8 @@ Turntable_DrawWaveform
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
-	int		channel
+	int		channel,
+	float		recallPos
 );
 
 void

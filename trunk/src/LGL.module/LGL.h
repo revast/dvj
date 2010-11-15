@@ -2055,9 +2055,12 @@ public:
 	bool		SetDivergeRecallBegin(int channel, float speed);
 	bool		SetDivergeRecallEnd(int channel);
 	bool		GetWarpPointIsSet(int channel);
+	bool		GetWarpPointIsLoop(int channel);
+	bool		GetWarpPointIsLocked(int channel);
 	bool		SetWarpPoint(int channel);
-	bool		SetWarpPoint(int channel, double alphaSeconds, double omegaSeconds, bool loop=false);
+	bool		SetWarpPoint(int channel, double alphaSeconds, double omegaSeconds, bool loop=false, bool lock=false);
 	float		GetWarpPointSecondsAlpha(int channel);
+	float		GetWarpPointSecondsOmega(int channel);
 	void		SetRapidInvertProperties(int channel, float secondsAlpha, float secondsDelta);
 	void		SetRapidVolumeInvert(int channel, bool rapidVolumeInvert);
 	void		SetRespondToRapidSoloInvertChannel(int channel, int soloChannel);
