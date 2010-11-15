@@ -8803,6 +8803,7 @@ GetImage()
 			if(LGL_FileExists(Path))
 			{
 				Image=new LGL_Image(Path);
+				Image->SetFrameNumber(0);
 			}
 			else
 			{
@@ -8815,10 +8816,10 @@ GetImage()
 					true,
 					"Empty LGL_VideoDecoder"
 				);
+				Image->SetFrameNumber(-1);
 			}
 		}
 		
-		Image->SetFrameNumber(0);
 		return(Image);
 	}
 
