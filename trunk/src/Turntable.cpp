@@ -1397,7 +1397,7 @@ NextFrame
 		(
 			Sound->IsUnloadable() ||
 			Input.DecodeAbort(target) ||
-			Mode1Timer.SecondsSinceLastReset()>5.0f
+			Mode1Timer.SecondsSinceLastReset() > (EncodeEveryTrack ? 10.0f : 5.0f)
 		)
 		{
 			//Abort load. Select new track.
