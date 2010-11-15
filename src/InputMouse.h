@@ -180,6 +180,7 @@ public:
 	void	EntireWaveformScrubberAlpha(float length, float posNow, float speed);
 	void	EntireWaveformScrubberOmega();
 	bool	GetEntireWaveformScrubberDelta();
+	float	GetEntireWaveformScrubberRecallPercent();
 	void	SetEntireWaveformScrubberForceNext(float pct);
 
 	DVJ_GuiTarget

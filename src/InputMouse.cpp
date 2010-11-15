@@ -1205,14 +1205,7 @@ EntireWaveformScrubberOmega()
 		EntireWaveformScrubberSpeed!=-1.0f
 	)
 	{
-		EntireWaveformScrubberForceNext=
-		(
-			EntireWaveformScrubberPosAlpha+
-			(
-				EntireWaveformScrubberTimer.SecondsSinceLastReset()*
-				EntireWaveformScrubberSpeed
-			)
-		) / EntireWaveformScrubberLength;
+		EntireWaveformScrubberForceNext=1.0f+GetEntireWaveformScrubberRecallPercent();
 	}
 
 	EntireWaveformScrubberLength=-1.0f;
@@ -1232,6 +1225,26 @@ GetEntireWaveformScrubberDelta()
 		EntireWaveformScrubberForceNow!=-1.0f ||
 		EntireWaveformScrubberForceNext!=-1.0f
 	);
+}
+
+float
+InputMouseObj::
+GetEntireWaveformScrubberRecallPercent()
+{
+	float ret=
+	LGL_Clamp
+	(
+		0.0f,
+		(
+			EntireWaveformScrubberPosAlpha+
+			(
+				EntireWaveformScrubberTimer.SecondsSinceLastReset()*
+				EntireWaveformScrubberSpeed
+			)
+		) / EntireWaveformScrubberLength,
+		1.0f
+	);
+	return(ret);
 }
 
 void

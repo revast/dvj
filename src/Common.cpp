@@ -977,7 +977,8 @@ Turntable_DrawWaveform
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
-	int		channel
+	int		channel,
+	float		recallPos
 )
 {
 	float coolR;
@@ -1880,22 +1881,28 @@ Turntable_DrawWaveform
 
 			if(LGL_KeyDown(LGL_KEY_LCTRL))
 			{
+				bool alphaDone=false;
 				if(warpPointSecondsTrigger<0.0f)
 				{
-					bool alphaDone=false;
 					if(GetInputMouse().GetEntireWaveformScrubberDelta()==false)
 					{
-						GetInputMouse().EntireWaveformScrubberAlpha(soundLengthSeconds,sound->GetPositionSeconds(channel),soundSpeed);
-						alphaDone=true;
+						if(sound->GetWarpPointIsLocked(channel)==false)
+						{
+							GetInputMouse().EntireWaveformScrubberAlpha(soundLengthSeconds,sound->GetPositionSeconds(channel),soundSpeed);
+							alphaDone=true;
+						}
 					}
-					if(LGL_MouseMotion() || alphaDone)
+				}
+				if(LGL_MouseMotion() || alphaDone)
+				{
+					float next = LGL_Clamp
+					(
+						0.0f,
+						(LGL_MouseX()-waveLeft)/(waveRight-waveLeft),
+						1.0f
+					);
+					if(GetInputMouse().GetEntireWaveformScrubberDelta())
 					{
-						float next = LGL_Clamp
-						(
-							0.0f,
-							(LGL_MouseX()-waveLeft)/(waveRight-waveLeft),
-							1.0f
-						);
 						GetInputMouse().SetEntireWaveformScrubberForceNext
 						(
 							next
@@ -2070,6 +2077,40 @@ Turntable_DrawWaveform
 
 			if(cachedLengthSeconds!=0)
 			{
+				float r=1.0f;
+				float g=1.0f;
+				float b=1.0f;
+				float a=1.0f;
+
+				if(recallPos!=-1.0f)
+				{
+					float pctRecall=recallPos/cachedLengthSeconds;
+					LGL_DrawLineToScreen
+					(
+						viewPortLeft+pctRecall*viewPortWidth,
+						waveBottom,
+						viewPortLeft+pctRecall*viewPortWidth,
+						waveTop,
+						r,g,b,a,
+						4.0f,
+						false
+					);
+					LGL_DrawLineToScreen
+					(
+						viewPortLeft+pctRecall*viewPortWidth,
+						waveBottom,
+						viewPortLeft+pctRecall*viewPortWidth,
+						waveTop,
+						warmR,warmG,warmB,1,
+						2.0f,
+						false
+					);
+
+					r=0.5f;
+					g=0.5f;
+					b=0.5f;
+					a=0.5f;
+				}
 				float pos=soundPositionSeconds/cachedLengthSeconds;
 				LGL_DrawLineToScreen
 				(
@@ -2077,7 +2118,7 @@ Turntable_DrawWaveform
 					waveBottom,
 					viewPortLeft+pos*viewPortWidth,
 					waveTop,
-					1,1,1,1,
+					r,g,b,a,
 					4.0f,
 					false
 				);
@@ -2087,7 +2128,7 @@ Turntable_DrawWaveform
 					waveBottom,
 					viewPortLeft+pos*viewPortWidth,
 					waveTop,
-					warmR,warmG,warmB,1,
+					warmR*r,warmG*g,warmB*b,1,
 					2.0f,
 					false
 				);
