@@ -8835,6 +8835,7 @@ GetImage()
 			true,
 			"Empty LGL_VideoDecoder"
 		);
+		Image->SetFrameNumber(-1);
 	}
 	if(strcmp(Path,"NULL")==0)
 	{
