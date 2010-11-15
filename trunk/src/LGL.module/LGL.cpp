@@ -360,6 +360,7 @@ typedef struct
 	bool			MouseDown[3];
 	bool			MouseStroke[3];
 	bool			MouseRelease[3];
+	LGL_Timer		MouseTimer[LGL_KEY_MAX];
 
 	//MultiTouch
 
@@ -1618,6 +1619,7 @@ LGL_Init
 		LGL.MouseDown[a]=false;
 		LGL.MouseStroke[a]=false;
 		LGL.MouseRelease[a]=false;
+		LGL.MouseTimer[a].Reset();
 	}
 
 	LGL.MultiTouchID=0;
@@ -1666,7 +1668,7 @@ LGL_Init
 			SDL_GetError()
 		);
 		assert(false);
-		exit(0);
+		LGL_Exit();
 	}
 	else
 	{
@@ -4987,7 +4989,7 @@ VertCompile
 			Description,
 			inFileVert
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 	sprintf(FileVert,"%s",inFileVert);
 
@@ -5032,7 +5034,7 @@ VertCompile
 		InfoLogPrint(VertObject);
 		printf("---\n");
 
-		exit(-1);
+		LGL_Exit();
 	}
 	
 	fclose(file);
@@ -5067,7 +5069,7 @@ FragCompile
 			Description,
 			inFileFrag
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 	sprintf(FileFrag,"%s",inFileFrag);
 
@@ -5113,7 +5115,7 @@ FragCompile
 		InfoLogPrint(FragObject);
 		printf("---\n");
 
-		exit(-1);
+		LGL_Exit();
 	}
 
 	fclose(file);
@@ -5182,7 +5184,7 @@ Link()
 				FileFrag
 			);
 		}
-		exit(-1);
+		LGL_Exit();
 	}
 	return(true);
 }
@@ -5645,7 +5647,7 @@ InfoLogPrint
 			(int)length,
 			(int)written
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 
 	printf("%s",log);
@@ -5698,7 +5700,7 @@ SetVertAttributeIntPrivate
 			);
 			printf("\tActiveAttrib[%i]: '%s'\n",(int)a,name);
 		}
-		exit(-1);
+		LGL_Exit();
 	}
 
 	gl2VertexAttrib4iv(index,arglist);
@@ -5749,7 +5751,7 @@ SetVertAttributeFloatPrivate
 			);
 			printf("\tActiveAttrib[%i]: '%s'\n",(int)a,name);
 		}
-		exit(-1);
+		LGL_Exit();
 	}
 
 	gl2VertexAttrib4fv(index,arglist);
@@ -5781,7 +5783,7 @@ SetUniformAttributeIntPrivate
 			Description,
 			name
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 
 	if(num==1)
@@ -5809,7 +5811,7 @@ SetUniformAttributeIntPrivate
 			Description,
 			num
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 
 	return(true);
@@ -5840,7 +5842,7 @@ SetUniformAttributeFloatPrivate
 			Description,
 			name
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 
 	if(num==1)
@@ -5868,7 +5870,7 @@ SetUniformAttributeFloatPrivate
 			Description,
 			num
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 	return(true);
 }
@@ -5966,7 +5968,7 @@ LGL_Image
 			char wd[2048];
 			getcwd(wd,2048);
 			printf("Working Directory: %s\n",wd);
-			exit(0);
+			LGL_Exit();
 		}
 	}
 
@@ -6083,7 +6085,7 @@ LGL_Image
 			"(left, right), (bottom ,top) = (%.2f, %.2f), (%.2f, %.2f)\n",
 			left,right,bottom,top
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 	
 	sprintf(Path,"FrameBuffer Image");
@@ -7331,7 +7333,7 @@ FrameBufferUpdate()
 	if(!FrameBufferImage)
 	{
 		printf("LGL_Image::FrameBufferUpdate(): Error! Not a FrameBufferImage!\n");
-		exit(-1);
+		LGL_Exit();
 	}
 
 	if(ReadFromFrontBuffer)
@@ -7371,7 +7373,7 @@ FrameBufferViewPort
 	{
 		printf("LGL_Image::FrameBufferViewPort(): Error! ");
 		printf("'%s' is not a FrameBufferImage!\n",Path);
-		exit(-1);
+		LGL_Exit();
 	}
 
 	LeftInt=	(int)floor(left*LGL.WindowResolutionX);
@@ -7714,14 +7716,14 @@ FileLoad
 	char*	inFilename
 )
 {
-	if(strlen(inFilename)>512)
+	if(strlen(inFilename)>2040)
 	{
 		printf
 		(
-			"LGL_Image::LGL_Image(): filename '%s' is too long (512 max)\n",
+			"LGL_Image::LGL_Image(): filename '%s' is too long (2040 max)\n",
 			inFilename
 		);
-		exit(-1);
+		return;
 	}
 
 	LeftInt=WidthInt=BottomInt=HeightInt=0;
@@ -7759,7 +7761,7 @@ FileLoad
 		char wd[2048];
 		getcwd(wd,2048);
 		printf("Working Directory: %s\n",wd);
-		exit(0);
+		return;
 	}
 
 	AlphaChannel=mySDL_Surface1->flags & SDL_SRCALPHA;
@@ -7855,14 +7857,14 @@ FileSave
 	if(temp==NULL)
 	{
 		printf("LGL_Image::Save(): Error! Unable to SDL_CreateRGBSurface().\n");
-		exit(-1);
+		LGL_Exit();
 	}
 
 	pixels=(unsigned char*)malloc(3*WidthInt*HeightInt);
 	if(pixels==NULL)
 	{
 		printf("LGL_Image::Save(): Error! Unable to malloc() pixel buffer.\n");
-		exit(-1);
+		LGL_Exit();
 	}
 
 	if(FrameBufferImage)
@@ -8121,7 +8123,7 @@ LoadImages()
 			"LGL_Animation::LoadImage(): Error! No Images in '%s'\n",
 			Path
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 	char target[1024];
 	for(unsigned int a=0;a<ImageCountMax;a++)
@@ -8798,7 +8800,22 @@ GetImage()
 
 		if(Image==NULL)
 		{
-			Image=new LGL_Image(Path);
+			if(LGL_FileExists(Path))
+			{
+				Image=new LGL_Image(Path);
+			}
+			else
+			{
+				Image = new LGL_Image
+				(
+					512,//1920,
+					512,//1024,
+					4,
+					NULL,
+					true,
+					"Empty LGL_VideoDecoder"
+				);
+			}
 		}
 		
 		Image->SetFrameNumber(0);
@@ -12097,7 +12114,7 @@ LGL_GetFont()
 			if(!LGL_DirectoryExists(fontDir))
 			{
 				printf("LGL_GetFont(): Error! A font directory must live at 'data/font/default'\n");
-				exit(-1);
+				LGL_Exit();
 			}
 		}
 		LGL.Font=new LGL_Font(fontDir);
@@ -12205,7 +12222,7 @@ GetInt()
 	if(Accept==3)
 	{
 		printf("LGL_InputBuffer::GetInt(): Error! Cannot call GetInt() after calling AcceptTime()...\n");
-		exit(-1);
+		LGL_Exit();
 	}
 	return(atoi(Buffer));
 }
@@ -12217,7 +12234,7 @@ GetFloat()
 	if(Accept==3)
 	{
 		printf("LGL_InputBuffer::GetFloat(): Error! Cannot call GetFloat() after calling AcceptTime()...\n");
-		exit(-1);
+		LGL_Exit();
 	}
 	return(atof(Buffer));
 }
@@ -12229,7 +12246,7 @@ GetHoursComponent()
 	if(Accept!=3)
 	{
 		printf("LGL_InputBuffer::GetHoursComponent() Error! You must call AcceptTime() before calling GetHours()...\n");
-		exit(-1);
+		LGL_Exit();
 	}
 	float seconds=GetSecondsTotal();
 	return((int)floor(seconds/(60.0*60.0)));
@@ -12242,7 +12259,7 @@ GetMinutesComponent()
 	if(Accept!=3)
 	{
 		printf("LGL_InputBuffer::GetMinutesComponent() Error! You must call AcceptTime() before calling GetHours()...\n");
-		exit(-1);
+		LGL_Exit();
 	}
 	float seconds=GetSecondsTotal();
 	return(((int)floor(seconds/(60.0)))%60);
@@ -12255,7 +12272,7 @@ GetSecondsComponent()
 	if(Accept!=3)
 	{
 		printf("LGL_InputBuffer::GetSecondsComponent() Error! You must call AcceptTime() before calling GetHours()...\n");
-		exit(-1);
+		LGL_Exit();
 	}
 	float seconds=GetSecondsTotal();
 	return(((int)floor(seconds/(60.0)))%60);
@@ -15183,7 +15200,7 @@ Play
 	if(false)//IsLoaded()==false)
 	{
 		printf("LGL_Sound::Play(): Error! '%s' not yet loaded\n",Path);
-		exit(-1);
+		LGL_Exit();
 	}
 
 	if(lengthSeconds==-1)
@@ -15568,7 +15585,7 @@ SetGlitchAttributes
 			channel,
 			LGL_SOUND_CHANNEL_NUMBER
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 	
 	//SDL_LockAudio();
@@ -15704,7 +15721,7 @@ if(channel<0)
 			channel,
 			LGL_SOUND_CHANNEL_NUMBER
 		);
-		exit(-1);
+		LGL_Exit();
 	}
 	
 	LGL.SoundChannel[channel].ToMono=DownMix;
@@ -17495,7 +17512,7 @@ LGL_ProcessInput()
 	{
 		if(event.type==SDL_QUIT)
 		{
-			exit(0);
+			LGL_Exit();
 		}
 		
 		//Keyboard
@@ -17562,7 +17579,6 @@ LGL_ProcessInput()
 			{
 				event.key.keysym.sym = 256 + (event.key.keysym.sym % LGL_KEY_MAX);
 			}
-			LGL.KeyTimer[event.key.keysym.sym].Reset();
 			LGL.KeyDown[event.key.keysym.sym]=false;
 			LGL.KeyRelease[event.key.keysym.sym]=true;
 			LGL.KeyTimer[event.key.keysym.sym].Reset();
@@ -17647,16 +17663,19 @@ LGL_ProcessInput()
 			{
 				LGL.MouseDown[LGL_MOUSE_LEFT]=true;
 				LGL.MouseStroke[LGL_MOUSE_LEFT]=true;
+				LGL.MouseTimer[LGL_MOUSE_LEFT].Reset();
 			}
 			if(event.button.button==SDL_BUTTON_MIDDLE)
 			{
 				LGL.MouseDown[LGL_MOUSE_MIDDLE]=true;
 				LGL.MouseStroke[LGL_MOUSE_MIDDLE]=true;
+				LGL.MouseTimer[LGL_MOUSE_MIDDLE].Reset();
 			}
 			if(event.button.button==SDL_BUTTON_RIGHT)
 			{
 				LGL.MouseDown[LGL_MOUSE_RIGHT]=true;
 				LGL.MouseStroke[LGL_MOUSE_RIGHT]=true;
+				LGL.MouseTimer[LGL_MOUSE_RIGHT].Reset();
 			}
 		}
 		
@@ -17666,16 +17685,19 @@ LGL_ProcessInput()
 			{
 				LGL.MouseDown[LGL_MOUSE_LEFT]=false;
 				LGL.MouseRelease[LGL_MOUSE_LEFT]=true;
+				LGL.MouseTimer[LGL_MOUSE_LEFT].Reset();
 			}
 			if(event.button.button==SDL_BUTTON_MIDDLE)
 			{
 				LGL.MouseDown[LGL_MOUSE_MIDDLE]=false;
 				LGL.MouseRelease[LGL_MOUSE_MIDDLE]=true;
+				LGL.MouseTimer[LGL_MOUSE_MIDDLE].Reset();
 			}
 			if(event.button.button==SDL_BUTTON_RIGHT)
 			{
 				LGL.MouseDown[LGL_MOUSE_RIGHT]=false;
 				LGL.MouseRelease[LGL_MOUSE_RIGHT]=true;
+				LGL.MouseTimer[LGL_MOUSE_RIGHT].Reset();
 			}
 		}
 
@@ -19323,19 +19345,19 @@ LGL_KeyStream()
 //Mouse
 
 void
-LGL_MouseSanityCheck
+lgl_MouseSanityCheck
 (
-	int	button
+	int&	button
 )
 {
 	if(button<0 || button>=3)
 	{
 		printf
 		(
-			"LGL_MouseSanityCheck(): Invalid parameter (%i)\n",
+			"lgl_MouseSanityCheck(): Invalid parameter (%i)\n",
 			button
 		);
-		exit(-1);
+		button=0;
 	}
 }
 
@@ -19395,7 +19417,7 @@ LGL_MouseDown
 	int	button
 )
 {
-	LGL_MouseSanityCheck(button);
+	lgl_MouseSanityCheck(button);
 	return(LGL.MouseDown[button]);
 }
 
@@ -19405,7 +19427,7 @@ LGL_MouseStroke
 	int	button
 )
 {
-	LGL_MouseSanityCheck(button);
+	lgl_MouseSanityCheck(button);
 	return(LGL.MouseStroke[button]);
 }
 
@@ -19415,8 +19437,18 @@ LGL_MouseRelease
 	int	button
 )
 {
-	LGL_MouseSanityCheck(button);
+	lgl_MouseSanityCheck(button);
 	return(LGL.MouseRelease[button]);
+}
+
+float
+LGL_MouseTimer
+(
+	int	button
+)
+{
+	lgl_MouseSanityCheck(button);
+	return(LGL.MouseTimer[button].SecondsSinceLastReset());
 }
 
 void
@@ -19612,7 +19644,7 @@ LGL_JoyName
 
 	if(which==1000)
 	{
-		exit(-1);
+		LGL_Exit();
 	}
 	
 	int Major=0;
@@ -19718,7 +19750,7 @@ LGL_JoyName
 		return(returnme);
 	}
 	printf("LGL_JoyName(): Error, unable to find name of Joystick #%i\n",which);
-	exit(0);
+	LGL_Exit();
 }
 
 void
@@ -19733,27 +19765,27 @@ lgl_JoySanityCheck
 	if(Joystick>=4)
 	{
 		printf("lgl_JoySanityCheck(): LGL only supports 4 joysticks! (You requested #%i)\n",Joystick);
-		exit(0);
+		LGL_Exit();
 	}
 	if(Joystick<-1)
 	{
 		printf("lgl_JoySanityCheck(): Joysticks %i is invalid! You can't have a negative joystick (except -1, which means any)!\n",Joystick);
-		exit(0);
+		LGL_Exit();
 	}
 	if(Button>=32 || Button<0)
 	{
 		printf("lgl_JoySanityCheck(): There is no button %i!\n",Button);
-		exit(0);
+		LGL_Exit();
 	}
 	if(Side<0 || Side>1)
 	{
 		printf("lgl_JoySanityCheck(): Invalid Side parameter (%i)\n",Side);
-		exit(0);
+		LGL_Exit();
 	}
 	if(Axis<0 || Axis>1)
 	{
 		printf("lgl_JoySanityCheck(): Invalid Axis parameter (%i)\n",Axis);
-		exit(0);
+		LGL_Exit();
 	}
 }
 
@@ -22627,7 +22659,7 @@ lgl_NetConnectionEvilPathScan
 	)
 	{
 		printf("lgl_NetConnectionEvilPathScan('%s'): Error!! Path is evil. Remote system is hostile. Exiting...\n",path);
-		exit(0);
+		LGL_Exit();
 	}
 }
 
@@ -23490,7 +23522,7 @@ LGL_NetConnection
 			"LGL_NetConnection(%i,%i,%i,%i): Error! Invalid IP Address.\n",
 			ip0,ip1,ip2,ip3
 		);
-		exit(0);
+		LGL_Exit();
 	}
 
 	ConstructorGeneric();
@@ -23593,7 +23625,7 @@ ConstructorGeneric()
 	if(LGL_NetAvailable()==false)
 	{
 		printf("LGL_NetConnection::ConstructorGeneric(): Error! Network unavailable.\n");
-		exit(0);
+		LGL_Exit();
 	}
 	Host[0]='\0';
 	for(int a=0;a<4;a++) IP[a]=0;
@@ -23645,7 +23677,7 @@ ConnectTCP
 	if(port<=0 || port>32767)
 	{
 		printf("LGL_NetConnection::ConnectTCP(%i): Error! Port is out of range...\n",port);
-		exit(0);
+		LGL_Exit();
 	}
 	if(IP[0]==-1)
 	{
@@ -23655,7 +23687,7 @@ ConnectTCP
 	if(strcmp(Host,"Server")==0)
 	{
 		printf("LGL_NetConnection::ConnectTCP(%i): Error! Servers can't establish connections!\n",port);
-		exit(0);
+		LGL_Exit();
 	}
 	
 	Port=port;
@@ -23684,7 +23716,7 @@ ListenTCP
 	if(port<=0 || port>32767)
 	{
 		printf("LGL_NetConnection::ListenTCP(%i): Error! Port is invalid\n",port);
-		exit(0);
+		LGL_Exit();
 	}
 	if(strcmp(Host,"Server")!=0)
 	{
@@ -23967,7 +23999,7 @@ SendDirectory
 	if(dir==NULL)
 	{
 		printf("LGL_NetConnection::SendDirectory(dir): Error! dir cannot be NULL\n");
-		exit(0);
+		LGL_Exit();
 	}
 	if(Connection_Status!=2)
 	{
@@ -24331,7 +24363,7 @@ IPQuad
 	if(whichQuad<0 || whichQuad>3)
 	{
 		printf("LGL_NetConnection::IPQuad(%i): Error! Argument must be [0,3]\n",whichQuad);
-		exit(0);
+		LGL_Exit();
 	}
 	if(blockUntilResolution)
 	{
@@ -27036,14 +27068,14 @@ LGL_ScreenShot
 	if(temp==NULL)
 	{
 		printf("LGL_ScreenShot(): Error! Unable to SDL_CreateGFBSurface().\n");
-		exit(-1);
+		LGL_Exit();
 	}
 
 	pixels=(unsigned char*)malloc(3*LGL.WindowResolutionX*LGL.WindowResolutionY);
 	if(pixels==NULL)
 	{
 		printf("LGL_ScreenShot(): Error! Unable to malloc() pixel buffer.\n");
-		exit(-1);
+		LGL_Exit();
 	}
 
 	glReadBuffer(GL_FRONT_LEFT);
@@ -27104,14 +27136,14 @@ lgl_DrawLogPlayback
 	if(inFile==NULL)
 	{
 		printf("lgl_DrawLogPlayback(NULL): Error! Can't fopen NULL filename!\n");
-		exit(0);
+		LGL_Exit();
 	}
 		
 	FILE* f=fopen(inFile,"r");
 	if(f==NULL)
 	{
 		printf("lgl_DrawLogPlayback(%s): Error! Couldn't fopen file!\n",inFile);
-		exit(0);
+		LGL_Exit();
 	}
 	fclose(f);
 }
@@ -28396,7 +28428,7 @@ LGL_Semaphore
 	if(Sem==NULL)
 	{
 		printf("LGL_Semaphore::LGL_Semaphore(): Error! Returned NULL.\n");
-		exit(0);
+		LGL_Exit();
 	}
 	Promiscuous=promiscuous;
 }

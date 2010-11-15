@@ -545,6 +545,7 @@ videoEncoderThread
 	}
 
 	tt->VideoEncoderTerminateSignal=-1;
+	tt->VideoEncoderEndSignal=1;
 	tt->VideoEncoderAudioOnly=false;
 
 	return(0);
@@ -692,6 +693,8 @@ TurntableObj
 
 	LowRez=false;
 	AspectRatioMode=0;
+	EncodeEveryTrack=0;
+	EncodeEveryTrackIndex=0;
 
 	Database=database;
 	char musicRoot[2048];
@@ -819,31 +822,41 @@ NextFrame
 	float	secondsElapsed
 )
 {
-	if(LGL_AudioJackXrun())
+	//Deal with low memory
 	{
-		VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()/2);
-	}
-
-	if(LGL_RamFreeMB()<100)
-	{
-		if(VideoFront->GetFrameBufferAddRadius()>2)
+		if(LGL_AudioJackXrun())
 		{
-			VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()-1);
+			VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()/2);
 		}
-	}
-	else if(LGL_RamFreeMB()>200)
-	{
-		if(VideoFrontRadiusIncreaseDelayTimer.SecondsSinceLastReset()>0.5f)
+
+		if(LGL_RamFreeMB()<100)
 		{
-			int radiusDesired = GetVideoBufferFrames();
-			int radiusNow = VideoFront->GetFrameBufferAddRadius();
-			if(radiusNow<radiusDesired)
+			if(VideoFront->GetFrameBufferAddRadius()>2)
 			{
-				VideoFront->SetFrameBufferAddRadius(radiusNow+1);
-				VideoFrontRadiusIncreaseDelayTimer.Reset();
+				VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()-1);
+			}
+		}
+		else if(LGL_RamFreeMB()>200)
+		{
+			if(VideoFrontRadiusIncreaseDelayTimer.SecondsSinceLastReset()>0.5f)
+			{
+				int radiusDesired = GetVideoBufferFrames();
+				int radiusNow = VideoFront->GetFrameBufferAddRadius();
+				if(radiusNow<radiusDesired)
+				{
+					VideoFront->SetFrameBufferAddRadius(radiusNow+1);
+					VideoFrontRadiusIncreaseDelayTimer.Reset();
+				}
 			}
 		}
 	}
+
+	if(LGL_KeyStroke(LGL_KEY_F8))
+	{
+		EncodeEveryTrack=!EncodeEveryTrack;
+		EncodeEveryTrackIndex=FileSelectInt;
+	}
+
 
 	unsigned int target =
 		(Focus ? TARGET_FOCUS : 0) |
@@ -1123,6 +1136,20 @@ NextFrame
 		}
 
 		int fileSelect = Input.FileSelect(target);
+		if(EncodeEveryTrack)
+		{
+			if(DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed)
+			{
+				if(FileSelectInt==EncodeEveryTrackIndex)
+				{
+					EncodeEveryTrackIndex++;
+				}
+			}
+			else
+			{
+				fileSelect = (EncodeEveryTrackIndex==FileSelectInt);
+			}
+		}
 		if
 		(
 			fileSelect > 0 &&
@@ -1192,6 +1219,7 @@ NextFrame
 						filenameSnd=filenameCached;
 					}
 					LGL_DrawLogWrite("!dvj::NewSound|%s|%i\n",filenameSnd,Which);
+//printf("Loading '%s'\n",filenameSnd);
 					Sound=new LGL_Sound
 					(
 						 filenameSnd,
@@ -1217,6 +1245,7 @@ NextFrame
 					else
 					{
 						Mode=1;
+						Mode1Timer.Reset();
 						DatabaseEntryNow=DatabaseFilteredEntries[FileSelectInt];
 						DecodeTimer.Reset();
 						SecondsLast=0.0f;
@@ -1253,6 +1282,10 @@ NextFrame
 				{
 					BadFileFlash=1.0f;
 					DatabaseFilteredEntries[FileSelectInt]->Loadable=false;
+					if(EncodeEveryTrack)
+					{
+						EncodeEveryTrackIndex++;
+					}
 				}
 			}
 			else if
@@ -1318,6 +1351,18 @@ NextFrame
 			FileSelectInt +
 			Input.FileScroll(target);
 
+		if(EncodeEveryTrack)
+		{
+			if(EncodeEveryTrackIndex>(int)DatabaseFilteredEntries.size())
+			{
+				EncodeEveryTrack=false;
+			}
+			else
+			{
+				FileSelectFloat=EncodeEveryTrackIndex;
+			}
+		}
+
 		if(FileSelectFloat<0)
 		{
 			FileSelectFloat=0;
@@ -1351,7 +1396,8 @@ NextFrame
 		if
 		(
 			Sound->IsUnloadable() ||
-			Input.DecodeAbort(target)
+			Input.DecodeAbort(target) ||
+			Mode1Timer.SecondsSinceLastReset()>5.0f
 		)
 		{
 			//Abort load. Select new track.
@@ -1363,6 +1409,10 @@ NextFrame
 			if(LGL_VideoDecoder* dec = GetVideo())
 			{
 				LGL_DrawLogWrite("!dvj::DeleteVideo|%s\n",dec->GetPath());
+			}
+			if(EncodeEveryTrack)
+			{
+				EncodeEveryTrackIndex++;
 			}
 			return;
 		}
@@ -1582,7 +1632,6 @@ NextFrame
 			)
 			{
 				//Unset Save Point
-printf("Unset!\n");
 				SavePointSeconds[SavePointIndex]=-1.0f;
 				SavePointUnsetFlashPercent[SavePointIndex]=1.0f;
 				SaveMetaData();
@@ -2368,6 +2417,14 @@ printf("Unset!\n");
 
 		//Eject
 		int eject = Input.WaveformEject(target);
+		if(EncodeEveryTrack)
+		{
+			if(VideoEncoderEndSignal==1)
+			{
+				eject=2;
+				EncodeEveryTrackIndex++;
+			}
+		}
 		if(eject > 0)
 		{
 			if
@@ -2885,6 +2942,7 @@ printf("Unset!\n");
 
 			VideoEncoderTerminateSignal=0;
 			VideoEncoderBeginSignal=0;
+			VideoEncoderEndSignal=0;
 			strcpy(VideoEncoderPathSrc,SoundSrcPath);
 			VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
 

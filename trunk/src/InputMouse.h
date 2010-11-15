@@ -154,6 +154,8 @@ private:
 
 	LGL_Timer
 		EntireWaveformScrubberTimer;
+	LGL_Timer
+		MouseMotionTimer;
 
 	DVJ_GuiTarget
 		HoverTarget;

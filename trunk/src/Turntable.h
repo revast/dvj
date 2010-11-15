@@ -149,6 +149,7 @@ private:
 	int				Mode;	//0=File Select
 						//1=Loading...
 						//2=Waveform
+	LGL_Timer			Mode1Timer;
 	LGL_Sound*			Sound;
 	char				SoundName[2048];
 	char				SoundSrcPath[2048];
@@ -298,6 +299,7 @@ public:
 	char				VideoEncoderPathSrc[2048];
 	int				VideoEncoderTerminateSignal;
 	int				VideoEncoderBeginSignal;
+	int				VideoEncoderEndSignal;
 	float				VideoEncoderUnsupportedCodecTime;
 	char				VideoEncoderUnsupportedCodecName[64];
 
@@ -346,6 +348,8 @@ static	bool				SurroundMode;
 	int				AspectRatioMode;	//0: Respect AR
 								//1: Fill
 								//2: Tile
+	bool				EncodeEveryTrack;
+	int				EncodeEveryTrackIndex;
 
 public:
 
