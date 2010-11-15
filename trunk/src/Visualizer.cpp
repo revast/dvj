@@ -85,6 +85,7 @@ VisualizerObj()
 
 	VideoFPSDisplay=0.0f;
 	LowMemoryWarningScalar=0.0f;
+	LowMemoryMB=75;
 
 	char tmp[2048];
 
@@ -340,6 +341,10 @@ DrawVisuals
 		if(LowMemoryWarningScalar>0)
 		{
 			float bri=LGL_Min(LowMemoryWarningScalar,1.0f);
+			if(LowMemoryTimer.SecondsSinceLastReset()>1.0f)
+			{
+				LowMemoryMB=LGL_RamFreeMB();
+			}
 			LGL_GetFont().DrawString
 			(
 				l+0.025f*w,
@@ -349,7 +354,7 @@ DrawVisuals
 				false,
 				0.75f*bri,
 				"LOW MEMORY: %iMB",
-				LGL_RamFreeMB()
+				LowMemoryMB
 			);
 			LGL_GetFont().DrawString
 			(
