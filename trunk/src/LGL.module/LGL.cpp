@@ -8742,28 +8742,28 @@ void
 LGL_VideoDecoder::
 SetTime
 (
-	float	seconds
+	double	seconds
 )
 {
 	TimeSecondsPrev=TimeSeconds;
 	TimeSeconds=seconds;
 }
 
-float
+double
 LGL_VideoDecoder::
 GetTime()
 {
 	return(TimeSeconds);
 }
 
-float
+double
 LGL_VideoDecoder::
 GetLengthSeconds()
 {
 	return(LengthSeconds);
 }
 
-float
+double
 LGL_VideoDecoder::
 GetFPS()
 {
@@ -8971,7 +8971,7 @@ printf("Checksum: %i\n",checksum);
 	return(Image);
 }
 
-float
+double
 LGL_VideoDecoder::
 GetSecondsBufferedLeft()
 {
@@ -9004,7 +9004,7 @@ GetSecondsBufferedLeft()
 		return(0.0f);
 	}
 
-	float seconds=0.0f;
+	double seconds=0.0f;
 
 	bool wrap=false;
 	for(int a=currentIndex;;a--)
@@ -9047,7 +9047,7 @@ GetSecondsBufferedLeft()
 	return(seconds);
 }
 
-float
+double
 LGL_VideoDecoder::
 GetSecondsBufferedRight()
 {
@@ -9080,7 +9080,7 @@ GetSecondsBufferedRight()
 		return(0.0f);
 	}
 	
-	float seconds=0.0f;
+	double seconds=0.0f;
 	bool wrap=false;
 	for(int a=currentIndex;;a++)
 	{
@@ -9274,9 +9274,9 @@ MaybeLoadVideo()
 		}
 	}
 
-	LengthSeconds=FormatContext->duration/(float)(AV_TIME_BASE);
+	LengthSeconds=FormatContext->duration/(double)(AV_TIME_BASE);
 	FPS=
-		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(float)
+		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(double)
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den;
 /*
 printf("FPS A = %i / %i (%.2f)\n",
@@ -9569,7 +9569,7 @@ MaybeRecycleBuffers()
 			)
 		)
 		{
-			if(totalBuffers>FrameBufferAddRadius+FrameBufferSubtractRadius+4)
+			if((int)totalBuffers>FrameBufferAddRadius+FrameBufferSubtractRadius+4)
 			{
 				delete FrameBufferReady[a];
 				totalBuffers--;
@@ -9594,7 +9594,7 @@ GetThreadTerminate()
 	return(ThreadTerminate);
 }
 
-float
+double
 LGL_VideoDecoder::
 TimestampToSeconds(long timestamp)
 {
@@ -9605,13 +9605,13 @@ long
 LGL_VideoDecoder::
 SecondsToTimestamp
 (
-	float	seconds
+	double	seconds
 )
 {
 	return(seconds*FPSTimestamp);
 }
 
-float
+double
 LGL_VideoDecoder::
 FrameNumberToSeconds(long frameNumber)
 {
@@ -9622,7 +9622,7 @@ long
 LGL_VideoDecoder::
 SecondsToFrameNumber
 (
-	float	seconds
+	double	seconds
 )
 {
 	return(seconds*FPS);
