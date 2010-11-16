@@ -1188,15 +1188,15 @@ public:
 	void			SetVideo(const char* path);
 	const char*		GetPath();
 	const char*		GetPathShort();
-	void			SetTime(float seconds);
-	float			GetTime();
-	float			GetLengthSeconds();
-	float			GetFPS();
+	void			SetTime(double seconds);
+	double			GetTime();
+	double			GetLengthSeconds();
+	double			GetFPS();
 	int			GetFPSDisplayed();
 	int			GetFPSMissed();
 	LGL_Image*		GetImage();
-	float			GetSecondsBufferedLeft();
-	float			GetSecondsBufferedRight();
+	double			GetSecondsBufferedLeft();
+	double			GetSecondsBufferedRight();
 	void			SetFrameBufferAddBackwards(bool addBackwards=true);
 	int			GetFrameBufferAddRadius() const;
 	void			SetFrameBufferAddRadius(int frames);
@@ -1214,7 +1214,7 @@ private:
 	char			PathShort[2048];
 	char			PathNext[2048];
 	
-	float			FPS;
+	double			FPS;
 	double			FPSTimestamp;
 	int			FPSDisplayed;
 	int			FPSMissed;
@@ -1222,9 +1222,9 @@ private:
 	int			FPSDisplayedMissCounter;
 	LGL_Timer		FPSDisplayedTimer;
 	LGL_Timer		FPSDisplayedConstTimeTimer;
-	float			LengthSeconds;
-	float			TimeSeconds;
-	float			TimeSecondsPrev;
+	double			LengthSeconds;
+	double			TimeSeconds;
+	double			TimeSecondsPrev;
 	long			FrameNumberNext;
 	long			FrameNumberDisplayed;
 
@@ -1264,10 +1264,10 @@ private:
 
 	//Internal Functions
 
-	float			TimestampToSeconds(long timestamp);
-	long			SecondsToTimestamp(float seconds);
-	float			FrameNumberToSeconds(long frameNumber);
-	long			SecondsToFrameNumber(float seconds);
+	double			TimestampToSeconds(long timestamp);
+	long			SecondsToTimestamp(double seconds);
+	double			FrameNumberToSeconds(long frameNumber);
+	long			SecondsToFrameNumber(double seconds);
 	long			FrameNumberToTimestamp(long FrameNumber);
 	long			GetNextFrameNumberToDecode();
 	long			GetNextFrameNumberToDecodePredictNext(bool mustNotBeDecoded=true);
