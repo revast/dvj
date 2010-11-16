@@ -479,10 +479,10 @@ Refresh
 					ThreadDieHint=true;
 				}
 				SkipMetadataHint=true;
-				LGL_ThreadWait(Thread);
-				Thread=NULL;
 				if(die)
 				{
+					LGL_ThreadWait(Thread);
+					Thread=NULL;
 					exit(0);
 				}
 			}

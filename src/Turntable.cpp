@@ -3143,7 +3143,7 @@ LGL_ClipRectEnable(ViewportLeft,ViewportRight,ViewportBottom,ViewportTop);
 				GlitchInterpolation=40.0f/44100.0f;
 				if(LuminScratchSamplePositionDesired!=-10000)
 				{
-					GlitchInterpolation=40.0/44100.0;
+					GlitchInterpolation=40.0/44100.0;	//Affects scratch responsiveness.
 				}
 				GlitchLength=(int)floor(.01f*64*512*2);
 			}
