@@ -25,6 +25,14 @@
 
 #include "LGL.module/LGL.h"
 
+InputXponentObj&
+GetInputXponent()
+{
+	static InputXponentObj inputXponent;
+	return(inputXponent);
+}
+
+
 //Core
 
 void

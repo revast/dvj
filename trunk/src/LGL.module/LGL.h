@@ -71,6 +71,12 @@
 
 #include "RtMidi.module/RtMidi.h"
 
+//OSC
+#include <iostream>
+#include "oscpack/osc/OscReceivedElements.h"
+#include "oscpack/osc/OscPacketListener.h"
+#include "oscpack/ip/UdpSocket.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -2733,6 +2739,46 @@ LGL_GetJP8k();
 #define	LGL_JP8K_BUTTON_KEY_3_10		94
 #define	LGL_JP8K_BUTTON_KEY_3_11		95
 #define	LGL_JP8K_BUTTON_KEY_4_0			96
+
+
+
+//OSC
+
+class LGL_OscServer :
+	private osc::OscPacketListener
+{
+
+public:
+
+			LGL_OscServer(int port);
+			~LGL_OscServer();
+	
+	void		ThreadFunc();
+
+protected:
+
+	virtual void	ProcessMessage
+			(
+				const osc::ReceivedMessage&	m,
+				const IpEndpointName&		remoteEndpoint
+			);
+
+private:
+
+	SDL_Thread*	Thread;
+	UdpListeningReceiveSocket
+			ListeningReceiveSocket;
+
+};
+
+class LGL_OscClient
+{
+
+public:
+
+			LGL_OscClient(int port);
+
+};
 
 
 

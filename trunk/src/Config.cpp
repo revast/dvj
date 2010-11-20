@@ -119,6 +119,8 @@ CreateDefaultDVJRC
 		fprintf(fd,"wireMemory=1\n");
 		fprintf(fd,"escDuringScanExits=1\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"oscServerPort=7000\n");
+		fprintf(fd,"\n");
 		fclose(fd);
 	}
 }
@@ -739,6 +741,13 @@ GetVideoBufferFramesFreqSense()
 		videoBufferFramesFreqSense=2;
 	}
 	return(videoBufferFramesFreqSense);
+}
+
+int
+GetOscServerPort()
+{
+	int port=dvjrcConfigFile->read<int>("oscServerPort",7000);
+	return(port);
 }
 
 #define MAP_STRING_TO_SDLK(X) if(strcasecmp(str,#X)==0) return(X)
