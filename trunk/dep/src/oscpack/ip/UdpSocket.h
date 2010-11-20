@@ -38,6 +38,8 @@
 #include "IpEndpointName.h"
 #endif /* INCLUDED_IPENDPOINTNAME_H */
 
+#include <stdexcept>
+
 
 class PacketListener;
 class TimerListener;
@@ -140,8 +142,15 @@ public:
 	UdpListeningReceiveSocket( const IpEndpointName& localEndpoint, PacketListener *listener )
         : listener_( listener )
     {
-        Bind( localEndpoint );
-        mux_.AttachSocketListener( this, listener_ );
+	try
+	{
+        	Bind( localEndpoint );
+	        mux_.AttachSocketListener( this, listener_ );
+	}
+	catch(std::runtime_error& e)
+	{
+		printf("ERROR: Could not bind OSC socket!\n");
+	}
     }
 
     ~UdpListeningReceiveSocket()
