@@ -54,8 +54,9 @@ InputMouseObj()
 	EntireWaveformScrubberSpeed=-1.0f;
 	EntireWaveformScrubberForceNow=-1.0f;
 	EntireWaveformScrubberForceNext=-1.0f;
-	HoverTarget=GUI_TARGET_NULL;
-	DragTarget=GUI_TARGET_NULL;
+	HoverElement=GUI_ELEMENT_NULL;
+	DragElement=GUI_ELEMENT_NULL;
+	DragTarget=0;
 	DragFloat=-1.0f;
 	DragFloatNext=-1.0f;
 }
@@ -99,12 +100,13 @@ NextFrame()
 	EntireWaveformScrubberForceNow=EntireWaveformScrubberForceNext;
 	EntireWaveformScrubberForceNext=-1.0f;
 
-	HoverTarget=HoverTargetNext;
-	HoverTargetNext=GUI_TARGET_NULL;
+	HoverElement=HoverElementNext;
+	HoverElementNext=GUI_ELEMENT_NULL;
 	
 	if(LGL_MouseRelease(LGL_MOUSE_LEFT))
 	{
-		DragTarget=GUI_TARGET_NULL;
+		DragTarget=TARGET_NONE;
+		DragElement=GUI_ELEMENT_NULL;
 		DragFloatNext=-1.0f;
 	}
 
@@ -147,14 +149,12 @@ float
 InputMouseObj::
 XfaderSpeakers()	const
 {
-	if(DragTarget==GUI_TARGET_XFADER_LEFT)
+	if(DragElement==GUI_ELEMENT_XFADER_LEFT)
 	{
 		return(DragFloat);
 	}
-	else
-	{
-		return(-1.0f);
-	}
+
+	return(-1.0f);
 }
 
 float
@@ -169,14 +169,12 @@ float
 InputMouseObj::
 XfaderHeadphones()	const
 {
-	if(DragTarget==GUI_TARGET_XFADER_RIGHT)
+	if(DragElement==GUI_ELEMENT_XFADER_RIGHT)
 	{
 		return(DragFloat);
 	}
-	else
-	{
-		return(-1.0f);
-	}
+
+	return(-1.0f);
 }
 
 float
@@ -358,9 +356,9 @@ WaveformEQLow
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		if(DragTarget==GUI_TARGET_EQ_LOW)
+		if(DragElement==GUI_ELEMENT_EQ_LOW)
 		{
 			return(DragFloat);
 		}
@@ -398,9 +396,9 @@ WaveformEQMid
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		if(DragTarget==GUI_TARGET_EQ_MID)
+		if(DragElement==GUI_ELEMENT_EQ_MID)
 		{
 			return(DragFloat);
 		}
@@ -438,9 +436,9 @@ WaveformEQHigh
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		if(DragTarget==GUI_TARGET_EQ_HIGH)
+		if(DragElement==GUI_ELEMENT_EQ_HIGH)
 		{
 			return(DragFloat);
 		}
@@ -478,9 +476,9 @@ WaveformGain
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		if(DragTarget==GUI_TARGET_EQ_GAIN)
+		if(DragElement==GUI_ELEMENT_EQ_GAIN)
 		{
 			if(DragFloat!=-1.0f)
 			{
@@ -587,9 +585,9 @@ WaveformRecordHold
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		return(DragTarget==GUI_TARGET_WAVEFORM);
+		return(DragElement==GUI_ELEMENT_WAVEFORM);
 	}
 	else
 	{
@@ -605,9 +603,12 @@ WaveformRecordSpeed
 )	const
 {
 	float speed=0.0f;
-	if(WaveformRecordHold(target))
+	if(target & DragTarget)
 	{
-		speed=LGL_MouseDX()*175.0f;
+		if(WaveformRecordHold(target))
+		{
+			speed=LGL_MouseDX()*175.0f;
+		}
 	}
 	return(speed);
 }
@@ -675,55 +676,55 @@ WaveformSavePointPick
 )	const
 {
 	int pick=-9999;
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
 		if(LGL_MouseStroke(LGL_MOUSE_LEFT))
 		{
-			if(HoverTarget==GUI_TARGET_SAVEPOINT_BPM_ALPHA)
+			if(HoverElement==GUI_ELEMENT_SAVEPOINT_BPM_ALPHA)
 			{
 				pick=-2;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_BPM_OMEGA)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_BPM_OMEGA)
 			{
 				pick=-1;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_0)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_0)
 			{
 				pick=0;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_1)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_1)
 			{
 				pick=1;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_2)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_2)
 			{
 				pick=2;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_3)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_3)
 			{
 				pick=3;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_4)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_4)
 			{
 				pick=4;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_5)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_5)
 			{
 				pick=5;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_6)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_6)
 			{
 				pick=6;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_7)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_7)
 			{
 				pick=7;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_8)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_8)
 			{
 				pick=8;
 			}
-			else if(HoverTarget==GUI_TARGET_SAVEPOINT_9)
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_9)
 			{
 				pick=9;
 			}
@@ -740,7 +741,7 @@ WaveformSavePointSet
 )	const
 {
 	bool set=false;
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
 		if(LGL_KeyDown(LGL_KEY_SHIFT))
 		{
@@ -764,7 +765,7 @@ WaveformSavePointUnsetPercent
 )	const
 {
 	float percent=0.0f;
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
 		if(LGL_KeyDown(LGL_KEY_SHIFT))
 		{
@@ -853,9 +854,9 @@ WaveformJumpToPercent
 {
 	float percent=-1.0f;
 
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		if(DragTarget==GUI_TARGET_ENTIRE_WAVEFORM)
+		if(DragElement==GUI_ELEMENT_ENTIRE_WAVEFORM)
 		{
 			percent=DragFloat;
 		}
@@ -942,7 +943,7 @@ WaveformLoopToggle
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
 		return(WaveformLoopToggleNow);
 	}
@@ -981,7 +982,7 @@ WaveformVideoSelect
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
 		return(WaveformVideoSelectNow);
 	}
@@ -998,9 +999,9 @@ WaveformVideoBrightness
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		if(DragTarget==GUI_TARGET_VIS_VIDEO)
+		if(DragElement==GUI_ELEMENT_VIS_VIDEO)
 		{
 			return(DragFloat);
 		}
@@ -1027,9 +1028,9 @@ WaveformFreqSenseBrightness
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		if(DragTarget==GUI_TARGET_VIS_FREQSENSE)
+		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE)
 		{
 			return(DragFloat);
 		}
@@ -1056,7 +1057,7 @@ WaveformVideoAspectRatioNext
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
 		return(WaveformVideoAspectRatioNextNow);
 	}
@@ -1073,9 +1074,9 @@ WaveformOscilloscopeBrightness
 	unsigned int	target
 )	const
 {
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		if(DragTarget==GUI_TARGET_VIS_OSCILLOSCOPE)
+		if(DragElement==GUI_ELEMENT_VIS_OSCILLOSCOPE)
 		{
 			return(DragFloat);
 		}
@@ -1092,9 +1093,9 @@ WaveformSyncBPM
 )	const
 {
 	bool sync=false;
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
-		if(HoverTarget == GUI_TARGET_BPM_PITCH)
+		if(HoverElement == GUI_ELEMENT_BPM_PITCH)
 		{
 			if(LGL_MouseDown(LGL_MOUSE_LEFT))
 			{
@@ -1115,7 +1116,7 @@ WaveformPointerScratch
 	float targetX=-1.0f;
 
 	/*
-	if(target & TARGET_FOCUS)
+	if(target & DragTarget)
 	{
 		if(LGL_MouseDown(LGL_MOUSE_LEFT))
 		{
@@ -1300,38 +1301,55 @@ SetEntireWaveformScrubberForceNext
 	}
 }
 
-DVJ_GuiTarget
+DVJ_GuiElement
 InputMouseObj::
-GetHoverTarget()	const
+GetHoverElement()	const
 {
-	return(HoverTarget);
+	return(HoverElement);
 }
 
-DVJ_GuiTarget
+int
 InputMouseObj::
-GetDragTarget()	const
+GetDragTarget()		const
 {
 	return(DragTarget);
 }
 
-void
+DVJ_GuiElement
 InputMouseObj::
-SetHoverTarget
-(
-	DVJ_GuiTarget	hoverTarget
-)
+GetDragElement()	const
 {
-	HoverTargetNext=hoverTarget;
+	return(DragElement);
 }
 
 void
 InputMouseObj::
 SetDragTarget
 (
-	DVJ_GuiTarget	dragTarget
+	int	target
 )
 {
-	DragTarget=dragTarget;
+	DragTarget=target;
+}
+
+void
+InputMouseObj::
+SetHoverElement
+(
+	DVJ_GuiElement	hoverElement
+)
+{
+	HoverElementNext=hoverElement;
+}
+
+void
+InputMouseObj::
+SetDragElement
+(
+	DVJ_GuiElement	dragElement
+)
+{
+	DragElement=dragElement;
 }
 
 void

@@ -54,7 +54,7 @@ NextFrame()
 {
 	if(LoopMeasuresDelta==0)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_LOOP_MEASURES)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_LOOP_MEASURES)
 		{
 			if(LGL_MultiTouchFingerCount()>=2)
 			{
@@ -121,7 +121,7 @@ InputMultiTouchObj::
 XfaderSpeakersDelta()	const
 {
 	float delta=0.0f;
-	if(GetInputMouse().GetHoverTarget()==GUI_TARGET_XFADER_LEFT)
+	if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_XFADER_LEFT)
 	{
 		delta=LGL_MultiTouchDY2()*KNOB_SCALAR*0.5f;
 	}
@@ -141,7 +141,7 @@ InputMultiTouchObj::
 XfaderHeadphonesDelta()	const
 {
 	float delta=0.0f;
-	if(GetInputMouse().GetHoverTarget()==GUI_TARGET_XFADER_RIGHT)
+	if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_XFADER_RIGHT)
 	{
 		delta=LGL_MultiTouchDY2()*KNOB_SCALAR*0.5f;
 	}
@@ -184,7 +184,7 @@ FileScroll
 	float scroll=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_NULL)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_NULL)
 		{
 			if(LGL_MultiTouchFingerCount()>=2)
 			{
@@ -275,7 +275,7 @@ WaveformNudge
 	float nudge=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_WAVEFORM)
 		{
 			if(LGL_MultiTouchFingerCount()==2)
 			{
@@ -313,11 +313,11 @@ WaveformPitchbendDelta
 		if
 		(
 			(
-				GetInputMouse().GetHoverTarget()==GUI_TARGET_BPM_PITCH &&
+				GetInputMouse().GetHoverElement()==GUI_ELEMENT_BPM_PITCH &&
 				LGL_MultiTouchFingerCount()>=2
 			) ||
 			(
-				GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM &&
+				GetInputMouse().GetHoverElement()==GUI_ELEMENT_WAVEFORM &&
 				LGL_MultiTouchFingerCount()==3
 			)
 		)
@@ -353,7 +353,7 @@ WaveformEQLowDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_LOW)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_EQ_LOW)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -393,7 +393,7 @@ WaveformEQMidDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_MID)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_EQ_MID)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -433,7 +433,7 @@ WaveformEQHighDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_HIGH)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_EQ_HIGH)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -473,7 +473,7 @@ WaveformGainDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_EQ_GAIN)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_EQ_GAIN)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -559,7 +559,7 @@ WaveformRewindFF
 	{
 		if(LGL_KeyDown(LGL_KEY_SHIFT))
 		{
-			if(GetInputMouse().GetHoverTarget()==GUI_TARGET_ENTIRE_WAVEFORM)
+			if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_ENTIRE_WAVEFORM)
 			{
 				if(LGL_MultiTouchFingerCount()>=2)
 				{
@@ -583,7 +583,7 @@ WaveformRecordHold
 	{
 		if(LGL_KeyDown(LGL_KEY_SHIFT))
 		{
-			if(GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM)
+			if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_WAVEFORM)
 			{
 				if(LGL_MultiTouchFingerCount()>=2)
 				{
@@ -607,7 +607,7 @@ WaveformRecordSpeed
 	{
 		if(LGL_KeyDown(LGL_KEY_SHIFT))
 		{
-			if(GetInputMouse().GetHoverTarget()==GUI_TARGET_WAVEFORM)
+			if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_WAVEFORM)
 			{
 				if(LGL_MultiTouchFingerCount()>=2)
 				{
@@ -927,7 +927,7 @@ WaveformVideoBrightnessDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_VIS_VIDEO)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_VIDEO)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -967,7 +967,7 @@ WaveformFreqSenseBrightnessDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_VIS_FREQSENSE)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -1018,7 +1018,7 @@ WaveformOscilloscopeBrightnessDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverTarget()==GUI_TARGET_VIS_OSCILLOSCOPE)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_OSCILLOSCOPE)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}

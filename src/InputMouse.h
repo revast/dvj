@@ -157,12 +157,13 @@ private:
 	LGL_Timer
 		MouseMotionTimer;
 
-	DVJ_GuiTarget
-		HoverTarget;
-	DVJ_GuiTarget
-		HoverTargetNext;
-	DVJ_GuiTarget
-		DragTarget;
+	DVJ_GuiElement
+		HoverElement;
+	DVJ_GuiElement
+		HoverElementNext;
+	int	DragTarget;
+	DVJ_GuiElement
+		DragElement;
 	float	DragFloat;
 	float	DragFloatNext;
 
@@ -185,13 +186,15 @@ public:
 	float	GetEntireWaveformScrubberRecallPercent();
 	void	SetEntireWaveformScrubberForceNext(float pct);
 
-	DVJ_GuiTarget
-		GetDragTarget() const;
-	DVJ_GuiTarget
-		GetHoverTarget() const;
-	
-	void	SetHoverTarget(DVJ_GuiTarget hoverTarget);
-	void	SetDragTarget(DVJ_GuiTarget dragTarget);
+	int	GetDragTarget()	const;
+	DVJ_GuiElement
+		GetDragElement() const;
+	DVJ_GuiElement
+		GetHoverElement() const;
+
+	void	SetDragTarget(int target);
+	void	SetHoverElement(DVJ_GuiElement hoverElement);
+	void	SetDragElement(DVJ_GuiElement dragElement);
 	void	SetDragFloatNext(float dragFloat);
 
 };

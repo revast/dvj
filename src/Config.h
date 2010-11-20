@@ -109,6 +109,9 @@ GetVideoBufferFrames();
 int
 GetVideoBufferFramesFreqSense();
 
+int
+GetOscServerPort();
+
 int	GetInputKeyboardFocusChangeKey();
 int	GetInputKeyboardFocusBottomKey();
 int	GetInputKeyboardFocusTopKey();

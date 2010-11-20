@@ -98,12 +98,14 @@
 #define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
 #define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
+#define	LGL_PRIORITY_OSC		(0.85f)
 #else
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(0.8f-1.0f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.7f-1.0f)
 #define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f-1.0f)
+#define	LGL_PRIORITY_OSC		(0.85f-1.0f)
 #endif
 
 #define LGL_EQ_SAMPLES_FFT	(512)
@@ -21849,6 +21851,91 @@ LGL_GetJP8k()
 {
 	return(LGL.JP8k);
 }
+
+
+
+//OSC
+
+LGL_OscClient::
+LGL_OscClient
+(
+	int	port
+)
+{
+	//
+}
+
+int
+lgl_OscServer_thread
+(
+	void*	object
+)
+{
+	LGL_ThreadSetPriority(LGL_PRIORITY_OSC,"Osc");
+	LGL_OscServer* oscServer = (LGL_OscServer*)object;
+	oscServer->ThreadFunc();
+	return(0);
+}
+
+LGL_OscServer::
+LGL_OscServer
+(
+	int	port
+) :
+	ListeningReceiveSocket
+	(
+		IpEndpointName
+		(
+			IpEndpointName::ANY_ADDRESS,
+			port
+		),
+		this
+	)
+{
+	Thread=LGL_ThreadCreate(lgl_OscServer_thread,this);
+}
+
+LGL_OscServer::
+~LGL_OscServer()
+{
+	//Cleanup Thread
+	{
+		ListeningReceiveSocket.AsynchronousBreak();
+		LGL_ThreadWait(Thread);
+		Thread=NULL;
+	}
+}
+
+void
+LGL_OscServer::
+ThreadFunc()
+{
+	ListeningReceiveSocket.Run();
+}
+
+void
+LGL_OscServer::
+ProcessMessage
+(
+	const osc::ReceivedMessage&	m,
+	const IpEndpointName&		remoteEndpoint
+)
+{
+	printf("ProcessMessage(): Alpha!\n");
+	try
+	{
+		printf("OSC Message: %s\n",m.AddressPattern());
+	}
+	catch(osc::Exception& e)
+	{
+		// any parsing errors such as unexpected argument types, or 
+		// missing arguments get thrown as exceptions.
+		std::cout << "error while parsing message: "
+			<< m.AddressPattern() << ": " << e.what() << "\n";
+	}
+}
+
+
 
 //VidCam
 

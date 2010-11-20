@@ -1,6 +1,6 @@
 /*
  *
- * InputXponent.h
+ * InputOsc.h - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,23 +21,30 @@
  *
  */
 
-#ifndef	_INPUT_XPONENT_H_
-#define	_INPUT_XPONENT_H_
+#ifndef	_INPUT_OSC_H_
+#define	_INPUT_OSC_H_
 
 #include "Input.h"
+#include "InputOscElement.h"
 
-class InputXponentObj;
+#include "LGL.module/LGL.h"
 
-InputXponentObj& GetInputXponent();
+class InputOscObj;
 
-class InputXponentObj : public InputObj
+InputOscObj& GetInputOsc();
+
+class InputOscObj :
+	public InputObj,
+	public LGL_OscServer
 {
 
 public:
 
+		InputOscObj(int port);
+virtual		~InputOscObj();
+
 	//Core
 
-	void	AddChild(InputObj*);
 virtual	void	NextFrame();
 
 	//Global Input
@@ -123,21 +130,37 @@ virtual	float	WaveformOscilloscopeBrightness	(unsigned int target)	const;	//How 
 virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
 
+protected:
+
+	virtual void	ProcessMessage
+			(
+				const osc::ReceivedMessage&	m,
+				const IpEndpointName&		remoteEndpoint
+			);
+
 private:
 
-	LGL_Timer
-		WaveformSavePointUnsetTimerLeft;
-	LGL_Timer
-		WaveformSavePointUnsetTimerRight;
-
-	bool	WaveformLoopAllDebumpLeft;
-	bool	WaveformLoopAllDebumpRight;
+	int			GetIndexFromTarget(unsigned int target) const;
+	void			AddOscElement(InputOscElementObj& oscElement);
+	std::vector<InputOscElementObj*>
+				OscElementList;
 	
-	bool	WaveformAudioInputModeToggleLeft;
-	bool	WaveformAudioInputModeDebumpLeft;
-	bool	WaveformAudioInputModeToggleRight;
-	bool	WaveformAudioInputModeDebumpRight;
+	char			OscMessageUnknown[2048];
+	float			OscMessageUnknownBrightness;
+	LGL_Semaphore		OscMessageUnknownSemaphore;
+
+	InputOscElementObj	XfaderSpeakersOscElement;
+	InputOscElementObj	XfaderHeadphonesOscElement;
+	InputOscElementObj	WaveformEqLowOscElement[2];
+	InputOscElementObj	WaveformEqMidOscElement[2];
+	InputOscElementObj	WaveformEqHighOscElement[2];
+	InputOscElementObj	WaveformGainOscElement[2];
+	InputOscElementObj	WaveformVideoBrightnessOscElement[2];
+	InputOscElementObj	WaveformOscilloscopeBrightnessOscElement[2];
+	InputOscElementObj	WaveformFreqSenseBrightnessOscElement[2];
+	InputOscElementObj	WaveformPitchbendOscElement[2];
+
 };
 
-#endif	//_INPUT_XPONENT_H_
+#endif	//_INPUT_OSC_H_
 

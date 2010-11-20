@@ -26,6 +26,7 @@
 #include "Common.h"
 #include "Config.h"
 #include "Input.h"
+#include "InputXponent.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -1873,16 +1874,21 @@ NextFrame
 			Nudge=Input.WaveformNudge(target);
 
 			candidate = Input.WaveformPitchbend(target);
+			float candidateXponent = GetInputXponent().WaveformPitchbend(target);
 			if(candidate!=0.0f)
 			{
 				if
 				(
-					PitchbendLastSetBySlider ||
+					candidateXponent==0.0f ||
+					PitchbendLastSetByXponentSlider ||
 					fabsf(Pitchbend-candidate)<0.0025f
 				)
 				{
 					Pitchbend=candidate;
-					PitchbendLastSetBySlider=true;
+					if(candidateXponent!=0.0f)
+					{
+						PitchbendLastSetByXponentSlider=true;
+					}
 				}
 			}
 			candidate=Input.WaveformPitchbendDelta(target);
@@ -1894,7 +1900,7 @@ NextFrame
 					Pitchbend+candidate,
 					4.0f
 				);
-				PitchbendLastSetBySlider=false;
+				PitchbendLastSetByXponentSlider=false;
 			}
 		}
 
@@ -2517,7 +2523,7 @@ NextFrame
 		}
 	}
 
-	if(Focus)
+	if(1 || Focus)
 	{
 		if(Mode==2)
 		{
@@ -2923,7 +2929,7 @@ NextFrame
 			*/
 			PauseMultiplier=0;
 			Pitchbend=1;
-			PitchbendLastSetBySlider=false;
+			PitchbendLastSetByXponentSlider=false;
 			Nudge=0;
 			MixerNudge=0;
 			GlitchPure=false;
@@ -4037,6 +4043,7 @@ DrawFrame
 			LGL_DrawLogPause();
 			Turntable_DrawWaveform
 			(
+				Which,
 				Sound,							//01
 				Sound->IsLoaded(),					//02
 				dec ? dec->GetPathShort() : NULL,			//03
@@ -5740,7 +5747,7 @@ SetBPMAdjusted
 		}
 	}
 	Pitchbend=best*Pitchbend;
-	PitchbendLastSetBySlider=false;
+	PitchbendLastSetByXponentSlider=false;
 }
 
 void

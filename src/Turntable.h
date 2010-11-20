@@ -203,7 +203,7 @@ private:
 	int				Channel;
 	int				PauseMultiplier;		//0=Paused	1=Playing
 	float				Pitchbend;
-	bool				PitchbendLastSetBySlider;
+	bool				PitchbendLastSetByXponentSlider;
 	float				Nudge;
 	float				MixerNudge;
 	bool				MixerVideoMute;

@@ -111,6 +111,7 @@ Turntable_DrawDirTree
 void
 Turntable_DrawWaveform
 (
+	int		which,
 	LGL_Sound*	sound,
 	bool		loaded,
 	const char*	videoPathShort,
@@ -178,6 +179,7 @@ Turntable_DrawWaveform
 void
 Turntable_DrawSliders
 (
+	int		which,
 	float		viewPortLeft,
 	float		viewPortRight,
 	float		viewPortBottom,
