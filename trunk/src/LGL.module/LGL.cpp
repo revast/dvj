@@ -21856,15 +21856,6 @@ LGL_GetJP8k()
 
 //OSC
 
-LGL_OscClient::
-LGL_OscClient
-(
-	int	port
-)
-{
-	//
-}
-
 int
 lgl_OscServer_thread
 (
@@ -21921,7 +21912,6 @@ ProcessMessage
 	const IpEndpointName&		remoteEndpoint
 )
 {
-	printf("ProcessMessage(): Alpha!\n");
 	try
 	{
 		printf("OSC Message: %s\n",m.AddressPattern());
@@ -21933,6 +21923,64 @@ ProcessMessage
 		std::cout << "error while parsing message: "
 			<< m.AddressPattern() << ": " << e.what() << "\n";
 	}
+}
+
+//OSC Client
+
+LGL_OscClient::
+LGL_OscClient
+(
+	const char*	address,
+	int		port
+) :	TransmitSocket
+	(
+		IpEndpointName
+		(
+			address,
+			port
+		)
+	),
+	PacketStream
+	(
+		PacketStreamBuffer,
+		PacketStreamBufferBytes
+	)
+{
+	IpEndpointName
+	(
+		address,
+		port
+	).AddressAsString(Address);
+}
+
+LGL_OscClient::
+~LGL_OscClient()
+{
+	//
+}
+
+osc::OutboundPacketStream&
+LGL_OscClient::
+Stream()
+{
+	return(PacketStream);
+}
+
+void
+LGL_OscClient::
+Send()
+{
+	TransmitSocket.Send(PacketStreamBuffer,PacketStreamBufferBytes);
+
+	osc::OutboundPacketStream freshStream(PacketStreamBuffer,PacketStreamBufferBytes);
+	PacketStream=freshStream;
+}
+
+const char*
+LGL_OscClient::
+GetAddress()
+{
+	return(Address);
 }
 
 

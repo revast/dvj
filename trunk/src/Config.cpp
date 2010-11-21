@@ -1116,8 +1116,7 @@ CreateDefaultKeyboardInput
 		fprintf(fd,"#\n");
 		fprintf(fd,"# keyboard.txt\n");
 		fprintf(fd,"#\n");
-		fprintf(fd,"# For a list of all possible LGL_KEY_* keys, see:\n");
-		//fprintf(fd,"# \thttp://sector7.xor.aps.anl.gov/programming/sdl/html/sdlkey.html\n");
+		fprintf(fd,"# For a list of all possible LGL_KEY_* values, see:\n");
 		fprintf(fd,"# TODO... Ask interim.descriptor@gmail.com, for now\n");
 		fprintf(fd,"#\n");
 		fprintf(fd,"\n");

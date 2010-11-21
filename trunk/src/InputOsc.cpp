@@ -35,12 +35,13 @@ InputOscObj(int port) :
 	LGL_OscServer(port),
 	OscMessageUnknownSemaphore("OscMessageUnknownSemaphore")
 {
-	InputOscElementObj* elements;
+	OscElementObj* elements;
 
 	//XfaderSpeakers
 	{
 		elements=&XfaderSpeakersOscElement;
-		elements->AddAddressPattern("/1/fader6");
+		elements->AddAddressPatternRecv("/1/fader6");
+		elements->AddAddressPatternRecv("/1/fader3");
 		elements->SetFloatValues
 		(
 			0,
@@ -54,7 +55,7 @@ InputOscObj(int port) :
 	//XfaderHeadphones
 	{
 		elements=&XfaderHeadphonesOscElement;
-		//elements->AddAddressPattern("/1/fader6");
+		//elements->AddAddressPatternRecv("/1/fader6");
 		elements->SetFloatValues
 		(
 			0,
@@ -68,8 +69,8 @@ InputOscObj(int port) :
 	//EQLow
 	{
 		elements=WaveformEqLowOscElement;
-		elements[0].AddAddressPattern("/1/rotary8");
-		elements[1].AddAddressPattern("/1/rotary15");
+		elements[0].AddAddressPatternRecv("/1/rotary8");
+		elements[1].AddAddressPatternRecv("/1/rotary15");
 		for(int a=0;a<2;a++)
 		{
 			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
@@ -87,8 +88,8 @@ InputOscObj(int port) :
 	//EQMid
 	{
 		elements=WaveformEqMidOscElement;
-		elements[0].AddAddressPattern("/1/rotary5");
-		elements[1].AddAddressPattern("/1/rotary13");
+		elements[0].AddAddressPatternRecv("/1/rotary5");
+		elements[1].AddAddressPatternRecv("/1/rotary13");
 		for(int a=0;a<2;a++)
 		{
 			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
@@ -106,8 +107,8 @@ InputOscObj(int port) :
 	//EQHigh
 	{
 		elements=WaveformEqHighOscElement;
-		elements[0].AddAddressPattern("/1/rotary2");
-		elements[1].AddAddressPattern("/1/rotary11");
+		elements[0].AddAddressPatternRecv("/1/rotary2");
+		elements[1].AddAddressPatternRecv("/1/rotary11");
 		for(int a=0;a<2;a++)
 		{
 			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
@@ -125,8 +126,8 @@ InputOscObj(int port) :
 	//VideoBrightness
 	{
 		elements=WaveformVideoBrightnessOscElement;
-		elements[0].AddAddressPattern("/1/rotary7");
-		elements[1].AddAddressPattern("/1/rotary16");
+		elements[0].AddAddressPatternRecv("/1/rotary7");
+		elements[1].AddAddressPatternRecv("/1/rotary16");
 		for(int a=0;a<2;a++)
 		{
 			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
@@ -144,8 +145,8 @@ InputOscObj(int port) :
 	//OscilloscopeBrightness
 	{
 		elements=WaveformOscilloscopeBrightnessOscElement;
-		elements[0].AddAddressPattern("/1/rotary4");
-		elements[1].AddAddressPattern("/1/rotary14");
+		elements[0].AddAddressPatternRecv("/1/rotary4");
+		elements[1].AddAddressPatternRecv("/1/rotary14");
 		for(int a=0;a<2;a++)
 		{
 			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
@@ -163,8 +164,8 @@ InputOscObj(int port) :
 	//FreqSenseBrightness
 	{
 		elements=WaveformFreqSenseBrightnessOscElement;
-		elements[0].AddAddressPattern("/1/rotary1");
-		elements[1].AddAddressPattern("/1/rotary12");
+		elements[0].AddAddressPatternRecv("/1/rotary1");
+		elements[1].AddAddressPatternRecv("/1/rotary12");
 		for(int a=0;a<2;a++)
 		{
 			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
@@ -182,8 +183,8 @@ InputOscObj(int port) :
 	//Gain
 	{
 		elements=WaveformGainOscElement;
-		elements[0].AddAddressPattern("/1/fader2");
-		elements[1].AddAddressPattern("/1/fader3");
+		elements[0].AddAddressPatternRecv("/1/fader2");
+		elements[1].AddAddressPatternRecv("/1/fader3");
 		for(int a=0;a<2;a++)
 		{
 			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
@@ -201,8 +202,8 @@ InputOscObj(int port) :
 	//Pitchbend
 	{
 		elements=WaveformPitchbendOscElement;
-		elements[0].AddAddressPattern("/1/fader4");
-		elements[1].AddAddressPattern("/1/fader5");
+		elements[0].AddAddressPatternRecv("/1/fader4");
+		elements[1].AddAddressPatternRecv("/1/fader5");
 		for(int a=0;a<2;a++)
 		{
 			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
@@ -216,12 +217,19 @@ InputOscObj(int port) :
 			AddOscElement(elements[a]);
 		}
 	}
+
+	//TEST
+	AddOscClient("idPad",7001);
 }
 
 InputOscObj::
 ~InputOscObj()
 {
-	//
+	for(unsigned int a=0;a<OscClientList.size();a++)
+	{
+		delete OscClientList[a];
+	}
+	OscClientList.clear();
 }
 
 //Core
@@ -235,7 +243,39 @@ NextFrame()
 		OscElementList[a]->SwapBackFront();
 	}
 
-	//HACK
+	//TEST
+	{
+		OscElementObj& element = XfaderSpeakersOscElement;
+		float cand=GetInput().XfaderSpeakers();
+		if(cand!=-1.0f)
+		{
+			//Send to OSC Clients
+			for(unsigned int a=0;a<OscClientList.size();a++)
+			{
+				if
+				(
+					strcmp
+					(
+						element.GetRemoteController(),
+						OscClientList[a]->GetAddress()
+					)!=0
+				)
+				{
+					std::vector<char*> addressPatternsSend=element.GetAddressPatternsSend();
+					for(unsigned int b=0;b<addressPatternsSend.size();b++)
+					{
+						OscClientList[a]->Stream() <<
+							osc::BeginMessage(addressPatternsSend[b]) <<
+							element.ConvertDvjToOsc(cand) <<
+							osc::EndMessage;
+						OscClientList[a]->Send();
+					}
+				}
+			}
+		}
+	}
+
+	//Display unknown received OSC messages
 	if(OscMessageUnknownBrightness>0.0f)
 	{
 		LGL_ScopeLock lock(OscMessageUnknownSemaphore);
@@ -1056,7 +1096,7 @@ void
 InputOscObj::
 ProcessMessage
 (
-	const	osc::ReceivedMessage&	m,
+	const osc::ReceivedMessage&	m,
 	const IpEndpointName&		remoteEndpoint
 )
 {
@@ -1159,9 +1199,21 @@ void
 InputOscObj::
 AddOscElement
 (
-	InputOscElementObj&	oscElement
+	OscElementObj&	oscElement
 )
 {
 	OscElementList.push_back(&oscElement);
+}
+
+void
+InputOscObj::
+AddOscClient
+(
+	const char*	host,
+	int		port
+)
+{
+	LGL_OscClient* client = new LGL_OscClient(host,port);
+	OscClientList.push_back(client);
 }
 

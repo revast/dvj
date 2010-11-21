@@ -75,6 +75,7 @@
 #include <iostream>
 #include "oscpack/osc/OscReceivedElements.h"
 #include "oscpack/osc/OscPacketListener.h"
+#include "oscpack/osc/OscOutboundPacketStream.h"
 #include "oscpack/ip/UdpSocket.h"
 
 #include <stdlib.h>
@@ -2776,7 +2777,29 @@ class LGL_OscClient
 
 public:
 
-			LGL_OscClient(int port);
+			LGL_OscClient
+			(
+				const char*	address,
+				int		port
+			);
+			~LGL_OscClient();
+
+	osc::OutboundPacketStream&
+			Stream();
+	void		Send();
+	
+	const char*	GetAddress();
+
+private:
+
+    	UdpTransmitSocket
+			TransmitSocket;
+	osc::OutboundPacketStream
+			PacketStream;
+#define			PacketStreamBufferBytes (1024)
+	char		PacketStreamBuffer[PacketStreamBufferBytes];
+
+	char		Address[2048];
 
 };
 

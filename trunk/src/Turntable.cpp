@@ -919,7 +919,7 @@ NextFrame
 	VideoEncoderUnsupportedCodecTime = LGL_Max(0.0f,VideoEncoderUnsupportedCodecTime-secondsElapsed);
 
 	//Volume
-	candidate=Input.WaveformVolumeSlider(target);
+	candidate=GetInput().WaveformVolumeSlider(target);
 	if(candidate!=-1.0f)
 	{
 		VolumeSlider=candidate;
@@ -930,9 +930,9 @@ NextFrame
 	{
 		for(int a=0;a<3;a++)
 		{
-			if(a==0) candidate = Input.WaveformEQLowDelta(target);
-			else if(a==1) candidate = Input.WaveformEQMidDelta(target);
-			else if(a==2) candidate = Input.WaveformEQHighDelta(target);
+			if(a==0) candidate = GetInput().WaveformEQLowDelta(target);
+			else if(a==1) candidate = GetInput().WaveformEQMidDelta(target);
+			else if(a==2) candidate = GetInput().WaveformEQHighDelta(target);
 			if(candidate!=0.0f)
 			{
 				EQKnob[a]=LGL_Clamp(0.0f,EQKnob[a]+candidate,2.0f);
@@ -944,9 +944,9 @@ NextFrame
 	{
 		for(int a=0;a<3;a++)
 		{
-			if(a==0) candidate = Input.WaveformEQLow(target);
-			else if(a==1) candidate = Input.WaveformEQMid(target);
-			else if(a==2) candidate = Input.WaveformEQHigh(target);
+			if(a==0) candidate = GetInput().WaveformEQLow(target);
+			else if(a==1) candidate = GetInput().WaveformEQMid(target);
+			else if(a==2) candidate = GetInput().WaveformEQHigh(target);
 			if(candidate!=-1.0f)
 			{
 				EQKnob[a]=LGL_Clamp(0.0f,candidate*2.0f,2.0f);
@@ -956,9 +956,9 @@ NextFrame
 
 	//EQ Kill
 	{
-		EQKill[0]=Input.WaveformEQLowKill(target);
-		EQKill[1]=Input.WaveformEQMidKill(target);
-		EQKill[2]=Input.WaveformEQHighKill(target);
+		EQKill[0]=GetInput().WaveformEQLowKill(target);
+		EQKill[1]=GetInput().WaveformEQMidKill(target);
+		EQKill[2]=GetInput().WaveformEQHighKill(target);
 	}
 
 	bool eqChanged=false;
@@ -975,7 +975,7 @@ NextFrame
 		UpdateSoundFreqResponse();
 	}
 
-	VolumeSolo=Input.WaveformVolumeSolo(target);
+	VolumeSolo=GetInput().WaveformVolumeSolo(target);
 
 	if(VideoEncoderTerminateSignal==-1)
 	{
@@ -1129,14 +1129,14 @@ NextFrame
 
 		if
 		(
-			Input.FileMarkUnopened(target) &&
+			GetInput().FileMarkUnopened(target) &&
 			DatabaseFilteredEntries.empty()==false
 		)
 		{
 			DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed=false;
 		}
 
-		int fileSelect = Input.FileSelect(target);
+		int fileSelect = GetInput().FileSelect(target);
 		if(EncodeEveryTrack)
 		{
 			if(DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed)
@@ -1322,7 +1322,7 @@ NextFrame
 		}
 
 		//CAN CRASH. Disabled until fixed.
-		if(0 && Input.FileRefresh(target))
+		if(0 && GetInput().FileRefresh(target))
 		{
 			//
 		}
@@ -1341,7 +1341,7 @@ NextFrame
 			}
 		}
 
-		int tmp=Input.FileIndexHighlight(target);
+		int tmp=GetInput().FileIndexHighlight(target);
 		if(tmp!=-1)
 		{
 			FileSelectFloat=FileTop+tmp;
@@ -1350,7 +1350,7 @@ NextFrame
 
 		FileSelectFloat=
 			FileSelectInt +
-			Input.FileScroll(target);
+			GetInput().FileScroll(target);
 
 		if(EncodeEveryTrack)
 		{
@@ -1397,7 +1397,7 @@ NextFrame
 		if
 		(
 			Sound->IsUnloadable() ||
-			Input.DecodeAbort(target) ||
+			GetInput().DecodeAbort(target) ||
 			Mode1Timer.SecondsSinceLastReset() > (EncodeEveryTrack ? 20.0f : 5.0f)
 		)
 		{
@@ -1423,11 +1423,11 @@ NextFrame
 		SecondsLast=SecondsNow;
 		SecondsNow=Sound->GetPositionSeconds(Channel);
 
-		VolumeKill = Input.WaveformGainKill(target);
+		VolumeKill = GetInput().WaveformGainKill(target);
 
-		float rewindFFFactor=Input.WaveformRewindFF(target);
-		float recordSpeed=Input.WaveformRecordSpeed(target);
-		bool recordHold=Input.WaveformRecordHold(target);
+		float rewindFFFactor=GetInput().WaveformRewindFF(target);
+		float recordSpeed=GetInput().WaveformRecordSpeed(target);
+		bool recordHold=GetInput().WaveformRecordHold(target);
 		if(recordSpeed==0.0f)
 		{
 			RecordSpeedAsZeroUntilZero=false;
@@ -1539,7 +1539,7 @@ NextFrame
 					Sound->SetWarpPoint(Channel);
 				}
 				RecordScratch=true;
-				float driveFactor=Input.WaveformRecordHold(target) ? 0.0f : 1.0f;//LGL_Min(RecordHoldReleaseTimer.SecondsSinceLastReset()*4.0f,1.0f);
+				float driveFactor=GetInput().WaveformRecordHold(target) ? 0.0f : 1.0f;//LGL_Min(RecordHoldReleaseTimer.SecondsSinceLastReset()*4.0f,1.0f);
 
 				float driveSpeed = 
 					(1.0f-driveFactor) * recordSpeed +
@@ -1558,7 +1558,7 @@ NextFrame
 		}
 
 		//Volume
-		VolumeInvertBinary=Input.WaveformVolumeInvert(target);
+		VolumeInvertBinary=GetInput().WaveformVolumeInvert(target);
 
 		Sound->SetRapidInvertProperties
 		(
@@ -1568,7 +1568,7 @@ NextFrame
 		);
 		if(GetBPM()>0)
 		{
-			if(Input.WaveformRapidVolumeInvert(target))
+			if(GetInput().WaveformRapidVolumeInvert(target))
 			{
 				RapidVolumeInvert=true;
 			}
@@ -1583,12 +1583,12 @@ NextFrame
 			RapidVolumeInvert=false;
 		}
 
-		RapidSoloInvert = Input.WaveformRapidSoloInvert(target);
+		RapidSoloInvert = GetInput().WaveformRapidSoloInvert(target);
 
 		//Save Points
 		if(AudioInputMode==false)
 		{
-			if(Input.WaveformSavePointPrev(target))
+			if(GetInput().WaveformSavePointPrev(target))
 			{
 				//Prev Save Point
 				SavePointIndex--;
@@ -1597,7 +1597,7 @@ NextFrame
 					SavePointIndex=11;
 				}
 			}
-			if(Input.WaveformSavePointNext(target))
+			if(GetInput().WaveformSavePointNext(target))
 			{
 				//Next Save Point
 				SavePointIndex++;
@@ -1606,7 +1606,7 @@ NextFrame
 					SavePointIndex=0;
 				}
 			}
-			int savepointCandidate=Input.WaveformSavePointPick(target);
+			int savepointCandidate=GetInput().WaveformSavePointPick(target);
 			if(savepointCandidate!=-9999)
 			{
 				SavePointIndex=LGL_Clamp(0,savepointCandidate+2,11);
@@ -1614,7 +1614,7 @@ NextFrame
 			if
 			(
 				SavePointIndex>=0 &&
-				Input.WaveformSavePointSet(target)
+				GetInput().WaveformSavePointSet(target)
 			)
 			{
 				//Set Save Point
@@ -1628,7 +1628,7 @@ NextFrame
 			if
 			(
 				SavePointIndex>=0 &&
-				Input.WaveformSavePointUnsetPercent(target)==1.0f &&
+				GetInput().WaveformSavePointUnsetPercent(target)==1.0f &&
 				SavePointSeconds[SavePointIndex]!=-1.0f
 			)
 			{
@@ -1647,7 +1647,7 @@ NextFrame
 					SavePointUnsetNoisePercent[SavePointIndex]=LGL_Max
 					(
 						SavePointUnsetNoisePercent[SavePointIndex],
-						LGL_Min(1,(SavePointSeconds[SavePointIndex]>-1.0f) ? (Input.WaveformSavePointUnsetPercent(target)*2.0f) : 0)
+						LGL_Min(1,(SavePointSeconds[SavePointIndex]>-1.0f) ? (GetInput().WaveformSavePointUnsetPercent(target)*2.0f) : 0)
 					);
 				}
 			}
@@ -1659,7 +1659,7 @@ NextFrame
 			)
 			{
 				//Shift current save point
-				candidate=Input.WaveformSavePointShift(target);
+				candidate=GetInput().WaveformSavePointShift(target);
 				if(candidate!=0.0f)
 				{
 					SavePointSeconds[SavePointIndex]=LGL_Max
@@ -1671,7 +1671,7 @@ NextFrame
 				}
 			}
 
-			candidate=Input.WaveformSavePointShiftAll(target);
+			candidate=GetInput().WaveformSavePointShiftAll(target);
 			if(candidate!=0.0f)
 			{
 				//Shift all save points
@@ -1687,7 +1687,7 @@ NextFrame
 			if
 			(
 				BPMAvailable() &&
-				Input.WaveformSavePointShiftAllHere(target)
+				GetInput().WaveformSavePointShiftAllHere(target)
 			)
 			{
 				double delta = Sound->GetPositionSeconds(Channel)-GetBPMFirstBeatSeconds();
@@ -1702,7 +1702,7 @@ NextFrame
 			}
 			if
 			(
-				Input.WaveformSavePointJumpNow(target) &&
+				GetInput().WaveformSavePointJumpNow(target) &&
 				SavePointSeconds[SavePointIndex]!=-1.0f
 			)
 			{
@@ -1727,7 +1727,7 @@ NextFrame
 			}
 			if
 			(
-				Input.WaveformSavePointJumpAtMeasure(target) &&
+				GetInput().WaveformSavePointJumpAtMeasure(target) &&
 				SavePointSeconds[SavePointIndex]!=-1.0f &&
 				GetBPM()!=0 &&
 				PauseMultiplier!=0
@@ -1793,7 +1793,7 @@ NextFrame
 				}
 			}
 
-			candidate = Input.WaveformJumpToPercent(target);
+			candidate = GetInput().WaveformJumpToPercent(target);
 			if(candidate!=-1.0f)
 			{
 				if(Sound->IsLoaded())
@@ -1871,9 +1871,9 @@ NextFrame
 		//Pitch
 		if(AudioInputMode==false)
 		{
-			Nudge=Input.WaveformNudge(target);
+			Nudge=GetInput().WaveformNudge(target);
 
-			candidate = Input.WaveformPitchbend(target);
+			candidate = GetInput().WaveformPitchbend(target);
 			float candidateXponent = GetInputXponent().WaveformPitchbend(target);
 			if(candidate!=0.0f)
 			{
@@ -1891,7 +1891,7 @@ NextFrame
 					}
 				}
 			}
-			candidate=Input.WaveformPitchbendDelta(target);
+			candidate=GetInput().WaveformPitchbendDelta(target);
 			if(candidate!=0.0f)
 			{
 				Pitchbend=LGL_Clamp
@@ -1908,7 +1908,7 @@ NextFrame
 		if
 		(
 			//AudioInputMode==false &&
-			Input.WaveformStutter(target)
+			GetInput().WaveformStutter(target)
 		)
 		{
 			bool glitchDuoPrev=GlitchDuo;
@@ -1916,8 +1916,8 @@ NextFrame
 
 			float fractionOfBeat=1.0f;
 
-			GlitchPitch = 2*LGL_Max(0.0f,Input.WaveformStutterPitch(target));
-			float glitchSpeed = LGL_Max(0.0f,Input.WaveformStutterSpeed(target));
+			GlitchPitch = 2*LGL_Max(0.0f,GetInput().WaveformStutterPitch(target));
+			float glitchSpeed = LGL_Max(0.0f,GetInput().WaveformStutterSpeed(target));
 
 			if(glitchSpeed>=0.0f)
 			{
@@ -1959,12 +1959,12 @@ NextFrame
 		}
 		LoopActive = 
 		(
-			(Input.WaveformLoopToggle(target) ? !LoopActive : LoopActive) &&
+			(GetInput().WaveformLoopToggle(target) ? !LoopActive : LoopActive) &&
 			RapidVolumeInvert==false
 		);
 		LoopThenRecallActive =
 		(
-			Input.WaveformLoopThenRecallActive(target) &&
+			GetInput().WaveformLoopThenRecallActive(target) &&
 			Sound->GetWarpPointIsLocked(Channel)==false &&
 			RapidVolumeInvert==false
 		);
@@ -1998,7 +1998,7 @@ NextFrame
 
 			if
 			(
-				Input.WaveformLoopAll(target) &&
+				GetInput().WaveformLoopAll(target) &&
 				Sound->IsLoaded()
 			)
 			{
@@ -2007,7 +2007,7 @@ NextFrame
 				LoopActive=true;
 			}
 
-			if(Input.WaveformLoopMeasuresHalf(target))
+			if(GetInput().WaveformLoopMeasuresHalf(target))
 			{
 				if(QuantizePeriodMeasuresExponent==exponentAll)
 				{
@@ -2020,13 +2020,13 @@ NextFrame
 				loopChanged=true;
 			}
 
-			if(Input.WaveformLoopMeasuresDouble(target))
+			if(GetInput().WaveformLoopMeasuresDouble(target))
 			{
 				QuantizePeriodMeasuresExponent=LGL_Min(QuantizePeriodMeasuresExponent+1,exponentMax);
 				loopChanged=true;
 			}
 
-			candidate=Input.WaveformLoopMeasuresExponent(target);
+			candidate=GetInput().WaveformLoopMeasuresExponent(target);
 			if(candidate!=WAVEFORM_LOOP_MEASURES_EXPONENT_NULL)
 			{
 				if
@@ -2138,7 +2138,7 @@ NextFrame
 
 			if
 			(
-				Input.WaveformLoopAll(target) &&
+				GetInput().WaveformLoopAll(target) &&
 				Sound->IsLoaded()
 			)
 			{
@@ -2147,7 +2147,7 @@ NextFrame
 				loopChanged=true;
 				LoopActive=true;
 			}
-			if(Input.WaveformLoopSecondsLess(target))
+			if(GetInput().WaveformLoopSecondsLess(target))
 			{
 				QuantizePeriodNoBPMSeconds=LGL_Max
 				(
@@ -2158,7 +2158,7 @@ NextFrame
 				loopChanged=true;
 			}
 
-			if(Input.WaveformLoopSecondsMore(target))
+			if(GetInput().WaveformLoopSecondsMore(target))
 			{
 				QuantizePeriodNoBPMSeconds=LGL_Min
 				(
@@ -2169,7 +2169,7 @@ NextFrame
 				loopChanged=true;
 			}
 
-			candidate=Input.WaveformLoopMeasuresExponent(target);
+			candidate=GetInput().WaveformLoopMeasuresExponent(target);
 			if(candidate!=WAVEFORM_LOOP_MEASURES_EXPONENT_NULL)
 			{
 				QuantizePeriodNoBPMSeconds=LGL_Clamp(secondsMin,candidate,secondsMax);
@@ -2218,7 +2218,7 @@ NextFrame
 		}
 
 		//AutoDivergeRecall
-		int autoDivergeRecall = Input.WaveformAutoDivergeRecall(target);
+		int autoDivergeRecall = GetInput().WaveformAutoDivergeRecall(target);
 		if(autoDivergeRecall==-2)
 		{
 			AutoDivergeRecallActive=!AutoDivergeRecallActive;
@@ -2273,12 +2273,12 @@ NextFrame
 			}
 		}
 
-		if(Input.WaveformVideoSelect(target))
+		if(GetInput().WaveformVideoSelect(target))
 		{
 			SelectNewVideo();
 		}
 
-		int mode=Input.WaveformAudioInputMode(target);
+		int mode=GetInput().WaveformAudioInputMode(target);
 		if(mode!=-1)
 		{
 			if(mode==2)
@@ -2296,13 +2296,13 @@ NextFrame
 			SelectNewVideo();
 		}
 
-		bool next = Input.WaveformVideoAspectRatioNext(target);
+		bool next = GetInput().WaveformVideoAspectRatioNext(target);
 		if(next)
 		{
 			AspectRatioMode=(AspectRatioMode+1)%3;
 		}
 
-		float newBright=Input.WaveformVideoBrightness(target);
+		float newBright=GetInput().WaveformVideoBrightness(target);
 		if(newBright!=-1.0f)
 		{
 			VideoBrightness=newBright;
@@ -2310,11 +2310,11 @@ NextFrame
 		VideoBrightness=LGL_Clamp
 		(
 			0.0f,
-			VideoBrightness+Input.WaveformVideoBrightnessDelta(target),
+			VideoBrightness+GetInput().WaveformVideoBrightnessDelta(target),
 			1.0f
 		);
 
-		newBright=Input.WaveformOscilloscopeBrightness(target);
+		newBright=GetInput().WaveformOscilloscopeBrightness(target);
 		if(newBright!=-1.0f)
 		{
 			OscilloscopeBrightness=newBright;
@@ -2322,19 +2322,19 @@ NextFrame
 		OscilloscopeBrightness=LGL_Clamp
 		(
 			0.0f,
-			OscilloscopeBrightness+Input.WaveformOscilloscopeBrightnessDelta(target),
+			OscilloscopeBrightness+GetInput().WaveformOscilloscopeBrightnessDelta(target),
 			1.0f
 		);
 
-		newBright=Input.WaveformFreqSenseBrightness(target);
+		newBright=GetInput().WaveformFreqSenseBrightness(target);
 		if(newBright==-1.0f)
 		{
-			if(Input.WaveformFreqSenseBrightnessDelta(target)!=0.0f)
+			if(GetInput().WaveformFreqSenseBrightnessDelta(target)!=0.0f)
 			{
 				newBright=LGL_Clamp
 				(
 					0.0f,
-					FreqSenseBrightness+Input.WaveformFreqSenseBrightnessDelta(target),
+					FreqSenseBrightness+GetInput().WaveformFreqSenseBrightnessDelta(target),
 					1.0f
 				);
 			}
@@ -2357,7 +2357,7 @@ NextFrame
 			}
 		}
 
-		float newRate=Input.WaveformVideoAdvanceRate(target);
+		float newRate=GetInput().WaveformVideoAdvanceRate(target);
 		if(newRate!=-1.0f)
 		{
 			float oldTime=GetVideoTimeSeconds();
@@ -2401,7 +2401,7 @@ NextFrame
 		if
 		(
 			//AudioInputMode==false &&
-			Input.WaveformTogglePause(target)
+			GetInput().WaveformTogglePause(target)
 		)
 		{
 			//Toggle PauseMultiplier
@@ -2422,7 +2422,7 @@ NextFrame
 		}
 
 		//Eject
-		int eject = Input.WaveformEject(target);
+		int eject = GetInput().WaveformEject(target);
 		if(EncodeEveryTrack)
 		{
 			if(VideoEncoderEndSignal==1)
@@ -2552,22 +2552,22 @@ NextFrame
 				}
 			}
 
-			VolumeMultiplierNow=LGL_Clamp(0.0f,VolumeMultiplierNow+Input.WaveformGainDelta(target),16.0f);
-			candidate = Input.WaveformGain(target);
+			VolumeMultiplierNow=LGL_Clamp(0.0f,VolumeMultiplierNow+GetInput().WaveformGainDelta(target),16.0f);
+			candidate = GetInput().WaveformGain(target);
 			if(candidate!=-1.0f)
 			{
 				VolumeMultiplierNow = candidate;
 			}
 
 			//bool wasScratching = LuminScratch || RecordScratch;
-			if(Input.WaveformPointerScratch(target)!=-1.0f)
+			if(GetInput().WaveformPointerScratch(target)!=-1.0f)
 			{
 				//Lumin Scratch
 				float centerSample=Sound->GetPositionSamples(Channel);
 				float leftSample=centerSample-64*512*Pitchbend*2*Sound->GetHz()/44100.0f;
 				float rightSample=centerSample+64*512*Pitchbend*2*Sound->GetHz()/44100.0f;
 
-				float gSamplePercent=0.5f+1.05f*(Input.WaveformPointerScratch(target)-0.5f);
+				float gSamplePercent=0.5f+1.05f*(GetInput().WaveformPointerScratch(target)-0.5f);
 				gSamplePercent = LGL_Clamp(0,(gSamplePercent-0.2f)*(1.0f/0.6f),1);
 
 				LuminScratch=true;
@@ -4026,7 +4026,7 @@ DrawFrame
 				Sound->GetWarpPointSecondsAlpha(Channel),		//37
 				QuantizePeriodMeasuresExponent,				//38
 				QuantizePeriodNoBPMSeconds,				//39
-				Input.WaveformRecordHold(target) ? 'T' : 'F',		//40
+				GetInput().WaveformRecordHold(target) ? 'T' : 'F',		//40
 				SoundName,						//41
 				videoSecondsBufferedLeft,				//42
 				videoSecondsBufferedRight,				//43
@@ -4094,7 +4094,7 @@ DrawFrame
 				Sound->GetWarpPointSecondsAlpha(Channel),		//48
 				QuantizePeriodMeasuresExponent,				//49
 				QuantizePeriodNoBPMSeconds,				//50
-				Input.WaveformRecordHold(target),			//51
+				GetInput().WaveformRecordHold(target),			//51
 				SoundName,						//52
 				videoSecondsBufferedLeft,				//53
 				videoSecondsBufferedRight,				//54
