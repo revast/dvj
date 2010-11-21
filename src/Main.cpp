@@ -44,7 +44,6 @@ float				QuadrentSplitX;
 float				QuadrentSplitY;
 bool				ExitPrompt;
 
-MixerObj*			Mixer;
 VisualizerObj*			Visualizer;
 bool				VisualizerFullScreen;
 
@@ -149,8 +148,7 @@ void InitializeGlobals()
 	}
 
 	Visualizer=new VisualizerObj;
-	Mixer=new MixerObj;
-	Mixer->SetVisualizer(Visualizer);
+	GetMixer().SetVisualizer(Visualizer);
 }
 
 void
@@ -335,7 +333,7 @@ void NextFrame()
 		if(LGL_KeyStroke(LGL_KEY_Y))
 		{
 			delete Visualizer;
-			delete Mixer;
+			GetMixer().Cleanup();
 			LGL_Exit();
 		}
 		if
@@ -345,7 +343,7 @@ void NextFrame()
 		)
 		{
 			ExitPrompt=false;
-			Mixer->BlankFocusFilterText();
+			GetMixer().BlankFocusFilterText();
 		}
 	}
 
@@ -385,10 +383,10 @@ void NextFrame()
 	}
 
 	//Mixer
-	Mixer->NextFrame(LGL_SecondsSinceLastFrame());
+	GetMixer().NextFrame(LGL_SecondsSinceLastFrame());
 
 	//Visuals
-	Visualizer->NextFrame(LGL_SecondsSinceLastFrame(),Mixer->GetTurntables());
+	Visualizer->NextFrame(LGL_SecondsSinceLastFrame(),GetMixer().GetTurntables());
 
 	if(LGL_MouseMotion())
 	{
@@ -480,7 +478,7 @@ void NextFrame()
 		OmniFaderDirection=0.0f;
 	}
 	LGL_SetRecordDVJToFileVolume(OmniFader);
-	Mixer->SetVolumeMaster(OmniFader);
+	GetMixer().SetVolumeMaster(OmniFader);
 	LGL_DrawLogWrite("dvj::OmniFader|%.3f\n",OmniFader);
 }
 
@@ -519,16 +517,16 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	if(VisualizerFullScreen)
 	{
 		if(LogEverything==false && LogVisuals==false) LGL_DrawLogPause();
-		//Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		//Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 		if(LogEverything==false && LogVisuals==false) LGL_DrawLogPause(false);
 	}
 
-	Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+	Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 	if(LGL_DisplayCount()>1 && LGL_IsFullScreen())
 	{
 		LGL_SetActiveDisplay(1);
 		Visualizer->SetViewportVisuals(0.0f,1.0f,0.0f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 		float left=0.0f;
 		float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
 		float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
@@ -540,27 +538,27 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	else if(EIGHT_WAY==false)
 	{
 		Visualizer->SetViewportVisuals(0.0f,0.5f,0.5f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 	}
 	else
 	{
 		Visualizer->SetViewportVisuals(0.00f,0.25f,0.75f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 		Visualizer->SetViewportVisuals(0.25f,0.50f,0.75f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer()GetTurntables());
 		Visualizer->SetViewportVisuals(0.50f,0.75f,0.75f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 		Visualizer->SetViewportVisuals(0.75f,1.0f,0.75f,1.0f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 
 		Visualizer->SetViewportVisuals(0.00f,0.25f,0.50f,0.75f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 		Visualizer->SetViewportVisuals(0.25f,0.50f,0.50f,0.75f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 		Visualizer->SetViewportVisuals(0.50f,0.75f,0.50f,0.75f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 		Visualizer->SetViewportVisuals(0.75f,1.0f,0.50f,0.75f);
-		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,Mixer->GetTurntables());
+		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
 	}
 	*/
 
@@ -607,7 +605,7 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		if(VisualizerFullScreen==false)
 		{
 			if(LogEverything==false) LGL_DrawLogPause();
-			Mixer->DrawFrame(visualsQuadrent, visualizerZoomOutPercent);
+			GetMixer().DrawFrame(visualsQuadrent, visualizerZoomOutPercent);
 			if(LogEverything==false) LGL_DrawLogPause(false);
 		}
 	}
@@ -832,7 +830,7 @@ int main(int argc, char** argv)
 
 	if(eeepc)
 	{
-		Mixer->SetLowRez(eeepc);
+		GetMixer().SetLowRez(eeepc);
 		LGL_ThreadSetPriority(-0.9f);
 		LGL_SmoothLines(false);
 		LGL_SmoothPolygons(false);

@@ -30,6 +30,81 @@ GetInput()
 	return(input);
 }
 
+float	InputFocusChange(unsigned int target) { return(GetInput().FocusChange()); }
+float	InputFocusBottom(unsigned int target) { return(GetInput().FocusBottom()); }
+float	InputFocusTop(unsigned int target) { return(GetInput().FocusTop()); }
+float	InputXfaderSpeakers(unsigned int target) { return(GetInput().XfaderSpeakers()); }
+float	InputXfaderSpeakersDelta(unsigned int target) { return(GetInput().XfaderSpeakersDelta()); }
+float	InputXfaderHeadphones(unsigned int target) { return(GetInput().XfaderHeadphones()); }
+float	InputXfaderHeadphonesDelta(unsigned int target) { return(GetInput().XfaderHeadphonesDelta()); }
+float	InputSyncTopToBottom(unsigned int target) { return(GetInput().SyncTopToBottom()); }
+float	InputMasterToHeadphones(unsigned int target) { return(GetInput().MasterToHeadphones()); }
+float	InputFileScroll(unsigned int target) { return(GetInput().FileScroll(target)); }
+float	InputFileSelect(unsigned int target) { return(GetInput().FileSelect(target)); }
+float	InputFileRefresh(unsigned int target) { return(GetInput().FileRefresh(target)); }
+float	InputFileIndexHighlight(unsigned int target) { return(GetInput().FileIndexHighlight(target)); }
+float	InputDecodeAbort(unsigned int target) { return(GetInput().DecodeAbort(target)); }
+float	InputWaveformEject(unsigned int target) { return(GetInput().WaveformEject(target)); }
+float	InputWaveformTogglePause(unsigned int target) { return(GetInput().WaveformTogglePause(target)); }
+float	InputWaveformNudge(unsigned int target) { return(GetInput().WaveformNudge(target)); }
+float	InputWaveformPitchbend(unsigned int target) { return(GetInput().WaveformPitchbend(target)); }
+float	InputWaveformPitchbendDelta(unsigned int target) { return(GetInput().WaveformPitchbendDelta(target)); }
+float	InputWaveformEQLow(unsigned int target) { return(GetInput().WaveformEQLow(target)); }
+float	InputWaveformEQLowDelta(unsigned int target) { return(GetInput().WaveformEQLowDelta(target)); }
+float	InputWaveformEQLowKill(unsigned int target) { return(GetInput().WaveformEQLowKill(target)); }
+float	InputWaveformEQMid(unsigned int target) { return(GetInput().WaveformEQMid(target)); }
+float	InputWaveformEQMidDelta(unsigned int target) { return(GetInput().WaveformEQMidDelta(target)); }
+float	InputWaveformEQMidKill(unsigned int target) { return(GetInput().WaveformEQMidKill(target)); }
+float	InputWaveformEQHigh(unsigned int target) { return(GetInput().WaveformEQHigh(target)); }
+float	InputWaveformEQHighDelta(unsigned int target) { return(GetInput().WaveformEQHighDelta(target)); }
+float	InputWaveformEQHighKill(unsigned int target) { return(GetInput().WaveformEQHighKill(target)); }
+float	InputWaveformGain(unsigned int target) { return(GetInput().WaveformGain(target)); }
+float	InputWaveformGainDelta(unsigned int target) { return(GetInput().WaveformGainDelta(target)); }
+float	InputWaveformGainKill(unsigned int target) { return(GetInput().WaveformGainKill(target)); }
+float	InputWaveformVolumeSlider(unsigned int target) { return(GetInput().WaveformVolumeSlider(target)); }
+float	InputWaveformVolumeInvert(unsigned int target) { return(GetInput().WaveformVolumeInvert(target)); }
+float	InputWaveformRapidVolumeInvert(unsigned int target) { return(GetInput().WaveformRapidVolumeInvert(target)); }
+float	InputWaveformRapidSoloInvert(unsigned int target) { return(GetInput().WaveformRapidSoloInvert(target)); }
+float	InputWaveformVolumeSolo(unsigned int target) { return(GetInput().WaveformVolumeSolo(target)); }
+float	InputWaveformRewindFF(unsigned int target) { return(GetInput().WaveformRewindFF(target)); }
+float	InputWaveformRecordHold(unsigned int target) { return(GetInput().WaveformRecordHold(target)); }
+float	InputWaveformRecordSpeed(unsigned int target) { return(GetInput().WaveformRecordSpeed(target)); }
+float	InputWaveformStutter(unsigned int target) { return(GetInput().WaveformStutter(target)); }
+float	InputWaveformStutterPitch(unsigned int target) { return(GetInput().WaveformStutterPitch(target)); }
+float	InputWaveformStutterSpeed(unsigned int target) { return(GetInput().WaveformStutterSpeed(target)); }
+float	InputWaveformSavePointPrev(unsigned int target) { return(GetInput().WaveformSavePointPrev(target)); }
+float	InputWaveformSavePointNext(unsigned int target) { return(GetInput().WaveformSavePointNext(target)); }
+float	InputWaveformSavePointPick(unsigned int target) { return(GetInput().WaveformSavePointPick(target)); }
+float	InputWaveformSavePointSet(unsigned int target) { return(GetInput().WaveformSavePointSet(target)); }
+float	InputWaveformSavePointUnsetPercent(unsigned int target) { return(GetInput().WaveformSavePointUnsetPercent(target)); }
+float	InputWaveformSavePointShift(unsigned int target) { return(GetInput().WaveformSavePointShift(target)); }
+float	InputWaveformSavePointShiftAll(unsigned int target) { return(GetInput().WaveformSavePointShiftAll(target)); }
+float	InputWaveformSavePointShiftAllHere(unsigned int target) { return(GetInput().WaveformSavePointShiftAllHere(target)); }
+float	InputWaveformSavePointJumpNow(unsigned int target) { return(GetInput().WaveformSavePointJumpNow(target)); }
+float	InputWaveformSavePointJumpAtMeasure(unsigned int target) { return(GetInput().WaveformSavePointJumpAtMeasure(target)); }
+float	InputWaveformJumpToPercent(unsigned int target) { return(GetInput().WaveformJumpToPercent(target)); }
+float	InputWaveformLoopMeasuresExponent(unsigned int target) { return(GetInput().WaveformLoopMeasuresExponent(target)); }
+float	InputWaveformLoopMeasuresHalf(unsigned int target) { return(GetInput().WaveformLoopMeasuresHalf(target)); }
+float	InputWaveformLoopMeasuresDouble(unsigned int target) { return(GetInput().WaveformLoopMeasuresDouble(target)); }
+float	InputWaveformLoopSecondsLess(unsigned int target) { return(GetInput().WaveformLoopSecondsLess(target)); }
+float	InputWaveformLoopSecondsMore(unsigned int target) { return(GetInput().WaveformLoopSecondsMore(target)); }
+float	InputWaveformLoopAll(unsigned int target) { return(GetInput().WaveformLoopAll(target)); }
+float	InputWaveformLoopToggle(unsigned int target) { return(GetInput().WaveformLoopToggle(target)); }
+float	InputWaveformLoopThenRecallActive(unsigned int target) { return(GetInput().WaveformLoopThenRecallActive(target)); }
+float	InputWaveformAutoDivergeRecall(unsigned int target) { return(GetInput().WaveformAutoDivergeRecall(target)); }
+float	InputWaveformVideoSelect(unsigned int target) { return(GetInput().WaveformVideoSelect(target)); }
+float	InputWaveformVideoBrightness(unsigned int target) { return(GetInput().WaveformVideoBrightness(target)); }
+float	InputWaveformVideoBrightnessDelta(unsigned int target) { return(GetInput().WaveformVideoBrightnessDelta(target)); }
+float	InputWaveformVideoAdvanceRate(unsigned int target) { return(GetInput().WaveformVideoAdvanceRate(target)); }
+float	InputWaveformFreqSenseBrightness(unsigned int target) { return(GetInput().WaveformFreqSenseBrightness(target)); }
+float	InputWaveformFreqSenseBrightnessDelta(unsigned int target) { return(GetInput().WaveformFreqSenseBrightnessDelta(target)); }
+float	InputWaveformAudioInputMode(unsigned int target) { return(GetInput().WaveformAudioInputMode(target)); }
+float	InputWaveformVideoAspectRatioNext(unsigned int target) { return(GetInput().WaveformVideoAspectRatioNext(target)); }
+float	InputWaveformOscilloscopeBrightness(unsigned int target) { return(GetInput().WaveformOscilloscopeBrightness(target)); }
+float	InputWaveformOscilloscopeBrightnessDelta(unsigned int target) { return(GetInput().WaveformOscilloscopeBrightnessDelta(target)); }
+float	InputWaveformSyncBPM(unsigned int target) { return(GetInput().WaveformSyncBPM(target)); }
+float	InputWaveformPointerScratch(unsigned int target) { return(GetInput().WaveformPointerScratch(target)); }
+
 InputObj::
 InputObj()
 {

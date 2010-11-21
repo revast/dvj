@@ -32,6 +32,13 @@
 
 #define	CPU_TEMP_DANGER (70)
 
+MixerObj&
+GetMixer()
+{
+	static MixerObj mixer;
+	return(mixer);
+}
+
 MixerObj::
 MixerObj()
 {
@@ -79,9 +86,17 @@ MixerObj()
 MixerObj::
 ~MixerObj()
 {
+	Cleanup();
+}
+
+void
+MixerObj::
+Cleanup()
+{
 	for(int a=0;a<2;a++)
 	{
 		delete Turntable[a];
+		Turntable[a]=NULL;
 	}
 
 	if(RecordingTrackListFD!=NULL)

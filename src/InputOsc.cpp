@@ -42,6 +42,7 @@ InputOscObj(int port) :
 		elements=&XfaderSpeakersOscElement;
 		elements->AddAddressPatternRecv("/1/fader6");
 		elements->AddAddressPatternRecv("/1/fader3");
+		elements->AddAddressPatternSend("/1/fader6");
 		elements->SetFloatValues
 		(
 			0,
@@ -49,6 +50,7 @@ InputOscObj(int port) :
 			0.0f,
 			-1.0f
 		);
+		elements->SetMasterInputGetFn(InputXfaderSpeakers);
 		AddOscElement(*elements);
 	}
 
@@ -238,37 +240,43 @@ void
 InputOscObj::
 NextFrame()
 {
-	for(unsigned int a=0;a<OscElementList.size();a++)
+	//Update elements
+	for(unsigned int e=0;e<OscElementList.size();e++)
 	{
-		OscElementList[a]->SwapBackFront();
+		OscElementList[e]->SwapBackFront();
 	}
 
-	//TEST
+	//Send master input updates to osc clients
+	for(unsigned int e=0;e<OscElementList.size();e++)
 	{
-		OscElementObj& element = XfaderSpeakersOscElement;
-		float cand=GetInput().XfaderSpeakers();
-		if(cand!=-1.0f)
+		if(OscElementObj* element = OscElementList[e])
 		{
-			//Send to OSC Clients
-			for(unsigned int a=0;a<OscClientList.size();a++)
+			if(OscElementObj::MasterInputGetFnType getFn = element->GetMasterInputGetFn())
 			{
-				if
-				(
-					strcmp
-					(
-						element.GetRemoteController(),
-						OscClientList[a]->GetAddress()
-					)!=0
-				)
+				float cand=getFn(element->GetTweakFocusTarget());
+				if(cand!=-1.0f)
 				{
-					std::vector<char*> addressPatternsSend=element.GetAddressPatternsSend();
-					for(unsigned int b=0;b<addressPatternsSend.size();b++)
+					for(unsigned int a=0;a<OscClientList.size();a++)
 					{
-						OscClientList[a]->Stream() <<
-							osc::BeginMessage(addressPatternsSend[b]) <<
-							element.ConvertDvjToOsc(cand) <<
-							osc::EndMessage;
-						OscClientList[a]->Send();
+						if
+						(
+							strcmp
+							(
+								element->GetRemoteControllerFront(),
+								OscClientList[a]->GetAddress()
+							)!=0
+						)
+						{
+							std::vector<char*> addressPatternsSend=element->GetAddressPatternsSend();
+							for(unsigned int b=0;b<addressPatternsSend.size();b++)
+							{
+								OscClientList[a]->Stream() <<
+									osc::BeginMessage(addressPatternsSend[b]) <<
+									element->ConvertDvjToOsc(cand) <<
+									osc::EndMessage;
+								OscClientList[a]->Send();
+							}
+						}
 					}
 				}
 			}

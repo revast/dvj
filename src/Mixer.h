@@ -25,11 +25,14 @@
 #define	_DVJ_MIXER_H_
 
 #include "LGL.module/LGL.h"
+
 #include "Turntable.h"
-
 #include "Database.h"
-
 #include "Visualizer.h"
+
+class MixerObj;
+
+MixerObj& GetMixer();
 
 class MixerObj
 {
@@ -38,6 +41,8 @@ public:
 
 					MixerObj();
 					~MixerObj();
+	
+	void				Cleanup();
 
 	void				NextFrame(float secondsElapsed);
 	void				DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent);

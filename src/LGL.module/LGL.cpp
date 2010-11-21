@@ -2603,6 +2603,12 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	return(true);
 }
 
+bool
+LGL_Running()
+{
+	return(LGL.Running);
+}
+
 void
 LGL_Exit()
 {

@@ -103,7 +103,7 @@ void
 OscElementObj::
 SetTweakFocusTarget
 (
-	int	target
+	unsigned int	target
 )
 {
 	TweakFocusTarget=target;
@@ -127,6 +127,22 @@ SetFloatValues
 	FloatFront=FloatDefault;
 }
 
+void
+OscElementObj::
+SetMasterInputGetFn
+(
+	OscElementObj::MasterInputGetFnType	fn
+)
+{
+	MasterInputGetFn=fn;
+}
+
+OscElementObj::MasterInputGetFnType
+OscElementObj::
+GetMasterInputGetFn()
+{
+	return(MasterInputGetFn);
+}
 
 bool
 OscElementObj::
@@ -135,7 +151,7 @@ GetTweak()
 	return(TweakFront);
 }
 
-int
+unsigned int
 OscElementObj::
 GetTweakFocusTarget()
 {
@@ -193,7 +209,14 @@ ConvertDvjToOsc
 
 const char*
 OscElementObj::
-GetRemoteController()	const
+GetRemoteControllerBack()	const
+{
+	return(RemoteControllerBack);
+}
+
+const char*
+OscElementObj::
+GetRemoteControllerFront()	const
 {
 	return(RemoteControllerFront);
 }
@@ -288,7 +311,7 @@ SwapBackFront()
 	FloatFront=FloatBack;
 	FloatBack=FloatDefault;
 
-	strcpy(RemoteControllerBack,RemoteControllerFront);
+	strcpy(RemoteControllerFront,RemoteControllerBack);
 	RemoteControllerBack[0]='\0';
 }
 

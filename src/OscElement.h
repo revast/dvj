@@ -44,7 +44,7 @@ private:
 				);
 public:
 
-	void			SetTweakFocusTarget(int target);
+	void			SetTweakFocusTarget(unsigned int target);
 	void			SetFloatValues
 				(
 					int	floatIndex,
@@ -53,12 +53,18 @@ public:
 					float	floatDefault
 				);
 
+	typedef float(*MasterInputGetFnType)(unsigned int target);
+
+	void			SetMasterInputGetFn(MasterInputGetFnType fn);
+	MasterInputGetFnType	GetMasterInputGetFn();
+
 	bool			GetTweak();
-	int			GetTweakFocusTarget();
+	unsigned int		GetTweakFocusTarget();
 	float			GetFloat() const;
 	float			ConvertOscToDvj(float osc);
 	float			ConvertDvjToOsc(float dvj);
-	const char*		GetRemoteController() const;
+	const char*		GetRemoteControllerBack() const;
+	const char*		GetRemoteControllerFront() const;
 	std::vector<char*>&	GetAddressPatternsSend();
 
 	bool			ProcessMessage
@@ -76,7 +82,7 @@ private:
 
 	bool			TweakBack;
 	bool			TweakFront;
-	int			TweakFocusTarget;
+	unsigned int		TweakFocusTarget;
 
 	int			FloatIndex;
 	float			FloatMapZero;
@@ -89,6 +95,8 @@ private:
 	char			RemoteControllerFront[2048];
 
 	LGL_Semaphore		BackFrontSemaphore;
+
+	MasterInputGetFnType	MasterInputGetFn;
 
 };
 
