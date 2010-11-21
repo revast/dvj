@@ -25,7 +25,7 @@
 #define	_INPUT_OSC_H_
 
 #include "Input.h"
-#include "InputOscElement.h"
+#include "OscElement.h"
 
 #include "LGL.module/LGL.h"
 
@@ -141,24 +141,27 @@ protected:
 private:
 
 	int			GetIndexFromTarget(unsigned int target) const;
-	void			AddOscElement(InputOscElementObj& oscElement);
-	std::vector<InputOscElementObj*>
+	void			AddOscElement(OscElementObj& oscElement);
+	void			AddOscClient(const char* host, int port);
+	std::vector<OscElementObj*>
 				OscElementList;
+	std::vector<LGL_OscClient*>
+				OscClientList;
 	
 	char			OscMessageUnknown[2048];
 	float			OscMessageUnknownBrightness;
 	LGL_Semaphore		OscMessageUnknownSemaphore;
 
-	InputOscElementObj	XfaderSpeakersOscElement;
-	InputOscElementObj	XfaderHeadphonesOscElement;
-	InputOscElementObj	WaveformEqLowOscElement[2];
-	InputOscElementObj	WaveformEqMidOscElement[2];
-	InputOscElementObj	WaveformEqHighOscElement[2];
-	InputOscElementObj	WaveformGainOscElement[2];
-	InputOscElementObj	WaveformVideoBrightnessOscElement[2];
-	InputOscElementObj	WaveformOscilloscopeBrightnessOscElement[2];
-	InputOscElementObj	WaveformFreqSenseBrightnessOscElement[2];
-	InputOscElementObj	WaveformPitchbendOscElement[2];
+	OscElementObj		XfaderSpeakersOscElement;
+	OscElementObj		XfaderHeadphonesOscElement;
+	OscElementObj		WaveformEqLowOscElement[2];
+	OscElementObj		WaveformEqMidOscElement[2];
+	OscElementObj		WaveformEqHighOscElement[2];
+	OscElementObj		WaveformGainOscElement[2];
+	OscElementObj		WaveformVideoBrightnessOscElement[2];
+	OscElementObj		WaveformOscilloscopeBrightnessOscElement[2];
+	OscElementObj		WaveformFreqSenseBrightnessOscElement[2];
+	OscElementObj		WaveformPitchbendOscElement[2];
 
 };
 

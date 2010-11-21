@@ -23,7 +23,12 @@
 
 #include "Input.h"
 
-InputObj Input;
+InputObj&
+GetInput()
+{
+	static InputObj input;
+	return(input);
+}
 
 InputObj::
 InputObj()

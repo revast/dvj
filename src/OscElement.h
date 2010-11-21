@@ -1,6 +1,6 @@
 /*
  *
- * InputOscElement.h - Input abstraction object
+ * OscElement.h - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,20 +21,28 @@
  *
  */
 
-#ifndef	_INPUT_OSC_ELEMENT_H_
-#define	_INPUT_OSC_ELEMENT_H_
+#ifndef	_OSC_ELEMENT_H_
+#define	_OSC_ELEMENT_H_
 
 #include "LGL.module/LGL.h"
 
-class InputOscElementObj
+class OscElementObj
 {
 
 public:
 
-				InputOscElementObj();
-				~InputOscElementObj();
+				OscElementObj();
+				~OscElementObj();
 
-	void			AddAddressPattern(const char* pattern);
+	void			AddAddressPatternRecv(const char* pattern);
+	void			AddAddressPatternSend(const char* pattern);
+private:
+	void			AddAddressPattern
+				(
+					const char*		pattern,
+					std::vector<char*>&	patternList
+				);
+public:
 
 	void			SetTweakFocusTarget(int target);
 	void			SetFloatValues
@@ -44,22 +52,27 @@ public:
 					float	floatMapOne,
 					float	floatDefault
 				);
-	
+
 	bool			GetTweak();
 	int			GetTweakFocusTarget();
 	float			GetFloat() const;
+	float			ConvertOscToDvj(float osc);
+	float			ConvertDvjToOsc(float dvj);
+	const char*		GetRemoteController() const;
+	std::vector<char*>&	GetAddressPatternsSend();
 
 	bool			ProcessMessage
 				(
 					const osc::ReceivedMessage&	m,
 					const IpEndpointName&		remoteEndpoint
 				);
-	
+
 	void			SwapBackFront();
 
 private:
 
-	std::vector<char*>	AddressPatterns;
+	std::vector<char*>	AddressPatternsRecv;
+	std::vector<char*>	AddressPatternsSend;
 
 	bool			TweakBack;
 	bool			TweakFront;
@@ -72,9 +85,12 @@ private:
 	float			FloatBack;
 	float			FloatFront;
 
+	char			RemoteControllerBack[2048];
+	char			RemoteControllerFront[2048];
+
 	LGL_Semaphore		BackFrontSemaphore;
 
 };
 
-#endif	//_INPUT_OSC_ELEMENT_H_
+#endif	//_OSC_ELEMENT_H_
 

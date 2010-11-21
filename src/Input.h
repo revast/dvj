@@ -28,6 +28,10 @@
 
 #include <vector>
 
+class InputObj;
+
+InputObj& GetInput();
+
 typedef enum
 {
 	GUI_ELEMENT_NULL = 0,
@@ -58,10 +62,6 @@ typedef enum
 	GUI_ELEMENT_BPM_PITCH,
 	GUI_ELEMENT_COUNT
 } DVJ_GuiElement;
-
-class InputObj;
-
-extern InputObj Input;
 
 #define	TARGET_NONE (0)
 #define	TARGET_FOCUS (1<<0)

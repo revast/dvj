@@ -112,15 +112,15 @@ void InitializeGlobalsPreLGL()
 
 void InitializeGlobals()
 {
-	Input.AddChild(new InputNullObj);
-	Input.AddChild(new InputKeyboardObj);
-	Input.AddChild(&GetInputMouse());
-	Input.AddChild(&GetInputMultiTouch());
-	Input.AddChild(&GetInputOsc());
-	Input.AddChild(&GetInputXponent());
-	Input.AddChild(new InputXsessionObj);
-	Input.AddChild(new InputWiimoteObj);
-	Input.AddChild(new InputTesterObj);
+	GetInput().AddChild(new InputNullObj);
+	GetInput().AddChild(new InputKeyboardObj);
+	GetInput().AddChild(&GetInputMouse());
+	GetInput().AddChild(&GetInputMultiTouch());
+	GetInput().AddChild(&GetInputOsc());
+	GetInput().AddChild(&GetInputXponent());
+	GetInput().AddChild(new InputXsessionObj);
+	GetInput().AddChild(new InputWiimoteObj);
+	GetInput().AddChild(new InputTesterObj);
 
 	QuadrentSplitX=.5f;
 	QuadrentSplitY=.5f;
@@ -282,7 +282,7 @@ bool mouseMotionEver=false;
 void NextFrame()
 {
 	LGL_ProcessInput();
-	Input.NextFrame();
+	GetInput().NextFrame();
 
 	if(LGL_SecondsSinceExecution()<5.0f)
 	{

@@ -1,6 +1,6 @@
 /*
  *
- * InputOscElement.cpp - Input abstraction object
+ * OscElement.cpp - Input abstraction object
  *
  * Copyright Chris Nelson (interim.descriptor@gmail.com), 2009
  *
@@ -21,10 +21,10 @@
  *
  */
 
-#include "InputOscElement.h"
+#include "OscElement.h"
 
-InputOscElementObj::
-InputOscElementObj() :
+OscElementObj::
+OscElementObj() :
 	BackFrontSemaphore("BackFrontSemaphore")
 {
 	TweakBack=false;
@@ -37,23 +37,52 @@ InputOscElementObj() :
 	FloatDefault=-1.0f;
 	FloatBack=FloatDefault;
 	FloatFront=FloatDefault;
+	RemoteControllerBack[0]='\0';
+	RemoteControllerFront[0]='\0';
 }
 
-InputOscElementObj::
-~InputOscElementObj()
+OscElementObj::
+~OscElementObj()
 {
-	for(unsigned int a=0;a<AddressPatterns.size();a++)
+	for(unsigned int a=0;a<AddressPatternsRecv.size();a++)
 	{
-		delete AddressPatterns[a];
+		delete AddressPatternsRecv[a];
 	}
-	AddressPatterns.clear();
+	AddressPatternsRecv.clear();
+
+	for(unsigned int a=0;a<AddressPatternsSend.size();a++)
+	{
+		delete AddressPatternsSend[a];
+	}
+	AddressPatternsSend.clear();
 }
 
 void
-InputOscElementObj::
+OscElementObj::
+AddAddressPatternRecv
+(
+	const char*		pattern
+)
+{
+	AddAddressPattern(pattern,AddressPatternsRecv);
+}
+
+void
+OscElementObj::
+AddAddressPatternSend
+(
+	const char*		pattern
+)
+{
+	AddAddressPattern(pattern,AddressPatternsSend);
+}
+
+void
+OscElementObj::
 AddAddressPattern
 (
-	const char*	pattern
+	const char*		pattern,
+	std::vector<char*>&	patternList
 )
 {
 	if
@@ -67,11 +96,11 @@ AddAddressPattern
 
 	char* neo = new char[strlen(pattern)+1];
 	strcpy(neo,pattern);
-	AddressPatterns.push_back(neo);
+	patternList.push_back(neo);
 }
 
 void
-InputOscElementObj::
+OscElementObj::
 SetTweakFocusTarget
 (
 	int	target
@@ -81,7 +110,7 @@ SetTweakFocusTarget
 }
 
 void
-InputOscElementObj::
+OscElementObj::
 SetFloatValues
 (
 	int	floatIndex,
@@ -100,31 +129,87 @@ SetFloatValues
 
 
 bool
-InputOscElementObj::
+OscElementObj::
 GetTweak()
 {
 	return(TweakFront);
 }
 
 int
-InputOscElementObj::
+OscElementObj::
 GetTweakFocusTarget()
 {
 	return(TweakFocusTarget);
 }
 
 float
-InputOscElementObj::
+OscElementObj::
 GetFloat()	const
 {
 	return(FloatFront);
 }
 
+float
+OscElementObj::
+ConvertOscToDvj
+(
+	float	osc
+)
+{
+	if(osc==-1.0f)
+	{
+		return(FloatDefault);
+	}
+
+	return(FloatMapZero + (FloatMapOne-FloatMapZero)*osc);
+}
+
+float
+OscElementObj::
+ConvertDvjToOsc
+(
+	float	dvj
+)
+{
+	if
+	(
+		dvj==FloatDefault ||
+		FloatMapOne==FloatMapZero
+	)
+	{
+		return(-1.0f);
+	}
+
+	return
+	(
+		LGL_Clamp
+		(
+			0.0f,
+			(dvj-FloatMapZero)/(FloatMapOne-FloatMapZero),
+			1.0f
+		)
+	);
+}
+
+const char*
+OscElementObj::
+GetRemoteController()	const
+{
+	return(RemoteControllerFront);
+}
+
+std::vector<char*>&
+OscElementObj::
+GetAddressPatternsSend()
+{
+	return(AddressPatternsSend);
+}
+
 bool
-InputOscElementObj::
+OscElementObj::
 ProcessMessage
 (
-	const	osc::ReceivedMessage&	m,
+	const osc::ReceivedMessage&	m,
 	const IpEndpointName&		remoteEndpoint
 )
 {
@@ -135,12 +220,21 @@ ProcessMessage
 		bool patternMatch=false;
 		//Try to make patternMatch true
 		{
-			for(unsigned int a=0;a<AddressPatterns.size();a++)
+			for(unsigned int a=0;a<AddressPatternsRecv.size();a++)
 			{
-				if(strcmp(AddressPatterns[a],m.AddressPattern())==0)
+				if(strcmp(AddressPatternsRecv[a],m.AddressPattern())==0)
 				{
 					patternMatch=true;
 					break;
+				}
+				else
+				{
+					char tmp[2048];
+					sprintf(tmp,"%s/z",AddressPatternsRecv[a]);
+					if(strcmp(m.AddressPattern(),tmp)==0)
+					{
+						messageRecognized=true;
+					}
 				}
 			}
 		}
@@ -160,7 +254,8 @@ ProcessMessage
 						{
 							LGL_ScopeLock lock(BackFrontSemaphore);
 							TweakBack=true;
-							FloatBack=FloatMapZero + (FloatMapOne-FloatMapZero)*arg->AsFloat();
+							FloatBack=ConvertOscToDvj(arg->AsFloat());
+							remoteEndpoint.AddressAsString(RemoteControllerBack);
 							messageRecognized=true;
 							break;
 						}
@@ -182,7 +277,7 @@ ProcessMessage
 }
 
 void
-InputOscElementObj::
+OscElementObj::
 SwapBackFront()
 {
 	LGL_ScopeLock lock(BackFrontSemaphore);
@@ -192,5 +287,8 @@ SwapBackFront()
 
 	FloatFront=FloatBack;
 	FloatBack=FloatDefault;
+
+	strcpy(RemoteControllerBack,RemoteControllerFront);
+	RemoteControllerBack[0]='\0';
 }
 

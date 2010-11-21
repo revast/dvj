@@ -145,20 +145,20 @@ NextFrame
 		}
 	}
 
-	if(Input.FocusChange())
+	if(GetInput().FocusChange())
 	{
 		Turntable[Focus]->SetFocus(false);
 		Focus=((Focus+1)%2);
 		Turntable[Focus]->SetFocus(true);
 	}
 
-	if(Input.FocusTop())
+	if(GetInput().FocusTop())
 	{
 		Turntable[0]->SetFocus(true);
 		Turntable[1]->SetFocus(false);
 		Focus=0;
 	}
-	else if(Input.FocusBottom())
+	else if(GetInput().FocusBottom())
 	{
 		Turntable[0]->SetFocus(false);
 		Turntable[1]->SetFocus(true);
@@ -173,7 +173,7 @@ NextFrame
 
 	if(TurntableObj::GetSurroundMode()==false)
 	{
-		int masterToHeadphones=Input.MasterToHeadphones();
+		int masterToHeadphones=GetInput().MasterToHeadphones();
 		if(masterToHeadphones==0)
 		{
 			LGL_AudioMasterToHeadphones(false);
@@ -184,7 +184,7 @@ NextFrame
 		}
 	}
 
-	candidate=Input.XfaderSpeakers();
+	candidate=GetInput().XfaderSpeakers();
 	if(candidate!=-1.0f)
 	{
 		CrossfadeSliderLeft=candidate;
@@ -212,11 +212,11 @@ NextFrame
 
 	if(TurntableObj::GetSurroundMode()==false)
 	{
-		candidate=Input.XfaderHeadphones();
+		candidate=GetInput().XfaderHeadphones();
 	}
 	else
 	{
-		candidate=Input.XfaderSpeakers();
+		candidate=GetInput().XfaderSpeakers();
 	}
 	if(candidate!=-1.0f)
 	{
@@ -252,19 +252,19 @@ NextFrame
 		Turntable[1]->GetBPM()>0
 	)
 	{
-		if(Input.SyncTopToBottom())
+		if(GetInput().SyncTopToBottom())
 		{
 			syncTT=0;
 			target=1;
 		}
-		if(Input.SyncBottomToTop())
+		if(GetInput().SyncBottomToTop())
 		{
 			syncTT=1;
 			target=0;
 		}
 		if(Turntable[Focus]->GetMode()==2)
 		{
-			if(Input.WaveformSyncBPM(TARGET_FOCUS))
+			if(GetInput().WaveformSyncBPM(TARGET_FOCUS))
 			{
 				syncTT=Focus;
 				target=Focus?0:1;
@@ -329,15 +329,15 @@ NextFrame
 	{
 		//Since we only have two channels, bind Speakers/Headphones
 		float delta=0;
-		delta+=Input.XfaderSpeakersDelta();
-		delta+=Input.XfaderHeadphonesDelta();
+		delta+=GetInput().XfaderSpeakersDelta();
+		delta+=GetInput().XfaderHeadphonesDelta();
 		CrossfadeSliderLeft=LGL_Clamp(0.0f,CrossfadeSliderLeft+delta,1.0f);
 		CrossfadeSliderRight=LGL_Clamp(0.0f,CrossfadeSliderRight+delta,1.0f);
 	}
 	else if(LGL_AudioChannels()==4)
 	{
-		CrossfadeSliderLeft=LGL_Clamp(0.0f,CrossfadeSliderLeft+Input.XfaderSpeakersDelta(),1.0f);
-		CrossfadeSliderRight=LGL_Clamp(0.0f,CrossfadeSliderRight+Input.XfaderHeadphonesDelta(),1.0f);
+		CrossfadeSliderLeft=LGL_Clamp(0.0f,CrossfadeSliderLeft+GetInput().XfaderSpeakersDelta(),1.0f);
+		CrossfadeSliderRight=LGL_Clamp(0.0f,CrossfadeSliderRight+GetInput().XfaderHeadphonesDelta(),1.0f);
 	}
 
 	int masterTT=-1;
