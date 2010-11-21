@@ -32,6 +32,83 @@ class InputObj;
 
 InputObj& GetInput();
 
+float	InputFocusChange(unsigned int target);
+float	InputFocusBottom(unsigned int target);
+float	InputFocusTop(unsigned int target);
+float	InputXfaderSpeakers(unsigned int target);
+float	InputXfaderSpeakersDelta(unsigned int target);
+float	InputXfaderHeadphones(unsigned int target);
+float	InputXfaderHeadphonesDelta(unsigned int target);
+float	InputSyncTopToBottom(unsigned int target);
+float	InputMasterToHeadphones(unsigned int target);
+float	InputFileScroll(unsigned int target);
+float	InputFileSelect(unsigned int target);
+float	InputFileRefresh(unsigned int target);
+float	InputFileIndexHighlight(unsigned int target);
+float	InputDecodeAbort(unsigned int target);
+float	InputWaveformEject(unsigned int target);
+float	InputWaveformTogglePause(unsigned int target);
+float	InputWaveformNudge(unsigned int target);
+float	InputWaveformPitchbend(unsigned int target);
+float	InputWaveformPitchbendDelta(unsigned int target);
+float	InputWaveformEQLow(unsigned int target);
+float	InputWaveformEQLowDelta(unsigned int target);
+float	InputWaveformEQLowKill(unsigned int target);
+float	InputWaveformEQMid(unsigned int target);
+float	InputWaveformEQMidDelta(unsigned int target);
+float	InputWaveformEQMidKill(unsigned int target);
+float	InputWaveformEQHigh(unsigned int target);
+float	InputWaveformEQHighDelta(unsigned int target);
+float	InputWaveformEQHighKill(unsigned int target);
+float	InputWaveformGain(unsigned int target);
+float	InputWaveformGainDelta(unsigned int target);
+float	InputWaveformGainKill(unsigned int target);
+float	InputWaveformVolumeSlider(unsigned int target);
+float	InputWaveformVolumeInvert(unsigned int target);
+float	InputWaveformRapidVolumeInvert(unsigned int target);
+float	InputWaveformRapidSoloInvert(unsigned int target);
+float	InputWaveformVolumeSolo(unsigned int target);
+float	InputWaveformRewindFF(unsigned int target);
+float	InputWaveformRecordHold(unsigned int target);
+float	InputWaveformRecordSpeed(unsigned int target);
+float	InputWaveformStutter(unsigned int target);
+float	InputWaveformStutterPitch(unsigned int target);
+float	InputWaveformStutterSpeed(unsigned int target);
+float	InputWaveformSavePointPrev(unsigned int target);
+float	InputWaveformSavePointNext(unsigned int target);
+float	InputWaveformSavePointPick(unsigned int target);
+float	InputWaveformSavePointSet(unsigned int target);
+float	InputWaveformSavePointUnsetPercent(unsigned int target);
+float	InputWaveformSavePointShift(unsigned int target);
+float	InputWaveformSavePointShiftAll(unsigned int target);
+float	InputWaveformSavePointShiftAllHere(unsigned int target);
+float	InputWaveformSavePointJumpNow(unsigned int target);
+float	InputWaveformSavePointJumpAtMeasure(unsigned int target);
+float	InputWaveformJumpToPercent(unsigned int target);
+float	InputWaveformLoopMeasuresExponent(unsigned int target);
+float	InputWaveformLoopMeasuresHalf(unsigned int target);
+float	InputWaveformLoopMeasuresDouble(unsigned int target);
+float	InputWaveformLoopSecondsLess(unsigned int target);
+float	InputWaveformLoopSecondsMore(unsigned int target);
+float	InputWaveformLoopAll(unsigned int target);
+float	InputWaveformLoopToggle(unsigned int target);
+float	InputWaveformLoopThenRecallActive(unsigned int target);
+float	InputWaveformAutoDivergeRecall(unsigned int target);
+float	InputWaveformVideoSelect(unsigned int target);
+float	InputWaveformVideoBrightness(unsigned int target);
+float	InputWaveformVideoBrightnessDelta(unsigned int target);
+float	InputWaveformVideoAdvanceRate(unsigned int target);
+float	InputWaveformFreqSenseBrightness(unsigned int target);
+float	InputWaveformFreqSenseBrightnessDelta(unsigned int target);
+float	InputWaveformAudioInputMode(unsigned int target);
+float	InputWaveformVideoAspectRatioNext(unsigned int target);
+float	InputWaveformOscilloscopeBrightness(unsigned int target);
+float	InputWaveformOscilloscopeBrightnessDelta(unsigned int target);
+float	InputWaveformSyncBPM(unsigned int target);
+float	InputWaveformPointerScratch(unsigned int target);
+
+
+
 typedef enum
 {
 	GUI_ELEMENT_NULL = 0,

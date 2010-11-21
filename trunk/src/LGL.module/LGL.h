@@ -397,6 +397,7 @@ bool		LGL_Init
 			const char*	inWindowTitle
 		);
 
+bool		LGL_Running();
 void		LGL_Exit();
 
 
