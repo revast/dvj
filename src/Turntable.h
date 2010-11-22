@@ -70,6 +70,7 @@ public:
 	float				GetOscilloscopeBrightnessFinal();
 	float				GetFreqSenseBrightnessPreview();
 	float				GetFreqSenseBrightnessFinal();
+	float				GetEjectVisualBrightnessScalar();
 	bool				GetAudioInputMode();
 
 	void				SetMixerVolumeFront(float scalar);
@@ -231,8 +232,8 @@ private:
 	bool				VolumeSolo;
 	float				VolumeMultiplierNow;
 	float				VolumeInvertBinary;
-	bool				RapidVolumeInvert;
-	bool				RapidSoloInvert;
+	bool				RhythmicVolumeInvert;
+	bool				RhythmicSoloInvert;
 	bool				VideoFileExists;
 	float				MixerVolumeFront;
 	float				MixerVolumeBack;
@@ -370,8 +371,8 @@ static	bool				GetSurroundMode();
 	double				GetBeginningOfCurrentMeasureSeconds(float measureMultiplier=1.0f);
 	double				GetBeginningOfArbitraryMeasureSeconds(float seconds, float measureMultiplier=1.0f);
 	bool				GetSolo();
-	bool				GetRapidSoloInvert();
-	void				SetRespondToRapidSoloInvert(int soloChannel);
+	bool				GetRhythmicSoloInvert();
+	void				SetRespondToRhythmicSoloInvert(int soloChannel);
 	void				BlankFilterTextIfMode0();
 	void				FileSelectToString(const char* str);
 	float				GetNoiseFactorVideo();

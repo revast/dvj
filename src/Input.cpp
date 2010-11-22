@@ -37,15 +37,14 @@ float	InputXfaderSpeakers(unsigned int target) { return(GetInput().XfaderSpeaker
 float	InputXfaderSpeakersDelta(unsigned int target) { return(GetInput().XfaderSpeakersDelta()); }
 float	InputXfaderHeadphones(unsigned int target) { return(GetInput().XfaderHeadphones()); }
 float	InputXfaderHeadphonesDelta(unsigned int target) { return(GetInput().XfaderHeadphonesDelta()); }
-float	InputSyncTopToBottom(unsigned int target) { return(GetInput().SyncTopToBottom()); }
 float	InputMasterToHeadphones(unsigned int target) { return(GetInput().MasterToHeadphones()); }
 float	InputFileScroll(unsigned int target) { return(GetInput().FileScroll(target)); }
 float	InputFileSelect(unsigned int target) { return(GetInput().FileSelect(target)); }
+float	InputFileMarkUnopened(unsigned int target) { return(GetInput().FileMarkUnopened(target)); }
 float	InputFileRefresh(unsigned int target) { return(GetInput().FileRefresh(target)); }
 float	InputFileIndexHighlight(unsigned int target) { return(GetInput().FileIndexHighlight(target)); }
-float	InputDecodeAbort(unsigned int target) { return(GetInput().DecodeAbort(target)); }
 float	InputWaveformEject(unsigned int target) { return(GetInput().WaveformEject(target)); }
-float	InputWaveformTogglePause(unsigned int target) { return(GetInput().WaveformTogglePause(target)); }
+float	InputWaveformPauseToggle(unsigned int target) { return(GetInput().WaveformPauseToggle(target)); }
 float	InputWaveformNudge(unsigned int target) { return(GetInput().WaveformNudge(target)); }
 float	InputWaveformPitchbend(unsigned int target) { return(GetInput().WaveformPitchbend(target)); }
 float	InputWaveformPitchbendDelta(unsigned int target) { return(GetInput().WaveformPitchbendDelta(target)); }
@@ -63,8 +62,8 @@ float	InputWaveformGainDelta(unsigned int target) { return(GetInput().WaveformGa
 float	InputWaveformGainKill(unsigned int target) { return(GetInput().WaveformGainKill(target)); }
 float	InputWaveformVolumeSlider(unsigned int target) { return(GetInput().WaveformVolumeSlider(target)); }
 float	InputWaveformVolumeInvert(unsigned int target) { return(GetInput().WaveformVolumeInvert(target)); }
-float	InputWaveformRapidVolumeInvert(unsigned int target) { return(GetInput().WaveformRapidVolumeInvert(target)); }
-float	InputWaveformRapidSoloInvert(unsigned int target) { return(GetInput().WaveformRapidSoloInvert(target)); }
+float	InputWaveformRhythmicVolumeInvert(unsigned int target) { return(GetInput().WaveformRhythmicVolumeInvert(target)); }
+float	InputWaveformRhythmicVolumeInvertOther(unsigned int target) { return(GetInput().WaveformRhythmicVolumeInvertOther(target)); }
 float	InputWaveformVolumeSolo(unsigned int target) { return(GetInput().WaveformVolumeSolo(target)); }
 float	InputWaveformRewindFF(unsigned int target) { return(GetInput().WaveformRewindFF(target)); }
 float	InputWaveformRecordHold(unsigned int target) { return(GetInput().WaveformRecordHold(target)); }
@@ -84,8 +83,8 @@ float	InputWaveformSavePointJumpNow(unsigned int target) { return(GetInput().Wav
 float	InputWaveformSavePointJumpAtMeasure(unsigned int target) { return(GetInput().WaveformSavePointJumpAtMeasure(target)); }
 float	InputWaveformJumpToPercent(unsigned int target) { return(GetInput().WaveformJumpToPercent(target)); }
 float	InputWaveformLoopMeasuresExponent(unsigned int target) { return(GetInput().WaveformLoopMeasuresExponent(target)); }
-float	InputWaveformLoopMeasuresHalf(unsigned int target) { return(GetInput().WaveformLoopMeasuresHalf(target)); }
-float	InputWaveformLoopMeasuresDouble(unsigned int target) { return(GetInput().WaveformLoopMeasuresDouble(target)); }
+float	InputWaveformQuantizationPeriodHalf(unsigned int target) { return(GetInput().WaveformQuantizationPeriodHalf(target)); }
+float	InputWaveformQuantizationPeriodDouble(unsigned int target) { return(GetInput().WaveformQuantizationPeriodDouble(target)); }
 float	InputWaveformLoopSecondsLess(unsigned int target) { return(GetInput().WaveformLoopSecondsLess(target)); }
 float	InputWaveformLoopSecondsMore(unsigned int target) { return(GetInput().WaveformLoopSecondsMore(target)); }
 float	InputWaveformLoopAll(unsigned int target) { return(GetInput().WaveformLoopAll(target)); }
@@ -98,11 +97,11 @@ float	InputWaveformVideoBrightnessDelta(unsigned int target) { return(GetInput()
 float	InputWaveformVideoAdvanceRate(unsigned int target) { return(GetInput().WaveformVideoAdvanceRate(target)); }
 float	InputWaveformFreqSenseBrightness(unsigned int target) { return(GetInput().WaveformFreqSenseBrightness(target)); }
 float	InputWaveformFreqSenseBrightnessDelta(unsigned int target) { return(GetInput().WaveformFreqSenseBrightnessDelta(target)); }
-float	InputWaveformAudioInputMode(unsigned int target) { return(GetInput().WaveformAudioInputMode(target)); }
+float	InputWaveformAudioInputToggle(unsigned int target) { return(GetInput().WaveformAudioInputToggle(target)); }
 float	InputWaveformVideoAspectRatioNext(unsigned int target) { return(GetInput().WaveformVideoAspectRatioNext(target)); }
 float	InputWaveformOscilloscopeBrightness(unsigned int target) { return(GetInput().WaveformOscilloscopeBrightness(target)); }
 float	InputWaveformOscilloscopeBrightnessDelta(unsigned int target) { return(GetInput().WaveformOscilloscopeBrightnessDelta(target)); }
-float	InputWaveformSyncBPM(unsigned int target) { return(GetInput().WaveformSyncBPM(target)); }
+float	InputWaveformSync(unsigned int target) { return(GetInput().WaveformSync(target)); }
 float	InputWaveformPointerScratch(unsigned int target) { return(GetInput().WaveformPointerScratch(target)); }
 
 InputObj::
@@ -247,34 +246,6 @@ XfaderHeadphonesDelta()	const
 	return(delta);
 }
 
-bool
-InputObj::
-SyncTopToBottom()	const
-{
-	bool sync=false;
-
-	for(unsigned int a=0;a<Children.size();a++)
-	{
-		sync|=Children[a]->SyncTopToBottom();
-	}
-
-	return(sync);
-}
-
-bool
-InputObj::
-SyncBottomToTop()	const
-{
-	bool sync=false;
-
-	for(unsigned int a=0;a<Children.size();a++)
-	{
-		sync|=Children[a]->SyncBottomToTop();
-	}
-
-	return(sync);
-}
-
 int
 InputObj::
 MasterToHeadphones()	const
@@ -391,25 +362,6 @@ FileIndexHighlight
 
 
 
-//Mode 1: Decoding...
-
-bool
-InputObj::
-DecodeAbort
-(
-	unsigned int	target
-)	const
-{
-	bool abort=false;
-	
-	for(unsigned int a=0;a<Children.size();a++)
-	{
-		abort|=Children[a]->DecodeAbort(target);
-	}
-
-	return(abort);
-}
-
 //Mode 2: Waveform
 
 int
@@ -435,7 +387,7 @@ WaveformEject
 
 bool
 InputObj::
-WaveformTogglePause
+WaveformPauseToggle
 (
 	unsigned int	target
 )	const
@@ -444,7 +396,7 @@ WaveformTogglePause
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		toggle|=Children[a]->WaveformTogglePause(target);
+		toggle|=Children[a]->WaveformPauseToggle(target);
 	}
 
 	return(toggle);
@@ -765,7 +717,7 @@ WaveformVolumeInvert
 
 bool
 InputObj::
-WaveformRapidVolumeInvert
+WaveformRhythmicVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -774,7 +726,7 @@ WaveformRapidVolumeInvert
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		invert|=Children[a]->WaveformRapidVolumeInvert(target);
+		invert|=Children[a]->WaveformRhythmicVolumeInvert(target);
 	}
 
 	return(invert);
@@ -782,7 +734,7 @@ WaveformRapidVolumeInvert
 
 bool
 InputObj::
-WaveformRapidSoloInvert
+WaveformRhythmicVolumeInvertOther
 (
 	unsigned int	target
 )	const
@@ -791,7 +743,7 @@ WaveformRapidSoloInvert
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		invert|=Children[a]->WaveformRapidSoloInvert(target);
+		invert|=Children[a]->WaveformRhythmicVolumeInvertOther(target);
 	}
 
 	return(invert);
@@ -1147,7 +1099,7 @@ WaveformLoopMeasuresExponent
 
 bool
 InputObj::
-WaveformLoopMeasuresHalf
+WaveformQuantizationPeriodHalf
 (
 	unsigned int	target
 )	const
@@ -1156,7 +1108,7 @@ WaveformLoopMeasuresHalf
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		half|=Children[a]->WaveformLoopMeasuresHalf(target);
+		half|=Children[a]->WaveformQuantizationPeriodHalf(target);
 	}
 
 	return(half);
@@ -1164,7 +1116,7 @@ WaveformLoopMeasuresHalf
 
 bool
 InputObj::
-WaveformLoopMeasuresDouble
+WaveformQuantizationPeriodDouble
 (
 	unsigned int	target
 )	const
@@ -1173,7 +1125,7 @@ WaveformLoopMeasuresDouble
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		twoX|=Children[a]->WaveformLoopMeasuresDouble(target);
+		twoX|=Children[a]->WaveformQuantizationPeriodDouble(target);
 	}
 
 	return(twoX);
@@ -1399,25 +1351,21 @@ WaveformFreqSenseBrightnessDelta
 	return(delta);
 }
 
-int
+bool
 InputObj::
-WaveformAudioInputMode
+WaveformAudioInputToggle
 (
 	unsigned int	target
 )	const
 {
-	int mode=-1;
+	bool toggle=false;
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		int candidate=Children[a]->WaveformAudioInputMode(target);
-		if(candidate!=-1)
-		{
-			mode=candidate;
-		}
+		toggle|=Children[a]->WaveformAudioInputToggle(target);
 	}
 
-	return(mode);
+	return(toggle);
 }
 
 bool
@@ -1477,7 +1425,7 @@ WaveformOscilloscopeBrightnessDelta
 
 bool
 InputObj::
-WaveformSyncBPM
+WaveformSync
 (
 	unsigned int	target
 )	const
@@ -1486,7 +1434,7 @@ WaveformSyncBPM
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		sync|=Children[a]->WaveformSyncBPM(target);
+		sync|=Children[a]->WaveformSync(target);
 	}
 
 	return(sync);

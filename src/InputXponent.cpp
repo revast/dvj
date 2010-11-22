@@ -77,42 +77,42 @@ NextFrame()
 			WaveformLoopAllDebumpLeft=true;
 		}
 
-		WaveformAudioInputModeToggleLeft=false;
+		WaveformAudioInputToggleToggleLeft=false;
 		if
 		(
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_HEADPHONES)==false
 		)
 		{
-			WaveformAudioInputModeDebumpLeft=false;
+			WaveformAudioInputToggleDebumpLeft=false;
 		}
 		else if
 		(
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_HEADPHONES)==true &&
 			LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_LEFT_HEADPHONES)>=1.0f &&
-			WaveformAudioInputModeDebumpLeft==false
+			WaveformAudioInputToggleDebumpLeft==false
 		)
 		{
-			WaveformAudioInputModeToggleLeft=true;
-			WaveformAudioInputModeDebumpLeft=true;
+			WaveformAudioInputToggleToggleLeft=true;
+			WaveformAudioInputToggleDebumpLeft=true;
 		}
 
-		WaveformAudioInputModeToggleRight=false;
+		WaveformAudioInputToggleToggleRight=false;
 		if
 		(
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES)==false
 		)
 		{
-			WaveformAudioInputModeDebumpRight=false;
+			WaveformAudioInputToggleDebumpRight=false;
 		}
 		else if
 		(
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES)==true &&
 			LGL_GetXponent()->GetButtonTimer(LGL_XPONENT_BUTTON_RIGHT_HEADPHONES)>=1.0f &&
-			WaveformAudioInputModeDebumpRight==false
+			WaveformAudioInputToggleDebumpRight==false
 		)
 		{
-			WaveformAudioInputModeToggleRight=true;
-			WaveformAudioInputModeDebumpRight=true;
+			WaveformAudioInputToggleToggleRight=true;
+			WaveformAudioInputToggleDebumpRight=true;
 		}
 
 		if
@@ -318,21 +318,6 @@ XfaderHeadphonesDelta()	const
 	return(0.0f);
 }
 
-bool
-InputXponentObj::
-SyncTopToBottom()	const
-{
-	if(LGL_GetXponent())
-	{
-		if(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_SYNC))
-		{
-			return(true);
-		}
-	}
-
-	return(false);
-}
-
 int
 InputXponentObj::
 MasterToHeadphones()	const
@@ -346,21 +331,6 @@ MasterToHeadphones()	const
 	}
 
 	return(to);
-}
-
-bool
-InputXponentObj::
-SyncBottomToTop()	const
-{
-	if(LGL_GetXponent())
-	{
-		if(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_SYNC))
-		{
-			return(true);
-		}
-	}
-
-	return(false);
 }
 
 //Mode 0: File Selection
@@ -582,29 +552,7 @@ FileRefresh
 	}
 }
 
-//Mode 1: Decoding...
 
-bool
-InputXponentObj::
-DecodeAbort
-(
-	unsigned int	target
-)	const
-{
-	if(LGL_GetXponent())
-	{
-		if(target & TARGET_BOTTOM)
-		{
-			return(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_EJECT));
-		}
-		else if(target & TARGET_TOP)
-		{
-			return(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_EJECT));
-		}
-	}
-
-	return(false);
-}
 
 //Mode 2: Waveform
 
@@ -632,7 +580,7 @@ WaveformEject
 
 bool
 InputXponentObj::
-WaveformTogglePause
+WaveformPauseToggle
 (
 	unsigned int	target
 )	const
@@ -1132,7 +1080,7 @@ WaveformVolumeInvert
 
 bool
 InputXponentObj::
-WaveformRapidVolumeInvert
+WaveformRhythmicVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -1162,7 +1110,7 @@ WaveformRapidVolumeInvert
 
 bool
 InputXponentObj::
-WaveformRapidSoloInvert
+WaveformRhythmicVolumeInvertOther
 (
 	unsigned int	target
 )	const
@@ -1801,7 +1749,7 @@ WaveformLoopMeasuresExponent
 
 bool
 InputXponentObj::
-WaveformLoopMeasuresHalf
+WaveformQuantizationPeriodHalf
 (
 	unsigned int	target
 )	const
@@ -1825,7 +1773,7 @@ WaveformLoopMeasuresHalf
 
 bool
 InputXponentObj::
-WaveformLoopMeasuresDouble
+WaveformQuantizationPeriodDouble
 (
 	unsigned int	target
 )	const
@@ -2099,34 +2047,34 @@ WaveformFreqSenseBrightness
 	return(brightness);
 }
 
-int
+bool
 InputXponentObj::
-WaveformAudioInputMode
+WaveformAudioInputToggle
 (
 	unsigned int	target
 )	const
 {
-	int mode=-1;
+	bool toggle=false;
 
 	if(LGL_GetXponent())
 	{
 		if((target & TARGET_BOTTOM))
 		{
-			if(WaveformAudioInputModeToggleRight)
+			if(WaveformAudioInputToggleToggleRight)
 			{
-				mode=2;
+				toggle=true;
 			}
 		}
 		else if((target & TARGET_TOP))
 		{
-			if(WaveformAudioInputModeToggleLeft)
+			if(WaveformAudioInputToggleToggleLeft)
 			{
-				mode=2;
+				toggle=true;
 			}
 		}
 	}
 
-	return(mode);
+	return(toggle);
 }
 
 bool
@@ -2201,11 +2149,29 @@ WaveformOscilloscopeBrightness
 
 bool
 InputXponentObj::
-WaveformSyncBPM
+WaveformSync
 (
 	unsigned int	target
 )	const
 {
+	if(LGL_GetXponent())
+	{
+		if(target & TARGET_TOP)
+		{
+			if(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_SYNC))
+			{
+				return(true);
+			}
+		}
+		if(target & TARGET_BOTTOM)
+		{
+			if(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_SYNC))
+			{
+				return(true);
+			}
+		}
+	}
+
 	return(false);
 }
 

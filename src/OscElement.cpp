@@ -23,10 +23,17 @@
 
 #include "OscElement.h"
 
+#include "Config.h"
+
 OscElementObj::
 OscElementObj() :
 	BackFrontSemaphore("BackFrontSemaphore")
 {
+	Action = NOOP;
+
+	Sticky=false;
+	StickyNow=false;
+
 	TweakBack=false;
 	TweakFront=false;
 	TweakFocusTarget=TARGET_NONE;
@@ -37,66 +44,29 @@ OscElementObj() :
 	FloatDefault=-1.0f;
 	FloatBack=FloatDefault;
 	FloatFront=FloatDefault;
+
 	RemoteControllerBack[0]='\0';
 	RemoteControllerFront[0]='\0';
+
+	MasterInputGetFn=NULL;
 }
 
 OscElementObj::
 ~OscElementObj()
 {
-	for(unsigned int a=0;a<AddressPatternsRecv.size();a++)
-	{
-		delete AddressPatternsRecv[a];
-	}
-	AddressPatternsRecv.clear();
-
-	for(unsigned int a=0;a<AddressPatternsSend.size();a++)
-	{
-		delete AddressPatternsSend[a];
-	}
-	AddressPatternsSend.clear();
+	ClearAddressPatterns();
 }
 
 void
 OscElementObj::
-AddAddressPatternRecv
+SetDVJAction
 (
-	const char*		pattern
+	DVJ_Action	action
 )
 {
-	AddAddressPattern(pattern,AddressPatternsRecv);
-}
+	Action=action;
 
-void
-OscElementObj::
-AddAddressPatternSend
-(
-	const char*		pattern
-)
-{
-	AddAddressPattern(pattern,AddressPatternsSend);
-}
-
-void
-OscElementObj::
-AddAddressPattern
-(
-	const char*		pattern,
-	std::vector<char*>&	patternList
-)
-{
-	if
-	(
-		pattern==NULL ||
-		pattern[0]!='/'
-	)
-	{
-		return;
-	}
-
-	char* neo = new char[strlen(pattern)+1];
-	strcpy(neo,pattern);
-	patternList.push_back(neo);
+	UpdateAddressPatterns();
 }
 
 void
@@ -107,6 +77,8 @@ SetTweakFocusTarget
 )
 {
 	TweakFocusTarget=target;
+
+	UpdateAddressPatterns();
 }
 
 void
@@ -144,16 +116,48 @@ GetMasterInputGetFn()
 	return(MasterInputGetFn);
 }
 
+void
+OscElementObj::
+SetSticky
+(
+	bool	sticky
+)
+{
+	Sticky=sticky;
+}
+
 bool
 OscElementObj::
-GetTweak()
+GetSticky()	const
+{
+	return(Sticky);
+}
+
+bool
+OscElementObj::
+GetStickyNow()	const
+{
+	return(StickyNow);
+}
+
+void
+OscElementObj::
+Unstick()
+{
+	StickyNow=false;
+	FloatBack=FloatDefault;
+}
+
+bool
+OscElementObj::
+GetTweak()	const
 {
 	return(TweakFront);
 }
 
 unsigned int
 OscElementObj::
-GetTweakFocusTarget()
+GetTweakFocusTarget()	const
 {
 	return(TweakFocusTarget);
 }
@@ -163,6 +167,13 @@ OscElementObj::
 GetFloat()	const
 {
 	return(FloatFront);
+}
+
+float
+OscElementObj::
+GetFloatDefault()	const
+{
+	return(FloatDefault);
 }
 
 float
@@ -223,9 +234,9 @@ GetRemoteControllerFront()	const
 
 std::vector<char*>&
 OscElementObj::
-GetAddressPatternsSend()
+GetAddressPatterns()
 {
-	return(AddressPatternsSend);
+	return(AddressPatterns);
 }
 
 bool
@@ -243,9 +254,9 @@ ProcessMessage
 		bool patternMatch=false;
 		//Try to make patternMatch true
 		{
-			for(unsigned int a=0;a<AddressPatternsRecv.size();a++)
+			for(unsigned int a=0;a<AddressPatterns.size();a++)
 			{
-				if(strcmp(AddressPatternsRecv[a],m.AddressPattern())==0)
+				if(strcmp(AddressPatterns[a],m.AddressPattern())==0)
 				{
 					patternMatch=true;
 					break;
@@ -253,10 +264,25 @@ ProcessMessage
 				else
 				{
 					char tmp[2048];
-					sprintf(tmp,"%s/z",AddressPatternsRecv[a]);
+					sprintf(tmp,"%s/z",AddressPatterns[a]);
 					if(strcmp(m.AddressPattern(),tmp)==0)
 					{
 						messageRecognized=true;
+						if(Sticky)
+						{
+							osc::ReceivedMessage::const_iterator arg = m.ArgumentsBegin();
+							if(arg!=m.ArgumentsEnd())
+							{
+								if(arg->AsFloat()==1.0f)
+								{
+									StickyNow=true;
+								}
+								else if(arg->AsFloat()==0.0f)
+								{
+									StickyNow=false;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -276,6 +302,10 @@ ProcessMessage
 						if(floatIndexNow<0)
 						{
 							LGL_ScopeLock lock(BackFrontSemaphore);
+							if(Sticky)
+							{
+								StickyNow=true;
+							}
 							TweakBack=true;
 							FloatBack=ConvertOscToDvj(arg->AsFloat());
 							remoteEndpoint.AddressAsString(RemoteControllerBack);
@@ -309,9 +339,57 @@ SwapBackFront()
 	TweakBack=false;
 
 	FloatFront=FloatBack;
-	FloatBack=FloatDefault;
+	if(StickyNow==false)
+	{
+		FloatBack=FloatDefault;
+	}
 
 	strcpy(RemoteControllerFront,RemoteControllerBack);
 	RemoteControllerBack[0]='\0';
+}
+
+void
+OscElementObj::
+AddAddressPattern
+(
+	const char*		pattern
+)
+{
+	if
+	(
+		pattern==NULL ||
+		pattern[0]!='/'
+	)
+	{
+		return;
+	}
+
+	char* neo = new char[strlen(pattern)+1];
+	strcpy(neo,pattern);
+	AddressPatterns.push_back(neo);
+}
+
+void
+OscElementObj::
+UpdateAddressPatterns()
+{
+	ClearAddressPatterns();
+
+	std::vector<const char*> addressPatterns = GetOscAddressPatternList(Action,TweakFocusTarget);
+	for(unsigned int a=0;a<addressPatterns.size();a++)
+	{
+		AddAddressPattern(addressPatterns[a]);
+	}
+}
+
+void
+OscElementObj::
+ClearAddressPatterns()
+{
+	for(unsigned int a=0;a<AddressPatterns.size();a++)
+	{
+		delete AddressPatterns[a];
+	}
+	AddressPatterns.clear();
 }
 

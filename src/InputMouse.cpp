@@ -185,22 +185,6 @@ XfaderHeadphonesDelta()	const
 	return(delta);
 }
 
-bool
-InputMouseObj::
-SyncTopToBottom()	const
-{
-	bool sync=false;
-	return(sync);
-}
-
-bool
-InputMouseObj::
-SyncBottomToTop()	const
-{
-	bool sync=false;
-	return(sync);
-}
-
 int
 InputMouseObj::
 MasterToHeadphones()	const
@@ -279,18 +263,7 @@ FileIndexHighlight
 	}
 }
 
-//Mode 1: Decoding...
 
-bool
-InputMouseObj::
-DecodeAbort
-(
-	unsigned int	target
-)	const
-{
-	bool abort=false;
-	return(abort);
-}
 
 //Mode 2: Waveform
 
@@ -307,7 +280,7 @@ WaveformEject
 
 bool
 InputMouseObj::
-WaveformTogglePause
+WaveformPauseToggle
 (
 	unsigned int	target
 )	const
@@ -536,7 +509,7 @@ WaveformVolumeInvert
 
 bool
 InputMouseObj::
-WaveformRapidVolumeInvert
+WaveformRhythmicVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -547,7 +520,7 @@ WaveformRapidVolumeInvert
 
 bool
 InputMouseObj::
-WaveformRapidSoloInvert
+WaveformRhythmicVolumeInvertOther
 (
 	unsigned int	target
 )	const
@@ -883,7 +856,7 @@ WaveformLoopMeasuresExponent
 
 bool
 InputMouseObj::
-WaveformLoopMeasuresHalf
+WaveformQuantizationPeriodHalf
 (
 	unsigned int	target
 )	const
@@ -894,7 +867,7 @@ WaveformLoopMeasuresHalf
 
 bool
 InputMouseObj::
-WaveformLoopMeasuresDouble
+WaveformQuantizationPeriodDouble
 (
 	unsigned int	target
 )	const
@@ -1039,15 +1012,15 @@ WaveformFreqSenseBrightness
 	return(-1.0f);
 }
 
-int
+bool
 InputMouseObj::
-WaveformAudioInputMode
+WaveformAudioInputToggle
 (
 	unsigned int	target
 )	const
 {
-	int mode=-1;
-	return(mode);
+	bool toggle=false;
+	return(toggle);
 }
 
 bool
@@ -1087,7 +1060,7 @@ WaveformOscilloscopeBrightness
 
 bool
 InputMouseObj::
-WaveformSyncBPM
+WaveformSync
 (
 	unsigned int	target
 )	const

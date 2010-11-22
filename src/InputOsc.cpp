@@ -35,193 +35,996 @@ InputOscObj(int port) :
 	LGL_OscServer(port),
 	OscMessageUnknownSemaphore("OscMessageUnknownSemaphore")
 {
-	OscElementObj* elements;
-
-	//XfaderSpeakers
+	//Setup clients
 	{
-		elements=&XfaderSpeakersOscElement;
-		elements->AddAddressPatternRecv("/1/fader6");
-		elements->AddAddressPatternRecv("/1/fader3");
-		elements->AddAddressPatternSend("/1/fader6");
-		elements->SetFloatValues
-		(
-			0,
-			1.0f,
-			0.0f,
-			-1.0f
-		);
-		elements->SetMasterInputGetFn(InputXfaderSpeakers);
-		AddOscElement(*elements);
-	}
-
-	//XfaderHeadphones
-	{
-		elements=&XfaderHeadphonesOscElement;
-		//elements->AddAddressPatternRecv("/1/fader6");
-		elements->SetFloatValues
-		(
-			0,
-			1.0f,
-			0.0f,
-			-1.0f
-		);
-		AddOscElement(*elements);
-	}
-
-	//EQLow
-	{
-		elements=WaveformEqLowOscElement;
-		elements[0].AddAddressPatternRecv("/1/rotary8");
-		elements[1].AddAddressPatternRecv("/1/rotary15");
-		for(int a=0;a<2;a++)
+		std::vector<IpEndpointName> endpointList = GetOscClientList();
+		for(unsigned int a=0;a<endpointList.size();a++)
 		{
-			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
-			elements[a].SetFloatValues
+			AddOscClient(endpointList[a]);
+		}
+	}
+
+	//Setup OscElements
+	{
+		//FocusChange
+		{
+			InitializeOscElement
 			(
+				FocusChangeOscElement,
+				FOCUS_CHANGE,
+				TARGET_NONE,
 				0,
 				0.0f,
 				1.0f,
-				-1.0f
-			);
-			AddOscElement(elements[a]);
-		}
-	}
-	
-	//EQMid
-	{
-		elements=WaveformEqMidOscElement;
-		elements[0].AddAddressPatternRecv("/1/rotary5");
-		elements[1].AddAddressPatternRecv("/1/rotary13");
-		for(int a=0;a<2;a++)
-		{
-			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
-			elements[a].SetFloatValues
-			(
-				0,
 				0.0f,
+				InputFocusChange,
+				false
+			);
+		}
+
+		//XfaderSpeakers
+		{
+			InitializeOscElement
+			(
+				XfaderSpeakersOscElement,
+				XFADER_SPEAKERS,
+				TARGET_NONE,
+				0,
 				1.0f,
-				-1.0f
-			);
-			AddOscElement(elements[a]);
-		}
-	}
-
-	//EQHigh
-	{
-		elements=WaveformEqHighOscElement;
-		elements[0].AddAddressPatternRecv("/1/rotary2");
-		elements[1].AddAddressPatternRecv("/1/rotary11");
-		for(int a=0;a<2;a++)
-		{
-			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
-			elements[a].SetFloatValues
-			(
-				0,
 				0.0f,
+				-1.0f,
+				InputXfaderSpeakers,
+				false
+			);
+		}
+
+		//XfaderHeadphones
+		{
+			InitializeOscElement
+			(
+				XfaderHeadphonesOscElement,
+				XFADER_HEADPHONES,
+				TARGET_NONE,
+				0,
 				1.0f,
-				-1.0f
-			);
-			AddOscElement(elements[a]);
-		}
-	}
-
-	//VideoBrightness
-	{
-		elements=WaveformVideoBrightnessOscElement;
-		elements[0].AddAddressPatternRecv("/1/rotary7");
-		elements[1].AddAddressPatternRecv("/1/rotary16");
-		for(int a=0;a<2;a++)
-		{
-			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
-			elements[a].SetFloatValues
-			(
-				0,
 				0.0f,
-				1.0f,
-				-1.0f
+				-1.0f,
+				InputXfaderHeadphones,
+				false
 			);
-			AddOscElement(elements[a]);
 		}
-	}
 
-	//OscilloscopeBrightness
-	{
-		elements=WaveformOscilloscopeBrightnessOscElement;
-		elements[0].AddAddressPatternRecv("/1/rotary4");
-		elements[1].AddAddressPatternRecv("/1/rotary14");
-		for(int a=0;a<2;a++)
+		//FileScroll
 		{
-			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
-			elements[a].SetFloatValues
-			(
-				0,
-				0.0f,
-				1.0f,
-				-1.0f
-			);
-			AddOscElement(elements[a]);
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					FileScrollOscElement[a],
+					FILE_SCROLL,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputFileScroll,
+					false
+				);
+			}
 		}
-	}
 
-	//FreqSenseBrightness
-	{
-		elements=WaveformFreqSenseBrightnessOscElement;
-		elements[0].AddAddressPatternRecv("/1/rotary1");
-		elements[1].AddAddressPatternRecv("/1/rotary12");
-		for(int a=0;a<2;a++)
+		//FileScrollPrev
 		{
-			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
-			elements[a].SetFloatValues
-			(
-				0,
-				0.0f,
-				1.0f,
-				-1.0f
-			);
-			AddOscElement(elements[a]);
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					FileScrollPrevOscElement[a],
+					FILE_SCROLL_PREV,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					false
+				);
+			}
 		}
-	}
 
-	//Gain
-	{
-		elements=WaveformGainOscElement;
-		elements[0].AddAddressPatternRecv("/1/fader2");
-		elements[1].AddAddressPatternRecv("/1/fader3");
-		for(int a=0;a<2;a++)
+		//FileScrollNext
 		{
-			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
-			elements[a].SetFloatValues
-			(
-				0,
-				0.0f,
-				2.0f,
-				-1.0f
-			);
-			AddOscElement(elements[a]);
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					FileScrollNextOscElement[a],
+					FILE_SCROLL_NEXT,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					false
+				);
+			}
 		}
-	}
 
-	//Pitchbend
-	{
-		elements=WaveformPitchbendOscElement;
-		elements[0].AddAddressPatternRecv("/1/fader4");
-		elements[1].AddAddressPatternRecv("/1/fader5");
-		for(int a=0;a<2;a++)
+		//FileSelect
 		{
-			elements[a].SetTweakFocusTarget((a==0) ? TARGET_TOP : TARGET_BOTTOM);
-			elements[a].SetFloatValues
-			(
-				0,
-				0.92f,
-				1.08f,
-				0.0f
-			);
-			AddOscElement(elements[a]);
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					FileSelectOscElement[a],
+					FILE_SELECT,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputFileSelect,
+					false
+				);
+			}
+		}
+
+		//FileMarkUnopened
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					FileMarkUnopenedOscElement[a],
+					FILE_MARK_UNOPENED,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputFileMarkUnopened,
+					false
+				);
+			}
+		}
+
+		//WaveformEject
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformEjectOscElement[a],
+					WAVEFORM_EJECT,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformEject,
+					true
+				);
+			}
+		}
+
+		//WaveformPauseToggle
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformPauseToggleOscElement[a],
+					WAVEFORM_PAUSE_TOGGLE,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformPauseToggle,
+					false
+				);
+			}
+		}
+
+		//WaveformNudge
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformNudgeOscElement[a],
+					WAVEFORM_NUDGE,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformNudge,
+					true
+				);
+			}
+		}
+
+		//WaveformNudgeSlower
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformNudgeSlowerOscElement[a],
+					WAVEFORM_NUDGE_SLOWER,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//WaveformNudgeFaster
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformNudgeFasterOscElement[a],
+					WAVEFORM_NUDGE_FASTER,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//Pitchbend
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformPitchbendOscElement[a],
+					WAVEFORM_PITCHBEND,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.92f,
+					1.08f,
+					0.0f,
+					InputWaveformPitchbend,
+					false
+				);
+			}
+		}
+
+		//EQLow
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformEQLowOscElement[a],
+					WAVEFORM_EQ_LOW,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformEQLow,
+					false
+				);
+			}
+		}
+
+		//EQLowKill
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformEQLowKillOscElement[a],
+					WAVEFORM_EQ_LOW_KILL,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformEQLowKill,
+					true
+				);
+			}
+		}
+
+		//EQMid
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformEQMidOscElement[a],
+					WAVEFORM_EQ_MID,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformEQMid,
+					false
+				);
+			}
+		}
+
+		//EQMidKill
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformEQMidKillOscElement[a],
+					WAVEFORM_EQ_MID_KILL,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformEQMidKill,
+					true
+				);
+			}
+		}
+
+		//EQHigh
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformEQHighOscElement[a],
+					WAVEFORM_EQ_HIGH,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformEQHigh,
+					false
+				);
+			}
+		}
+
+		//EQHighill
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformEQHighKillOscElement[a],
+					WAVEFORM_EQ_HIGH_KILL,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformEQHighKill,
+					true
+				);
+			}
+		}
+
+		//Gain
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformGainOscElement[a],
+					WAVEFORM_GAIN,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformGain,
+					false
+				);
+			}
+		}
+
+		//GainKill
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformGainKillOscElement[a],
+					WAVEFORM_GAIN_KILL,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformGainKill,
+					true
+				);
+			}
+		}
+
+		//Volume
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformVolumeOscElement[a],
+					WAVEFORM_VOLUME,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformVolumeSlider,
+					false
+				);
+			}
+		}
+
+		//VolumeInvert
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformVolumeInvertOscElement[a],
+					WAVEFORM_VOLUME_INVERT,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformVolumeInvert,
+					true
+				);
+			}
+		}
+		
+		//RhythmicVolumeInvert
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformRhythmicVolumeInvertOscElement[a],
+					WAVEFORM_RHYTHMIC_VOLUME_INVERT,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformRhythmicVolumeInvert,
+					true
+				);
+			}
+		}
+		
+		//RhythmicVolumeInvertOther
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformRhythmicVolumeInvertOtherOscElement[a],
+					WAVEFORM_RHYTHMIC_VOLUME_INVERT_OTHER,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformRhythmicVolumeInvertOther,
+					true
+				);
+			}
+		}
+		
+		//VolumeSolo
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformVolumeSoloOscElement[a],
+					WAVEFORM_VOLUME_SOLO,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformVolumeSolo,
+					true
+				);
+			}
+		}
+
+		//SeekBackwardSlow
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSeekBackwardSlowOscElement[a],
+					WAVEFORM_SEEK_BACKWARD_SLOW,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//SeekBackwardFast
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSeekBackwardFastOscElement[a],
+					WAVEFORM_SEEK_BACKWARD_FAST,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//SeekForwardSlow
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSeekForwardSlowOscElement[a],
+					WAVEFORM_SEEK_FORWARD_SLOW,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//SeekForwardFast
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSeekForwardFastOscElement[a],
+					WAVEFORM_SEEK_FORWARD_FAST,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//ScratchSpeed
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformScratchSpeedOscElement[a],
+					WAVEFORM_SCRATCH_SPEED,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					0.5f,
+					0.0f,
+					InputWaveformRecordSpeed,
+					true
+				);
+			}
+		}
+
+		//SavePointPrev
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSavePointPrevOscElement[a],
+					WAVEFORM_SAVEPOINT_PREV,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformSavePointPrev,
+					false
+				);
+			}
+		}
+
+		//SavePointNext
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSavePointNextOscElement[a],
+					WAVEFORM_SAVEPOINT_NEXT,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformSavePointNext,
+					false
+				);
+			}
+		}
+
+		//SavePointSet
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSavePointSetOscElement[a],
+					WAVEFORM_SAVEPOINT_SET,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformSavePointSet,
+					true
+				);
+			}
+		}
+
+		//SavePointShiftBackward
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSavePointShiftBackwardOscElement[a],
+					WAVEFORM_SAVEPOINT_SHIFT_BACKWARD,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//SavePointShiftForward
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSavePointShiftForwardOscElement[a],
+					WAVEFORM_SAVEPOINT_SHIFT_FORWARD,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//SavePointShiftAllBackward
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSavePointShiftAllBackwardOscElement[a],
+					WAVEFORM_SAVEPOINT_SHIFT_ALL_BACKWARD,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//SavePointShiftAllForward
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSavePointShiftAllForwardOscElement[a],
+					WAVEFORM_SAVEPOINT_SHIFT_ALL_FORWARD,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					NULL,
+					true
+				);
+			}
+		}
+
+		//SavePointJumpNow
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSavePointJumpNowOscElement[a],
+					WAVEFORM_SAVEPOINT_JUMP_NOW,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformSavePointJumpNow,
+					false
+				);
+			}
+		}
+
+		//SavePointJumpAtMeasure
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSavePointJumpAtMeasureOscElement[a],
+					WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformSavePointJumpAtMeasure,
+					false
+				);
+			}
+		}
+
+		//QuantizationPeriodHalf
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformQuantizationPeriodHalfOscElement[a],
+					WAVEFORM_QUANTIZATION_PERIOD_HALF,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformQuantizationPeriodHalf,
+					false
+				);
+			}
+		}
+
+		//QuantizationPeriodDouble
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformQuantizationPeriodDoubleOscElement[a],
+					WAVEFORM_QUANTIZATION_PERIOD_DOUBLE,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformQuantizationPeriodDouble,
+					false
+				);
+			}
+		}
+
+		//LoopToggle
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformLoopToggleOscElement[a],
+					WAVEFORM_LOOP_TOGGLE,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformLoopToggle,
+					false
+				);
+			}
+		}
+
+		//LoopThenRecall
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformLoopThenRecallOscElement[a],
+					WAVEFORM_LOOP_THEN_RECALL,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformLoopThenRecallActive,
+					true
+				);
+			}
+		}
+
+		//VideoSelect
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformVideoSelectOscElement[a],
+					WAVEFORM_VIDEO_SELECT,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformVideoSelect,
+					false
+				);
+			}
+		}
+
+		//VideoBrightness
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformVideoBrightnessOscElement[a],
+					WAVEFORM_VIDEO_BRIGHTNESS,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformVideoBrightness,
+					false
+				);
+			}
+		}
+
+		//OscilloscopeBrightness
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformOscilloscopeBrightnessOscElement[a],
+					WAVEFORM_OSCILLOSCOPE_BRIGHTNESS,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformOscilloscopeBrightness,
+					false
+				);
+			}
+		}
+
+		//FreqSenseBrightness
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformFreqSenseBrightnessOscElement[a],
+					WAVEFORM_FREQ_SENSE_BRIGHTNESS,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformFreqSenseBrightness,
+					false
+				);
+			}
+		}
+
+		//AudioInputToggle
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformAudioInputToggleOscElement[a],
+					WAVEFORM_AUDIO_INPUT_TOGGLE,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformAudioInputToggle,
+					false
+				);
+			}
+		}
+
+		//VideoAspectRatioNext
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformVideoAspectRatioNextOscElement[a],
+					WAVEFORM_VIDEO_ASPECT_RATIO_NEXT,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformVideoAspectRatioNext,
+					false
+				);
+			}
+		}
+
+		//Sync
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSyncOscElement[a],
+					WAVEFORM_SYNC,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformSync,
+					true
+				);
+			}
 		}
 	}
-
-	//TEST
-	AddOscClient("idPad",7001);
 }
 
 InputOscObj::
@@ -246,6 +1049,17 @@ NextFrame()
 		OscElementList[e]->SwapBackFront();
 	}
 
+	//Update SavePointSet/Unset
+	{
+		for(int a=0;a<2;a++)
+		{
+			if(WaveformSavePointSetOscElement[a].GetFloat()==0.0f)
+			{
+				SavePointUnsetTimer[a].Reset();
+			}
+		}
+	}
+
 	//Send master input updates to osc clients
 	for(unsigned int e=0;e<OscElementList.size();e++)
 	{
@@ -254,8 +1068,12 @@ NextFrame()
 			if(OscElementObj::MasterInputGetFnType getFn = element->GetMasterInputGetFn())
 			{
 				float cand=getFn(element->GetTweakFocusTarget());
-				if(cand!=-1.0f)
+				if(cand!=element->GetFloatDefault())
 				{
+					if(cand!=element->GetFloat())
+					{
+						element->Unstick();
+					}
 					for(unsigned int a=0;a<OscClientList.size();a++)
 					{
 						if
@@ -267,7 +1085,7 @@ NextFrame()
 							)!=0
 						)
 						{
-							std::vector<char*> addressPatternsSend=element->GetAddressPatternsSend();
+							std::vector<char*> addressPatternsSend=element->GetAddressPatterns();
 							for(unsigned int b=0;b<addressPatternsSend.size();b++)
 							{
 								OscClientList[a]->Stream() <<
@@ -313,7 +1131,7 @@ bool
 InputOscObj::
 FocusChange()	const
 {
-	bool change=false;
+	bool change=FocusChangeOscElement.GetFloat()!=0.0f;
 	return(change);
 }
 
@@ -389,14 +1207,6 @@ XfaderHeadphonesDelta()	const
 	return(delta);
 }
 
-bool
-InputOscObj::
-SyncTopToBottom()	const
-{
-	bool sync=false;
-	return(sync);
-}
-
 int
 InputOscObj::
 MasterToHeadphones()	const
@@ -405,14 +1215,6 @@ MasterToHeadphones()	const
 	if(XfaderHeadphones()==1.0f) to=0;
 	if(XfaderSpeakers()!=-1.0f) to=1;
 	return(to);
-}
-
-bool
-InputOscObj::
-SyncBottomToTop()	const
-{
-	bool sync=false;
-	return(sync);
 }
 
 //Mode 0: File Selection
@@ -424,7 +1226,9 @@ FileScroll
 	unsigned int	target
 )	const
 {
-	float scroll=0.0f;
+	float scroll = FileScrollOscElement[GetIndexFromTarget(target)].GetFloat();
+	scroll -= FileScrollPrevOscElement[GetIndexFromTarget(target)].GetFloat();
+	scroll += FileScrollNextOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(scroll);
 }
 
@@ -435,8 +1239,8 @@ FileSelect
 	unsigned int	target
 )	const
 {
-	int choose=0;
-	return(choose);
+	int select = FileSelectOscElement[GetIndexFromTarget(target)].GetFloat();
+	return(select);
 }
 
 bool
@@ -446,7 +1250,7 @@ FileMarkUnopened
 	unsigned int	target
 )	const
 {
-	bool mark=false;
+	int mark = FileMarkUnopenedOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(mark);
 }
 
@@ -461,18 +1265,7 @@ FileRefresh
 	return(refresh);
 }
 
-//Mode 1: Decoding...
 
-bool
-InputOscObj::
-DecodeAbort
-(
-	unsigned int	target
-)	const
-{
-	bool abort=false;
-	return(abort);
-}
 
 //Mode 2: Waveform
 
@@ -483,18 +1276,18 @@ WaveformEject
 	unsigned int	target
 )	const
 {
-	int eject=0;
+	int eject=WaveformEjectOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(eject);
 }
 
 bool
 InputOscObj::
-WaveformTogglePause
+WaveformPauseToggle
 (
 	unsigned int	target
 )	const
 {
-	bool toggle=false;
+	bool toggle=WaveformPauseToggleOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(toggle);
 }
 
@@ -505,7 +1298,12 @@ WaveformNudge
 	unsigned int	target
 )	const
 {
-	float nudge=0.0f;
+	const float SLOWER_FASTER_SCALAR=0.04;
+
+	float nudge=WaveformNudgeOscElement[GetIndexFromTarget(target)].GetFloat();
+	nudge-=(WaveformNudgeSlowerOscElement[GetIndexFromTarget(target)].GetFloat() ? SLOWER_FASTER_SCALAR : 0.0f);
+	nudge+=(WaveformNudgeFasterOscElement[GetIndexFromTarget(target)].GetFloat() ? SLOWER_FASTER_SCALAR : 0.0f);
+
 	return(nudge);
 }
 
@@ -539,8 +1337,7 @@ WaveformEQLow
 	unsigned int	target
 )	const
 {
-	float low=-1.0f;
-	low = WaveformEqLowOscElement[GetIndexFromTarget(target)].GetFloat();
+	float low = WaveformEQLowOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(low);
 }
 
@@ -562,7 +1359,7 @@ WaveformEQLowKill
 	unsigned int	target
 )	const
 {
-	bool kill=false;
+	bool kill = WaveformEQLowKillOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(kill);
 }
 
@@ -573,8 +1370,7 @@ WaveformEQMid
 	unsigned int	target
 )	const
 {
-	float mid=-1.0f;
-	mid = WaveformEqMidOscElement[GetIndexFromTarget(target)].GetFloat();
+	float mid = WaveformEQMidOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(mid);
 }
 
@@ -596,7 +1392,7 @@ WaveformEQMidKill
 	unsigned int	target
 )	const
 {
-	bool kill=false;
+	bool kill = WaveformEQMidKillOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(kill);
 }
 
@@ -607,8 +1403,7 @@ WaveformEQHigh
 	unsigned int	target
 )	const
 {
-	float high=-1.0f;
-	high = WaveformEqHighOscElement[GetIndexFromTarget(target)].GetFloat();
+	float high = WaveformEQHighOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(high);
 }
 
@@ -630,7 +1425,7 @@ WaveformEQHighKill
 	unsigned int	target
 )	const
 {
-	bool kill=false;
+	bool kill = WaveformEQHighKillOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(kill);
 }
 
@@ -641,8 +1436,7 @@ WaveformGain
 	unsigned int	target
 )	const
 {
-	float gain=-1.0f;
-	gain = WaveformGainOscElement[GetIndexFromTarget(target)].GetFloat();
+	float gain = WaveformGainOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(gain);
 }
 
@@ -664,7 +1458,7 @@ WaveformGainKill
 	unsigned int	target
 )	const
 {
-	bool kill=false;
+	bool kill = WaveformGainKillOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(kill);
 }
 
@@ -675,7 +1469,7 @@ WaveformVolumeSlider
 	unsigned int	target
 )	const
 {
-	float volume=-1.0f;
+	float volume = WaveformVolumeOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(volume);
 }
 
@@ -686,29 +1480,29 @@ WaveformVolumeInvert
 	unsigned int	target
 )	const
 {
-	bool invert=false;
+	bool invert = WaveformVolumeInvertOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(invert);
 }
 
 bool
 InputOscObj::
-WaveformRapidVolumeInvert
+WaveformRhythmicVolumeInvert
 (
 	unsigned int	target
 )	const
 {
-	bool invert=false;
+	bool invert = WaveformRhythmicVolumeInvertOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(invert);
 }
 
 bool
 InputOscObj::
-WaveformRapidSoloInvert
+WaveformRhythmicVolumeInvertOther
 (
 	unsigned int	target
 )	const
 {
-	bool invert=false;
+	bool invert = WaveformRhythmicVolumeInvertOtherOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(invert);
 }
 
@@ -719,7 +1513,7 @@ WaveformVolumeSolo
 	unsigned int	target
 )	const
 {
-	bool solo=false;
+	bool solo = WaveformVolumeSoloOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(solo);
 }
 
@@ -730,7 +1524,16 @@ WaveformRewindFF
 	unsigned int	target
 )	const
 {
+	const float RATE_FAST=32.0f;
+	const float RATE_SLOW=2.0f;
+
 	float rewindff=0.0f;
+
+	rewindff-=(WaveformSeekBackwardSlowOscElement[GetIndexFromTarget(target)].GetFloat() ? RATE_SLOW : 0.0f);
+	rewindff+=(WaveformSeekForwardSlowOscElement[GetIndexFromTarget(target)].GetFloat() ? RATE_SLOW : 0.0f);
+	rewindff-=(WaveformSeekBackwardFastOscElement[GetIndexFromTarget(target)].GetFloat() ? RATE_FAST : 0.0f);
+	rewindff+=(WaveformSeekForwardFastOscElement[GetIndexFromTarget(target)].GetFloat() ? RATE_FAST : 0.0f);
+
 	return(rewindff);
 }
 
@@ -741,7 +1544,7 @@ WaveformRecordHold
 	unsigned int	target
 )	const
 {
-	bool hold=false;
+	bool hold = WaveformScratchSpeedOscElement[GetIndexFromTarget(target)].GetStickyNow();
 	return(hold);
 }
 
@@ -753,6 +1556,10 @@ WaveformRecordSpeed
 )	const
 {
 	float speed=0.0f;
+	if(WaveformRecordHold(target))
+	{
+		speed = WaveformScratchSpeedOscElement[GetIndexFromTarget(target)].GetFloat();
+	}
 	return(speed);
 }
 
@@ -796,7 +1603,7 @@ WaveformSavePointPrev
 	unsigned int	target
 )	const
 {
-	bool prev=false;
+	bool prev = WaveformSavePointPrevOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(prev);
 }
 
@@ -807,7 +1614,7 @@ WaveformSavePointNext
 	unsigned int	target
 )	const
 {
-	bool next=false;
+	bool next = WaveformSavePointNextOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(next);
 }
 
@@ -829,7 +1636,8 @@ WaveformSavePointSet
 	unsigned int	target
 )	const
 {
-	bool set=false;
+	bool set = WaveformSavePointSetOscElement[GetIndexFromTarget(target)].GetFloat();
+	set &= WaveformSavePointSetOscElement[GetIndexFromTarget(target)].GetTweak();
 	return(set);
 }
 
@@ -841,6 +1649,12 @@ WaveformSavePointUnsetPercent
 )	const
 {
 	float percent=0.0f;
+	
+	if(WaveformSavePointSetOscElement[GetIndexFromTarget(target)].GetFloat())
+	{
+		percent=LGL_Min(1.0f,SavePointUnsetTimer[GetIndexFromTarget(target)].SecondsSinceLastReset()*2.0f);
+	}
+
 	return(percent);
 }
 
@@ -851,7 +1665,10 @@ WaveformSavePointShift
 	unsigned int	target
 )	const
 {
-	float shift=0.0f;
+	const float SPEED = 0.025f * 1.0f/60.0f;
+	float shift = 0.0f;
+	shift -= SPEED * WaveformSavePointShiftBackwardOscElement[GetIndexFromTarget(target)].GetFloat();
+	shift += SPEED * WaveformSavePointShiftForwardOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(shift);
 }
 
@@ -862,7 +1679,10 @@ WaveformSavePointShiftAll
 	unsigned int	target
 )	const
 {
-	float shift=0.0f;
+	const float SPEED = 0.025f * 1.0f/60.0f;
+	float shift = 0.0f;
+	shift -= SPEED * WaveformSavePointShiftAllBackwardOscElement[GetIndexFromTarget(target)].GetFloat();
+	shift += SPEED * WaveformSavePointShiftAllForwardOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(shift);
 }
 
@@ -884,7 +1704,7 @@ WaveformSavePointJumpNow
 	unsigned int	target
 )	const
 {
-	bool jump=false;
+	bool jump = WaveformSavePointJumpNowOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(jump);
 }
 
@@ -895,7 +1715,7 @@ WaveformSavePointJumpAtMeasure
 	unsigned int	target
 )	const
 {
-	bool jump=false;
+	bool jump = WaveformSavePointJumpAtMeasureOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(jump);
 }
 
@@ -912,23 +1732,23 @@ WaveformLoopMeasuresExponent
 
 bool
 InputOscObj::
-WaveformLoopMeasuresHalf
+WaveformQuantizationPeriodHalf
 (
 	unsigned int	target
 )	const
 {
-	bool half=false;
+	bool half = WaveformQuantizationPeriodHalfOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(half);
 }
 
 bool
 InputOscObj::
-WaveformLoopMeasuresDouble
+WaveformQuantizationPeriodDouble
 (
 	unsigned int	target
 )	const
 {
-	bool twoX=false;
+	bool twoX = WaveformQuantizationPeriodDoubleOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(twoX);
 }
 
@@ -972,7 +1792,7 @@ WaveformLoopToggle
 	unsigned int	target
 )	const
 {
-	bool toggle=false;
+	bool toggle = WaveformLoopToggleOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(toggle);
 }
 
@@ -983,7 +1803,7 @@ WaveformLoopThenRecallActive
 	unsigned int	target
 )	const
 {
-	bool active=false;
+	bool active = WaveformLoopThenRecallOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(active);
 }
 
@@ -1005,7 +1825,7 @@ WaveformVideoSelect
 	unsigned int	target
 )	const
 {
-	bool select=false;
+	bool select = WaveformVideoSelectOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(select);
 }
 
@@ -1044,15 +1864,15 @@ WaveformFreqSenseBrightness
 	return(brightness);
 }
 
-int
+bool
 InputOscObj::
-WaveformAudioInputMode
+WaveformAudioInputToggle
 (
 	unsigned int	target
 )	const
 {
-	int mode=-1;
-	return(mode);
+	bool toggle = WaveformAudioInputToggleOscElement[GetIndexFromTarget(target)].GetFloat();
+	return(toggle);
 }
 
 bool
@@ -1062,7 +1882,7 @@ WaveformVideoAspectRatioNext
 	unsigned int	target
 )	const
 {
-	bool next=false;
+	bool next = WaveformVideoAspectRatioNextOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(next);
 }
 
@@ -1080,12 +1900,12 @@ WaveformOscilloscopeBrightness
 
 bool
 InputOscObj::
-WaveformSyncBPM
+WaveformSync
 (
 	unsigned int	target
 )	const
 {
-	bool sync=false;
+	bool sync = WaveformSyncOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(sync);
 }
 
@@ -1108,6 +1928,26 @@ ProcessMessage
 	const IpEndpointName&		remoteEndpoint
 )
 {
+	//See if we have a new client!
+	char hostStr[2048];
+	remoteEndpoint.AddressAsString(hostStr);
+	bool clientFound=false;
+	for(unsigned int a=0;a<OscClientList.size();a++)
+	{
+		if(strcmp(hostStr,OscClientList[a]->GetAddress())==0)
+		{
+			clientFound=true;
+		}
+	}
+	if(clientFound==false)
+	{
+		std::vector<int> autoPortList = GetOscClientAutoPortList();
+		for(unsigned int a=0;a<autoPortList.size();a++)
+		{
+			AddOscClient(hostStr,autoPortList[a]);
+		}
+	}
+
 	try
 	{
 		/*
@@ -1156,7 +1996,7 @@ ProcessMessage
 							arg2
 						);
 					}
-					else
+					else if(m.ArgumentCount()==1)
 					{
 						sprintf
 						(
@@ -1169,7 +2009,12 @@ ProcessMessage
 				}
 				else
 				{
-					strcpy(OscMessageUnknown,m.AddressPattern());
+					sprintf
+					(
+						OscMessageUnknown,
+						"%s (No Args!)",
+						m.AddressPattern()
+					);
 				}
 				OscMessageUnknownBrightness=5.0f;
 			}
@@ -1217,11 +2062,60 @@ void
 InputOscObj::
 AddOscClient
 (
+	IpEndpointName	endpoint
+)
+{
+	char host[2048];
+	endpoint.AddressAsString(host);
+	AddOscClient
+	(
+		host,
+		endpoint.port
+	);
+}
+
+void
+InputOscObj::
+AddOscClient
+(
 	const char*	host,
 	int		port
 )
 {
-	LGL_OscClient* client = new LGL_OscClient(host,port);
-	OscClientList.push_back(client);
+	if(strcmp(host,"0.0.0.0")!=0)
+	{
+		LGL_OscClient* client = new LGL_OscClient(host,port);
+		OscClientList.push_back(client);
+	}
+}
+
+void
+InputOscObj::
+InitializeOscElement
+(
+	OscElementObj&	element,
+	DVJ_Action	dvjAction,
+	int		target,
+	float		floatValueIndex,
+	float		floatValueMapZero,
+	float		floatValueMapOne,
+	float		floatValueDefault,
+	OscElementObj::MasterInputGetFnType
+			getFn,
+	bool		sticky
+)
+{
+	element.SetDVJAction(dvjAction);
+	element.SetTweakFocusTarget(target);
+	element.SetFloatValues
+	(
+		floatValueIndex,
+		floatValueMapZero,
+		floatValueMapOne,
+		floatValueDefault
+	);
+	element.SetMasterInputGetFn(getFn);
+	element.SetSticky(sticky);
+	AddOscElement(element);
 }
 

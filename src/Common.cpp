@@ -305,6 +305,7 @@ Mixer_DrawGlowLinesTurntables
 		const float cfRight = (a==0) ? crossFadeSliderWidth : 1.0f;
 		const float cfBottom=viewPortBottom;
 		const float cfTop=viewPortTop;
+		bool justSet=false;
 		if
 		(
 			LGL_MouseX()>=cfLeft &&
@@ -328,17 +329,21 @@ Mixer_DrawGlowLinesTurntables
 					GUI_ELEMENT_XFADER_LEFT :
 					GUI_ELEMENT_XFADER_RIGHT
 				);
+				justSet=true;
 			}
 		}
 
 		if
 		(
-			LGL_MouseMotion() &&
-			GetInputMouse().GetDragElement() ==
+			justSet ||
 			(
-				(a==0) ?
-				GUI_ELEMENT_XFADER_LEFT :
-				GUI_ELEMENT_XFADER_RIGHT
+				LGL_MouseMotion() &&
+				GetInputMouse().GetDragElement() ==
+				(
+					(a==0) ?
+					GUI_ELEMENT_XFADER_LEFT :
+					GUI_ELEMENT_XFADER_RIGHT
+				)
 			)
 		)
 		{

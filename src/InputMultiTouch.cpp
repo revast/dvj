@@ -147,29 +147,12 @@ XfaderHeadphonesDelta()	const
 	}
 	return(delta);
 }
-
-bool
-InputMultiTouchObj::
-SyncTopToBottom()	const
-{
-	bool sync=false;
-	return(sync);
-}
-
 int
 InputMultiTouchObj::
 MasterToHeadphones()	const
 {
 	int to=-1;
 	return(to);
-}
-
-bool
-InputMultiTouchObj::
-SyncBottomToTop()	const
-{
-	bool sync=false;
-	return(sync);
 }
 
 //Mode 0: File Selection
@@ -228,19 +211,6 @@ FileRefresh
 	return(refresh);
 }
 
-//Mode 1: Decoding...
-
-bool
-InputMultiTouchObj::
-DecodeAbort
-(
-	unsigned int	target
-)	const
-{
-	bool abort=false;
-	return(abort);
-}
-
 //Mode 2: Waveform
 
 int
@@ -256,7 +226,7 @@ WaveformEject
 
 bool
 InputMultiTouchObj::
-WaveformTogglePause
+WaveformPauseToggle
 (
 	unsigned int	target
 )	const
@@ -516,7 +486,7 @@ WaveformVolumeInvert
 
 bool
 InputMultiTouchObj::
-WaveformRapidVolumeInvert
+WaveformRhythmicVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -527,7 +497,7 @@ WaveformRapidVolumeInvert
 
 bool
 InputMultiTouchObj::
-WaveformRapidSoloInvert
+WaveformRhythmicVolumeInvertOther
 (
 	unsigned int	target
 )	const
@@ -795,7 +765,7 @@ WaveformLoopMeasuresExponent
 
 bool
 InputMultiTouchObj::
-WaveformLoopMeasuresHalf
+WaveformQuantizationPeriodHalf
 (
 	unsigned int	target
 )	const
@@ -813,7 +783,7 @@ WaveformLoopMeasuresHalf
 
 bool
 InputMultiTouchObj::
-WaveformLoopMeasuresDouble
+WaveformQuantizationPeriodDouble
 (
 	unsigned int	target
 )	const
@@ -975,15 +945,15 @@ WaveformFreqSenseBrightnessDelta
 	return(delta);
 }
 
-int
+bool
 InputMultiTouchObj::
-WaveformAudioInputMode
+WaveformAudioInputToggle
 (
 	unsigned int	target
 )	const
 {
-	int mode=-1;
-	return(mode);
+	bool toggle=false;
+	return(toggle);
 }
 
 bool
@@ -1028,7 +998,7 @@ WaveformOscilloscopeBrightnessDelta
 
 bool
 InputMultiTouchObj::
-WaveformSyncBPM
+WaveformSync
 (
 	unsigned int	target
 )	const

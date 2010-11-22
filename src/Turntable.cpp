@@ -619,8 +619,8 @@ TurntableObj
 	VolumeSlider=1.0f;
 	VolumeMultiplierNow=1.0f;
 	VolumeInvertBinary=false;
-	RapidVolumeInvert=false;
-	RapidSoloInvert=false;
+	RhythmicVolumeInvert=false;
+	RhythmicSoloInvert=false;
 	LoopAlphaSeconds=-1.0;
 	QuantizePeriodMeasuresExponent=-3;
 	QuantizePeriodNoBPMSeconds=1.0;
@@ -1252,8 +1252,8 @@ NextFrame
 						SecondsLast=0.0f;
 						SecondsNow=0.0f;
 						VolumeInvertBinary=false;
-						RapidVolumeInvert=false;
-						RapidSoloInvert=false;
+						RhythmicVolumeInvert=false;
+						RhythmicSoloInvert=false;
 						LoopAlphaSeconds=-1.0;
 						//QuantizePeriodMeasuresExponent=QuantizePeriodMeasuresExponent
 						QuantizePeriodNoBPMSeconds=1.0;
@@ -1397,7 +1397,7 @@ NextFrame
 		if
 		(
 			Sound->IsUnloadable() ||
-			GetInput().DecodeAbort(target) ||
+			GetInput().WaveformEject(target) ||
 			Mode1Timer.SecondsSinceLastReset() > (EncodeEveryTrack ? 20.0f : 5.0f)
 		)
 		{
@@ -1560,7 +1560,7 @@ NextFrame
 		//Volume
 		VolumeInvertBinary=GetInput().WaveformVolumeInvert(target);
 
-		Sound->SetRapidInvertProperties
+		Sound->SetRhythmicInvertProperties
 		(
 			Channel,
 			GetBeginningOfCurrentMeasureSeconds(),
@@ -1568,22 +1568,22 @@ NextFrame
 		);
 		if(GetBPM()>0)
 		{
-			if(GetInput().WaveformRapidVolumeInvert(target))
+			if(GetInput().WaveformRhythmicVolumeInvert(target))
 			{
-				RapidVolumeInvert=true;
+				RhythmicVolumeInvert=true;
 			}
 			else
 			{
-				RapidVolumeInvert=false;
+				RhythmicVolumeInvert=false;
 			}
-			Sound->SetRapidVolumeInvert(Channel,RapidVolumeInvert);
+			Sound->SetRhythmicVolumeInvert(Channel,RhythmicVolumeInvert);
 		}
 		else
 		{
-			RapidVolumeInvert=false;
+			RhythmicVolumeInvert=false;
 		}
 
-		RapidSoloInvert = GetInput().WaveformRapidSoloInvert(target);
+		RhythmicSoloInvert = GetInput().WaveformRhythmicVolumeInvertOther(target);
 
 		//Save Points
 		if(AudioInputMode==false)
@@ -1960,13 +1960,13 @@ NextFrame
 		LoopActive = 
 		(
 			(GetInput().WaveformLoopToggle(target) ? !LoopActive : LoopActive) &&
-			RapidVolumeInvert==false
+			RhythmicVolumeInvert==false
 		);
 		LoopThenRecallActive =
 		(
 			GetInput().WaveformLoopThenRecallActive(target) &&
 			Sound->GetWarpPointIsLocked(Channel)==false &&
-			RapidVolumeInvert==false
+			RhythmicVolumeInvert==false
 		);
 
 		bool loopChanged=
@@ -2007,7 +2007,7 @@ NextFrame
 				LoopActive=true;
 			}
 
-			if(GetInput().WaveformLoopMeasuresHalf(target))
+			if(GetInput().WaveformQuantizationPeriodHalf(target))
 			{
 				if(QuantizePeriodMeasuresExponent==exponentAll)
 				{
@@ -2020,7 +2020,7 @@ NextFrame
 				loopChanged=true;
 			}
 
-			if(GetInput().WaveformLoopMeasuresDouble(target))
+			if(GetInput().WaveformQuantizationPeriodDouble(target))
 			{
 				QuantizePeriodMeasuresExponent=LGL_Min(QuantizePeriodMeasuresExponent+1,exponentMax);
 				loopChanged=true;
@@ -2236,8 +2236,8 @@ NextFrame
 			AutoDivergeRecallActive=true;
 		}
 
-		//Rapid Volume Invert vs QuantizePeriodMeasuresExponent
-		if(RapidVolumeInvert || RapidSoloInvert)
+		//Rhythmic Volume Invert vs QuantizePeriodMeasuresExponent
+		if(RhythmicVolumeInvert || RhythmicSoloInvert)
 		{
 			const int rapidVolumeInvertMeasuresExponentMin=-6;
 			const int rapidVolumeInvertMeasuresExponentMax=-1;
@@ -2278,21 +2278,10 @@ NextFrame
 			SelectNewVideo();
 		}
 
-		int mode=GetInput().WaveformAudioInputMode(target);
-		if(mode!=-1)
+		bool toggle=GetInput().WaveformAudioInputToggle(target);
+		if(toggle)
 		{
-			if(mode==2)
-			{
-				AudioInputMode=!AudioInputMode;
-			}
-			else
-			{
-				AudioInputMode=(mode==1);
-			}
-			if(0 && AudioInputMode)
-			{
-				PauseMultiplier=0.0f;
-			}
+			AudioInputMode=!AudioInputMode;
 			SelectNewVideo();
 		}
 
@@ -2401,7 +2390,7 @@ NextFrame
 		if
 		(
 			//AudioInputMode==false &&
-			GetInput().WaveformTogglePause(target)
+			GetInput().WaveformPauseToggle(target)
 		)
 		{
 			//Toggle PauseMultiplier
@@ -4031,7 +4020,7 @@ DrawFrame
 				videoSecondsBufferedLeft,				//42
 				videoSecondsBufferedRight,				//43
 				(Which==Master) ? 'T' : 'F',				//44
-				(RapidVolumeInvert) ? 'T' : 'F',			//45
+				(RhythmicVolumeInvert) ? 'T' : 'F',			//45
 				GetBeginningOfCurrentMeasureSeconds(),			//46
 				VideoBrightness,					//47
 				OscilloscopeBrightness,					//48
@@ -4099,7 +4088,7 @@ DrawFrame
 				videoSecondsBufferedLeft,				//53
 				videoSecondsBufferedRight,				//54
 				Which==Master,						//55
-				RapidVolumeInvert,					//56
+				RhythmicVolumeInvert,					//56
 				GetBeginningOfCurrentMeasureSeconds(),			//57
 				VideoBrightness,					//58
 				OscilloscopeBrightness,					//59
@@ -4454,7 +4443,7 @@ GetVisualBrightnessFinal()
 	bool muted=false;
 	if(GetBPM()>0)
 	{
-		if(RapidVolumeInvert)
+		if(RhythmicVolumeInvert)
 		{
 			long sampleNow = SmoothWaveformScrollingSample;
 			long bpmFirstBeatCurrentMeasureSamples = GetBeginningOfCurrentMeasureSeconds()*Sound->GetHz();
@@ -4469,7 +4458,7 @@ GetVisualBrightnessFinal()
 	}
 	if(Sound)
 	{
-		if(Sound->GetRespondToRapidSoloInvertCurrentValue(Channel)==0)
+		if(Sound->GetRespondToRhythmicSoloInvertCurrentValue(Channel)==0)
 		{
 			muted=true;
 		}
@@ -5452,6 +5441,17 @@ UpdateSoundFreqResponse()
 	}
 }
 
+float
+TurntableObj::
+GetEjectVisualBrightnessScalar()
+{
+	return
+	(
+		1.0f-
+		NoiseFactor
+	);
+}
+
 bool
 TurntableObj::
 GetAudioInputMode()
@@ -5901,21 +5901,21 @@ GetSolo()
 
 bool
 TurntableObj::
-GetRapidSoloInvert()
+GetRhythmicSoloInvert()
 {
-	return(RapidSoloInvert);
+	return(RhythmicSoloInvert);
 }
 
 void
 TurntableObj::
-SetRespondToRapidSoloInvert
+SetRespondToRhythmicSoloInvert
 (
 	int	soloChannel
 )
 {
 	if(Sound)
 	{
-		Sound->SetRespondToRapidSoloInvertChannel
+		Sound->SetRespondToRhythmicSoloInvertChannel
 		(
 			Channel,
 			soloChannel

@@ -169,28 +169,12 @@ XfaderHeadphonesDelta()	const
 	return(delta);
 }
 
-bool
-InputWiimoteObj::
-SyncTopToBottom()	const
-{
-	bool sync=false;
-	return(sync);
-}
-
 int
 InputWiimoteObj::
 MasterToHeadphones()	const
 {
 	int to=-1;
 	return(to);
-}
-
-bool
-InputWiimoteObj::
-SyncBottomToTop()	const
-{
-	bool sync=false;
-	return(sync);
 }
 
 //Mode 0: File Selection
@@ -272,18 +256,7 @@ FileRefresh
 	return(refresh);
 }
 
-//Mode 1: Decoding...
 
-bool
-InputWiimoteObj::
-DecodeAbort
-(
-	unsigned int	target
-)	const
-{
-	bool abort=false;
-	return(abort);
-}
 
 //Mode 2: Waveform
 
@@ -307,7 +280,7 @@ WaveformEject
 
 bool
 InputWiimoteObj::
-WaveformTogglePause
+WaveformPauseToggle
 (
 	unsigned int	target
 )	const
@@ -545,7 +518,7 @@ WaveformVolumeInvert
 
 bool
 InputWiimoteObj::
-WaveformRapidVolumeInvert
+WaveformRhythmicVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -556,7 +529,7 @@ WaveformRapidVolumeInvert
 
 bool
 InputWiimoteObj::
-WaveformRapidSoloInvert
+WaveformRhythmicVolumeInvertOther
 (
 	unsigned int	target
 )	const
@@ -773,7 +746,7 @@ WaveformLoopMeasuresExponent
 
 bool
 InputWiimoteObj::
-WaveformLoopMeasuresHalf
+WaveformQuantizationPeriodHalf
 (
 	unsigned int	target
 )	const
@@ -784,7 +757,7 @@ WaveformLoopMeasuresHalf
 
 bool
 InputWiimoteObj::
-WaveformLoopMeasuresDouble
+WaveformQuantizationPeriodDouble
 (
 	unsigned int	target
 )	const
@@ -903,15 +876,15 @@ WaveformFreqSenseBrightness
 	return(brightness);
 }
 
-int
+bool
 InputWiimoteObj::
-WaveformAudioInputMode
+WaveformAudioInputToggle
 (
 	unsigned int	target
 )	const
 {
-	int mode=-1;
-	return(mode);
+	bool toggle=false;
+	return(toggle);
 }
 
 bool
@@ -937,7 +910,7 @@ WaveformOscilloscopeBrightness
 
 bool
 InputWiimoteObj::
-WaveformSyncBPM
+WaveformSync
 (
 	unsigned int	target
 )	const

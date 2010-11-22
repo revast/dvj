@@ -267,19 +267,9 @@ NextFrame
 		Turntable[1]->GetBPM()>0
 	)
 	{
-		if(GetInput().SyncTopToBottom())
-		{
-			syncTT=0;
-			target=1;
-		}
-		if(GetInput().SyncBottomToTop())
-		{
-			syncTT=1;
-			target=0;
-		}
 		if(Turntable[Focus]->GetMode()==2)
 		{
-			if(GetInput().WaveformSyncBPM(TARGET_FOCUS))
+			if(GetInput().WaveformSync(TARGET_FOCUS))
 			{
 				syncTT=Focus;
 				target=Focus?0:1;
@@ -396,9 +386,9 @@ NextFrame
 	{
 		int b=(a+1)%2;
 		Turntable[a]->SetMixerVolumeBack(0);
-		Turntable[a]->SetRespondToRapidSoloInvert
+		Turntable[a]->SetRespondToRhythmicSoloInvert
 		(
-			Turntable[b]->GetRapidSoloInvert() ?
+			Turntable[b]->GetRhythmicSoloInvert() ?
 				Turntable[b]->GetSoundChannel() :
 				-1
 		);

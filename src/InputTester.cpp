@@ -136,14 +136,6 @@ XfaderHeadphonesDelta()	const
 	return(delta);
 }
 
-bool
-InputTesterObj::
-SyncTopToBottom()	const
-{
-	bool sync=CurrentActionBottom == SYNC_TOP_TO_BOTTOM;
-	return(sync);
-}
-
 int
 InputTesterObj::
 MasterToHeadphones()	const
@@ -154,14 +146,6 @@ MasterToHeadphones()	const
 		to=LGL_RandInt(0,1);
 	}
 	return(to);
-}
-
-bool
-InputTesterObj::
-SyncBottomToTop()	const
-{
-	bool sync=CurrentActionBottom == SYNC_BOTTOM_TO_TOP;
-	return(sync);
 }
 
 //Mode 0: File Selection
@@ -175,9 +159,9 @@ FileScroll
 {
 	int currentAction = GetCurrentAction(target);
 	float scroll=
+		((currentAction == FILE_SCROLL_PREV) ? 1.0f : 0.0f) +
+		((currentAction == FILE_SCROLL_NEXT) ? -1.0f : 0.0f) +
 		((currentAction == FILE_SCROLL_DOWN_MANY) ? -5.0f : 0.0f) +
-		((currentAction == FILE_SCROLL_DOWN_ONE) ? -1.0f : 0.0f) +
-		((currentAction == FILE_SCROLL_UP_ONE) ? 1.0f : 0.0f) +
 		((currentAction == FILE_SCROLL_UP_MANY) ? 5.0f : 0.0f);
 	return(scroll);
 }
@@ -218,19 +202,7 @@ FileRefresh
 	return(refresh);
 }
 
-//Mode 1: Decoding...
 
-bool
-InputTesterObj::
-DecodeAbort
-(
-	unsigned int	target
-)	const
-{
-	int currentAction = GetCurrentAction(target);
-	bool abort=currentAction == DECODE_ABORT;
-	return(abort);
-}
 
 //Mode 2: Waveform
 
@@ -255,13 +227,13 @@ WaveformEject
 
 bool
 InputTesterObj::
-WaveformTogglePause
+WaveformPauseToggle
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	bool toggle=currentAction == WAVEFORM_TOGGLE_PAUSE;
+	bool toggle=currentAction == WAVEFORM_PAUSE_TOGGLE;
 	return(toggle);
 }
 
@@ -274,10 +246,8 @@ WaveformNudge
 {
 	int currentAction = GetCurrentAction(target);
 	float nudge=
-		((currentAction == WAVEFORM_NUDGE_LEFT_1) ? -0.02f : 0.0f) +
-		((currentAction == WAVEFORM_NUDGE_LEFT_2) ? -0.02f : 0.0f) +
-		((currentAction == WAVEFORM_NUDGE_RIGHT_1) ? 0.02f : 0.0f) +
-		((currentAction == WAVEFORM_NUDGE_RIGHT_2) ? 0.02f : 0.0f);
+		((currentAction == WAVEFORM_NUDGE_SLOWER) ? -0.02f : 0.0f) +
+		((currentAction == WAVEFORM_NUDGE_FASTER) ? 0.02f : 0.0f);
 	return(nudge);
 }
 
@@ -481,25 +451,25 @@ WaveformVolumeInvert
 
 bool
 InputTesterObj::
-WaveformRapidVolumeInvert
+WaveformRhythmicVolumeInvert
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	bool invert=currentAction == WAVEFORM_RAPID_VOLUME_INVERT;
+	bool invert=currentAction == WAVEFORM_RHYTHMIC_VOLUME_INVERT;
 	return(invert);
 }
 
 bool
 InputTesterObj::
-WaveformRapidSoloInvert
+WaveformRhythmicVolumeInvertOther
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	bool invert=currentAction == WAVEFORM_RAPID_SOLO_INVERT;
+	bool invert=currentAction == WAVEFORM_RHYTHMIC_VOLUME_INVERT_OTHER;
 	return(invert);
 }
 
@@ -524,8 +494,8 @@ WaveformRewindFF
 {
 	int currentAction = GetCurrentAction(target);
 	float rewindff=
-		((currentAction == WAVEFORM_REWIND) ? -32.0f : 0.0f) +
-		((currentAction == WAVEFORM_FF) ? 32.0f : 0.0f);
+		((currentAction == WAVEFORM_SEEK_BACKWARD_FAST) ? -32.0f : 0.0f) +
+		((currentAction == WAVEFORM_SEEK_FORWARD_FAST) ? 32.0f : 0.0f);
 	return(rewindff);
 }
 
@@ -549,8 +519,8 @@ WaveformRecordSpeed
 {
 	int currentAction = GetCurrentAction(target);
 	float speed=
-		((currentAction == WAVEFORM_RECORD_SPEED_BACK) ? -2.0f : 0.0f) +
-		((currentAction == WAVEFORM_RECORD_SPEED_FORWARD) ? 2.0f : 0.0f);
+		((currentAction == WAVEFORM_SEEK_BACKWARD_SLOW) ? -2.0f : 0.0f) +
+		((currentAction == WAVEFORM_SEEK_FORWARD_SLOW) ? 2.0f : 0.0f);
 	return(speed);
 }
 
@@ -715,25 +685,25 @@ WaveformLoopMeasuresExponent
 
 bool
 InputTesterObj::
-WaveformLoopMeasuresHalf
+WaveformQuantizationPeriodHalf
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	bool half=currentAction == WAVEFORM_LOOP_MEASURES_HALF;
+	bool half=currentAction == WAVEFORM_QUANTIZATION_PERIOD_HALF;
 	return(half);
 }
 
 bool
 InputTesterObj::
-WaveformLoopMeasuresDouble
+WaveformQuantizationPeriodDouble
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	bool twoX=currentAction == WAVEFORM_LOOP_MEASURES_DOUBLE;
+	bool twoX=currentAction == WAVEFORM_QUANTIZATION_PERIOD_DOUBLE;
 	return(twoX);
 }
 
@@ -745,7 +715,7 @@ WaveformLoopSecondsLess
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	bool less=currentAction == WAVEFORM_LOOP_MEASURES_HALF;
+	bool less=currentAction == WAVEFORM_QUANTIZATION_PERIOD_HALF;
 	return(less);
 }
 
@@ -757,7 +727,7 @@ WaveformLoopSecondsMore
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	bool more=currentAction == WAVEFORM_LOOP_MEASURES_DOUBLE;
+	bool more=currentAction == WAVEFORM_QUANTIZATION_PERIOD_DOUBLE;
 	return(more);
 }
 
@@ -886,20 +856,20 @@ WaveformFreqSenseBrightness
 	}
 }
 
-int
+bool
 InputTesterObj::
-WaveformAudioInputMode
+WaveformAudioInputToggle
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	int mode = -1;
-	if(currentAction == WAVEFORM_AUDIO_INPUT_MODE)
+	bool toggle = false;
+	if(currentAction == WAVEFORM_AUDIO_INPUT_TOGGLE)
 	{
-		mode = LGL_RandInt(0,2);
+		toggle = (LGL_RandInt(0,1)==1);
 	}
-	return(mode);
+	return(toggle);
 }
 
 bool
@@ -947,13 +917,13 @@ WaveformOscilloscopeBrightness
 
 bool
 InputTesterObj::
-WaveformSyncBPM
+WaveformSync
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	bool sync=currentAction == WAVEFORM_SYNC_BPM;
+	bool sync=currentAction == WAVEFORM_SYNC;
 	return(sync);
 }
 

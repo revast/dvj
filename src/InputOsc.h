@@ -56,8 +56,6 @@ virtual float	XfaderSpeakers()					const;	//Crossfader for speakers
 virtual float	XfaderSpeakersDelta()					const;	//Crossfader for speakers (change)
 virtual float	XfaderHeadphones()					const;	//Crossfader for headphones
 virtual float	XfaderHeadphonesDelta()					const;	//Crossfader for headphones (change)
-virtual	bool	SyncTopToBottom()					const;	//Sync top turntable to bottom
-virtual	bool	SyncBottomToTop()					const;	//Sync bottom turntable to top
 virtual int	MasterToHeadphones()					const;	//Headphones hears what's being output to master
 
 	//Mode 0: File Selection
@@ -67,14 +65,10 @@ virtual	int	FileSelect			(unsigned int target)	const;	//Enter the directory or o
 virtual bool	FileMarkUnopened		(unsigned int target)	const;	//Don't display that the current file has been opened
 virtual	bool	FileRefresh			(unsigned int target)	const;	//Rescan current folder
 
-	//Mode 1: Decoding...
-
-virtual bool	DecodeAbort			(unsigned int target)	const;	//Return to File Selection
-
 	//Mode 2: Waveform
 
 virtual int	WaveformEject			(unsigned int target)	const;	//Return to File Selection
-virtual bool	WaveformTogglePause		(unsigned int target)	const;	//Play/Pause the record
+virtual bool	WaveformPauseToggle		(unsigned int target)	const;	//Play/Pause the record
 virtual	float	WaveformNudge			(unsigned int target)	const;	//Temporary pitchbend for beatmatching
 virtual	float	WaveformPitchbend		(unsigned int target)	const;	//Permanent pitchbend for beatmatching
 virtual	float	WaveformPitchbendDelta		(unsigned int target)	const;	//Permanent pitchbend for beatmatching
@@ -92,8 +86,9 @@ virtual float	WaveformGainDelta		(unsigned int target)	const;	//Respected in all
 virtual	bool	WaveformGainKill		(unsigned int target)	const;	//Respected in all modes
 virtual	float	WaveformVolumeSlider		(unsigned int target)	const;	//Respected in all modes
 virtual	bool	WaveformVolumeInvert		(unsigned int target)	const;	//Audible => Inaudible => Full
-virtual	bool	WaveformRapidVolumeInvert	(unsigned int target)	const;	//Invert my Turntable's volume so I'm audible on nth notes, as defined by LoopMeasures
-virtual	bool	WaveformRapidSoloInvert		(unsigned int target)	const;	//Invert other TT's volume so only I'm audible on nth notes, as defined by LoopMeasures
+virtual	bool	WaveformRhythmicVolumeInvert	(unsigned int target)	const;	//Invert my Turntable's volume so I'm audible on nth notes, as defined by LoopMeasures
+virtual	bool	WaveformRhythmicVolumeInvertOther
+						(unsigned int target)	const;	//Invert other TT's volume so only I'm audible on nth notes, as defined by LoopMeasures
 virtual	bool	WaveformVolumeSolo		(unsigned int target)	const;	//Full + others muted
 virtual	float	WaveformRewindFF		(unsigned int target)	const;	//Velocity of seeking
 virtual	bool	WaveformRecordHold		(unsigned int target)	const;	//Finger on Record
@@ -112,8 +107,8 @@ virtual	bool	WaveformSavePointShiftAllHere	(unsigned int target)	const;	//Shift 
 virtual	bool	WaveformSavePointJumpNow	(unsigned int target)	const;	//Jump to current save point
 virtual	bool	WaveformSavePointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
 virtual	int	WaveformLoopMeasuresExponent	(unsigned int target)	const;	//Loop 2^n measures. If disabled, enable. Else, disable if equal.
-virtual	bool	WaveformLoopMeasuresHalf	(unsigned int target)	const;	//Loop half as many measures
-virtual	bool	WaveformLoopMeasuresDouble	(unsigned int target)	const;	//Loop twice as many measures
+virtual	bool	WaveformQuantizationPeriodHalf	(unsigned int target)	const;	//Loop half as many measures
+virtual	bool	WaveformQuantizationPeriodDouble(unsigned int target)	const;	//Loop twice as many measures
 virtual	bool	WaveformLoopSecondsLess		(unsigned int target)	const;	//Loop less seconds (When no BPM is available)
 virtual	bool	WaveformLoopSecondsMore		(unsigned int target)	const;	//Loop more seconds (When no BPM is available)
 virtual bool	WaveformLoopAll			(unsigned int target)	const;	//Loop all measures (to savepoint [9], or last measure), or all seconds
@@ -124,10 +119,10 @@ virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new vi
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual	float	WaveformFreqSenseBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
-virtual	int	WaveformAudioInputMode		(unsigned int target)	const;	//Set audio input mode
+virtual	bool	WaveformAudioInputToggle	(unsigned int target)	const;	//Set audio input mode
 virtual	bool	WaveformVideoAspectRatioNext	(unsigned int target)	const;	//Advance to next aspect ratio mode
 virtual	float	WaveformOscilloscopeBrightness	(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader
-virtual	bool	WaveformSyncBPM			(unsigned int target)	const;	//Sync BPM to opposite turntable
+virtual	bool	WaveformSync			(unsigned int target)	const;	//Sync BPM to opposite turntable
 virtual	float	WaveformPointerScratch		(unsigned int target)	const;	//Point at the waveform for scratching
 
 protected:
@@ -142,6 +137,7 @@ private:
 
 	int			GetIndexFromTarget(unsigned int target) const;
 	void			AddOscElement(OscElementObj& oscElement);
+	void			AddOscClient(IpEndpointName endpoint);
 	void			AddOscClient(const char* host, int port);
 	std::vector<OscElementObj*>
 				OscElementList;
@@ -152,16 +148,74 @@ private:
 	float			OscMessageUnknownBrightness;
 	LGL_Semaphore		OscMessageUnknownSemaphore;
 
+	LGL_Timer		SavePointUnsetTimer[2];
+
+	OscElementObj		FocusChangeOscElement;
 	OscElementObj		XfaderSpeakersOscElement;
 	OscElementObj		XfaderHeadphonesOscElement;
-	OscElementObj		WaveformEqLowOscElement[2];
-	OscElementObj		WaveformEqMidOscElement[2];
-	OscElementObj		WaveformEqHighOscElement[2];
+	OscElementObj		FileScrollOscElement[2];
+	OscElementObj		FileScrollPrevOscElement[2];
+	OscElementObj		FileScrollNextOscElement[2];
+	OscElementObj		FileSelectOscElement[2];
+	OscElementObj		FileMarkUnopenedOscElement[2];
+	OscElementObj		WaveformEjectOscElement[2];
+	OscElementObj		WaveformPauseToggleOscElement[2];
+	OscElementObj		WaveformNudgeOscElement[2];
+	OscElementObj		WaveformNudgeSlowerOscElement[2];
+	OscElementObj		WaveformNudgeFasterOscElement[2];
+	OscElementObj		WaveformPitchbendOscElement[2];
+	OscElementObj		WaveformEQLowOscElement[2];
+	OscElementObj		WaveformEQLowKillOscElement[2];
+	OscElementObj		WaveformEQMidOscElement[2];
+	OscElementObj		WaveformEQMidKillOscElement[2];
+	OscElementObj		WaveformEQHighOscElement[2];
+	OscElementObj		WaveformEQHighKillOscElement[2];
 	OscElementObj		WaveformGainOscElement[2];
+	OscElementObj		WaveformGainKillOscElement[2];
+	OscElementObj		WaveformVolumeOscElement[2];
+	OscElementObj		WaveformVolumeInvertOscElement[2];
+	OscElementObj		WaveformRhythmicVolumeInvertOscElement[2];
+	OscElementObj		WaveformRhythmicVolumeInvertOtherOscElement[2];
+	OscElementObj		WaveformVolumeSoloOscElement[2];
+	OscElementObj		WaveformSeekBackwardSlowOscElement[2];
+	OscElementObj		WaveformSeekBackwardFastOscElement[2];
+	OscElementObj		WaveformSeekForwardSlowOscElement[2];
+	OscElementObj		WaveformSeekForwardFastOscElement[2];
+	OscElementObj		WaveformScratchSpeedOscElement[2];
+	OscElementObj		WaveformSavePointPrevOscElement[2];
+	OscElementObj		WaveformSavePointNextOscElement[2];
+	OscElementObj		WaveformSavePointSetOscElement[2];
+	OscElementObj		WaveformSavePointShiftBackwardOscElement[2];
+	OscElementObj		WaveformSavePointShiftForwardOscElement[2];
+	OscElementObj		WaveformSavePointShiftAllBackwardOscElement[2];
+	OscElementObj		WaveformSavePointShiftAllForwardOscElement[2];
+	OscElementObj		WaveformSavePointJumpNowOscElement[2];
+	OscElementObj		WaveformSavePointJumpAtMeasureOscElement[2];
+	OscElementObj		WaveformQuantizationPeriodHalfOscElement[2];
+	OscElementObj		WaveformQuantizationPeriodDoubleOscElement[2];
+	OscElementObj		WaveformLoopToggleOscElement[2];
+	OscElementObj		WaveformLoopThenRecallOscElement[2];
+	OscElementObj		WaveformVideoSelectOscElement[2];
 	OscElementObj		WaveformVideoBrightnessOscElement[2];
 	OscElementObj		WaveformOscilloscopeBrightnessOscElement[2];
 	OscElementObj		WaveformFreqSenseBrightnessOscElement[2];
-	OscElementObj		WaveformPitchbendOscElement[2];
+	OscElementObj		WaveformAudioInputToggleOscElement[2];
+	OscElementObj		WaveformVideoAspectRatioNextOscElement[2];
+	OscElementObj		WaveformSyncOscElement[2];
+
+	void			InitializeOscElement
+				(
+					OscElementObj&	element,
+					DVJ_Action	dvjAction,
+					int		target,
+					float		floatValueIndex,
+					float		floatValueMapZero,
+					float		floatValueMapOne,
+					float		floatValueDefault,
+					OscElementObj::MasterInputGetFnType
+							getFn,
+					bool		sticky
+				);
 
 };
 
