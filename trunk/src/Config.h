@@ -24,6 +24,93 @@
 #ifndef	_DVJ_CONFIG_H_
 #define	_DVJ_CONFIG_H_
 
+typedef enum
+{
+	NOOP = 0,
+	FOCUS_CHANGE,
+	FOCUS_BOTTOM,
+	FOCUS_TOP,
+	XFADER_SPEAKERS,
+	XFADER_SPEAKERS_DELTA_DOWN,
+	XFADER_SPEAKERS_DELTA_UP,
+	XFADER_HEADPHONES,
+	XFADER_HEADPHONES_DELTA_DOWN,
+	XFADER_HEADPHONES_DELTA_UP,
+	MASTER_TO_HEADPHONES,
+	FILE_SCROLL,
+	FILE_SCROLL_DOWN_MANY,
+	FILE_SCROLL_UP_MANY,
+	FILE_SCROLL_PREV,
+	FILE_SCROLL_NEXT,
+	FILE_SELECT,
+	FILE_MARK_UNOPENED,
+	FILE_REFRESH,
+	WAVEFORM_EJECT,
+	WAVEFORM_PAUSE_TOGGLE,
+	WAVEFORM_NUDGE,
+	WAVEFORM_NUDGE_SLOWER,
+	WAVEFORM_NUDGE_FASTER,
+	WAVEFORM_PITCHBEND,
+	WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW,
+	WAVEFORM_PITCHBEND_DELTA_UP_SLOW,
+	WAVEFORM_PITCHBEND_DELTA_DOWN,
+	WAVEFORM_PITCHBEND_DELTA_UP,
+	WAVEFORM_PITCHBEND_DELTA_DOWN_FAST,
+	WAVEFORM_PITCHBEND_DELTA_UP_FAST,
+	WAVEFORM_EQ_LOW,
+	WAVEFORM_EQ_LOW_DELTA_DOWN,
+	WAVEFORM_EQ_LOW_DELTA_UP,
+	WAVEFORM_EQ_LOW_KILL,
+	WAVEFORM_EQ_MID,
+	WAVEFORM_EQ_MID_DELTA_DOWN,
+	WAVEFORM_EQ_MID_DELTA_UP,
+	WAVEFORM_EQ_MID_KILL,
+	WAVEFORM_EQ_HIGH,
+	WAVEFORM_EQ_HIGH_DELTA_DOWN,
+	WAVEFORM_EQ_HIGH_DELTA_UP,
+	WAVEFORM_EQ_HIGH_KILL,
+	WAVEFORM_GAIN,
+	WAVEFORM_GAIN_DELTA_DOWN,
+	WAVEFORM_GAIN_DELTA_UP,
+	WAVEFORM_GAIN_KILL,
+	WAVEFORM_VOLUME,
+	WAVEFORM_VOLUME_INVERT,
+	WAVEFORM_RHYTHMIC_VOLUME_INVERT,
+	WAVEFORM_RHYTHMIC_VOLUME_INVERT_OTHER,
+	WAVEFORM_VOLUME_SOLO,
+	WAVEFORM_SEEK_BACKWARD_SLOW,
+	WAVEFORM_SEEK_BACKWARD_FAST,
+	WAVEFORM_SEEK_FORWARD_SLOW,
+	WAVEFORM_SEEK_FORWARD_FAST,
+	WAVEFORM_SCRATCH_SPEED,
+	WAVEFORM_STUTTER,
+	WAVEFORM_SAVEPOINT_PREV,
+	WAVEFORM_SAVEPOINT_NEXT,
+	WAVEFORM_SAVEPOINT_SET,
+	WAVEFORM_SAVEPOINT_SHIFT_BACKWARD,
+	WAVEFORM_SAVEPOINT_SHIFT_FORWARD,
+	WAVEFORM_SAVEPOINT_SHIFT_ALL_BACKWARD,
+	WAVEFORM_SAVEPOINT_SHIFT_ALL_FORWARD,
+	WAVEFORM_SAVEPOINT_JUMP_NOW,
+	WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE,
+	WAVEFORM_QUANTIZATION_PERIOD_HALF,
+	WAVEFORM_QUANTIZATION_PERIOD_DOUBLE,
+	WAVEFORM_LOOP_TOGGLE,
+	WAVEFORM_LOOP_THEN_RECALL,
+	WAVEFORM_AUTO_DIVERGE_THEN_RECALL,
+	WAVEFORM_VIDEO_SELECT,
+	WAVEFORM_VIDEO_BRIGHTNESS,
+	WAVEFORM_FREQ_SENSE_BRIGHTNESS,
+	WAVEFORM_OSCILLOSCOPE_BRIGHTNESS,
+	WAVEFORM_AUDIO_INPUT_TOGGLE,
+	WAVEFORM_VIDEO_ASPECT_RATIO_NEXT,
+	WAVEFORM_SYNC,
+	FULL_SCREEN_TOGGLE,
+	VISUALIZER_FULL_SCREEN_TOGGLE,
+	SCREENSHOT,
+	ACTION_LAST
+} DVJ_Action;
+
 void
 ConfigInit();
 
@@ -109,9 +196,6 @@ GetVideoBufferFrames();
 int
 GetVideoBufferFramesFreqSense();
 
-int
-GetOscServerPort();
-
 int	GetInputKeyboardFocusChangeKey();
 int	GetInputKeyboardFocusBottomKey();
 int	GetInputKeyboardFocusTopKey();
@@ -119,24 +203,21 @@ int	GetInputKeyboardXfaderSpeakersDeltaDownKey();
 int	GetInputKeyboardXfaderSpeakersDeltaUpKey();
 int	GetInputKeyboardXfaderHeadphonesDeltaDownKey();
 int	GetInputKeyboardXfaderHeadphonesDeltaUpKey();
-int	GetInputKeyboardSyncTopToBottomKey();
-int	GetInputKeyboardSyncBottomToTopKey();
 int	GetInputKeyboardFileScrollDownManyKey();
 int	GetInputKeyboardFileScrollUpManyKey();
-int	GetInputKeyboardFileScrollDownOneKey();
-int	GetInputKeyboardFileScrollUpOneKey();
+int	GetInputKeyboardFileScrollPrevKey();
+int	GetInputKeyboardFileScrollNextKey();
 int	GetInputKeyboardFileSelectKey();
 int	GetInputKeyboardFileMarkUnopenedKey();
 int	GetInputKeyboardFileRefreshKey();
-int	GetInputKeyboardDecodeAbortKey();
 int	GetInputKeyboardWaveformEjectKey();
-int	GetInputKeyboardWaveformTogglePauseKey();
-int	GetInputKeyboardWaveformNudgeLeft1Key();
-int	GetInputKeyboardWaveformNudgeRight1Key();
-int	GetInputKeyboardWaveformNudgeLeft2Key();
-int	GetInputKeyboardWaveformNudgeRight2Key();
+int	GetInputKeyboardWaveformPauseToggleKey();
+int	GetInputKeyboardWaveformNudgeSlowerKey();
+int	GetInputKeyboardWaveformNudgeFasterKey();
 int	GetInputKeyboardWaveformPitchbendDeltaDownSlowKey();
 int	GetInputKeyboardWaveformPitchbendDeltaUpSlowKey();
+int	GetInputKeyboardWaveformPitchbendDeltaDownKey();
+int	GetInputKeyboardWaveformPitchbendDeltaUpKey();
 int	GetInputKeyboardWaveformPitchbendDeltaDownFastKey();
 int	GetInputKeyboardWaveformPitchbendDeltaUpFastKey();
 int	GetInputKeyboardWaveformEQLowDeltaDownKey();
@@ -151,116 +232,52 @@ int	GetInputKeyboardWaveformEQHighKillKey();
 int	GetInputKeyboardWaveformGainDeltaDownKey();
 int	GetInputKeyboardWaveformGainDeltaUpKey();
 int	GetInputKeyboardWaveformVolumeInvertKey();
-int	GetInputKeyboardWaveformRapidVolumeInvertKey();
-int	GetInputKeyboardWaveformRapidSoloInvertKey();
+int	GetInputKeyboardWaveformRhythmicVolumeInvertKey();
+int	GetInputKeyboardWaveformRhythmicVolumeInvertOtherKey();
 int	GetInputKeyboardWaveformVolumeSoloKey();
-int	GetInputKeyboardWaveformRewindKey();
-int	GetInputKeyboardWaveformFFKey();
-int	GetInputKeyboardWaveformRecordSpeedBackKey();
-int	GetInputKeyboardWaveformRecordSpeedForwardKey();
-int	GetInputKeyboardWaveformStutterKey();
+int	GetInputKeyboardWaveformSeekBackwardFastKey();
+int	GetInputKeyboardWaveformSeekForwardFastKey();
+int	GetInputKeyboardWaveformSeekBackwardSlowKey();
+int	GetInputKeyboardWaveformSeekForwardSlowKey();
 int	GetInputKeyboardWaveformSavePointPrevKey();
 int	GetInputKeyboardWaveformSavePointNextKey();
 int	GetInputKeyboardWaveformSavePointSetKey();
-int	GetInputKeyboardWaveformSavePointUnsetKey();
-int	GetInputKeyboardWaveformSavePointShiftLeftKey();
-int	GetInputKeyboardWaveformSavePointShiftRightKey();
-int	GetInputKeyboardWaveformSavePointShiftAllLeftKey();
-int	GetInputKeyboardWaveformSavePointShiftAllRightKey();
+int	GetInputKeyboardWaveformSavePointShiftBackwardKey();
+int	GetInputKeyboardWaveformSavePointShiftForwardKey();
+int	GetInputKeyboardWaveformSavePointShiftAllBackwardKey();
+int	GetInputKeyboardWaveformSavePointShiftAllForwardKey();
 int	GetInputKeyboardWaveformSavePointJumpNowKey();
 int	GetInputKeyboardWaveformSavePointJumpAtMeasureKey();
-int	GetInputKeyboardWaveformLoopMeasuresHalfKey();
-int	GetInputKeyboardWaveformLoopMeasuresDoubleKey();
+int	GetInputKeyboardWaveformQuantizationPeriodHalfKey();
+int	GetInputKeyboardWaveformQuantizationPeriodDoubleKey();
+int	GetInputKeyboardWaveformStutterKey();
 int	GetInputKeyboardWaveformLoopToggleKey();
 int	GetInputKeyboardWaveformLoopThenRecallKey();
 int	GetInputKeyboardWaveformAutoDivergeRecallKey();
 int	GetInputKeyboardWaveformVideoSelectKey();
-int	GetInputKeyboardWaveformAudioInputModeKey();
+int	GetInputKeyboardWaveformAudioInputToggleKey();
 int	GetInputKeyboardWaveformVideoAspectRatioNextKey();
-int	GetInputKeyboardWaveformSyncBPMKey();
-int	GetInputKeyboardRecordingStartKey();
+int	GetInputKeyboardWaveformSyncKey();
 int	GetInputKeyboardFullScreenToggleKey();
 int	GetInputKeyboardVisualizerFullScreenToggleKey();
 int	GetInputKeyboardScreenshotKey();
 //int	GetInputKeyboardWaveformKey();
 
-typedef enum
-{
-	NOOP = 0,
-	FOCUS_CHANGE,
-	FOCUS_BOTTOM,
-	FOCUS_TOP,
-	XFADER_SPEAKERS_DELTA_DOWN,
-	XFADER_SPEAKERS_DELTA_UP,
-	XFADER_HEADPHONES_DELTA_DOWN,
-	XFADER_HEADPHONES_DELTA_UP,
-	SYNC_TOP_TO_BOTTOM,
-	SYNC_BOTTOM_TO_TOP,
-	MASTER_TO_HEADPHONES,
-	FILE_SCROLL_DOWN_MANY,
-	FILE_SCROLL_UP_MANY,
-	FILE_SCROLL_DOWN_ONE,
-	FILE_SCROLL_UP_ONE,
-	FILE_SELECT,
-	FILE_MARK_UNOPENED,
-	FILE_REFRESH,
-	DECODE_ABORT,
-	WAVEFORM_EJECT,
-	WAVEFORM_TOGGLE_PAUSE,
-	WAVEFORM_NUDGE_LEFT_1,
-	WAVEFORM_NUDGE_RIGHT_1,
-	WAVEFORM_NUDGE_LEFT_2,
-	WAVEFORM_NUDGE_RIGHT_2,
-	WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW,
-	WAVEFORM_PITCHBEND_DELTA_UP_SLOW,
-	WAVEFORM_PITCHBEND_DELTA_DOWN_FAST,
-	WAVEFORM_PITCHBEND_DELTA_UP_FAST,
-	WAVEFORM_EQ_LOW_DELTA_DOWN,
-	WAVEFORM_EQ_LOW_DELTA_UP,
-	WAVEFORM_EQ_LOW_KILL,
-	WAVEFORM_EQ_MID_DELTA_DOWN,
-	WAVEFORM_EQ_MID_DELTA_UP,
-	WAVEFORM_EQ_MID_KILL,
-	WAVEFORM_EQ_HIGH_DELTA_DOWN,
-	WAVEFORM_EQ_HIGH_DELTA_UP,
-	WAVEFORM_EQ_HIGH_KILL,
-	WAVEFORM_GAIN_DELTA_DOWN,
-	WAVEFORM_GAIN_DELTA_UP,
-	WAVEFORM_GAIN_KILL,
-	WAVEFORM_VOLUME_INVERT,
-	WAVEFORM_RAPID_VOLUME_INVERT,
-	WAVEFORM_RAPID_SOLO_INVERT,
-	WAVEFORM_VOLUME_SOLO,
-	WAVEFORM_REWIND,
-	WAVEFORM_FF,
-	WAVEFORM_RECORD_SPEED_BACK,
-	WAVEFORM_RECORD_SPEED_FORWARD,
-	WAVEFORM_STUTTER,
-	WAVEFORM_SAVEPOINT_PREV,
-	WAVEFORM_SAVEPOINT_NEXT,
-	WAVEFORM_SAVEPOINT_SET,
-	WAVEFORM_SAVEPOINT_UNSET,
-	WAVEFORM_SAVEPOINT_SHIFT_LEFT,
-	WAVEFORM_SAVEPOINT_SHIFT_RIGHT,
-	WAVEFORM_SAVEPOINT_SHIFT_ALL_LEFT,
-	WAVEFORM_SAVEPOINT_SHIFT_ALL_RIGHT,
-	WAVEFORM_SAVEPOINT_JUMP_NOW,
-	WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE,
-	WAVEFORM_LOOP_MEASURES_HALF,
-	WAVEFORM_LOOP_MEASURES_DOUBLE,
-	WAVEFORM_LOOP_TOGGLE,
-	WAVEFORM_LOOP_THEN_RECALL,
-	WAVEFORM_AUTO_DIVERGE_THEN_RECALL,
-	WAVEFORM_VIDEO_SELECT,
-	WAVEFORM_AUDIO_INPUT_MODE,
-	WAVEFORM_VIDEO_ASPECT_RATIO_NEXT,
-	WAVEFORM_SYNC_BPM,
-	RECORDING_START,
-	FULL_SCREEN_TOGGLE,
-	VISUALIZER_FULL_SCREEN_TOGGLE,
-	SCREENSHOT,
-	ACTION_LAST
-} DVJ_Action;
+int
+GetOscServerPort();
+
+std::vector<IpEndpointName>
+GetOscClientList();
+
+std::vector<int>
+GetOscClientAutoPortList();
+
+std::vector<const char*>
+GetOscAddressPatternList
+(
+	DVJ_Action	action,
+	int		target
+);
 
 #endif	//_DVJ_CONFIG_H_
 

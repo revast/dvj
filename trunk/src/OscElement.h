@@ -26,6 +26,8 @@
 
 #include "LGL.module/LGL.h"
 
+#include "Config.h"
+
 class OscElementObj
 {
 
@@ -34,15 +36,7 @@ public:
 				OscElementObj();
 				~OscElementObj();
 
-	void			AddAddressPatternRecv(const char* pattern);
-	void			AddAddressPatternSend(const char* pattern);
-private:
-	void			AddAddressPattern
-				(
-					const char*		pattern,
-					std::vector<char*>&	patternList
-				);
-public:
+	void			SetDVJAction(DVJ_Action action);
 
 	void			SetTweakFocusTarget(unsigned int target);
 	void			SetFloatValues
@@ -58,14 +52,20 @@ public:
 	void			SetMasterInputGetFn(MasterInputGetFnType fn);
 	MasterInputGetFnType	GetMasterInputGetFn();
 
-	bool			GetTweak();
-	unsigned int		GetTweakFocusTarget();
+	void			SetSticky(bool sticky=true);
+	bool			GetSticky() const;
+	bool			GetStickyNow() const;
+	void			Unstick();
+
+	bool			GetTweak() const;
+	unsigned int		GetTweakFocusTarget() const;
 	float			GetFloat() const;
+	float			GetFloatDefault() const;
 	float			ConvertOscToDvj(float osc);
 	float			ConvertDvjToOsc(float dvj);
 	const char*		GetRemoteControllerBack() const;
 	const char*		GetRemoteControllerFront() const;
-	std::vector<char*>&	GetAddressPatternsSend();
+	std::vector<char*>&	GetAddressPatterns();
 
 	bool			ProcessMessage
 				(
@@ -77,8 +77,16 @@ public:
 
 private:
 
-	std::vector<char*>	AddressPatternsRecv;
-	std::vector<char*>	AddressPatternsSend;
+	void			AddAddressPattern(const char* pattern);
+	void			UpdateAddressPatterns();
+	void			ClearAddressPatterns();
+
+	DVJ_Action		Action;
+
+	std::vector<char*>	AddressPatterns;
+
+	bool			Sticky;
+	bool			StickyNow;
 
 	bool			TweakBack;
 	bool			TweakFront;

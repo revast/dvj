@@ -174,28 +174,12 @@ XfaderHeadphonesDelta()	const
 	return(delta);
 }
 
-bool
-InputXsessionObj::
-SyncTopToBottom()	const
-{
-	bool sync=false;
-	return(sync);
-}
-
 int
 InputXsessionObj::
 MasterToHeadphones()	const
 {
 	int to=-1;
 	return(to);
-}
-
-bool
-InputXsessionObj::
-SyncBottomToTop()	const
-{
-	bool sync=false;
-	return(sync);
 }
 
 //Mode 0: File Selection
@@ -279,31 +263,7 @@ FileRefresh
 	return(refresh);
 }
 
-//Mode 1: Decoding...
 
-bool
-InputXsessionObj::
-DecodeAbort
-(
-	unsigned int	target
-)	const
-{
-	bool abort=false;
-	
-	if(LGL_MidiDevice* xsession = LGL_GetXsession())
-	{
-		if(target & TARGET_TOP)
-		{
-			abort=xsession->GetButtonStroke(LGL_XSESSION_BUTTON_LEFT_EJECT);
-		}
-		else if(target & TARGET_BOTTOM)
-		{
-			abort=xsession->GetButtonStroke(LGL_XSESSION_BUTTON_RIGHT_EJECT);
-		}
-	}
-
-	return(abort);
-}
 
 //Mode 2: Waveform
 
@@ -333,7 +293,7 @@ WaveformEject
 
 bool
 InputXsessionObj::
-WaveformTogglePause
+WaveformPauseToggle
 (
 	unsigned int	target
 )	const
@@ -668,7 +628,7 @@ WaveformVolumeInvert
 
 bool
 InputXsessionObj::
-WaveformRapidVolumeInvert
+WaveformRhythmicVolumeInvert
 (
 	unsigned int	target
 )	const
@@ -679,7 +639,7 @@ WaveformRapidVolumeInvert
 
 bool
 InputXsessionObj::
-WaveformRapidSoloInvert
+WaveformRhythmicVolumeInvertOther
 (
 	unsigned int	target
 )	const
@@ -923,7 +883,7 @@ WaveformLoopMeasuresExponent
 
 bool
 InputXsessionObj::
-WaveformLoopMeasuresHalf
+WaveformQuantizationPeriodHalf
 (
 	unsigned int	target
 )	const
@@ -934,7 +894,7 @@ WaveformLoopMeasuresHalf
 
 bool
 InputXsessionObj::
-WaveformLoopMeasuresDouble
+WaveformQuantizationPeriodDouble
 (
 	unsigned int	target
 )	const
@@ -1053,15 +1013,15 @@ WaveformFreqSenseBrightness
 	return(brightness);
 }
 
-int
+bool
 InputXsessionObj::
-WaveformAudioInputMode
+WaveformAudioInputToggle
 (
 	unsigned int	target
 )	const
 {
-	int mode=-1;
-	return(mode);
+	bool toggle=false;
+	return(toggle);
 }
 
 bool
@@ -1087,7 +1047,7 @@ WaveformOscilloscopeBrightness
 
 bool
 InputXsessionObj::
-WaveformSyncBPM
+WaveformSync
 (
 	unsigned int	target
 )	const

@@ -101,7 +101,8 @@ const int LGL_AVCODEC_MAX_AUDIO_FRAME_SIZE = (AVCODEC_MAX_AUDIO_FRAME_SIZE*2);
 #ifdef	SDL_2
 enum
 {
-	LGL_KEY_UNKNOWN		= 0,
+	LGL_KEY_NONE		= 0,
+	LGL_KEY_UNKNOWN		= 1,
 	LGL_KEY_BACKSPACE	= SDLK_BACKSPACE,
 	LGL_KEY_TAB		= SDLK_TAB,
 	LGL_KEY_CLEAR		= SDL_SCANCODE_CLEAR,
@@ -2069,10 +2070,10 @@ public:
 	bool		SetWarpPoint(int channel, double alphaSeconds, double omegaSeconds, bool loop=false, bool lock=false);
 	float		GetWarpPointSecondsAlpha(int channel);
 	float		GetWarpPointSecondsOmega(int channel);
-	void		SetRapidInvertProperties(int channel, float secondsAlpha, float secondsDelta);
-	void		SetRapidVolumeInvert(int channel, bool rapidVolumeInvert);
-	void		SetRespondToRapidSoloInvertChannel(int channel, int soloChannel);
-	int		GetRespondToRapidSoloInvertCurrentValue(int channel);
+	void		SetRhythmicInvertProperties(int channel, float secondsAlpha, float secondsDelta);
+	void		SetRhythmicVolumeInvert(int channel, bool rapidVolumeInvert);
+	void		SetRespondToRhythmicSoloInvertChannel(int channel, int soloChannel);
+	int		GetRespondToRhythmicSoloInvertCurrentValue(int channel);
 
 	float		GetVU(int channel) const;
 

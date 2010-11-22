@@ -35,7 +35,7 @@ NextFrame()
 {
 	if
 	(
-		LGL_KeyDown(GetInputKeyboardWaveformSavePointUnsetKey())==false ||
+		LGL_KeyDown(GetInputKeyboardWaveformSavePointSetKey())==false ||
 		LGL_KeyDown(GetInputKeyboardFocusChangeKey())
 	)
 	{
@@ -44,8 +44,8 @@ NextFrame()
 
 	if
 	(
-		LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey())==false &&
-		LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey())==false
+		LGL_KeyDown(GetInputKeyboardWaveformQuantizationPeriodHalfKey())==false &&
+		LGL_KeyDown(GetInputKeyboardWaveformQuantizationPeriodDoubleKey())==false
 	)
 	{
 		WaveformLoopAllDebump=false;
@@ -113,20 +113,6 @@ XfaderHeadphonesDelta()	const
 	return(delta);
 }
 
-bool
-InputKeyboardObj::
-SyncTopToBottom()	const
-{
-	return(LGL_KeyDown(GetInputKeyboardSyncTopToBottomKey()));
-}
-
-bool
-InputKeyboardObj::
-SyncBottomToTop()	const
-{
-	return(LGL_KeyDown(GetInputKeyboardSyncBottomToTopKey()));
-}
-
 int
 InputKeyboardObj::
 MasterToHeadphones()	const
@@ -165,8 +151,8 @@ FileScroll
 		);
 		scroll+=
 		(
-			(LGL_KeyStroke(GetInputKeyboardFileScrollDownOneKey()) ? 1 : 0) +
-			(LGL_KeyStroke(GetInputKeyboardFileScrollUpOneKey()) ? -1 : 0)
+			(LGL_KeyStroke(GetInputKeyboardFileScrollNextKey()) ? 1 : 0) +
+			(LGL_KeyStroke(GetInputKeyboardFileScrollPrevKey()) ? -1 : 0)
 		);
 	}
 
@@ -224,24 +210,7 @@ FileRefresh
 	}
 }
 
-//Mode 1: Decoding...
 
-bool
-InputKeyboardObj::
-DecodeAbort
-(
-	unsigned int	target
-)	const
-{
-	if(target & TARGET_FOCUS)
-	{
-		return(LGL_KeyStroke(GetInputKeyboardDecodeAbortKey()));
-	}
-	else
-	{
-		return(false);
-	}
-}
 
 //Mode 2: Waveform
 
@@ -264,14 +233,14 @@ WaveformEject
 
 bool
 InputKeyboardObj::
-WaveformTogglePause
+WaveformPauseToggle
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(GetInputKeyboardWaveformTogglePauseKey()));
+		return(LGL_KeyStroke(GetInputKeyboardWaveformPauseToggleKey()));
 	}
 	else
 	{
@@ -292,10 +261,8 @@ WaveformNudge
 	{
 		return
 		(
-			(LGL_KeyDown(GetInputKeyboardWaveformNudgeLeft1Key()) ? -DELTA : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformNudgeRight1Key()) ? DELTA : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformNudgeLeft2Key()) ? -DELTA : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformNudgeRight2Key()) ? DELTA : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformNudgeSlowerKey()) ? -DELTA : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformNudgeFasterKey()) ? DELTA : 0)
 		);
 	}
 	else
@@ -556,14 +523,14 @@ WaveformVolumeInvert
 
 bool
 InputKeyboardObj::
-WaveformRapidVolumeInvert
+WaveformRhythmicVolumeInvert
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(GetInputKeyboardWaveformRapidVolumeInvertKey()));
+		return(LGL_KeyDown(GetInputKeyboardWaveformRhythmicVolumeInvertKey()));
 	}
 	else
 	{
@@ -573,14 +540,14 @@ WaveformRapidVolumeInvert
 
 bool
 InputKeyboardObj::
-WaveformRapidSoloInvert
+WaveformRhythmicVolumeInvertOther
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(GetInputKeyboardWaveformRapidSoloInvertKey()));
+		return(LGL_KeyDown(GetInputKeyboardWaveformRhythmicVolumeInvertOtherKey()));
 	}
 	else
 	{
@@ -610,8 +577,8 @@ WaveformRewindFF
 
 	if(target & TARGET_FOCUS)
 	{
-		speed-=(LGL_KeyDown(GetInputKeyboardWaveformRewindKey())?1:0)*SPEED_FAST;
-		speed+=(LGL_KeyDown(GetInputKeyboardWaveformFFKey())?1:0)*SPEED_FAST;
+		speed-=(LGL_KeyDown(GetInputKeyboardWaveformSeekBackwardFastKey())?1:0)*SPEED_FAST;
+		speed+=(LGL_KeyDown(GetInputKeyboardWaveformSeekForwardFastKey())?1:0)*SPEED_FAST;
 	}
 	
 	return(speed);
@@ -646,8 +613,8 @@ WaveformRecordSpeed
 
 	if(target & TARGET_FOCUS)
 	{
-		speed-=(LGL_KeyDown(GetInputKeyboardWaveformRecordSpeedBackKey())?1:0)*SPEED_SLOW;
-		speed+=(LGL_KeyDown(GetInputKeyboardWaveformRecordSpeedForwardKey())?1:0)*SPEED_SLOW;
+		speed-=(LGL_KeyDown(GetInputKeyboardWaveformSeekBackwardSlowKey())?1:0)*SPEED_SLOW;
+		speed+=(LGL_KeyDown(GetInputKeyboardWaveformSeekForwardSlowKey())?1:0)*SPEED_SLOW;
 	}
 
 	return(speed);
@@ -780,8 +747,8 @@ WaveformSavePointShift
 	{
 		percent+=LGL_SecondsSinceLastFrame()*SPEED*
 		(
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftLeftKey()) ? -1 : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftRightKey()) ? 1 : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftBackwardKey()) ? -1 : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftForwardKey()) ? 1 : 0)
 		);
 	}
 
@@ -802,8 +769,8 @@ WaveformSavePointShiftAll
 	{
 		percent+=LGL_SecondsSinceLastFrame()*SPEED*
 		(
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllLeftKey()) ? -1 : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllRightKey()) ? 1 : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllBackwardKey()) ? -1 : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllForwardKey()) ? 1 : 0)
 		);
 	}
 
@@ -821,8 +788,8 @@ WaveformSavePointShiftAllHere
 	{
 		return
 		(
-			LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftLeftKey()) &&
-			LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftRightKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftBackwardKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftForwardKey()) &&
 			LGL_KeyStroke(GetInputKeyboardWaveformSavePointSetKey())
 		);
 	}
@@ -878,7 +845,7 @@ WaveformLoopMeasuresExponent
 
 bool
 InputKeyboardObj::
-WaveformLoopMeasuresHalf
+WaveformQuantizationPeriodHalf
 (
 	unsigned int	target
 )	const
@@ -888,7 +855,7 @@ WaveformLoopMeasuresHalf
 		return
 		(
 			WaveformLoopAllDebump==false &&
-			LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresHalfKey())
+			LGL_KeyStroke(GetInputKeyboardWaveformQuantizationPeriodHalfKey())
 		);
 	}
 	else
@@ -899,7 +866,7 @@ WaveformLoopMeasuresHalf
 
 bool
 InputKeyboardObj::
-WaveformLoopMeasuresDouble
+WaveformQuantizationPeriodDouble
 (
 	unsigned int	target
 )	const
@@ -909,7 +876,7 @@ WaveformLoopMeasuresDouble
 		return
 		(
 			WaveformLoopAllDebump==false &&
-			LGL_KeyStroke(GetInputKeyboardWaveformLoopMeasuresDoubleKey())
+			LGL_KeyStroke(GetInputKeyboardWaveformQuantizationPeriodDoubleKey())
 		);
 	}
 	else
@@ -930,8 +897,8 @@ WaveformLoopSecondsLess
 		return
 		(
 			WaveformLoopAllDebump==false &&
-			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey()) &&
-			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey())==false
+			LGL_KeyDown(GetInputKeyboardWaveformQuantizationPeriodHalfKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformQuantizationPeriodDoubleKey())==false
 		);
 	}
 	else
@@ -952,8 +919,8 @@ WaveformLoopSecondsMore
 		return
 		(
 			WaveformLoopAllDebump==false &&
-			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey()) &&
-			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey())==false
+			LGL_KeyDown(GetInputKeyboardWaveformQuantizationPeriodDoubleKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformQuantizationPeriodHalfKey())==false
 		);
 	}
 	else
@@ -973,10 +940,10 @@ WaveformLoopAll
 	{
 		return
 		(
-			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresHalfKey()) &&
-			LGL_KeyDown(GetInputKeyboardWaveformLoopMeasuresDoubleKey()) &&
-			LGL_KeyTimer(GetInputKeyboardWaveformLoopMeasuresHalfKey()) >= 1.0f &&
-			LGL_KeyTimer(GetInputKeyboardWaveformLoopMeasuresDoubleKey()) >= 1.0f
+			LGL_KeyDown(GetInputKeyboardWaveformQuantizationPeriodHalfKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformQuantizationPeriodDoubleKey()) &&
+			LGL_KeyTimer(GetInputKeyboardWaveformQuantizationPeriodHalfKey()) >= 1.0f &&
+			LGL_KeyTimer(GetInputKeyboardWaveformQuantizationPeriodDoubleKey()) >= 1.0f
 		);
 	}
 	else
@@ -1084,27 +1051,24 @@ WaveformFreqSenseBrightness
 	return(-1.0f);
 }
 
-int
+bool
 InputKeyboardObj::
-WaveformAudioInputMode
+WaveformAudioInputToggle
 (
 	unsigned int	target
 )	const
 {
-	int mode=-1;
+	bool toggle=false;
 
 	if(target & TARGET_FOCUS)
 	{
-		if
-		(
-			LGL_KeyStroke(GetInputKeyboardWaveformAudioInputModeKey())
-		)
+		if(LGL_KeyStroke(GetInputKeyboardWaveformAudioInputToggleKey()))
 		{
-			mode=2;
+			toggle=true;
 		}
 	}
 
-	return(mode);
+	return(toggle);
 }
 
 bool
@@ -1137,14 +1101,14 @@ WaveformOscilloscopeBrightness
 
 bool
 InputKeyboardObj::
-WaveformSyncBPM
+WaveformSync
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(GetInputKeyboardWaveformSyncBPMKey()));
+		return(LGL_KeyDown(GetInputKeyboardWaveformSyncKey()));
 	}
 	
 	return(false);

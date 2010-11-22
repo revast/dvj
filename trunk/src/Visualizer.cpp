@@ -1063,40 +1063,10 @@ DrawVideos
 	float oscilloscopeBright = preview ? tt->GetOscilloscopeBrightnessPreview() : tt->GetOscilloscopeBrightnessFinal();
 	float freqSenseBright = preview ? tt->GetFreqSenseBrightnessPreview() : tt->GetFreqSenseBrightnessFinal();
 
-//if(preview) printf("Brights: %.2f, %.2f, %.2f\n",videoBright,oscilloscopeBright,freqSenseBright);
-
-	if(preview)
-	{
-		/*
-		float projAR=
-			(LGL_WindowResolutionX()*(ViewportVisualsRight-ViewportVisualsLeft))/(float)
-			(LGL_WindowResolutionY()*(ViewportVisualsTop-ViewportVisualsBottom));
-
-		if(LGL_DisplayCount()>1)
-		{
-			int oldDisplay=LGL_GetActiveDisplay();
-			LGL_SetActiveDisplay(1);
-			projAR=LGL_DisplayAspectRatio();
-			LGL_SetActiveDisplay(oldDisplay);
-		}
-
-		int previewPixelL=l*LGL_WindowResolutionX();
-		int previewPixelR=r*LGL_WindowResolutionX();
-		int previewPixelB=b*LGL_WindowResolutionY();
-		int previewPixelT=t*LGL_WindowResolutionY();
-
-		float previewPixelAR = (previewPixelR-previewPixelL)/(float)(previewPixelT-previewPixelB);
-
-		float yCenter=(b+t)/2.0f;
-		float yRadius=yCenter-b;
-
-		b=yCenter-(previewPixelAR/projAR)*yRadius;
-		t=yCenter+(previewPixelAR/projAR)*yRadius;
-		*/
-	}
-
-	//float w=r-l;
-	//float h=t-b;
+	float ejectBrightnessScalar=tt->GetEjectVisualBrightnessScalar();
+	videoBright*=ejectBrightnessScalar;
+	oscilloscopeBright*=ejectBrightnessScalar;
+	freqSenseBright*=ejectBrightnessScalar;
 
 	if(freqSenseBright>0.0f)
 	{
@@ -1211,12 +1181,8 @@ DrawVideos
 			);
 		}
 	}
-	
-	if
-	(
-		videoBright > 0.0f &&
-		1//tt->GetAudioInputMode()==false
-	)
+
+	if(videoBright > 0.0f)
 	{
 		if(LGL_VideoDecoder* vid = tt->GetVideo())
 		{

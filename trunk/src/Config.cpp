@@ -46,10 +46,14 @@ void
 LoadKeyboardInput();
 
 void
-PrepareKeyMap();
+PrepareInputMap();
+
+void
+LoadOscInput();
 
 ConfigFile* dvjrcConfigFile=NULL;
 ConfigFile* inputKeyboardConfigFile=NULL;
+ConfigFile* inputOscConfigFile=NULL;
 char dotDvj[2048];
 char musicRootPath[2048];
 char dvjSessionFlacPath[2048];
@@ -69,6 +73,7 @@ ConfigInit()
 	CreateDotDVJTree();
 	LoadMusicRootPath();
 	LoadKeyboardInput();
+	LoadOscInput();
 }
 
 void
@@ -132,6 +137,12 @@ CreateDefaultKeyboardInput
 );
 
 void
+CreateDefaultOscInput
+(
+	const char*	path
+);
+
+void
 LoadDVJRC()
 {
 	char dvjrc[2048];
@@ -184,17 +195,33 @@ LoadMusicRootPath()
 void
 LoadKeyboardInput()
 {
-	char inputKeyboard[2048];
-	sprintf(inputKeyboard,"%s/input/keyboard.txt",dotDvj);
+	char inputKeyboardTxt[2048];
+	sprintf(inputKeyboardTxt,"%s/input/keyboard.txt",dotDvj);
 
-	if(LGL_FileExists(inputKeyboard)==false)
+	if(LGL_FileExists(inputKeyboardTxt)==false)
 	{
-		CreateDefaultKeyboardInput(inputKeyboard);
+		CreateDefaultKeyboardInput(inputKeyboardTxt);
 	}
 
-	inputKeyboardConfigFile = new ConfigFile(inputKeyboard);
+	inputKeyboardConfigFile = new ConfigFile(inputKeyboardTxt);
 
-	PrepareKeyMap();
+	PrepareInputMap();
+}
+
+void
+LoadOscInput()
+{
+	char inputOscTxt[2048];
+	sprintf(inputOscTxt,"%s/input/osc.txt",dotDvj);
+
+	if(LGL_FileExists(inputOscTxt)==false)
+	{
+		CreateDefaultOscInput(inputOscTxt);
+	}
+
+	inputOscConfigFile = new ConfigFile(inputOscTxt);
+
+	PrepareInputMap();
 }
 
 void
@@ -743,13 +770,6 @@ GetVideoBufferFramesFreqSense()
 	return(videoBufferFramesFreqSense);
 }
 
-int
-GetOscServerPort()
-{
-	int port=dvjrcConfigFile->read<int>("oscServerPort",7000);
-	return(port);
-}
-
 #define MAP_STRING_TO_SDLK(X) if(strcasecmp(str,#X)==0) return(X)
 
 int
@@ -759,7 +779,7 @@ MapStringToSDLK
 )
 {
 	MAP_STRING_TO_SDLK(LGL_KEY_UNKNOWN);
-	//MAP_STRING_TO_SDLK(LGL_KEY_FIRST);
+	MAP_STRING_TO_SDLK(LGL_KEY_NONE);
 	MAP_STRING_TO_SDLK(LGL_KEY_BACKSPACE);
 	MAP_STRING_TO_SDLK(LGL_KEY_TAB);
 	MAP_STRING_TO_SDLK(LGL_KEY_CLEAR);
@@ -910,190 +930,394 @@ MapStringToSDLK
 	return(LGL_KEY_UNKNOWN);
 }
 
-class dvjKeyboardMapObj
+class dvjInputMapObj
 {
 
 public:
 
-	void		Set(const char* inKey, const char* inValueStr)
+	void		Set
+			(
+				const char*	inActionStr,
+				bool		inEachTurntable,
+				const char*	inValueStr,
+				const char*	inOscDefaultStr
+			)
 			{
-				Key=inKey;
-				ValueStr=inValueStr;
+				ActionGlobalStr=inActionStr;
+				EachTurntable=inEachTurntable;
+				KeyboardStr=inValueStr;
+				OscDefaultStr=inOscDefaultStr;
 
-				if(MapStringToSDLK(ValueStr)==-1)
+				sprintf(ActionTT0Str,"%s:TT0",ActionGlobalStr);
+				sprintf(ActionTT1Str,"%s:TT1",ActionGlobalStr);
+				sprintf(ActionTTFocusStr,"%s:TTFocus",ActionGlobalStr);
+
+				if(MapStringToSDLK(KeyboardStr)==-1)
 				{
-					printf("ERROR! Programmer populated dvjKeyboardMapObj with invalid value '%s'\n",ValueStr);
+					printf("ERROR! Programmer populated dvjInputMapObj with invalid value '%s'\n",KeyboardStr);
 					exit(-1);
 				}
 
-				string str=ValueStr;
+				string str=KeyboardStr;
 				if(inputKeyboardConfigFile)
 				{
 					str = inputKeyboardConfigFile->read<string>
 					(
-						Key,
-						ValueStr
+						ActionGlobalStr,
+						KeyboardStr
 					);
 				}
-				ValueInt=MapStringToSDLK(str.c_str());
+				KeyboardInt=MapStringToSDLK(str.c_str());
+
+				//OSC
+				strcpy(OscDefaultAddressPatternGlobal,"");
+				strcpy(OscDefaultAddressPatternTT0,"");
+				strcpy(OscDefaultAddressPatternTT1,"");
+				strcpy(OscDefaultAddressPatternTTFocus,"");
+				strcpy(OscUserAddressPatternGlobal,"");
+				strcpy(OscUserAddressPatternTT0,"");
+				strcpy(OscUserAddressPatternTT1,"");
+				strcpy(OscUserAddressPatternTTFocus,"");
+
+				if(OscDefaultStr[0]!='\0')
+				{
+					//Default
+					if(EachTurntable)
+					{
+						sprintf(OscDefaultAddressPatternTT0,"/dvj/tt_0/%s",OscDefaultStr);
+						sprintf(OscDefaultAddressPatternTT1,"/dvj/tt_1/%s",OscDefaultStr);
+						//sprintf(OscDefaultAddressPatternTTFocus,"/dvj/tt_focus/%s",OscDefaultStr);
+					}
+					else
+					{
+						sprintf(OscDefaultAddressPatternGlobal,"/dvj/global/%s",OscDefaultStr);
+					}
+
+					//User
+					if(inputOscConfigFile)
+					{
+						std::string tmpStdString;
+						char tmpStr[2048];
+
+						if(EachTurntable)
+						{
+							//TT0
+							{
+								tmpStdString = inputOscConfigFile->read<std::string>(ActionTT0Str,"");
+								strcpy(tmpStr,tmpStdString.c_str());
+								if
+								(
+									tmpStr[0]!='\0' &&
+									strcmp(tmpStr,OscDefaultAddressPatternTT0)!=0
+								)
+								{
+									strcpy(OscUserAddressPatternTT0,tmpStr);
+								}
+							}
+							//TT1
+							{
+								tmpStdString = inputOscConfigFile->read<std::string>(ActionTT1Str,"");
+								strcpy(tmpStr,tmpStdString.c_str());
+								if
+								(
+									tmpStr[0]!='\0' &&
+									strcmp(tmpStr,OscDefaultAddressPatternTT1)!=0
+								)
+								{
+									strcpy(OscUserAddressPatternTT1,tmpStr);
+								}
+							}
+							//TTFocus
+							/*
+							{
+								tmpStdString = inputOscConfigFile->read<std::string>(ActionTTFocusStr,"");
+								strcpy(tmpStr,tmpStdString.c_str());
+								if
+								(
+									tmpStr[0]!='\0' &&
+									strcmp(tmpStr,OscDefaultAddressPatternTTFocus)!=0
+								)
+								{
+									strcpy(OscUserAddressPatternTTFocus,tmpStr);
+								}
+							}
+							*/
+						}
+						else
+						{
+							//Global
+							{
+								tmpStdString = inputOscConfigFile->read<std::string>(ActionGlobalStr,"");
+								strcpy(tmpStr,tmpStdString.c_str());
+								if
+								(
+									tmpStr[0]!='\0' &&
+									strcmp(tmpStr,OscDefaultAddressPatternGlobal)!=0
+								)
+								{
+									strcpy(OscUserAddressPatternGlobal,tmpStr);
+								}
+							}
+						}
+					}
+				}
+			}
+	
+	std::vector<const char*>
+			GetOscAddressPatternList(int target)
+			{
+				std::vector<const char*> ret;
+/*
+printf("Default Global: %s\n",OscDefaultAddressPatternGlobal);
+printf("Default TT0   : %s\n",OscDefaultAddressPatternTT0);
+printf("Default TT1   : %s\n",OscDefaultAddressPatternTT1);
+//printf("Default Focus : %s\n",OscDefaultAddressPatternTTFocus);
+printf("User Global   : %s\n",OscUserAddressPatternGlobal);
+printf("User TT0      : %s\n",OscUserAddressPatternTT0);
+printf("User TT1      : %s\n",OscUserAddressPatternTT1);
+//printf("User Focus    : %s\n",OscUserAddressPatternTTFocus);
+*/
+
+				if(EachTurntable)
+				{
+					if(target & TARGET_TOP)
+					{
+						if(OscDefaultAddressPatternTT0[0]!='\0')
+						{
+							ret.push_back(OscDefaultAddressPatternTT0);
+						}
+						if(OscUserAddressPatternTT0[0]!='\0')
+						{
+							ret.push_back(OscUserAddressPatternTT0);
+						}
+					}
+					if(target & TARGET_BOTTOM)
+					{
+						if(OscDefaultAddressPatternTT1)
+						{
+							ret.push_back(OscDefaultAddressPatternTT1);
+						}
+						if(OscUserAddressPatternTT1)
+						{
+							ret.push_back(OscUserAddressPatternTT1);
+						}
+					}
+					/*
+					if(target & TARGET_FOCUS)
+					{
+						if(OscDefaultAddressPatternTTFocus[0]!='\0')
+						{
+							ret.push_back(OscDefaultAddressPatternTTFocus);
+						}
+						if(OscUserAddressPatternTTFocus[0]!='\0')
+						{
+							ret.push_back(OscUserAddressPatternTTFocus);
+						}
+					}
+					*/
+				}
+				else
+				{
+					if(OscDefaultAddressPatternGlobal[0]!='\0')
+					{
+						ret.push_back(OscDefaultAddressPatternGlobal);
+					}
+					if(OscUserAddressPatternGlobal[0]!='\0')
+					{
+						ret.push_back(OscUserAddressPatternGlobal);
+					}
+				}
+
+				return(ret);
 			}
 
-	const char*	Key;
-	const char*	ValueStr;
-	int		ValueInt;
+	const char*	ActionGlobalStr;
+	char		ActionTT0Str[1024];
+	char		ActionTT1Str[1024];
+	char		ActionTTFocusStr[1024];
+	bool		EachTurntable;
+	const char*	KeyboardStr;
+	int		KeyboardInt;
+	const char*	OscDefaultStr;
+	char		OscDefaultAddressPatternGlobal[512];
+	char		OscDefaultAddressPatternTT0[512];
+	char		OscDefaultAddressPatternTT1[512];
+	char		OscDefaultAddressPatternTTFocus[512];
+	char		OscUserAddressPatternGlobal[2048];
+	char		OscUserAddressPatternTT0[2048];
+	char		OscUserAddressPatternTT1[2048];
+	char		OscUserAddressPatternTTFocus[2048];
 };
 
-dvjKeyboardMapObj dvjKeyMap[ACTION_LAST];
+dvjInputMapObj dvjInputMap[ACTION_LAST];
 
 void
-PrepareKeyMap()
+PrepareInputMap()
 {
-	dvjKeyMap[NOOP].Set
-		("NOOP",				"LGL_KEY_UNKNOWN");
-	dvjKeyMap[FOCUS_CHANGE].Set
-		("focusChange",				"LGL_KEY_TAB");
-	dvjKeyMap[FOCUS_BOTTOM].Set
-		("focusBottom",				"LGL_KEY_UNKNOWN");
-	dvjKeyMap[FOCUS_TOP].Set
-		("focusTop",				"LGL_KEY_UNKNOWN");
-	dvjKeyMap[XFADER_SPEAKERS_DELTA_DOWN].Set
-		("xfaderSpeakersDeltaDown",		"LGL_KEY_DELETE");
-	dvjKeyMap[XFADER_SPEAKERS_DELTA_UP].Set
-		("xfaderSpeakersDeltaUp",		"LGL_KEY_INSERT");
-	dvjKeyMap[XFADER_HEADPHONES_DELTA_DOWN].Set
-		("xfaderHeadphonesDeltaDown",		"LGL_KEY_END");
-	dvjKeyMap[XFADER_HEADPHONES_DELTA_UP].Set
-		("xfaderHeadphonesDeltaUp",		"LGL_KEY_HOME");
-	dvjKeyMap[SYNC_TOP_TO_BOTTOM].Set
-		("syncTopToBottom",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[SYNC_BOTTOM_TO_TOP].Set
-		("syncBottomToTop",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[MASTER_TO_HEADPHONES].Set
-		("masterToHeadphones",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[FILE_SCROLL_DOWN_MANY].Set
-		("fileScrollDownMany",			"LGL_KEY_PAGEDOWN");
-	dvjKeyMap[FILE_SCROLL_UP_MANY].Set
-		("fileScrollUpMany",			"LGL_KEY_PAGEUP");
-	dvjKeyMap[FILE_SCROLL_DOWN_ONE].Set
-		("fileScrollDownOne",			"LGL_KEY_DOWN");
-	dvjKeyMap[FILE_SCROLL_UP_ONE].Set
-		("fileScrollUpOne",			"LGL_KEY_UP");
-	dvjKeyMap[FILE_SELECT].Set
-		("fileSelect",				"LGL_KEY_RETURN");
-	dvjKeyMap[FILE_MARK_UNOPENED].Set
-		("fileMarkUnopened",			"LGL_KEY_BACKQUOTE");
-	dvjKeyMap[FILE_REFRESH].Set
-		("fileRefresh",				"LGL_KEY_F5");
-	dvjKeyMap[DECODE_ABORT].Set
-		("decodeAbort",				"LGL_KEY_BACKSPACE");
-	dvjKeyMap[WAVEFORM_EJECT].Set
-		("waveformEject",			"LGL_KEY_BACKSPACE");
-	dvjKeyMap[WAVEFORM_TOGGLE_PAUSE].Set
-		("waveformTogglePause",			"LGL_KEY_RETURN");
-	dvjKeyMap[WAVEFORM_NUDGE_LEFT_1].Set
-		("waveformNudgeLeft1",			"LGL_KEY_LEFT");
-	dvjKeyMap[WAVEFORM_NUDGE_RIGHT_1].Set
-		("waveformNudgeRight1",			"LGL_KEY_RIGHT");
-	dvjKeyMap[WAVEFORM_NUDGE_LEFT_2].Set
-		("waveformNudgeLeft2",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_NUDGE_RIGHT_2].Set
-		("waveformNudgeRight2",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW].Set
-		("waveformPitchbendDeltaDownSlow",	"LGL_KEY_DOWN");
-	dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_UP_SLOW].Set
-		("waveformPitchbendDeltaUpSlow",	"LGL_KEY_UP");
-	dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_DOWN_FAST].Set
-		("waveformPitchbendDeltaDownFast",	"LGL_KEY_PAGEDOWN");
-	dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_UP_FAST].Set
-		("waveformPitchbendDeltaUpFast",	"LGL_KEY_PAGEUP");
-	dvjKeyMap[WAVEFORM_EQ_LOW_DELTA_DOWN].Set
-		("waveformEQLowDeltaDown",		"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_EQ_LOW_DELTA_UP].Set
-		("waveformEQLowDeltaUp",		"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_EQ_LOW_KILL].Set
-		("waveformEQLowKill",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_EQ_MID_DELTA_DOWN].Set
-		("waveformEQMidDeltaDown",		"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_EQ_MID_DELTA_UP].Set
-		("waveformEQMidDeltaUp",		"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_EQ_MID_KILL].Set
-		("waveformEQMidKill",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_EQ_HIGH_DELTA_DOWN].Set
-		("waveformEQHiDeltaDown",		"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_EQ_HIGH_DELTA_UP].Set
-		("waveformEQHiDeltaUp",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_EQ_HIGH_KILL].Set
-		("waveformEQHiKill",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_GAIN_DELTA_DOWN].Set
-		("waveformGainDeltaDown",		"LGL_KEY_MINUS");
-	dvjKeyMap[WAVEFORM_GAIN_DELTA_UP].Set
-		("waveformGainDeltaUp",			"LGL_KEY_EQUALS");
-	dvjKeyMap[WAVEFORM_GAIN_KILL].Set
-		("waveformGainKill",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_VOLUME_INVERT].Set
-		("waveformVolumeInvert",		"LGL_KEY_SPACE");
-	dvjKeyMap[WAVEFORM_RAPID_VOLUME_INVERT].Set
-		("waveformRapidVolumeInvert",		"LGL_KEY_I");
-	dvjKeyMap[WAVEFORM_RAPID_SOLO_INVERT].Set
-		("waveformRapidSoloInvert",		"LGL_KEY_U");
-	dvjKeyMap[WAVEFORM_VOLUME_SOLO].Set
-		("waveformVolumeSolo",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_REWIND].Set
-		("waveformRewind",			"LGL_KEY_LEFTBRACKET");
-	dvjKeyMap[WAVEFORM_FF].Set
-		("waveformFF",				"LGL_KEY_RIGHTBRACKET");
-	dvjKeyMap[WAVEFORM_RECORD_SPEED_BACK].Set
-		("waveformRecordSpeedBack",		"LGL_KEY_SEMICOLON");
-	dvjKeyMap[WAVEFORM_RECORD_SPEED_FORWARD].Set
-		("waveformRecordSpeedForward",		"LGL_KEY_QUOTE");
-	dvjKeyMap[WAVEFORM_STUTTER].Set
-		("waveformStutter",			"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_PREV].Set
-		("waveformSavePointPrev",		"LGL_KEY_F");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_NEXT].Set
-		("waveformSavePointNext",		"LGL_KEY_H");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_SET].Set
-		("waveformSavePointSet",		"LGL_KEY_G");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_UNSET].Set
-		("waveformSavePointUnset",		"LGL_KEY_G");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_LEFT].Set
-		("waveformSavePointShiftLeft",		"LGL_KEY_R");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_RIGHT].Set
-		("waveformSavePointShiftRight",		"LGL_KEY_Y");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_LEFT].Set
-		("waveformSavePointShiftAllLeft",	"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_RIGHT].Set
-		("waveformSavePointShiftAllRight",	"LGL_KEY_UNKNOWN");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_JUMP_NOW].Set
-		("waveformSavePointJumpNow",		"LGL_KEY_B");
-	dvjKeyMap[WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE].Set
-		("waveformSavePointJumpAtMeasure",	"LGL_KEY_T");
-	dvjKeyMap[WAVEFORM_LOOP_MEASURES_HALF].Set
-		("waveformLoopMeasuresHalf",		"LGL_KEY_J");
-	dvjKeyMap[WAVEFORM_LOOP_MEASURES_DOUBLE].Set
-		("waveformLoopMeasuresDouble",		"LGL_KEY_K");
-	dvjKeyMap[WAVEFORM_LOOP_TOGGLE].Set
-		("waveformLoopToggle",			"LGL_KEY_L");
-	dvjKeyMap[WAVEFORM_LOOP_THEN_RECALL].Set
-		("waveformLoopThenRecall",		"LGL_KEY_O");
-	dvjKeyMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].Set
-		("waveformAutoDivergeThenRecall",	"LGL_KEY_M");
-	dvjKeyMap[WAVEFORM_VIDEO_SELECT].Set
-		("waveformVideoSelect",			"LGL_KEY_PERIOD");
-	dvjKeyMap[WAVEFORM_AUDIO_INPUT_MODE].Set
-		("waveformAudioInputMode",		"LGL_KEY_F11");
-	dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_NEXT].Set
-		("waveformVideoAspectRatioNext",	"LGL_KEY_SLASH");
-	dvjKeyMap[WAVEFORM_SYNC_BPM].Set
-		("waveformSyncBPM",			"LGL_KEY_BACKSLASH");
-	dvjKeyMap[RECORDING_START].Set
-		("recordingStart",			"LGL_KEY_F10");
-	dvjKeyMap[FULL_SCREEN_TOGGLE].Set
-		("fullScreenToggle",			"LGL_KEY_F4");
-	dvjKeyMap[VISUALIZER_FULL_SCREEN_TOGGLE].Set
-		("visualizerFullScreenToggle",		"LGL_KEY_F3");
-	dvjKeyMap[SCREENSHOT].Set
-		("screenshot",				"LGL_KEY_F2");
+	dvjInputMap[NOOP].Set
+		("NOOP",				false,	"LGL_KEY_UNKNOWN",	"");
+	dvjInputMap[FOCUS_CHANGE].Set
+		("focusChange",				false,	"LGL_KEY_TAB",		"focus_change");
+	dvjInputMap[FOCUS_BOTTOM].Set
+		("focusBottom",				false,	"LGL_KEY_UNKNOWN",	"");
+	dvjInputMap[FOCUS_TOP].Set
+		("focusTop",				false,	"LGL_KEY_UNKNOWN",	"");
+	dvjInputMap[XFADER_SPEAKERS].Set
+		("xfaderSpeakers",			false,	"LGL_KEY_NONE",		"xfader_speakers");
+	dvjInputMap[XFADER_SPEAKERS_DELTA_DOWN].Set
+		("xfaderSpeakersDeltaDown",		false,	"LGL_KEY_DELETE",	"");
+	dvjInputMap[XFADER_SPEAKERS_DELTA_UP].Set
+		("xfaderSpeakersDeltaUp",		false,	"LGL_KEY_INSERT",	"");
+	dvjInputMap[XFADER_HEADPHONES].Set
+		("xfaderHeadphones",			false,	"LGL_KEY_NONE",		"xfader_headphones");
+	dvjInputMap[XFADER_HEADPHONES_DELTA_DOWN].Set
+		("xfaderHeadphonesDeltaDown",		false,	"LGL_KEY_END",		"");
+	dvjInputMap[XFADER_HEADPHONES_DELTA_UP].Set
+		("xfaderHeadphonesDeltaUp",		false,	"LGL_KEY_HOME",		"");
+	dvjInputMap[MASTER_TO_HEADPHONES].Set
+		("masterToHeadphones",			false,	"LGL_KEY_NONE",		"");
+	dvjInputMap[FILE_SCROLL].Set
+		("fileScroll",				true,	"LGL_KEY_NONE",		"file/scroll");
+	dvjInputMap[FILE_SCROLL_DOWN_MANY].Set
+		("fileScrollDownMany",			true,	"LGL_KEY_PAGEDOWN",	"");
+	dvjInputMap[FILE_SCROLL_UP_MANY].Set
+		("fileScrollUpMany",			true,	"LGL_KEY_PAGEUP",	"");
+	dvjInputMap[FILE_SCROLL_PREV].Set
+		("fileScrollPrev",			true,	"LGL_KEY_UP",		"file/scroll/prev");
+	dvjInputMap[FILE_SCROLL_NEXT].Set
+		("fileScrollNext",			true,	"LGL_KEY_DOWN",		"file/scroll/next");
+	dvjInputMap[FILE_SELECT].Set
+		("fileSelect",				true,	"LGL_KEY_RETURN",	"file/select");
+	dvjInputMap[FILE_MARK_UNOPENED].Set
+		("fileMarkUnopened",			true,	"LGL_KEY_BACKQUOTE",	"file/mark_unopened");
+	dvjInputMap[FILE_REFRESH].Set
+		("fileRefresh",				true,	"LGL_KEY_NONE",		"");
+	dvjInputMap[WAVEFORM_EJECT].Set
+		("waveformEject",			true,	"LGL_KEY_BACKSPACE",	"eject");
+	dvjInputMap[WAVEFORM_PAUSE_TOGGLE].Set
+		("waveformPauseToggle",			true,	"LGL_KEY_RETURN",	"pause/toggle");
+	dvjInputMap[WAVEFORM_NUDGE].Set
+		("waveformNudge",			true,	"LGL_KEY_NONE",		"nudge");
+	dvjInputMap[WAVEFORM_NUDGE_SLOWER].Set
+		("waveformNudgeSlower",			true,	"LGL_KEY_LEFT",		"nudge/slower");
+	dvjInputMap[WAVEFORM_NUDGE_FASTER].Set
+		("waveformNudgeFaster",			true,	"LGL_KEY_RIGHT",	"nudge/faster");
+	dvjInputMap[WAVEFORM_PITCHBEND].Set
+		("waveformPitchbend",			true,	"LGL_KEY_NONE",		"pitchbend");
+	dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW].Set
+		("waveformPitchbendDeltaLowerSlow",	true,	"LGL_KEY_UNKNOWN",	"");	//"pitchbend/lower/slow");
+	dvjInputMap[WAVEFORM_PITCHBEND_DELTA_UP_SLOW].Set
+		("waveformPitchbendDeltaHigherSlow",	true,	"LGL_KEY_UNKNOWN",	"");	//"pitchbend/higher/slow");
+	dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN].Set
+		("waveformPitchbendDeltaLower",		true,	"LGL_KEY_DOWN",		"");	//"pitchbend/lower");
+	dvjInputMap[WAVEFORM_PITCHBEND_DELTA_UP].Set
+		("waveformPitchbendDeltaHigher",	true,	"LGL_KEY_UP",		"")	;//"pitchbend/higher");
+	dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN_FAST].Set
+		("waveformPitchbendDeltaLowerFast",	true,	"LGL_KEY_PAGEDOWN",	"");	//"pitchbend/lower/fast");
+	dvjInputMap[WAVEFORM_PITCHBEND_DELTA_UP_FAST].Set
+		("waveformPitchbendDeltaHigherFast",	true,	"LGL_KEY_PAGEUP",	"");	//"pitchbend/higher/fast");
+	dvjInputMap[WAVEFORM_EQ_LOW].Set
+		("waveformEQLow",			true,	"LGL_KEY_NONE",		"eq/low");
+	dvjInputMap[WAVEFORM_EQ_LOW_DELTA_DOWN].Set
+		("waveformEQLowDeltaDown",		true,	"LGL_KEY_UNKNOWN",	"");
+	dvjInputMap[WAVEFORM_EQ_LOW_DELTA_UP].Set
+		("waveformEQLowDeltaUp",		true,	"LGL_KEY_UNKNOWN",	"");
+	dvjInputMap[WAVEFORM_EQ_LOW_KILL].Set
+		("waveformEQLowKill",			true,	"LGL_KEY_UNKNOWN",	"eq/low/kill");
+	dvjInputMap[WAVEFORM_EQ_MID].Set
+		("waveformEQMid",			true,	"LGL_KEY_NONE",		"eq/mid");
+	dvjInputMap[WAVEFORM_EQ_MID_DELTA_DOWN].Set
+		("waveformEQMidDeltaDown",		true,	"LGL_KEY_UNKNOWN",	"");
+	dvjInputMap[WAVEFORM_EQ_MID_DELTA_UP].Set
+		("waveformEQMidDeltaUp",		true,	"LGL_KEY_UNKNOWN",	"");
+	dvjInputMap[WAVEFORM_EQ_MID_KILL].Set
+		("waveformEQMidKill",			true,	"LGL_KEY_UNKNOWN",	"eq/mid/kill");
+	dvjInputMap[WAVEFORM_EQ_HIGH].Set
+		("waveformEQHigh",			true,	"LGL_KEY_NONE",		"eq/high");
+	dvjInputMap[WAVEFORM_EQ_HIGH_DELTA_DOWN].Set
+		("waveformEQHiDeltaDown",		true,	"LGL_KEY_UNKNOWN",	"");
+	dvjInputMap[WAVEFORM_EQ_HIGH_DELTA_UP].Set
+		("waveformEQHiDeltaUp",			true,	"LGL_KEY_UNKNOWN",	"");
+	dvjInputMap[WAVEFORM_EQ_HIGH_KILL].Set
+		("waveformEQHiKill",			true,	"LGL_KEY_UNKNOWN",	"eq/high/kill");
+	dvjInputMap[WAVEFORM_GAIN].Set
+		("waveformGain",			true,	"LGL_KEY_NONE",		"gain");
+	dvjInputMap[WAVEFORM_GAIN_DELTA_DOWN].Set
+		("waveformGainDeltaDown",		true,	"LGL_KEY_MINUS",	"");
+	dvjInputMap[WAVEFORM_GAIN_DELTA_UP].Set
+		("waveformGainDeltaUp",			true,	"LGL_KEY_EQUALS",	"");
+	dvjInputMap[WAVEFORM_GAIN_KILL].Set
+		("waveformGainKill",			true,	"LGL_KEY_UNKNOWN",	"gain/kill");
+	dvjInputMap[WAVEFORM_VOLUME].Set
+		("waveformVolume",			true,	"LGL_KEY_NONE",		"volume");
+	dvjInputMap[WAVEFORM_VOLUME_INVERT].Set
+		("waveformVolumeInvert",		true,	"LGL_KEY_SPACE",	"volume_invert");
+	dvjInputMap[WAVEFORM_RHYTHMIC_VOLUME_INVERT].Set
+		("waveformRhymthicVolumeInvert",	true,	"LGL_KEY_I",		"rhythmic_volume_invert");
+	dvjInputMap[WAVEFORM_RHYTHMIC_VOLUME_INVERT_OTHER].Set
+		("waveformRhythmicVolumeInvertOther",	true,	"LGL_KEY_U",		"rhythmic_volume_invert_other");
+	dvjInputMap[WAVEFORM_VOLUME_SOLO].Set
+		("waveformVolumeSolo",			true,	"LGL_KEY_UNKNOWN",	"volume_solo");
+	dvjInputMap[WAVEFORM_SEEK_BACKWARD_SLOW].Set
+		("waveformSeekBackwardSlow",		true,	"LGL_KEY_SEMICOLON",	"seek/backward/slow");
+	dvjInputMap[WAVEFORM_SEEK_BACKWARD_FAST].Set
+		("waveformSeekBackwardFast",		true,	"LGL_KEY_LEFTBRACKET",	"seek/backward/fast");
+	dvjInputMap[WAVEFORM_SEEK_FORWARD_SLOW].Set
+		("waveformSeekForwardSlow",		true,	"LGL_KEY_QUOTE",	"seek/forward/slow");
+	dvjInputMap[WAVEFORM_SEEK_FORWARD_FAST].Set
+		("waveformSeekForwardFast",		true,	"LGL_KEY_RIGHTBRACKET",	"seek/forward/fast");
+	dvjInputMap[WAVEFORM_SCRATCH_SPEED].Set
+		("waveformScratchSpeed",		true,	"LGL_KEY_NONE",		"scratch/speed");
+	dvjInputMap[WAVEFORM_SAVEPOINT_PREV].Set
+		("waveformSavePointPrev",		true,	"LGL_KEY_F",		"save_point/prev");
+	dvjInputMap[WAVEFORM_SAVEPOINT_NEXT].Set
+		("waveformSavePointNext",		true,	"LGL_KEY_H",		"save_point/next");
+	dvjInputMap[WAVEFORM_SAVEPOINT_SET].Set
+		("waveformSavePointSet",		true,	"LGL_KEY_G",		"save_point/set");
+	dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_BACKWARD].Set
+		("waveformSavePointShiftBackward",	true,	"LGL_KEY_R",		"save_point/shift/backward");
+	dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_FORWARD].Set
+		("waveformSavePointShiftForward",	true,	"LGL_KEY_Y",		"save_point/shift/forward");
+	dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_BACKWARD].Set
+		("waveformSavePointShiftAllBackward",	true,	"LGL_KEY_UNKNOWN",	"save_point/shift_all/backward");
+	dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_FORWARD].Set
+		("waveformSavePointShiftAllForward",	true,	"LGL_KEY_UNKNOWN",	"save_point/shift_all/forward");
+	dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_NOW].Set
+		("waveformSavePointJumpNow",		true,	"LGL_KEY_B",		"save_point/jump/now");
+	dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE].Set
+		("waveformSavePointJumpAtMeasure",	true,	"LGL_KEY_T",		"save_point/jump/at_measure");
+	dvjInputMap[WAVEFORM_QUANTIZATION_PERIOD_HALF].Set
+		("waveformQuantizationPeriodHalf",	true,	"LGL_KEY_J",		"quantization_period/half");
+	dvjInputMap[WAVEFORM_QUANTIZATION_PERIOD_DOUBLE].Set
+		("waveformQuantizationPeriodDouble",	true,	"LGL_KEY_K",		"quantization_period/double");
+	dvjInputMap[WAVEFORM_STUTTER].Set
+		("waveformStutter",			true,	"LGL_KEY_NONE",		"");
+	dvjInputMap[WAVEFORM_LOOP_TOGGLE].Set
+		("waveformLoopToggle",			true,	"LGL_KEY_L",		"loop/toggle");
+	dvjInputMap[WAVEFORM_LOOP_THEN_RECALL].Set
+		("waveformLoopThenRecall",		true,	"LGL_KEY_O",		"loop_then_recall");
+	dvjInputMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].Set
+		("waveformAutoDivergeThenRecall",	true,	"LGL_KEY_NONE",		"");
+	dvjInputMap[WAVEFORM_VIDEO_SELECT].Set
+		("waveformVideoSelect",			true,	"LGL_KEY_PERIOD",	"video_select");
+	dvjInputMap[WAVEFORM_VIDEO_BRIGHTNESS].Set
+		("waveformVideoBrightness",		true,	"LGL_KEY_NONE",		"video_brightness");
+	dvjInputMap[WAVEFORM_FREQ_SENSE_BRIGHTNESS].Set
+		("waveformFreqSenseBrightness",		true,	"LGL_KEY_NONE",		"freq_sense_brightness");
+	dvjInputMap[WAVEFORM_OSCILLOSCOPE_BRIGHTNESS].Set
+		("waveformOscilloscopeBrightness",	true,	"LGL_KEY_NONE",		"oscilloscope_brightness");
+	dvjInputMap[WAVEFORM_AUDIO_INPUT_TOGGLE].Set
+		("waveformAudioInputToggle",		true,	"LGL_KEY_F11",		"audio_input/toggle");
+	dvjInputMap[WAVEFORM_VIDEO_ASPECT_RATIO_NEXT].Set
+		("waveformVideoAspectRatioNext",	true,	"LGL_KEY_SLASH",	"video_aspect_ratio/next");
+	dvjInputMap[WAVEFORM_SYNC].Set
+		("waveformSync",			true,	"LGL_KEY_BACKSLASH",	"sync");
+	dvjInputMap[FULL_SCREEN_TOGGLE].Set
+		("fullScreenToggle",			false,	"LGL_KEY_NONE",		"");
+	dvjInputMap[VISUALIZER_FULL_SCREEN_TOGGLE].Set
+		("visualizerFullScreenToggle",		false,	"LGL_KEY_F4",		"");
+	dvjInputMap[SCREENSHOT].Set
+		("screenshot",				false,	"LGL_KEY_F2",		"");
 }
 
 void
@@ -1102,13 +1326,13 @@ CreateDefaultKeyboardInput
 	const char*	path
 )
 {
-	//Prime dvjKeyMap with default values
-	PrepareKeyMap();
+	//Prime dvjInputMap with default values
+	PrepareInputMap();
 
 	int maxLength=0;
 	for(int a=0;a<ACTION_LAST;a++)
 	{
-		maxLength=LGL_Max(strlen(dvjKeyMap[a].Key),maxLength);
+		maxLength=LGL_Max(strlen(dvjInputMap[a].ActionGlobalStr),maxLength);
 	}
 
 	if(FILE* fd=fopen(path,"w"))
@@ -1122,12 +1346,121 @@ CreateDefaultKeyboardInput
 		fprintf(fd,"\n");
 		for(int a=0;a<ACTION_LAST;a++)
 		{
-			if(const char* key = dvjKeyMap[a].Key)
+			if(const char* key = dvjInputMap[a].ActionGlobalStr)
 			{
-				if(const char* valueStr = dvjKeyMap[a].ValueStr)
+				if(dvjInputMap[a].KeyboardInt != LGL_KEY_NONE)
 				{
-					fprintf(fd,"%s",key);
-					int numSpaces = maxLength - strlen(key);
+					if(const char* valueStr = dvjInputMap[a].KeyboardStr)
+					{
+						fprintf(fd,"%s",key);
+						int numSpaces = maxLength - strlen(key);
+						for(int b=0;b<numSpaces;b++)
+						{
+							fprintf(fd, " ");
+						}
+						fprintf(fd," = %s\n",valueStr);
+					}
+				}
+			}
+		}
+		fprintf(fd,"\n");
+		fclose(fd);
+	}
+}
+
+void
+CreateDefaultOscInput
+(
+	const char*	path
+)
+{
+	//Prime dvjInputMap with default values
+	PrepareInputMap();
+
+	int maxLength=0;
+	for(int a=0;a<ACTION_LAST;a++)
+	{
+		maxLength=LGL_Max(strlen(dvjInputMap[a].ActionGlobalStr),maxLength);
+	}
+	maxLength+=strlen(":TT0");
+
+	if(FILE* fd=fopen(path,"w"))
+	{
+		fprintf(fd,"#\n");
+		fprintf(fd,"# osc.txt\n");
+		fprintf(fd,"#\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"#\n");
+		fprintf(fd,"# Global Section\n");
+		fprintf(fd,"#\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"oscServerPort      = 7000\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"# When an listed client connects to our server, we try to make an outgoing connection back to its server, trying these ports:\n");
+		fprintf(fd,"oscClientAutoPort0 = 7000\n");
+		fprintf(fd,"oscClientAutoPort1 = 7001\n");
+		fprintf(fd,"oscClientAutoPort2 = 0\n");
+		fprintf(fd,"oscClientAutoPort3 = 0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"oscClient_000_Host = localhost\n");
+		fprintf(fd,"oscClient_000_Port = 0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"oscClient_001_Host = localhost\n");
+		fprintf(fd,"oscClient_001_Port = 0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"oscClient_002_Host = localhost\n");
+		fprintf(fd,"oscClient_002_Port = 0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"oscClient_003_Host = localhost\n");
+		fprintf(fd,"oscClient_003_Port = 0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"# You may add up to oscClient_0255, if you so desire.\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"#\n");
+		fprintf(fd,"# Address Pattern Section\n");
+		fprintf(fd,"#\n");
+		fprintf(fd,"# If you override these values, dvj will use your value as well as the default.\n");
+		fprintf(fd,"#\n");
+		fprintf(fd,"# For a list of all default values, move this file away from its current location, and run dvj to regenerate it.\n");
+		fprintf(fd,"#\n");
+		fprintf(fd,"\n");
+		for(int a=0;a<ACTION_LAST;a++)
+		{
+			std::vector<const char*> valueStrList;
+			std::vector<const char*> keyStrList;
+			if(dvjInputMap[a].EachTurntable)
+			{
+				valueStrList.push_back(dvjInputMap[a].OscDefaultAddressPatternTT0);
+				keyStrList.push_back(dvjInputMap[a].ActionTT0Str);
+				valueStrList.push_back(dvjInputMap[a].OscDefaultAddressPatternTT1);
+				keyStrList.push_back(dvjInputMap[a].ActionTT1Str);
+				//valueStrList.push_back(dvjInputMap[a].OscDefaultAddressPatternTTFocus);
+				//keyStrList.push_back(dvjInputMap[a].ActionTTFocusStr);
+			}
+			else
+			{
+				valueStrList.push_back(dvjInputMap[a].OscDefaultAddressPatternGlobal);
+				keyStrList.push_back(dvjInputMap[a].ActionGlobalStr);
+			}
+
+			for(unsigned int v=0;v<valueStrList.size();v++)
+			{
+				const char* valueStr = valueStrList[v];
+				const char* keyStr = keyStrList[v];
+				if
+				(
+					valueStr &&
+					valueStr[0]!='\0' &&
+					keyStr &&
+					keyStr[0]!='\0'
+				)
+				{
+					fprintf(fd,"%s",keyStr);
+					int numSpaces = maxLength - strlen(keyStr);
 					for(int b=0;b<numSpaces;b++)
 					{
 						fprintf(fd, " ");
@@ -1142,149 +1475,207 @@ CreateDefaultKeyboardInput
 }
 
 int GetInputKeyboardFocusChangeKey()
-	{ return(dvjKeyMap[FOCUS_CHANGE].ValueInt); }
+	{ return(dvjInputMap[FOCUS_CHANGE].KeyboardInt); }
 int GetInputKeyboardFocusBottomKey()
-	{ return(dvjKeyMap[FOCUS_BOTTOM].ValueInt); }
+	{ return(dvjInputMap[FOCUS_BOTTOM].KeyboardInt); }
 int GetInputKeyboardFocusTopKey()
-	{ return(dvjKeyMap[FOCUS_TOP].ValueInt); }
+	{ return(dvjInputMap[FOCUS_TOP].KeyboardInt); }
 int GetInputKeyboardXfaderSpeakersDeltaDownKey()
-	{ return(dvjKeyMap[XFADER_SPEAKERS_DELTA_DOWN].ValueInt); }
+	{ return(dvjInputMap[XFADER_SPEAKERS_DELTA_DOWN].KeyboardInt); }
 int GetInputKeyboardXfaderSpeakersDeltaUpKey()
-	{ return(dvjKeyMap[XFADER_SPEAKERS_DELTA_UP].ValueInt); }
+	{ return(dvjInputMap[XFADER_SPEAKERS_DELTA_UP].KeyboardInt); }
 int GetInputKeyboardXfaderHeadphonesDeltaDownKey()
-	{ return(dvjKeyMap[XFADER_HEADPHONES_DELTA_DOWN].ValueInt); }
+	{ return(dvjInputMap[XFADER_HEADPHONES_DELTA_DOWN].KeyboardInt); }
 int GetInputKeyboardXfaderHeadphonesDeltaUpKey()
-	{ return(dvjKeyMap[XFADER_HEADPHONES_DELTA_UP].ValueInt); }
-int GetInputKeyboardSyncTopToBottomKey()
-	{ return(dvjKeyMap[SYNC_TOP_TO_BOTTOM].ValueInt); }
-int GetInputKeyboardSyncBottomToTopKey()
-	{ return(dvjKeyMap[SYNC_BOTTOM_TO_TOP].ValueInt); }
+	{ return(dvjInputMap[XFADER_HEADPHONES_DELTA_UP].KeyboardInt); }
 int GetInputKeyboardMasterToHeadphones()
-	{ return(dvjKeyMap[MASTER_TO_HEADPHONES].ValueInt); }
+	{ return(dvjInputMap[MASTER_TO_HEADPHONES].KeyboardInt); }
 int GetInputKeyboardFileScrollDownManyKey()
-	{ return(dvjKeyMap[FILE_SCROLL_DOWN_MANY].ValueInt); }
+	{ return(dvjInputMap[FILE_SCROLL_DOWN_MANY].KeyboardInt); }
 int GetInputKeyboardFileScrollUpManyKey()
-	{ return(dvjKeyMap[FILE_SCROLL_UP_MANY].ValueInt); }
-int GetInputKeyboardFileScrollDownOneKey()
-	{ return(dvjKeyMap[FILE_SCROLL_DOWN_ONE].ValueInt); }
-int GetInputKeyboardFileScrollUpOneKey()
-	{ return(dvjKeyMap[FILE_SCROLL_UP_ONE].ValueInt); }
+	{ return(dvjInputMap[FILE_SCROLL_UP_MANY].KeyboardInt); }
+int GetInputKeyboardFileScrollNextKey()
+	{ return(dvjInputMap[FILE_SCROLL_NEXT].KeyboardInt); }
+int GetInputKeyboardFileScrollPrevKey()
+	{ return(dvjInputMap[FILE_SCROLL_PREV].KeyboardInt); }
 int GetInputKeyboardFileSelectKey()
-	{ return(dvjKeyMap[FILE_SELECT].ValueInt); }
+	{ return(dvjInputMap[FILE_SELECT].KeyboardInt); }
 int GetInputKeyboardFileMarkUnopenedKey()
-	{ return(dvjKeyMap[FILE_MARK_UNOPENED].ValueInt); }
+	{ return(dvjInputMap[FILE_MARK_UNOPENED].KeyboardInt); }
 int GetInputKeyboardFileRefreshKey()
-	{ return(dvjKeyMap[FILE_REFRESH].ValueInt); }
-int GetInputKeyboardDecodeAbortKey()
-	{ return(dvjKeyMap[DECODE_ABORT].ValueInt); }
+	{ return(dvjInputMap[FILE_REFRESH].KeyboardInt); }
 int GetInputKeyboardWaveformEjectKey()
-	{ return(dvjKeyMap[WAVEFORM_EJECT].ValueInt); }
-int GetInputKeyboardWaveformTogglePauseKey()
-	{ return(dvjKeyMap[WAVEFORM_TOGGLE_PAUSE].ValueInt); }
-int GetInputKeyboardWaveformNudgeLeft1Key()
-	{ return(dvjKeyMap[WAVEFORM_NUDGE_LEFT_1].ValueInt); }
-int GetInputKeyboardWaveformNudgeRight1Key()
-	{ return(dvjKeyMap[WAVEFORM_NUDGE_RIGHT_1].ValueInt); }
-int GetInputKeyboardWaveformNudgeLeft2Key()
-	{ return(dvjKeyMap[WAVEFORM_NUDGE_LEFT_2].ValueInt); }
-int GetInputKeyboardWaveformNudgeRight2Key()
-	{ return(dvjKeyMap[WAVEFORM_NUDGE_RIGHT_2].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EJECT].KeyboardInt); }
+int GetInputKeyboardWaveformPauseToggleKey()
+	{ return(dvjInputMap[WAVEFORM_PAUSE_TOGGLE].KeyboardInt); }
+int GetInputKeyboardWaveformNudgeSlowerKey()
+	{ return(dvjInputMap[WAVEFORM_NUDGE_SLOWER].KeyboardInt); }
+int GetInputKeyboardWaveformNudgeFasterKey()
+	{ return(dvjInputMap[WAVEFORM_NUDGE_FASTER].KeyboardInt); }
 int GetInputKeyboardWaveformPitchbendDeltaDownSlowKey()
-	{ return(dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW].KeyboardInt); }
 int GetInputKeyboardWaveformPitchbendDeltaUpSlowKey()
-	{ return(dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_UP_SLOW].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_PITCHBEND_DELTA_UP_SLOW].KeyboardInt); }
+int GetInputKeyboardWaveformPitchbendDeltaDownKey()
+	{ return(dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN].KeyboardInt); }
+int GetInputKeyboardWaveformPitchbendDeltaUpKey()
+	{ return(dvjInputMap[WAVEFORM_PITCHBEND_DELTA_UP].KeyboardInt); }
 int GetInputKeyboardWaveformPitchbendDeltaDownFastKey()
-	{ return(dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_DOWN_FAST].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN_FAST].KeyboardInt); }
 int GetInputKeyboardWaveformPitchbendDeltaUpFastKey()
-	{ return(dvjKeyMap[WAVEFORM_PITCHBEND_DELTA_UP_FAST].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_PITCHBEND_DELTA_UP_FAST].KeyboardInt); }
 int GetInputKeyboardWaveformEQLowDeltaDownKey()
-	{ return(dvjKeyMap[WAVEFORM_EQ_LOW_DELTA_DOWN].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EQ_LOW_DELTA_DOWN].KeyboardInt); }
 int GetInputKeyboardWaveformEQLowDeltaUpKey()
-	{ return(dvjKeyMap[WAVEFORM_EQ_LOW_DELTA_UP].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EQ_LOW_DELTA_UP].KeyboardInt); }
 int GetInputKeyboardWaveformEQLowKillKey()
-	{ return(dvjKeyMap[WAVEFORM_EQ_LOW_KILL].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EQ_LOW_KILL].KeyboardInt); }
 int GetInputKeyboardWaveformEQMidDeltaDownKey()
-	{ return(dvjKeyMap[WAVEFORM_EQ_MID_DELTA_DOWN].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EQ_MID_DELTA_DOWN].KeyboardInt); }
 int GetInputKeyboardWaveformEQMidDeltaUpKey()
-	{ return(dvjKeyMap[WAVEFORM_EQ_MID_DELTA_UP].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EQ_MID_DELTA_UP].KeyboardInt); }
 int GetInputKeyboardWaveformEQMidKillKey()
-	{ return(dvjKeyMap[WAVEFORM_EQ_MID_KILL].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EQ_MID_KILL].KeyboardInt); }
 int GetInputKeyboardWaveformEQHighDeltaDownKey()
-	{ return(dvjKeyMap[WAVEFORM_EQ_HIGH_DELTA_DOWN].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EQ_HIGH_DELTA_DOWN].KeyboardInt); }
 int GetInputKeyboardWaveformEQHighDeltaUpKey()
-	{ return(dvjKeyMap[WAVEFORM_EQ_HIGH_DELTA_UP].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EQ_HIGH_DELTA_UP].KeyboardInt); }
 int GetInputKeyboardWaveformEQHighKillKey()
-	{ return(dvjKeyMap[WAVEFORM_EQ_HIGH_KILL].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_EQ_HIGH_KILL].KeyboardInt); }
 int GetInputKeyboardWaveformGainDeltaDownKey()
-	{ return(dvjKeyMap[WAVEFORM_GAIN_DELTA_DOWN].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_GAIN_DELTA_DOWN].KeyboardInt); }
 int GetInputKeyboardWaveformGainDeltaUpKey()
-	{ return(dvjKeyMap[WAVEFORM_GAIN_DELTA_UP].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_GAIN_DELTA_UP].KeyboardInt); }
 int GetInputKeyboardWaveformGainKill()
-	{ return(dvjKeyMap[WAVEFORM_GAIN_KILL].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_GAIN_KILL].KeyboardInt); }
 int GetInputKeyboardWaveformVolumeInvertKey()
-	{ return(dvjKeyMap[WAVEFORM_VOLUME_INVERT].ValueInt); }
-int GetInputKeyboardWaveformRapidVolumeInvertKey()
-	{ return(dvjKeyMap[WAVEFORM_RAPID_VOLUME_INVERT].ValueInt); }
-int GetInputKeyboardWaveformRapidSoloInvertKey()
-	{ return(dvjKeyMap[WAVEFORM_RAPID_SOLO_INVERT].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_VOLUME_INVERT].KeyboardInt); }
+int GetInputKeyboardWaveformRhythmicVolumeInvertKey()
+	{ return(dvjInputMap[WAVEFORM_RHYTHMIC_VOLUME_INVERT].KeyboardInt); }
+int GetInputKeyboardWaveformRhythmicVolumeInvertOtherKey()
+	{ return(dvjInputMap[WAVEFORM_RHYTHMIC_VOLUME_INVERT_OTHER].KeyboardInt); }
 int GetInputKeyboardWaveformVolumeSoloKey()
-	{ return(dvjKeyMap[WAVEFORM_VOLUME_SOLO].ValueInt); }
-int GetInputKeyboardWaveformRewindKey()
-	{ return(dvjKeyMap[WAVEFORM_REWIND].ValueInt); }
-int GetInputKeyboardWaveformFFKey()
-	{ return(dvjKeyMap[WAVEFORM_FF].ValueInt); }
-int GetInputKeyboardWaveformRecordSpeedBackKey()
-	{ return(dvjKeyMap[WAVEFORM_RECORD_SPEED_BACK].ValueInt); }
-int GetInputKeyboardWaveformRecordSpeedForwardKey()
-	{ return(dvjKeyMap[WAVEFORM_RECORD_SPEED_FORWARD].ValueInt); }
-int GetInputKeyboardWaveformStutterKey()
-	{ return(dvjKeyMap[WAVEFORM_STUTTER].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_VOLUME_SOLO].KeyboardInt); }
+int GetInputKeyboardWaveformSeekBackwardSlowKey()
+	{ return(dvjInputMap[WAVEFORM_SEEK_BACKWARD_SLOW].KeyboardInt); }
+int GetInputKeyboardWaveformSeekBackwardFastKey()
+	{ return(dvjInputMap[WAVEFORM_SEEK_BACKWARD_FAST].KeyboardInt); }
+int GetInputKeyboardWaveformSeekForwardSlowKey()
+	{ return(dvjInputMap[WAVEFORM_SEEK_FORWARD_SLOW].KeyboardInt); }
+int GetInputKeyboardWaveformSeekForwardFastKey()
+	{ return(dvjInputMap[WAVEFORM_SEEK_FORWARD_FAST].KeyboardInt); }
 int GetInputKeyboardWaveformSavePointPrevKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_PREV].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_PREV].KeyboardInt); }
 int GetInputKeyboardWaveformSavePointNextKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_NEXT].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_NEXT].KeyboardInt); }
 int GetInputKeyboardWaveformSavePointSetKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SET].ValueInt); }
-int GetInputKeyboardWaveformSavePointUnsetKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_UNSET].ValueInt); }
-int GetInputKeyboardWaveformSavePointShiftLeftKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_LEFT].ValueInt); }
-int GetInputKeyboardWaveformSavePointShiftRightKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_RIGHT].ValueInt); }
-int GetInputKeyboardWaveformSavePointShiftAllLeftKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_LEFT].ValueInt); }
-int GetInputKeyboardWaveformSavePointShiftAllRightKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_RIGHT].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SET].KeyboardInt); }
+int GetInputKeyboardWaveformSavePointShiftBackwardKey()
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_BACKWARD].KeyboardInt); }
+int GetInputKeyboardWaveformSavePointShiftForwardKey()
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_FORWARD].KeyboardInt); }
+int GetInputKeyboardWaveformSavePointShiftAllBackwardKey()
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_BACKWARD].KeyboardInt); }
+int GetInputKeyboardWaveformSavePointShiftAllForwardKey()
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_FORWARD].KeyboardInt); }
 int GetInputKeyboardWaveformSavePointJumpNowKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_JUMP_NOW].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_NOW].KeyboardInt); }
 int GetInputKeyboardWaveformSavePointJumpAtMeasureKey()
-	{ return(dvjKeyMap[WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE].ValueInt); }
-int GetInputKeyboardWaveformLoopMeasuresHalfKey()
-	{ return(dvjKeyMap[WAVEFORM_LOOP_MEASURES_HALF].ValueInt); }
-int GetInputKeyboardWaveformLoopMeasuresDoubleKey()
-	{ return(dvjKeyMap[WAVEFORM_LOOP_MEASURES_DOUBLE].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE].KeyboardInt); }
+int GetInputKeyboardWaveformQuantizationPeriodHalfKey()
+	{ return(dvjInputMap[WAVEFORM_QUANTIZATION_PERIOD_HALF].KeyboardInt); }
+int GetInputKeyboardWaveformQuantizationPeriodDoubleKey()
+	{ return(dvjInputMap[WAVEFORM_QUANTIZATION_PERIOD_DOUBLE].KeyboardInt); }
+int GetInputKeyboardWaveformStutterKey()
+	{ return(dvjInputMap[WAVEFORM_STUTTER].KeyboardInt); }
 int GetInputKeyboardWaveformLoopToggleKey()
-	{ return(dvjKeyMap[WAVEFORM_LOOP_TOGGLE].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_LOOP_TOGGLE].KeyboardInt); }
 int GetInputKeyboardWaveformLoopThenRecallKey()
-	{ return(dvjKeyMap[WAVEFORM_LOOP_THEN_RECALL].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_LOOP_THEN_RECALL].KeyboardInt); }
 int GetInputKeyboardWaveformAutoDivergeRecallKey()
-	{ return(dvjKeyMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].KeyboardInt); }
 int GetInputKeyboardWaveformVideoSelectKey()
-	{ return(dvjKeyMap[WAVEFORM_VIDEO_SELECT].ValueInt); }
-int GetInputKeyboardWaveformAudioInputModeKey()
-	{ return(dvjKeyMap[WAVEFORM_AUDIO_INPUT_MODE].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_VIDEO_SELECT].KeyboardInt); }
+int GetInputKeyboardWaveformAudioInputToggleKey()
+	{ return(dvjInputMap[WAVEFORM_AUDIO_INPUT_TOGGLE].KeyboardInt); }
 int GetInputKeyboardWaveformVideoAspectRatioNextKey()
-	{ return(dvjKeyMap[WAVEFORM_VIDEO_ASPECT_RATIO_NEXT].ValueInt); }
-int GetInputKeyboardWaveformSyncBPMKey()
-	{ return(dvjKeyMap[WAVEFORM_SYNC_BPM].ValueInt); }
-int GetInputKeyboardRecordingStartKey()
-	{ return(dvjKeyMap[RECORDING_START].ValueInt); }
+	{ return(dvjInputMap[WAVEFORM_VIDEO_ASPECT_RATIO_NEXT].KeyboardInt); }
+int GetInputKeyboardWaveformSyncKey()
+	{ return(dvjInputMap[WAVEFORM_SYNC].KeyboardInt); }
 int GetInputKeyboardFullScreenToggleKey()
-	{ return(dvjKeyMap[FULL_SCREEN_TOGGLE].ValueInt); }
+	{ return(dvjInputMap[FULL_SCREEN_TOGGLE].KeyboardInt); }
 int GetInputKeyboardVisualizerFullScreenToggleKey()
-	{ return(dvjKeyMap[VISUALIZER_FULL_SCREEN_TOGGLE].ValueInt); }
+	{ return(dvjInputMap[VISUALIZER_FULL_SCREEN_TOGGLE].KeyboardInt); }
 int GetInputKeyboardScreenshotKey()
-	{ return(dvjKeyMap[SCREENSHOT].ValueInt); }
+	{ return(dvjInputMap[SCREENSHOT].KeyboardInt); }
 
-//int GetInputKeyboardWaveformKey() { return(dvjKeyMap[WAVEFORM_].ValueInt); }
+int
+GetOscServerPort()
+{
+	int port=inputOscConfigFile->read<int>("oscServerPort",7000);
+	return(port);
+}
+
+std::vector<IpEndpointName>
+GetOscClientList()
+{
+	std::vector<IpEndpointName> ret;
+
+	char keyHost[512];
+	char keyPort[512];
+
+	for(int a=0;a<256;a++)
+	{
+		sprintf(keyHost,"oscClient_%03i_Host",a);
+		sprintf(keyPort,"oscClient_%03i_Port",a);
+		std::string hostStr = inputOscConfigFile->read<std::string>(keyHost,"");
+		int port=inputOscConfigFile->read<int>(keyPort,0);
+		if
+		(
+			port>=1024 &&
+			hostStr.c_str()[0]!='\0'
+		)
+		{
+			ret.push_back
+			(
+				IpEndpointName
+				(
+					hostStr.c_str(),
+					port
+				)
+			);
+		}
+	}
+
+	return(ret);
+}
+
+std::vector<int>
+GetOscClientAutoPortList()
+{
+	std::vector<int> ret;
+	for(int a=0;a<4;a++)
+	{
+		char key[512];
+		sprintf(key,"oscClientAutoPort%i",a);
+		int port=inputOscConfigFile->read<int>(key,0);
+		if(port!=0)
+		{
+			ret.push_back(port);
+		}
+	}
+	return(ret);
+}
+
+std::vector<const char*>
+GetOscAddressPatternList
+(
+	DVJ_Action	action,
+	int		target
+)
+{
+	return(dvjInputMap[action].GetOscAddressPatternList(target));
+}
+
+//int GetInputKeyboardWaveformKey() { return(dvjInputMap[WAVEFORM_].KeyboardInt); }
 
