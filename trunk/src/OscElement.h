@@ -63,6 +63,8 @@ public:
 	float			GetFloatDefault() const;
 	float			ConvertOscToDvj(float osc);
 	float			ConvertDvjToOsc(float dvj);
+	float			GetLastSentFloat() const;
+	void			SetLastSentFloat(float sent);
 	const char*		GetRemoteControllerBack() const;
 	const char*		GetRemoteControllerFront() const;
 	std::vector<char*>&	GetAddressPatterns();
@@ -87,6 +89,7 @@ private:
 
 	bool			Sticky;
 	bool			StickyNow;
+	float			LastSentFloat;
 
 	bool			TweakBack;
 	bool			TweakFront;

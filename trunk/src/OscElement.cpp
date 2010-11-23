@@ -45,6 +45,8 @@ OscElementObj() :
 	FloatBack=FloatDefault;
 	FloatFront=FloatDefault;
 
+	LastSentFloat=-9990.0f;
+
 	RemoteControllerBack[0]='\0';
 	RemoteControllerFront[0]='\0';
 
@@ -216,6 +218,23 @@ ConvertDvjToOsc
 			1.0f
 		)
 	);
+}
+
+float
+OscElementObj::
+GetLastSentFloat()	const
+{
+	return(LastSentFloat);
+}
+
+void
+OscElementObj::
+SetLastSentFloat
+(
+	float	sent
+)
+{
+	LastSentFloat=sent;
 }
 
 const char*
