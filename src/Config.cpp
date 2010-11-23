@@ -1198,10 +1198,10 @@ PrepareInputMap()
 		("waveformPauseToggle",			true,	"LGL_KEY_RETURN",	"pause/toggle");
 	dvjInputMap[WAVEFORM_NUDGE].Set
 		("waveformNudge",			true,	"LGL_KEY_NONE",		"nudge");
-	dvjInputMap[WAVEFORM_NUDGE_SLOWER].Set
-		("waveformNudgeSlower",			true,	"LGL_KEY_LEFT",		"nudge/slower");
-	dvjInputMap[WAVEFORM_NUDGE_FASTER].Set
-		("waveformNudgeFaster",			true,	"LGL_KEY_RIGHT",	"nudge/faster");
+	dvjInputMap[WAVEFORM_NUDGE_BACKWARD].Set
+		("waveformNudgeBackward",		true,	"LGL_KEY_LEFT",		"nudge/backward");
+	dvjInputMap[WAVEFORM_NUDGE_FORWARD].Set
+		("waveformNudgeForward",		true,	"LGL_KEY_RIGHT",	"nudge/forward");
 	dvjInputMap[WAVEFORM_PITCHBEND].Set
 		("waveformPitchbend",			true,	"LGL_KEY_NONE",		"pitchbend");
 	dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW].Set
@@ -1508,10 +1508,10 @@ int GetInputKeyboardWaveformEjectKey()
 	{ return(dvjInputMap[WAVEFORM_EJECT].KeyboardInt); }
 int GetInputKeyboardWaveformPauseToggleKey()
 	{ return(dvjInputMap[WAVEFORM_PAUSE_TOGGLE].KeyboardInt); }
-int GetInputKeyboardWaveformNudgeSlowerKey()
-	{ return(dvjInputMap[WAVEFORM_NUDGE_SLOWER].KeyboardInt); }
-int GetInputKeyboardWaveformNudgeFasterKey()
-	{ return(dvjInputMap[WAVEFORM_NUDGE_FASTER].KeyboardInt); }
+int GetInputKeyboardWaveformNudgeBackwardKey()
+	{ return(dvjInputMap[WAVEFORM_NUDGE_BACKWARD].KeyboardInt); }
+int GetInputKeyboardWaveformNudgeForwardKey()
+	{ return(dvjInputMap[WAVEFORM_NUDGE_FORWARD].KeyboardInt); }
 int GetInputKeyboardWaveformPitchbendDeltaDownSlowKey()
 	{ return(dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW].KeyboardInt); }
 int GetInputKeyboardWaveformPitchbendDeltaUpSlowKey()

@@ -161,8 +161,8 @@ private:
 	OscElementObj		WaveformEjectOscElement[2];
 	OscElementObj		WaveformPauseToggleOscElement[2];
 	OscElementObj		WaveformNudgeOscElement[2];
-	OscElementObj		WaveformNudgeSlowerOscElement[2];
-	OscElementObj		WaveformNudgeFasterOscElement[2];
+	OscElementObj		WaveformNudgeBackwardOscElement[2];
+	OscElementObj		WaveformNudgeForwardOscElement[2];
 	OscElementObj		WaveformPitchbendOscElement[2];
 	OscElementObj		WaveformEQLowOscElement[2];
 	OscElementObj		WaveformEQLowKillOscElement[2];
@@ -216,6 +216,11 @@ private:
 							getFn,
 					bool		sticky
 				);
+
+public:
+
+	std::vector<LGL_OscClient*>&
+				GetLGLOscClientList();
 
 };
 

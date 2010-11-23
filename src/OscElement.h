@@ -60,11 +60,13 @@ public:
 	bool			GetTweak() const;
 	unsigned int		GetTweakFocusTarget() const;
 	float			GetFloat() const;
+	float			GetFloatDelta() const;
 	float			GetFloatDefault() const;
 	float			ConvertOscToDvj(float osc);
 	float			ConvertDvjToOsc(float dvj);
 	float			GetLastSentFloat() const;
 	void			SetLastSentFloat(float sent);
+	void			SetSendDefaultOnZRelease(bool send=true);
 	const char*		GetRemoteControllerBack() const;
 	const char*		GetRemoteControllerFront() const;
 	std::vector<char*>&	GetAddressPatterns();
@@ -89,7 +91,9 @@ private:
 
 	bool			Sticky;
 	bool			StickyNow;
+	bool			SendDefaultOnZRelease;
 	float			LastSentFloat;
+	float			LastRecvFloat;
 
 	bool			TweakBack;
 	bool			TweakFront;
@@ -101,6 +105,9 @@ private:
 	float			FloatDefault;
 	float			FloatBack;
 	float			FloatFront;
+	float			FloatDeltaBack;
+	float			FloatDeltaFront;
+	LGL_Timer		FloatDeltaDeltaTimer;
 
 	char			RemoteControllerBack[2048];
 	char			RemoteControllerFront[2048];

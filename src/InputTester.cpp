@@ -246,8 +246,8 @@ WaveformNudge
 {
 	int currentAction = GetCurrentAction(target);
 	float nudge=
-		((currentAction == WAVEFORM_NUDGE_SLOWER) ? -0.02f : 0.0f) +
-		((currentAction == WAVEFORM_NUDGE_FASTER) ? 0.02f : 0.0f);
+		((currentAction == WAVEFORM_NUDGE_BACKWARD) ? -0.02f : 0.0f) +
+		((currentAction == WAVEFORM_NUDGE_FORWARD) ? 0.02f : 0.0f);
 	return(nudge);
 }
 

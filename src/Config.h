@@ -48,8 +48,8 @@ typedef enum
 	WAVEFORM_EJECT,
 	WAVEFORM_PAUSE_TOGGLE,
 	WAVEFORM_NUDGE,
-	WAVEFORM_NUDGE_SLOWER,
-	WAVEFORM_NUDGE_FASTER,
+	WAVEFORM_NUDGE_BACKWARD,
+	WAVEFORM_NUDGE_FORWARD,
 	WAVEFORM_PITCHBEND,
 	WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW,
 	WAVEFORM_PITCHBEND_DELTA_UP_SLOW,
@@ -212,8 +212,8 @@ int	GetInputKeyboardFileMarkUnopenedKey();
 int	GetInputKeyboardFileRefreshKey();
 int	GetInputKeyboardWaveformEjectKey();
 int	GetInputKeyboardWaveformPauseToggleKey();
-int	GetInputKeyboardWaveformNudgeSlowerKey();
-int	GetInputKeyboardWaveformNudgeFasterKey();
+int	GetInputKeyboardWaveformNudgeBackwardKey();
+int	GetInputKeyboardWaveformNudgeForwardKey();
 int	GetInputKeyboardWaveformPitchbendDeltaDownSlowKey();
 int	GetInputKeyboardWaveformPitchbendDeltaUpSlowKey();
 int	GetInputKeyboardWaveformPitchbendDeltaDownKey();
