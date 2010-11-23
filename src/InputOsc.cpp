@@ -1084,8 +1084,13 @@ NextFrame()
 				}
 
 				float cand=getFn(target);
-				if(cand!=element->GetFloatDefault())
+				if
+				(
+					//cand!=element->GetFloatDefault() &&
+					cand!=element->GetLastSentFloat()
+				)
 				{
+					element->SetLastSentFloat(cand);
 					if(cand!=element->GetFloat())
 					{
 						element->Unstick();
