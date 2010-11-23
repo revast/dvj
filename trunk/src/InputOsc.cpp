@@ -551,14 +551,14 @@ InputOscObj(int port) :
 			}
 		}
 
-		//SeekBackwardSlow
+		//Seek
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSeekBackwardSlowOscElement[a],
-					WAVEFORM_SEEK_BACKWARD_SLOW,
+					WaveformSeekOscElement[a],
+					WAVEFORM_SEEK,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
@@ -567,63 +567,7 @@ InputOscObj(int port) :
 					NULL,
 					true
 				);
-			}
-		}
-
-		//SeekBackwardFast
-		{
-			for(int a=0;a<2;a++)
-			{
-				InitializeOscElement
-				(
-					WaveformSeekBackwardFastOscElement[a],
-					WAVEFORM_SEEK_BACKWARD_FAST,
-					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
-					0,
-					0.0f,
-					1.0f,
-					0.0f,
-					NULL,
-					true
-				);
-			}
-		}
-
-		//SeekForwardSlow
-		{
-			for(int a=0;a<2;a++)
-			{
-				InitializeOscElement
-				(
-					WaveformSeekForwardSlowOscElement[a],
-					WAVEFORM_SEEK_FORWARD_SLOW,
-					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
-					0,
-					0.0f,
-					1.0f,
-					0.0f,
-					NULL,
-					true
-				);
-			}
-		}
-
-		//SeekForwardFast
-		{
-			for(int a=0;a<2;a++)
-			{
-				InitializeOscElement
-				(
-					WaveformSeekForwardFastOscElement[a],
-					WAVEFORM_SEEK_FORWARD_FAST,
-					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
-					0,
-					0.0f,
-					1.0f,
-					0.0f,
-					NULL,
-					true
-				);
+				WaveformSeekOscElement[a].SetSendDefaultOnZRelease();
 			}
 		}
 
@@ -1235,7 +1179,7 @@ InputOscObj::
 MasterToHeadphones()	const
 {
 	int to=-1;
-	if(XfaderHeadphones()==1.0f) to=0;
+	if(XfaderHeadphones()!=-1.0f) to=0;
 	if(XfaderSpeakers()!=-1.0f) to=1;
 	return(to);
 }
@@ -1252,6 +1196,9 @@ FileScroll
 	float scroll = FileScrollOscElement[GetIndexFromTarget(target)].GetFloat();
 	scroll -= FileScrollPrevOscElement[GetIndexFromTarget(target)].GetFloat();
 	scroll += FileScrollNextOscElement[GetIndexFromTarget(target)].GetFloat();
+	scroll += WaveformRewindFF(target)/4.0f;
+	scroll -= WaveformSavePointPrev(target);
+	scroll += WaveformSavePointNext(target);
 	return(scroll);
 }
 
@@ -1263,6 +1210,7 @@ FileSelect
 )	const
 {
 	int select = FileSelectOscElement[GetIndexFromTarget(target)].GetFloat();
+	select |= WaveformPauseToggle(target);
 	return(select);
 }
 
@@ -1547,15 +1495,18 @@ WaveformRewindFF
 	unsigned int	target
 )	const
 {
-	const float RATE_FAST=32.0f;
-	const float RATE_SLOW=2.0f;
+//	const float RATE_FAST=32.0f;
+//	const float RATE_SLOW=2.0f;
 
 	float rewindff=0.0f;
+	rewindff=WaveformSeekOscElement[GetIndexFromTarget(target)].GetFloat();
 
+/*
 	rewindff-=(WaveformSeekBackwardSlowOscElement[GetIndexFromTarget(target)].GetFloat() ? RATE_SLOW : 0.0f);
 	rewindff+=(WaveformSeekForwardSlowOscElement[GetIndexFromTarget(target)].GetFloat() ? RATE_SLOW : 0.0f);
 	rewindff-=(WaveformSeekBackwardFastOscElement[GetIndexFromTarget(target)].GetFloat() ? RATE_FAST : 0.0f);
 	rewindff+=(WaveformSeekForwardFastOscElement[GetIndexFromTarget(target)].GetFloat() ? RATE_FAST : 0.0f);
+*/
 
 	return(rewindff);
 }

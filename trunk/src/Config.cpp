@@ -1258,6 +1258,8 @@ PrepareInputMap()
 		("waveformRhythmicVolumeInvertOther",	true,	"LGL_KEY_U",		"rhythmic_volume_invert_other");
 	dvjInputMap[WAVEFORM_VOLUME_SOLO].Set
 		("waveformVolumeSolo",			true,	"LGL_KEY_UNKNOWN",	"volume_solo");
+	dvjInputMap[WAVEFORM_SEEK].Set
+		("waveformSeek",			true,	"LGL_KEY_NONE",		"seek");
 	dvjInputMap[WAVEFORM_SEEK_BACKWARD_SLOW].Set
 		("waveformSeekBackwardSlow",		true,	"LGL_KEY_SEMICOLON",	"seek/backward/slow");
 	dvjInputMap[WAVEFORM_SEEK_BACKWARD_FAST].Set

@@ -177,10 +177,7 @@ private:
 	OscElementObj		WaveformRhythmicVolumeInvertOscElement[2];
 	OscElementObj		WaveformRhythmicVolumeInvertOtherOscElement[2];
 	OscElementObj		WaveformVolumeSoloOscElement[2];
-	OscElementObj		WaveformSeekBackwardSlowOscElement[2];
-	OscElementObj		WaveformSeekBackwardFastOscElement[2];
-	OscElementObj		WaveformSeekForwardSlowOscElement[2];
-	OscElementObj		WaveformSeekForwardFastOscElement[2];
+	OscElementObj		WaveformSeekOscElement[2];
 	OscElementObj		WaveformScratchSpeedOscElement[2];
 	OscElementObj		WaveformSavePointPrevOscElement[2];
 	OscElementObj		WaveformSavePointNextOscElement[2];
