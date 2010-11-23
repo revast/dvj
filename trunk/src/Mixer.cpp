@@ -269,7 +269,7 @@ NextFrame
 	{
 		if(Turntable[Focus]->GetMode()==2)
 		{
-			if(GetInput().WaveformSync(TARGET_FOCUS))
+			if(GetInput().WaveformSync(TARGET_FOCUS | ((Focus==0) ? TARGET_TOP : TARGET_BOTTOM)))
 			{
 				syncTT=Focus;
 				target=Focus?0:1;
