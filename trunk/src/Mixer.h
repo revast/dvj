@@ -71,6 +71,7 @@ public:
 
 	void				SetLowRez(bool lowRez);
 	void				BlankFocusFilterText();
+	int				GetFocus();
 
 private:
 

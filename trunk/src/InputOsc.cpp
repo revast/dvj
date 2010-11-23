@@ -1067,7 +1067,23 @@ NextFrame()
 		{
 			if(OscElementObj::MasterInputGetFnType getFn = element->GetMasterInputGetFn())
 			{
-				float cand=getFn(element->GetTweakFocusTarget());
+				int target = element->GetTweakFocusTarget();
+				if(target==TARGET_TOP)
+				{
+					if(GetMixer().GetFocus()==0)
+					{
+						target|=TARGET_FOCUS;
+					}
+				}
+				else if(target==TARGET_BOTTOM)
+				{
+					if(GetMixer().GetFocus()==1)
+					{
+						target|=TARGET_FOCUS;
+					}
+				}
+
+				float cand=getFn(target);
 				if(cand!=element->GetFloatDefault())
 				{
 					if(cand!=element->GetFloat())

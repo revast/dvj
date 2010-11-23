@@ -1051,6 +1051,13 @@ BlankFocusFilterText()
 	Turntable[Focus]->BlankFilterTextIfMode0();
 }
 
+int
+MixerObj::
+GetFocus()
+{
+	return(Focus);
+}
+
 void
 MixerObj::
 DrawStatus
