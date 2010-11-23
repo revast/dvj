@@ -33,6 +33,10 @@ OscElementObj() :
 
 	Sticky=false;
 	StickyNow=false;
+	
+	SendDefaultOnZRelease=false;
+	LastSentFloat=-9999.0f;
+	LastRecvFloat=-9999.0f;
 
 	TweakBack=false;
 	TweakFront=false;
@@ -44,8 +48,8 @@ OscElementObj() :
 	FloatDefault=-1.0f;
 	FloatBack=FloatDefault;
 	FloatFront=FloatDefault;
-
-	LastSentFloat=-9990.0f;
+	FloatDeltaBack=0.0f;
+	FloatDeltaFront=0.0f;
 
 	RemoteControllerBack[0]='\0';
 	RemoteControllerFront[0]='\0';
@@ -99,6 +103,8 @@ SetFloatValues
 	FloatDefault=floatDefault;
 	FloatBack=FloatDefault;
 	FloatFront=FloatDefault;
+	FloatDeltaBack=0.0f;
+	FloatDeltaFront=0.0f;
 }
 
 void
@@ -148,6 +154,7 @@ Unstick()
 {
 	StickyNow=false;
 	FloatBack=FloatDefault;
+	FloatDeltaBack=0.0f;
 }
 
 bool
@@ -169,6 +176,13 @@ OscElementObj::
 GetFloat()	const
 {
 	return(FloatFront);
+}
+
+float
+OscElementObj::
+GetFloatDelta()	const
+{
+	return(FloatDeltaFront);
 }
 
 float
@@ -237,6 +251,16 @@ SetLastSentFloat
 	LastSentFloat=sent;
 }
 
+void
+OscElementObj::
+SetSendDefaultOnZRelease
+(
+	bool	send
+)
+{
+	SendDefaultOnZRelease=send;
+}
+
 const char*
 OscElementObj::
 GetRemoteControllerBack()	const
@@ -286,6 +310,7 @@ ProcessMessage
 					sprintf(tmp,"%s/z",AddressPatterns[a]);
 					if(strcmp(m.AddressPattern(),tmp)==0)
 					{
+						//Z Message!
 						messageRecognized=true;
 						if(Sticky)
 						{
@@ -294,11 +319,31 @@ ProcessMessage
 							{
 								if(arg->AsFloat()==1.0f)
 								{
+									//Z Hold
 									StickyNow=true;
 								}
 								else if(arg->AsFloat()==0.0f)
 								{
+									//Z Release
 									StickyNow=false;
+									if(SendDefaultOnZRelease)
+									{
+										LastRecvFloat=-9999.0f;
+
+										//Restore element to default on clients
+										std::vector<LGL_OscClient*> oscClientList=GetInputOsc().GetLGLOscClientList();
+										for(unsigned int c=0;c<oscClientList.size();c++)
+										{
+											for(unsigned int p=0;p<AddressPatterns.size();p++)
+											{
+												oscClientList[c]->Stream() <<
+													osc::BeginMessage(AddressPatterns[p]) <<
+													FloatDefault <<
+													osc::EndMessage;
+												oscClientList[c]->Send();
+											}
+										}
+									}
 								}
 							}
 						}
@@ -326,6 +371,27 @@ ProcessMessage
 								StickyNow=true;
 							}
 							TweakBack=true;
+							
+							if(LastRecvFloat!=-9999.0f)
+							{
+								float scalar = LGL_Max
+								(
+									60.0f,
+									1.0f /
+									(
+										LGL_Max
+										(
+											1.0f/60.0f,
+											FloatDeltaDeltaTimer.SecondsSinceLastReset()
+										)
+									)
+								);
+								scalar=60.0f;
+								FloatDeltaBack=scalar*ConvertOscToDvj(arg->AsFloat()-LastRecvFloat);
+								FloatDeltaDeltaTimer.Reset();
+							}
+							LastRecvFloat=arg->AsFloat();
+
 							FloatBack=ConvertOscToDvj(arg->AsFloat());
 							remoteEndpoint.AddressAsString(RemoteControllerBack);
 							messageRecognized=true;
@@ -361,6 +427,12 @@ SwapBackFront()
 	if(StickyNow==false)
 	{
 		FloatBack=FloatDefault;
+	}
+
+	FloatDeltaFront=FloatDeltaBack;
+	if(FloatDeltaDeltaTimer.SecondsSinceLastReset()>0.1f)
+	{
+		//FloatDeltaBack=0.0f;
 	}
 
 	strcpy(RemoteControllerFront,RemoteControllerBack);

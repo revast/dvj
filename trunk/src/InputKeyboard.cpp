@@ -261,8 +261,8 @@ WaveformNudge
 	{
 		return
 		(
-			(LGL_KeyDown(GetInputKeyboardWaveformNudgeSlowerKey()) ? -DELTA : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformNudgeFasterKey()) ? DELTA : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformNudgeBackwardKey()) ? -DELTA : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformNudgeForwardKey()) ? DELTA : 0)
 		);
 	}
 	else

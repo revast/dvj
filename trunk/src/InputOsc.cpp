@@ -70,8 +70,8 @@ InputOscObj(int port) :
 				XFADER_SPEAKERS,
 				TARGET_NONE,
 				0,
-				1.0f,
 				0.0f,
+				1.0f,
 				-1.0f,
 				InputXfaderSpeakers,
 				false
@@ -86,8 +86,8 @@ InputOscObj(int port) :
 				XFADER_HEADPHONES,
 				TARGET_NONE,
 				0,
-				1.0f,
 				0.0f,
+				1.0f,
 				-1.0f,
 				InputXfaderHeadphones,
 				false
@@ -243,17 +243,18 @@ InputOscObj(int port) :
 					InputWaveformNudge,
 					true
 				);
+				WaveformNudgeOscElement[a].SetSendDefaultOnZRelease();
 			}
 		}
 
-		//WaveformNudgeSlower
+		//WaveformNudgeBackward
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformNudgeSlowerOscElement[a],
-					WAVEFORM_NUDGE_SLOWER,
+					WaveformNudgeBackwardOscElement[a],
+					WAVEFORM_NUDGE_BACKWARD,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
@@ -265,14 +266,14 @@ InputOscObj(int port) :
 			}
 		}
 
-		//WaveformNudgeFaster
+		//WaveformNudgeForward
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformNudgeFasterOscElement[a],
-					WAVEFORM_NUDGE_FASTER,
+					WaveformNudgeForwardOscElement[a],
+					WAVEFORM_NUDGE_FORWARD,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
@@ -642,6 +643,7 @@ InputOscObj(int port) :
 					InputWaveformRecordSpeed,
 					true
 				);
+				WaveformScratchSpeedOscElement[a].SetSendDefaultOnZRelease();
 			}
 		}
 
@@ -1086,12 +1088,12 @@ NextFrame()
 				float cand=getFn(target);
 				if
 				(
-					//cand!=element->GetFloatDefault() &&
+					cand!=element->GetFloatDefault() &&
 					cand!=element->GetLastSentFloat()
 				)
 				{
 					element->SetLastSentFloat(cand);
-					if(cand!=element->GetFloat())
+					if(0 && cand!=element->GetFloat())
 					{
 						element->Unstick();
 					}
@@ -1322,8 +1324,8 @@ WaveformNudge
 	const float SLOWER_FASTER_SCALAR=0.04;
 
 	float nudge=WaveformNudgeOscElement[GetIndexFromTarget(target)].GetFloat();
-	nudge-=(WaveformNudgeSlowerOscElement[GetIndexFromTarget(target)].GetFloat() ? SLOWER_FASTER_SCALAR : 0.0f);
-	nudge+=(WaveformNudgeFasterOscElement[GetIndexFromTarget(target)].GetFloat() ? SLOWER_FASTER_SCALAR : 0.0f);
+	nudge-=(WaveformNudgeBackwardOscElement[GetIndexFromTarget(target)].GetFloat() ? SLOWER_FASTER_SCALAR : 0.0f);
+	nudge+=(WaveformNudgeForwardOscElement[GetIndexFromTarget(target)].GetFloat() ? SLOWER_FASTER_SCALAR : 0.0f);
 
 	return(nudge);
 }
@@ -1579,7 +1581,7 @@ WaveformRecordSpeed
 	float speed=0.0f;
 	if(WaveformRecordHold(target))
 	{
-		speed = WaveformScratchSpeedOscElement[GetIndexFromTarget(target)].GetFloat();
+		speed = WaveformScratchSpeedOscElement[GetIndexFromTarget(target)].GetFloatDelta();
 	}
 	return(speed);
 }
@@ -2138,5 +2140,12 @@ InitializeOscElement
 	element.SetMasterInputGetFn(getFn);
 	element.SetSticky(sticky);
 	AddOscElement(element);
+}
+
+std::vector<LGL_OscClient*>&
+InputOscObj::
+GetLGLOscClientList()
+{
+	return(OscClientList);
 }
 
