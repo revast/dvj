@@ -1880,13 +1880,6 @@ WaveformSync
 )	const
 {
 	bool sync = WaveformSyncOscElement[GetIndexFromTarget(target)].GetFloat();
-	/*
-printf("SYN: [%i,%i,%i => %i]\n",
-	(target & TARGET_TOP) ? 1 : 0,
-	(target & TARGET_BOTTOM) ? 1 : 0,
-	(target & TARGET_FOCUS) ? 1 : 0,
-	sync);
-*/
 	return(sync);
 }
 
