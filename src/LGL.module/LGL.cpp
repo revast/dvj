@@ -253,11 +253,9 @@ typedef struct
 	bool			WindowFullscreen;
 	bool			VSync;
 
-#ifdef	SDL_2
 	SDL_WindowID		WindowID;
 	SDL_GLContext		GLContext;
 	//SDL_Surface*		GLVideoSurface;
-#endif	//SDL_2
 
 	float			DisplayViewPortLeft[LGL_DISPLAY_MAX];
 	float			DisplayViewPortRight[LGL_DISPLAY_MAX];
@@ -1680,16 +1678,11 @@ LGL_Init
 	}
 
 #ifndef	LGL_NO_GRAPHICS
-#ifdef	SDL_2
 	LGL.DisplayCount=SDL_GetNumVideoDisplays();
-#else	//SDL_2
-	LGL.DisplayCount=1;
-#endif	//SDL_2
 	LGL.DisplayNow=0;
 
 printf("%i screens!\n",LGL.DisplayCount);
 
-#ifdef	SDL_2
 	for(int a=0;a<LGL.DisplayCount;a++)
 	{
 		SDL_SelectVideoDisplay(a);
@@ -1721,7 +1714,6 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	}
 
 	SDL_SelectVideoDisplay(0);
-#endif	//SDL_2
 
 	if
 	(
@@ -1729,7 +1721,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		inWindowResolutionY==9999
 	)
 	{
-		if(LGL.DisplayCount==1)
+		if(1 || LGL.DisplayCount==1)
 		{
 			LGL.WindowResolutionX=LGL_DisplayResolutionX();
 			LGL.WindowResolutionY=LGL_DisplayResolutionY()-100;
@@ -2023,7 +2015,6 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	//Initialize Video
 
 #ifndef	LGL_NO_GRAPHICS
-#ifdef	SDL_2
 	SDL_SelectVideoDisplay(0);
 
 	int windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
@@ -2083,58 +2074,11 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		LGL.GLVideoSurface->flags |= surface_flags;
 		*/
 	}
-#else	//SDL_2
-	SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
-	unsigned int Flags=SDL_OPENGL;
-	if(LGL.WindowFullscreen==true)
-	{
-		Flags=Flags|SDL_FULLSCREEN;
-	}
-	if
-	(
-		SDL_SetVideoMode
-		(
-			LGL.WindowResolutionX,
-			LGL.WindowResolutionY,
-			32,			//Color depth
-			Flags
-		) == NULL
-	)
-	{
-		if(Flags==SDL_OPENGL)
-		{
-			printf
-			(
-				"LGL_Init(): SDL_SetVideoMode \
-				(%i,%i,SDL_OPENGL) failed... %s\n",
-				LGL.WindowResolutionX,
-				LGL.WindowResolutionY,
-				SDL_GetError()
-			);
-		}
-		if(Flags==(SDL_OPENGL|SDL_FULLSCREEN))
-		{
-			printf
-			(
-				"LGL_Init(): SDL_SetVideoMode \
-				(%i,%i,SDL_OPENGL|SDL_FULLSCREEN) \
-				failed... %s\n",
-				LGL.WindowResolutionX,
-				LGL.WindowResolutionY,
-				SDL_GetError()
-			);
-		}
-			
-		return(false);
-	}
-#endif	//SDL_2
 
 	//GL Settings
 
 	LGL.VSync = (LGL.WindowFullscreen && LGL.DisplayCount>1) ? false : true;
-#ifdef	SDL_2
 	SDL_GL_SetSwapInterval(LGL_VSync());	//VSYNC
-#endif
 
 	glDrawBuffer(GL_BACK);
 	glReadBuffer(GL_FRONT);
@@ -3763,11 +3707,8 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 	{
 		LGL_DelaySeconds(1.0f/LGL.FPSMax-LGL_SecondsSinceThisFrame());
 	}
-#ifdef	SDL_2
+
 	SDL_GL_SwapWindow(LGL.WindowID);
-#else	//SDL_2
-	SDL_GL_SwapBuffers();
-#endif	//SDL_2
 #endif	//LGL_NO_GRAPHICS
 
 	lgl_font_gl_buffer_ptr = &(lgl_font_gl_buffer[0]);
@@ -17526,7 +17467,6 @@ LGL_ProcessInput()
 		}
 		
 		//Keyboard
-#ifdef	SDL_2
 		if(event.type==SDL_KEYDOWN)
 		{
 			if(event.key.keysym.sym > 256)
@@ -17600,46 +17540,6 @@ LGL_ProcessInput()
 			StreamCounter++;
 			LGL.KeyStream[StreamCounter]='\0';
 		}
-#else	//SDL_2
-		if(event.type==SDL_KEYDOWN)
-		{
-			LGL.KeyDown[event.key.keysym.sym]=true;
-			LGL.KeyStroke[event.key.keysym.sym]=true;
-			LGL.KeyTimer[event.key.keysym.sym].Reset();
-			if
-			(
-				StreamCounter<255 &&
-				event.key.keysym.unicode<0x80 &&
-				event.key.keysym.unicode>0
-			)
-			{
-				if(isalpha((char)event.key.keysym.unicode))
-				{
-					if(SDL_GetModState() & KMOD_SHIFT)
-					{
-						LGL.KeyStream[StreamCounter]=toupper((char)event.key.keysym.unicode);
-					}
-					else
-					{
-						LGL.KeyStream[StreamCounter]=tolower((char)event.key.keysym.unicode);
-					}
-				}
-				else
-				{
-					LGL.KeyStream[StreamCounter]=(char)event.key.keysym.unicode;
-				}
-				
-				StreamCounter++;
-				LGL.KeyStream[StreamCounter]='\0';
-			}
-		}
-		if(event.type==SDL_KEYUP)
-		{
-			LGL.KeyDown[event.key.keysym.sym]=false;
-			LGL.KeyRelease[event.key.keysym.sym]=true;
-			LGL.KeyTimer[event.key.keysym.sym].Reset();
-		}
-#endif	//SDL_2
 
 		//Mouse
 
