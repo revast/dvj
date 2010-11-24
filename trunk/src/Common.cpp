@@ -240,8 +240,8 @@ Main_DrawGlowLines
 			float projAR = projW/(float)projH;
 			float targetAR = 1.0f*LGL_DisplayResolutionX()/(float)((1.0f-quadrentSplitY)*LGL_DisplayResolutionY());
 			
-			float myL = 0.5f - 0.5f * 1.0f * (projAR/targetAR);
-			float myR = 0.5f + 0.5f * 1.0f * (projAR/targetAR);
+			float myL = 0.5f - (0.5f * (projAR/targetAR));
+			float myR = 0.5f + (0.5f * (projAR/targetAR));
 
 			LGL_DrawLineToScreen
 			(

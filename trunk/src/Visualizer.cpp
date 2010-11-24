@@ -47,8 +47,14 @@ VisualizerObj()
 
 	if(LGL_DisplayCount()>1)
 	{
-		float projAspect = LGL_DisplayResolutionX(1)/(float)LGL_DisplayResolutionY(1);
-		right = projAspect * (top-bottom);
+		float quadrentSplitY = 0.5f;
+		float projAR = LGL_DisplayResolutionX(1)/(float)LGL_DisplayResolutionY(1);
+		float targetAR = 1.0f*LGL_DisplayResolutionX(0)/(float)((1.0f-quadrentSplitY)*LGL_DisplayResolutionY(0));
+
+		left = 0.5f - (0.5f * (projAR/targetAR));
+		right = 0.5f + (0.5f * (projAR/targetAR));
+
+		//right = projAspect * (top-bottom);
 	}
 
 	SetViewportVisuals(left,right,bottom,top);
