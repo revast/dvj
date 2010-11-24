@@ -1721,7 +1721,7 @@ printf("\tScreen[%i]: %i x %i\n",a,
 		inWindowResolutionY==9999
 	)
 	{
-		if(1 || LGL.DisplayCount==1)
+		if(LGL.DisplayCount==1)
 		{
 			LGL.WindowResolutionX=LGL_DisplayResolutionX();
 			LGL.WindowResolutionY=LGL_DisplayResolutionY()-100;
