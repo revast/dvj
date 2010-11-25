@@ -1106,11 +1106,40 @@ DrawVideos
 						image->GetFrameNumber()!=-1
 					)
 					{
+						int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
+						int projW;
+						int projH;
+						if(LGL_DisplayCount()==1)
+						{
+							projW = ViewportVisualsWidth * LGL_DisplayResolutionX();
+							projH = ViewportVisualsHeight * LGL_DisplayResolutionY();
+						}
+						else
+						{
+							projW = LGL_DisplayResolutionX(projDisplay);
+							projH = LGL_DisplayResolutionY(projDisplay);
+						}
+						float projAR = projW/(float)projH;
+						float imageAR = image->GetWidth()/(float)image->GetHeight();
+						if(LGL_DisplayCount()==1 && tt->GetAspectRatioMode()==0) projAR=imageAR;
+						float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
+
+						float midX = 0.5f*(l+r);
+						//float midY = 0.5f*(b+t);
+
+						float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
+						float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
+
+						float myL = targetLimitL;
+						float myR = targetLimitR;
+						float myB = b;
+						float myT = t;
+
 						while(br>0.0f)
 						{
 							image->DrawToScreen
 							(
-								l,r,b,t,
+								myL,myR,myB,myT,
 								0,
 								br,
 								br,
