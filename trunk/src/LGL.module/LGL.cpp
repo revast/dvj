@@ -3765,7 +3765,7 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 }
 
 void
-LGL_SwapBuffers(bool endFrame)
+LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 {
 #ifdef	LGL_NO_GRAPHICS
 	LGL_DelaySeconds(1.0f/60.0f-LGL_SecondsSinceThisFrame());
@@ -3788,7 +3788,10 @@ LGL_SwapBuffers(bool endFrame)
 		*/
 		SDL_GL_SetSwapInterval(vsync);	//VSYNC
 		SDL_GL_SwapWindow(LGL.WindowID[LGL.DisplayNow]);
-		LGL_ClearBackBuffer();
+		if(clearBackBuffer)
+		{
+			LGL_ClearBackBuffer();
+		}
 		/*
 		int activeDisplayPrev=LGL_GetActiveDisplay();
 		for(int d=0;d<LGL.DisplayCount;d++)
@@ -4895,8 +4898,8 @@ LGL_ShaderAvailableFrag()
 	);
 }
 
-LGL_ShaderObj::
-LGL_ShaderObj
+LGL_Shader::
+LGL_Shader
 (
 	char* inDescription
 )
@@ -4907,21 +4910,21 @@ LGL_ShaderObj
 	ProgramObject=0;
 }
 
-LGL_ShaderObj::
-~LGL_ShaderObj()
+LGL_Shader::
+~LGL_Shader()
 {
 	OmniDelete();
 }
 
 char*
-LGL_ShaderObj::
+LGL_Shader::
 GetDescription()
 {
 	return(Description);
 }
 
 void
-LGL_ShaderObj::
+LGL_Shader::
 SetDescription
 (
 	char*	inDescription
@@ -4931,7 +4934,7 @@ SetDescription
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 VertCompile
 (
 	char*	inFileVert
@@ -4954,7 +4957,7 @@ VertCompile
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::VertCompile(): Error! Couldn't open file '%s'...\n",
+			"LGL_Shader('%s')::VertCompile(): Error! Couldn't open file '%s'...\n",
 			Description,
 			inFileVert
 		);
@@ -4994,7 +4997,7 @@ VertCompile
 		
 		printf
 		(
-			"LGL_ShaderObj('%s')::VertCompile(): Error! '%s' failed to compile:\n\n",
+			"LGL_Shader('%s')::VertCompile(): Error! '%s' failed to compile:\n\n",
 			Description,
 			inFileVert
 		);
@@ -5011,7 +5014,7 @@ VertCompile
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 FragCompile
 (
 	char*	inFileFrag
@@ -5034,7 +5037,7 @@ FragCompile
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::FragCompile(): Error! Couldn't open file '%s'...\n",
+			"LGL_Shader('%s')::FragCompile(): Error! Couldn't open file '%s'...\n",
 			Description,
 			inFileFrag
 		);
@@ -5075,7 +5078,7 @@ FragCompile
 		
 		printf
 		(
-			"LGL_ShaderObj('%s')::FragCompile(): Error! '%s' failed to compile:\n\n",
+			"LGL_Shader('%s')::FragCompile(): Error! '%s' failed to compile:\n\n",
 			Description,
 			inFileFrag
 		);
@@ -5092,21 +5095,21 @@ FragCompile
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 VertCompiled()
 {
 	return(VertObject!=0);
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 FragCompiled()
 {
 	return(FragObject!=0);
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 Link()
 {
 	if(ProgramObject!=0)
@@ -5134,7 +5137,7 @@ Link()
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::Link(): Error! Could link program... Source files:\n",
+			"LGL_Shader('%s')::Link(): Error! Could link program... Source files:\n",
 			Description
 		);
 		if(strlen(FileVert)>0)
@@ -5159,7 +5162,14 @@ Link()
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
+IsLinked()
+{
+	return(ProgramObject!=0);
+}
+
+bool
+LGL_Shader::
 Enable
 (
 	bool	enable
@@ -5167,14 +5177,16 @@ Enable
 {
 	if
 	(
-		strstr
+		strcasestr
 		(
 			(char*)glGetString(GL_EXTENSIONS),
 			"GL_ARB_SHADING_LANGUAGE_100"
 		)==NULL
 	)
 	{
-		printf("LGL_ShaderObj::Enable(): Warning! Your graphics driver compiles but cannot run GLSL programs!\n");
+		printf("LGL_Shader::Enable(): Warning! Your graphics driver compiles but cannot run GLSL programs!\n");
+		printf("\tMore Info: Cannot find string 'GL_ARB_SHADING_LANGUAGE_100' in extensions:\n");
+		printf("***\n%s\n***\n",(char*)glGetString(GL_EXTENSIONS));
 		return(false);
 	}
 	if(enable==false)
@@ -5197,7 +5209,7 @@ Enable
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 Disable()
 {
 	if(IsEnabled()==false)
@@ -5211,7 +5223,7 @@ Disable()
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 IsEnabled()
 {
 	return
@@ -5222,7 +5234,7 @@ IsEnabled()
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 EnableToggle()
 {
 	if(IsEnabled())
@@ -5238,7 +5250,7 @@ EnableToggle()
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeInt
 (
 	char*	name,
@@ -5255,7 +5267,7 @@ SetVertAttributeInt
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeInt
 (
 	char*	name,
@@ -5272,7 +5284,7 @@ SetVertAttributeInt
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeInt
 (
 	char*	name,
@@ -5289,7 +5301,7 @@ SetVertAttributeInt
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeInt
 (
 	char*	name,
@@ -5307,7 +5319,7 @@ SetVertAttributeInt
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeFloat
 (
 	char*	name,
@@ -5324,7 +5336,7 @@ SetVertAttributeFloat
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeFloat
 (
 	char*	name,
@@ -5341,7 +5353,7 @@ SetVertAttributeFloat
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeFloat
 (
 	char*	name,
@@ -5358,7 +5370,7 @@ SetVertAttributeFloat
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeFloat
 (
 	char*	name,
@@ -5376,7 +5388,7 @@ SetVertAttributeFloat
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeInt
 (
 	char*	name,
@@ -5393,7 +5405,7 @@ SetUniformAttributeInt
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeInt
 (
 	char*	name,
@@ -5410,7 +5422,7 @@ SetUniformAttributeInt
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeInt
 (
 	char*	name,
@@ -5427,7 +5439,7 @@ SetUniformAttributeInt
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeInt
 (
 	char*	name,
@@ -5445,7 +5457,7 @@ SetUniformAttributeInt
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeFloat
 (
 	char*	name,
@@ -5462,7 +5474,7 @@ SetUniformAttributeFloat
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeFloat
 (
 	char*	name,
@@ -5479,7 +5491,7 @@ SetUniformAttributeFloat
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeFloat
 (
 	char*	name,
@@ -5496,7 +5508,7 @@ SetUniformAttributeFloat
 	);
 }
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeFloat
 (
 	char*	name,
@@ -5514,7 +5526,7 @@ SetUniformAttributeFloat
 }
 
 void
-LGL_ShaderObj::
+LGL_Shader::
 VertDelete()
 {
 	Disable();
@@ -5528,7 +5540,7 @@ VertDelete()
 }
 
 void
-LGL_ShaderObj::
+LGL_Shader::
 FragDelete()
 {
 	Disable();
@@ -5542,7 +5554,7 @@ FragDelete()
 }
 
 void
-LGL_ShaderObj::
+LGL_Shader::
 ProgramDelete()
 {
 	Disable();
@@ -5554,7 +5566,7 @@ ProgramDelete()
 }
 
 void
-LGL_ShaderObj::
+LGL_Shader::
 OmniDelete()
 {
 	ProgramDelete();
@@ -5563,7 +5575,7 @@ OmniDelete()
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 InfoLogExists
 (
 	GLhandleARB	obj
@@ -5582,7 +5594,7 @@ InfoLogExists
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 InfoLogPrint
 (
 	GLhandleARB	obj
@@ -5611,7 +5623,7 @@ InfoLogPrint
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::InfoLogPrint(): Error! Couldn't read log (expected %i, got %i)!\n",
+			"LGL_Shader('%s')::InfoLogPrint(): Error! Couldn't read log (expected %i, got %i)!\n",
 			Description,
 			(int)length,
 			(int)written
@@ -5627,7 +5639,7 @@ InfoLogPrint
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeIntPrivate
 (
 	char*	name,	int	num,
@@ -5652,7 +5664,7 @@ SetVertAttributeIntPrivate
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::SetVertAttributeInt(): Error! "
+			"LGL_Shader('%s')::SetVertAttributeInt(): Error! "
 			"Could not resolve Attribute '%s'...\n",
 			Description,
 			name
@@ -5677,7 +5689,7 @@ SetVertAttributeIntPrivate
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetVertAttributeFloatPrivate
 (
 	char*	name,	int	num,
@@ -5702,7 +5714,7 @@ SetVertAttributeFloatPrivate
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::SetVertAttributeFloat(): Error! "
+			"LGL_Shader('%s')::SetVertAttributeFloat(): Error! "
 			"Could not resolve Attribute '%s' for program %i...\n",
 			Description,
 			name,
@@ -5728,7 +5740,7 @@ SetVertAttributeFloatPrivate
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeIntPrivate
 (
 	char*	name,		int	num,
@@ -5747,7 +5759,7 @@ SetUniformAttributeIntPrivate
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::SetUniformAttributeInt(): Error! "
+			"LGL_Shader('%s')::SetUniformAttributeInt(): Error! "
 			"Could not resolve uniform variable '%s'...\n",
 			Description,
 			name
@@ -5775,7 +5787,7 @@ SetUniformAttributeIntPrivate
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::SetUniformAttributeInt(): Error! "
+			"LGL_Shader('%s')::SetUniformAttributeInt(): Error! "
 			"Num is '%i', but must be [1,4]...\n",
 			Description,
 			num
@@ -5787,7 +5799,7 @@ SetUniformAttributeIntPrivate
 }
 
 bool
-LGL_ShaderObj::
+LGL_Shader::
 SetUniformAttributeFloatPrivate
 (
 	char*	name,		int	num,
@@ -5806,7 +5818,7 @@ SetUniformAttributeFloatPrivate
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::SetUniformAttributeFloat(): Error! "
+			"LGL_Shader('%s')::SetUniformAttributeFloat(): Error! "
 			"Could not resolve uniform variable '%s'...\n",
 			Description,
 			name
@@ -5834,7 +5846,7 @@ SetUniformAttributeFloatPrivate
 	{
 		printf
 		(
-			"LGL_ShaderObj('%s')::SetUniformAttributeFloat(): Error! "
+			"LGL_Shader('%s')::SetUniformAttributeFloat(): Error! "
 			"Num is '%i', but must be [1,4]...\n",
 			Description,
 			num
@@ -6152,6 +6164,7 @@ DrawToScreen
 #ifdef	LGL_NO_GRAPHICS
 	return;
 #endif	//LGL_NO_GRAPHICS
+
 	lgl_glScreenify2D();
 
 	if

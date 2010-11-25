@@ -1146,19 +1146,36 @@ DrawVideos
 						float myB = b;
 						float myT = t;
 
-						while(br>0.0f)
+						//FIXME: ZOMG more than one pass is insane!!
+						static LGL_Shader imageShader("Image Shader");
+						if(imageShader.VertCompiled()==false)
 						{
-							image->DrawToScreen
-							(
-								myL,myR,myB,myT,
-								0,
-								br,
-								br,
-								br,
-								0.0f
-							);
-							br-=1.0f;
+							imageShader.VertCompile("data/glsl/bright_image.vert.glsl");
 						}
+						if(imageShader.FragCompiled()==false)
+						{
+							imageShader.FragCompile("data/glsl/bright_image.frag.glsl");
+						}
+						if(imageShader.IsLinked()==false)
+						{
+							imageShader.Link();
+						}
+						imageShader.Enable();
+						imageShader.SetUniformAttributeFloat
+						(
+							"brightnessScalar",
+							br
+						);
+						image->DrawToScreen
+						(
+							myL,myR,myB,myT,
+							0,
+							1.0f,
+							1.0f,
+							1.0f,
+							0.0f
+						);
+						imageShader.Disable();
 					}
 				}
 			}
