@@ -1583,7 +1583,7 @@ NextFrame
 			RhythmicVolumeInvert=false;
 		}
 
-		RhythmicSoloInvert = GetInput().WaveformRhythmicVolumeInvertOther(target);
+		RhythmicSoloInvert = BPMAvailable() && GetInput().WaveformRhythmicVolumeInvertOther(target);
 
 		//Save Points
 		if(AudioInputMode==false)
