@@ -290,12 +290,12 @@ Mixer_DrawGlowLinesTurntables
 	GetColorWarm(warmR,warmG,warmB);
 
 	float glow = GetGlowFromTime(time) * brightness;
-	float viewPortLeft = 0.0f;
-	float viewPortRight = 1.0f;
-	float viewPortBottom = 0.0f;
-	float viewPortTop = 0.5f;
-	//float viewPortWidth = viewPortRight - viewPortLeft;
-	float viewPortHeight = viewPortTop - viewPortBottom;
+	float viewportLeft = 0.0f;
+	float viewportRight = 1.0f;
+	float viewportBottom = 0.0f;
+	float viewportTop = 0.5f;
+	//float viewportWidth = viewportRight - viewportLeft;
+	float viewportHeight = viewportTop - viewportBottom;
 
 	const float crossFadeSliderWidth=0.025f;
 
@@ -303,8 +303,8 @@ Mixer_DrawGlowLinesTurntables
 	{
 		const float cfLeft = (a==0) ? 0 : (1.0f-crossFadeSliderWidth);
 		const float cfRight = (a==0) ? crossFadeSliderWidth : 1.0f;
-		const float cfBottom=viewPortBottom;
-		const float cfTop=viewPortTop;
+		const float cfBottom=viewportBottom;
+		const float cfTop=viewportTop;
 		bool justSet=false;
 		if
 		(
@@ -365,15 +365,15 @@ Mixer_DrawGlowLinesTurntables
 		float br=glow*a/7.0f;
 		LGL_ClipRectEnable
 		(
-			visualizerQuadrent?0.0f:viewPortLeft,
-			visualizerQuadrent?0.5f:viewPortRight,
-			visualizerQuadrent?0.5f:viewPortBottom,
-			visualizerQuadrent?1.0f:viewPortTop
+			visualizerQuadrent?0.0f:viewportLeft,
+			visualizerQuadrent?0.5f:viewportRight,
+			visualizerQuadrent?0.5f:viewportBottom,
+			visualizerQuadrent?1.0f:viewportTop
 		);
 		LGL_DrawLineToScreen
 		(
-			0.025,viewPortBottom+.5*viewPortHeight,
-			0.975,viewPortBottom+.5*viewPortHeight,
+			0.025,viewportBottom+.5*viewportHeight,
+			0.975,viewportBottom+.5*viewportHeight,
 			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
 			false
@@ -382,16 +382,16 @@ Mixer_DrawGlowLinesTurntables
 		{
 			LGL_DrawLineToScreen
 			(
-				0,crossFadeSliderLeft*viewPortTop,
-				0+crossFadeSliderWidth,crossFadeSliderLeft*viewPortTop,
+				0,crossFadeSliderLeft*viewportTop,
+				0+crossFadeSliderWidth,crossFadeSliderLeft*viewportTop,
 				warmR*br,warmG*br,warmB*br,br,
 				zz*(7-a),
 				false
 			);
 			LGL_DrawLineToScreen
 			(
-				1.0f-crossFadeSliderWidth,crossFadeSliderRight*viewPortTop,
-				1,crossFadeSliderRight*viewPortTop,
+				1.0f-crossFadeSliderWidth,crossFadeSliderRight*viewportTop,
+				1,crossFadeSliderRight*viewportTop,
 				warmR*br,warmG*br,warmB*br,br,
 				zz*(7-a),
 				false
@@ -400,7 +400,7 @@ Mixer_DrawGlowLinesTurntables
 		if(visualizerQuadrent==false) LGL_ClipRectDisable();
 		LGL_DrawLineToScreen
 		(
-			0.975,viewPortTop,
+			0.975,viewportTop,
 			0.975,0,
 			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
@@ -408,7 +408,7 @@ Mixer_DrawGlowLinesTurntables
 		);
 		LGL_DrawLineToScreen
 		(
-			0.025,viewPortTop,
+			0.025,viewportTop,
 			0.025,0,
 			2*coolR*br,2*coolG*br,2*coolB*br,br,
 			7-a,
@@ -538,8 +538,8 @@ Mixer_DrawGlowLinesStatus
 void
 Mixer_DrawLevels
 (
-	float viewPortBottom,
-	float viewPortTop,
+	float viewportBottom,
+	float viewportTop,
 	float leftBottomLevel,
 	float leftTopLevel,
 	float rightBottomLevel,
@@ -558,14 +558,14 @@ Mixer_DrawLevels
 			1.0f
 		);
 	}
-	float viewPortHeight=viewPortTop-viewPortBottom;
+	float viewportHeight=viewportTop-viewportBottom;
 	for(int a=0;a<2;a++)
 	{
 		/*
 		LGL_GetFont().DrawString
 		(
 			.025*.5,
-			viewPortBottom+.245*viewPortHeight+(1.5)*.5*viewPortHeight,
+			viewportBottom+.245*viewportHeight+(1.5)*.5*viewportHeight,
 			.010,
 			1,1,1,1,
 			true,.5,
@@ -576,7 +576,7 @@ Mixer_DrawLevels
 		LGL_GetFont().DrawString
 		(
 			.025f*.5f,
-			viewPortBottom+.245f*viewPortHeight+(1-a)*.5f*viewPortHeight,
+			viewportBottom+.245f*viewportHeight+(1-a)*.5f*viewportHeight,
 			.010f,
 			1,1,1,1,
 			true,.5f,
@@ -586,7 +586,7 @@ Mixer_DrawLevels
 		LGL_GetFont().DrawString
 		(
 			1.0f-.025f*.5f,
-			viewPortBottom+.245f*viewPortHeight+(1-a)*.5f*viewPortHeight,
+			viewportBottom+.245f*viewportHeight+(1-a)*.5f*viewportHeight,
 			.010f,
 			1,1,1,1,
 			true,.5f,
@@ -613,8 +613,8 @@ Turntable_DrawDirTree
 	bool*		alreadyPlayedBits,
 	int		fileNum,
 	int		fileSelectInt,
-	float		viewPortBottom,
-	float		viewPortTop,
+	float		viewportBottom,
+	float		viewportTop,
 	float		badFileFlash,
 	float*		inBPMList
 )
@@ -626,13 +626,13 @@ Turntable_DrawDirTree
 
 	float glow = GetGlowFromTime(time);
 	float centerX = 0.5f;
-	float viewPortLeft = 0.025f;
-	float viewPortRight = 0.975f;
-	float viewPortWidth = viewPortRight - viewPortLeft;
-	float viewPortHeight = viewPortTop - viewPortBottom;
+	float viewportLeft = 0.025f;
+	float viewportRight = 0.975f;
+	float viewportWidth = viewportRight - viewportLeft;
+	float viewportHeight = viewportTop - viewportBottom;
 	LGL_GetFont().DrawString
 	(
-		centerX,viewPortBottom+.875*viewPortHeight,.025,
+		centerX,viewportBottom+.875*viewportHeight,.025,
 		1,1,1,1,
 		true,.5,
 		filterText[0]=='\0' ?
@@ -673,10 +673,10 @@ Turntable_DrawDirTree
 
 		if(strlen(fileNow)>0)
 		{
-			float rectLeft=viewPortLeft;
-			float rectRight=viewPortRight;
-			float rectBottom=viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight;
-			float rectTop=viewPortTop-(.1f+(b+1)/6.25f+.02f)*viewPortHeight+viewPortHeight/15.0f+.04f*viewPortHeight;
+			float rectLeft=viewportLeft;
+			float rectRight=viewportRight;
+			float rectBottom=viewportTop-(.1f+(b+1)/6.25f+.02f)*viewportHeight;
+			float rectTop=viewportTop-(.1f+(b+1)/6.25f+.02f)*viewportHeight+viewportHeight/15.0f+.04f*viewportHeight;
 
 			if
 			(
@@ -708,16 +708,16 @@ Turntable_DrawDirTree
 				);
 			}
 
-			float stringY=viewPortTop-0.1f*viewPortHeight-(viewPortHeight*((b+1)/6.25f-0.035f));
+			float stringY=viewportTop-0.1f*viewportHeight-(viewportHeight*((b+1)/6.25f-0.035f));
 
 			float bpm = inBPMList[b];
 			if(bpm>0)
 			{
 				LGL_GetFont().DrawString
 				(
-					viewPortLeft+0.01f*viewPortWidth,
-					stringY-0.5f*viewPortHeight/15.0f,
-					viewPortHeight/15.0f,
+					viewportLeft+0.01f*viewportWidth,
+					stringY-0.5f*viewportHeight/15.0f,
+					viewportHeight/15.0f,
 					R,G,B,1,
 					false,0,
 					"%.0f",
@@ -725,9 +725,9 @@ Turntable_DrawDirTree
 				);
 			}
 
-			float fontHeight=viewPortHeight/15.0f;
+			float fontHeight=viewportHeight/15.0f;
 			float fontWidth=LGL_GetFont().GetWidthString(fontHeight,fileNow);
-			float fontWidthMax=viewPortWidth*0.9f;
+			float fontWidthMax=viewportWidth*0.9f;
 			fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
 
 			char fileNowSafe[2048];
@@ -742,7 +742,7 @@ Turntable_DrawDirTree
 			}
 			LGL_GetFont().DrawString
 			(
-				viewPortLeft+(.025f+0.05f)*viewPortWidth,
+				viewportLeft+(.025f+0.05f)*viewportWidth,
 				stringY-0.5f*fontHeight,
 				fontHeight,
 				R,G,B,1,
@@ -938,10 +938,10 @@ Turntable_DrawWaveform
 	float		grainStreamSourcePoint,
 	float		grainStreamLength,
 	float		grainStreamPitch,
-	float		viewPortLeft,
-	float		viewPortRight,
-	float		viewPortBottom,
-	float		viewPortTop,
+	float		viewportLeft,
+	float		viewportRight,
+	float		viewportBottom,
+	float		viewportTop,
 	float		volumeMultiplierNow,
 	float		centerX,
 	bool		pause,
@@ -1009,8 +1009,8 @@ Turntable_DrawWaveform
 	}
 
 	//Prepare some derived varibales
-	float viewPortWidth = viewPortRight - viewPortLeft;
-	float viewPortHeight = viewPortTop - viewPortBottom;
+	float viewportWidth = viewportRight - viewportLeft;
+	float viewportHeight = viewportTop - viewportBottom;
 	float soundLengthSamplesHalf = 0.5f*soundLengthSamples;
 	float soundLengthSeconds = soundLengthSamples / sound->GetHz();
 	float soundPositionSeconds = soundPositionSamples / sound->GetHz();
@@ -1053,7 +1053,7 @@ Turntable_DrawWaveform
 
 	long pointResolution=256+1;
 
-	float pointRadiusMin=viewPortRight-(viewPortLeft+0.5f*viewPortWidth);
+	float pointRadiusMin=viewportRight-(viewportLeft+0.5f*viewportWidth);
 	float pointRadius=pointRadiusMin*zoom;
 
 	float percentTowardsNextZoomInLevel=(pointRadius-pointRadiusMin)/pointRadiusMin;
@@ -1063,17 +1063,17 @@ Turntable_DrawWaveform
 	long sampleRight=pos+sampleRadius;
 	long sampleWidth=sampleRight-sampleLeft;
 
-	float viewPortCenter=viewPortLeft+0.5f*viewPortWidth;
-	float pointLeft=	viewPortCenter-(0.5f+0.5f*percentTowardsNextZoomInLevel)*(WAVE_WIDTH_PERCENT*viewPortWidth);
-	float pointRight=	viewPortCenter+(0.5f+0.5f*percentTowardsNextZoomInLevel)*(WAVE_WIDTH_PERCENT*viewPortWidth);
+	float viewportCenter=viewportLeft+0.5f*viewportWidth;
+	float pointLeft=	viewportCenter-(0.5f+0.5f*percentTowardsNextZoomInLevel)*(WAVE_WIDTH_PERCENT*viewportWidth);
+	float pointRight=	viewportCenter+(0.5f+0.5f*percentTowardsNextZoomInLevel)*(WAVE_WIDTH_PERCENT*viewportWidth);
 	float pointWidth=	pointRight-pointLeft;
-	float pointBottom=	viewPortBottom+0.125*viewPortHeight;
-	float pointTop=		viewPortBottom+0.875*viewPortHeight;
+	float pointBottom=	viewportBottom+0.125*viewportHeight;
+	float pointTop=		viewportBottom+0.875*viewportHeight;
 	float pointHeight=	pointTop-pointBottom;
 	float pointYMid=	0.5f*(pointBottom+pointTop);
 	
-	float wavLeft = viewPortCenter-0.5f*WAVE_WIDTH_PERCENT*viewPortWidth;
-	float wavRight=	viewPortCenter+0.5f*WAVE_WIDTH_PERCENT*viewPortWidth;
+	float wavLeft = viewportCenter-0.5f*WAVE_WIDTH_PERCENT*viewportWidth;
+	float wavRight=	viewportCenter+0.5f*WAVE_WIDTH_PERCENT*viewportWidth;
 	float wavWidth= wavRight-wavLeft;
 
 	LGL_ClipRectEnable
@@ -1310,8 +1310,8 @@ Turntable_DrawWaveform
 						sampleNow<glitchSampleRight-glitchDelta
 					) ||
 					(
-						arrayV[(a*2)+0] >= centerX+needleDeltaL*viewPortWidth &&
-						arrayV[(a*2)+0] <= centerX+needleDeltaR*viewPortWidth
+						arrayV[(a*2)+0] >= centerX+needleDeltaL*viewportWidth &&
+						arrayV[(a*2)+0] <= centerX+needleDeltaR*viewportWidth
 					)
 				);
 
@@ -1458,8 +1458,8 @@ Turntable_DrawWaveform
 		//Draw Center Needle Rectangle
 		LGL_DrawRectToScreen
 		(
-			centerX+needleDeltaL*viewPortWidth,
-			centerX+needleDeltaR*viewPortWidth,
+			centerX+needleDeltaL*viewportWidth,
+			centerX+needleDeltaR*viewportWidth,
 			pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			0.25f*warmR,0.25f*warmG,0.25f*warmB,0.0f
@@ -1582,15 +1582,15 @@ Turntable_DrawWaveform
 		//Center Needle frame
 		LGL_DrawLineToScreen
 		(
-			centerX+needleDeltaL*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-			centerX+needleDeltaL*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+			centerX+needleDeltaL*viewportWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+			centerX+needleDeltaL*viewportWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			warmR,warmG,warmB,1.0f,
 			1
 		);
 		LGL_DrawLineToScreen
 		(
-			centerX+needleDeltaR*viewPortWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
-			centerX+needleDeltaR*viewPortWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+			centerX+needleDeltaR*viewportWidth,pointBottom+NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
+			centerX+needleDeltaR*viewportWidth,pointTop-NEEDLE_DISTANCE_FROM_EDGES*pointHeight,
 			warmR,warmG,warmB,1.0f,
 			1
 		);
@@ -1782,13 +1782,13 @@ Turntable_DrawWaveform
 
 	if(audioInputMode==false)
 	{
-		float noiseBottom=viewPortBottom;
+		float noiseBottom=viewportBottom;
 		float noiseTop=pointBottom;
-		float noiseLeft=viewPortLeft + (warpPointSecondsStart/cachedLengthSeconds)*viewPortWidth;
-		float noiseRight=viewPortLeft + (warpPointSecondsTrigger/cachedLengthSeconds)*viewPortWidth;
+		float noiseLeft=viewportLeft + (warpPointSecondsStart/cachedLengthSeconds)*viewportWidth;
+		float noiseRight=viewportLeft + (warpPointSecondsTrigger/cachedLengthSeconds)*viewportWidth;
 		float noiseHeight=noiseTop-noiseBottom;
 		float noiseWidth=noiseRight-noiseLeft;
-		float noiseRelativeWidth=noiseWidth/viewPortWidth;
+		float noiseRelativeWidth=noiseWidth/viewportWidth;
 
 		//Background loop noise
 		if(warpPointSecondsStart!=-1.0f)
@@ -1852,11 +1852,11 @@ Turntable_DrawWaveform
 
 		if(entireWaveArrayFillIndex>0)
 		{
-			float waveBottom=viewPortBottom;
+			float waveBottom=viewportBottom;
 			float waveTop=pointBottom;
 			float waveHeight=waveTop-waveBottom;
-			float waveLeft=viewPortLeft;
-			float waveRight=viewPortRight;
+			float waveLeft=viewportLeft;
+			float waveRight=viewportRight;
 
 			if
 			(
@@ -1937,7 +1937,7 @@ Turntable_DrawWaveform
 
 				zeroCrossingFactor=GetFreqBrightness(true,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak());
 
-				entireWaveArrayLine1Points[a*2+0]=viewPortLeft+(a/(float)entireWaveArrayCount)*viewPortWidth;
+				entireWaveArrayLine1Points[a*2+0]=viewportLeft+(a/(float)entireWaveArrayCount)*viewportWidth;
 				entireWaveArrayLine1Points[a*2+1]=LGL_Clamp
 				(
 					waveBottom,
@@ -1962,7 +1962,7 @@ Turntable_DrawWaveform
 				);
 				entireWaveArrayLine1Colors[a*4+3]=1.0f;
 
-				entireWaveArrayLine2Points[a*2+0]=viewPortLeft+(a/(float)entireWaveArrayCount)*viewPortWidth;
+				entireWaveArrayLine2Points[a*2+0]=viewportLeft+(a/(float)entireWaveArrayCount)*viewportWidth;
 				entireWaveArrayLine2Points[a*2+1]=LGL_Clamp
 				(
 					waveBottom,
@@ -2043,8 +2043,8 @@ Turntable_DrawWaveform
 						float bright=(a==savePointIndex)?1.0f:0.5f;
 						LGL_DrawLineToScreen
 						(
-							viewPortLeft+viewPortWidth*savePointPercent,waveBottom,
-							viewPortLeft+viewPortWidth*savePointPercent,waveTop,
+							viewportLeft+viewportWidth*savePointPercent,waveBottom,
+							viewportLeft+viewportWidth*savePointPercent,waveTop,
 							bright,bright,bright,1.0f,
 							(a==savePointIndex)?3.0f:1.0f,
 							false
@@ -2099,9 +2099,9 @@ Turntable_DrawWaveform
 					float pctRecall=recallPos/cachedLengthSeconds;
 					LGL_DrawLineToScreen
 					(
-						viewPortLeft+pctRecall*viewPortWidth,
+						viewportLeft+pctRecall*viewportWidth,
 						waveBottom,
-						viewPortLeft+pctRecall*viewPortWidth,
+						viewportLeft+pctRecall*viewportWidth,
 						waveTop,
 						r,g,b,a,
 						4.0f,
@@ -2109,9 +2109,9 @@ Turntable_DrawWaveform
 					);
 					LGL_DrawLineToScreen
 					(
-						viewPortLeft+pctRecall*viewPortWidth,
+						viewportLeft+pctRecall*viewportWidth,
 						waveBottom,
-						viewPortLeft+pctRecall*viewPortWidth,
+						viewportLeft+pctRecall*viewportWidth,
 						waveTop,
 						warmR,warmG,warmB,1,
 						2.0f,
@@ -2126,9 +2126,9 @@ Turntable_DrawWaveform
 				float pos=soundPositionSeconds/cachedLengthSeconds;
 				LGL_DrawLineToScreen
 				(
-					viewPortLeft+pos*viewPortWidth,
+					viewportLeft+pos*viewportWidth,
 					waveBottom,
-					viewPortLeft+pos*viewPortWidth,
+					viewportLeft+pos*viewportWidth,
 					waveTop,
 					r,g,b,a,
 					4.0f,
@@ -2136,9 +2136,9 @@ Turntable_DrawWaveform
 				);
 				LGL_DrawLineToScreen
 				(
-					viewPortLeft+pos*viewPortWidth,
+					viewportLeft+pos*viewportWidth,
 					waveBottom,
-					viewPortLeft+pos*viewPortWidth,
+					viewportLeft+pos*viewportWidth,
 					waveTop,
 					warmR*r,warmG*g,warmB*b,1,
 					2.0f,
@@ -2182,31 +2182,31 @@ Turntable_DrawWaveform
 		);
 	}
 
-	float txtCenterX=centerX+0.25f*viewPortWidth;
-	float fontWidthMax=viewPortWidth*0.45f;
+	float txtCenterX=centerX+0.25f*viewportWidth;
+	float fontWidthMax=viewportWidth*0.45f;
 	if(videoPathShort==NULL || 1)
 	{
 		txtCenterX=centerX;
-		fontWidthMax=viewPortWidth*0.9f;
+		fontWidthMax=viewportWidth*0.9f;
 	}
 
-	float fontHeight=0.05f*viewPortHeight;
+	float fontHeight=0.05f*viewportHeight;
 	float fontWidth=LGL_GetFont().GetWidthString(fontHeight,tmpStr);
 	fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
 
 	LGL_GetFont().DrawString
 	(
 		txtCenterX,
-		viewPortBottom+.925f*viewPortHeight-0.5f*fontHeight,
+		viewportBottom+.925f*viewportHeight-0.5f*fontHeight,
 		fontHeight,
 		1,1,1,1,
 		true,.5f,
 		tmpStr
 	);
 
-	fontHeight=0.05f*viewPortHeight;
+	fontHeight=0.05f*viewportHeight;
 	fontWidth=LGL_GetFont().GetWidthString(fontHeight,tmpStr);
-	fontHeight=LGL_Min(fontHeight,fontHeight*0.45f*viewPortWidth/fontWidth);
+	fontHeight=LGL_Min(fontHeight,fontHeight*0.45f*viewportWidth/fontWidth);
 
 	if(videoPathShort && 0)
 	{
@@ -2218,8 +2218,8 @@ Turntable_DrawWaveform
 
 		LGL_GetFont().DrawString
 		(
-			centerX-0.25f*viewPortWidth,
-			viewPortBottom+.925f*viewPortHeight-0.5f*fontHeight,
+			centerX-0.25f*viewportWidth,
+			viewportBottom+.925f*viewportHeight-0.5f*fontHeight,
 			fontHeight,
 			1,1,1,1,
 			true,.5f,
@@ -2245,36 +2245,36 @@ Turntable_DrawWaveform
 	}
 	LGL_GetFont().DrawString
 	(
-		viewPortLeft+.02f*viewPortWidth,
-		viewPortBottom+.80f*viewPortHeight,
-		viewPortHeight/15.0f,
+		viewportLeft+.02f*viewportWidth,
+		viewportBottom+.80f*viewportHeight,
+		viewportHeight/15.0f,
 		1,1,1,1,
 		false,.5f,
 		"Speed:"
 	);
 	LGL_GetFont().DrawString
 	(
-		viewPortLeft+.125f*viewPortWidth,
-		viewPortBottom+.80f*viewPortHeight,
-		viewPortHeight/15.0f,
+		viewportLeft+.125f*viewportWidth,
+		viewportBottom+.80f*viewportHeight,
+		viewportHeight/15.0f,
 		1,1,1,1,
 		false,.5f,
 		tmpStr
 	);
 	*/
 
-	float lft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.0075f;
-	float wth=(viewPortWidth*0.25f)/16.0f;
-	float bot=viewPortBottom+0.24f*viewPortHeight;
-	float top=bot+0.075f*viewPortHeight;
+	float lft=0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.0075f;
+	float wth=(viewportWidth*0.25f)/16.0f;
+	float bot=viewportBottom+0.24f*viewportHeight;
+	float top=bot+0.075f*viewportHeight;
 	float spc=wth*0.75f;
 
 	if(audioInputMode==false)
 	{
-		float bpmPitchL = 0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f;
-		float bpmPitchR = 0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.100f;
-		float bpmPitchB = viewPortBottom+.70f*viewPortHeight;
-		float bpmPitchT = viewPortBottom+0.85f*viewPortHeight;
+		float bpmPitchL = 0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f;
+		float bpmPitchR = 0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f+0.100f;
+		float bpmPitchB = viewportBottom+.70f*viewportHeight;
+		float bpmPitchT = viewportBottom+0.85f*viewportHeight;
 
 		if
 		(
@@ -2291,20 +2291,20 @@ Turntable_DrawWaveform
 		{
 			LGL_GetFont().DrawString
 			(
-				//viewPortLeft+.02f*viewPortWidth,
+				//viewportLeft+.02f*viewportWidth,
 				bpmPitchL,
-				viewPortBottom+.80f*viewPortHeight,
-				0.05f*viewPortHeight,
+				viewportBottom+.80f*viewportHeight,
+				0.05f*viewportHeight,
 				1,1,1,1,
 				false,.5f,
 				"BPM:"
 			);
 			LGL_GetFont().DrawString
 			(
-				//viewPortLeft+.125f*viewPortWidth,
-				0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.06f-0.0095f,
-				viewPortBottom+.80f*viewPortHeight,
-				0.05f*viewPortHeight,
+				//viewportLeft+.125f*viewportWidth,
+				0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.06f-0.0095f,
+				viewportBottom+.80f*viewportHeight,
+				0.05f*viewportHeight,
 				1,1,1,1,
 				false,.5f,
 				"%.2f",
@@ -2313,10 +2313,10 @@ Turntable_DrawWaveform
 
 			if(0 && isMaster)
 			{
-				float masterBoxLeft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.006f;
-				float masterBoxRight=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.105f;
-				float masterBoxBottom=viewPortBottom+.78f*viewPortHeight;
-				float masterBoxTop=viewPortBottom+.88f*viewPortHeight;
+				float masterBoxLeft=0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.006f;
+				float masterBoxRight=0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.105f;
+				float masterBoxBottom=viewportBottom+.78f*viewportHeight;
+				float masterBoxTop=viewportBottom+.88f*viewportHeight;
 				LGL_DrawLineToScreen
 				(
 					masterBoxLeft,
@@ -2385,20 +2385,20 @@ Turntable_DrawWaveform
 		}
 		LGL_GetFont().DrawString
 		(
-			//viewPortLeft+.02f*viewPortWidth,
+			//viewportLeft+.02f*viewportWidth,
 			bpmPitchL,
 			bpmPitchB,
-			0.05f*viewPortHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			"Pitch:"
 		);
 		LGL_GetFont().DrawString
 		(
-			//viewPortLeft+.125f*viewPortWidth,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.06f,
+			//viewportLeft+.125f*viewportWidth,
+			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.06f,
 			bpmPitchB,
-			0.05f*viewPortHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			"%s%s",
@@ -2410,10 +2410,10 @@ Turntable_DrawWaveform
 
 		//Looping
 		{
-			float loopL=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.112f;
-			float loopR=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.127f;
-			float loopB=viewPortBottom+.80f*viewPortHeight-0.010f*viewPortHeight;
-			float loopT=viewPortBottom+.80f*viewPortHeight+0.075f*viewPortHeight;
+			float loopL=0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f+0.112f;
+			float loopR=0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f+0.127f;
+			float loopB=viewportBottom+.80f*viewportHeight-0.010f*viewportHeight;
+			float loopT=viewportBottom+.80f*viewportHeight+0.075f*viewportHeight;
 			loopImage->DrawToScreen
 			(
 				loopL,loopR,
@@ -2425,7 +2425,7 @@ Turntable_DrawWaveform
 			if
 			(
 				LGL_MouseX()>=loopL &&
-				LGL_MouseX()<=viewPortRight &&
+				LGL_MouseX()<=viewportRight &&
 				LGL_MouseY()>=loopB &&
 				LGL_MouseY()<=loopT
 			)
@@ -2487,9 +2487,9 @@ Turntable_DrawWaveform
 		}
 		LGL_GetFont().DrawString
 		(
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f+0.1325f,
-			viewPortBottom+.80f*viewPortHeight,
-			0.05f*viewPortHeight,
+			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f+0.1325f,
+			viewportBottom+.80f*viewportHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			loopStr
@@ -2498,18 +2498,18 @@ Turntable_DrawWaveform
 		/*
 		LGL_GetFont().DrawString
 		(
-			viewPortLeft+.02f*viewPortWidth,
-			viewPortBottom+.60f*viewPortHeight,
-			viewPortHeight/15.0f,
+			viewportLeft+.02f*viewportWidth,
+			viewportBottom+.60f*viewportHeight,
+			viewportHeight/15.0f,
 			1,1,1,1,
 			false,.5f,
 			"Volume:"
 		);
 		LGL_GetFont().DrawString
 		(
-			viewPortLeft+.125f*viewPortWidth,
-			viewPortBottom+.60f*viewPortHeight,
-			viewPortHeight/15.0f,
+			viewportLeft+.125f*viewportWidth,
+			viewportBottom+.60f*viewportHeight,
+			viewportHeight/15.0f,
 			1,1,1,1,
 			false,.5f,
 			"%.2f",fabs((volumeMultiplierNow)*2.0f)
@@ -2554,18 +2554,18 @@ Turntable_DrawWaveform
 
 		LGL_GetFont().DrawString
 		(
-			viewPortLeft+.02f*viewPortWidth,
-			viewPortBottom+.45f*viewPortHeight,
-			viewPortHeight/15.0f,
+			viewportLeft+.02f*viewportWidth,
+			viewportBottom+.45f*viewportHeight,
+			viewportHeight/15.0f,
 			1,1,1,1,
 			false,.5f,
 			"Length:"
 		);
 		LGL_GetFont().DrawString
 		(
-			viewPortLeft+.125f*viewPortWidth,
-			viewPortBottom+.45f*viewPortHeight,
-			viewPortHeight/15.0f,
+			viewportLeft+.125f*viewportWidth,
+			viewportBottom+.45f*viewportHeight,
+			viewportHeight/15.0f,
 			1,1,1,1,
 			false,.5f,
 			tmpStr
@@ -2605,23 +2605,23 @@ Turntable_DrawWaveform
 		/*
 		LGL_GetFont().DrawString
 		(
-			//viewPortLeft+.02f*viewPortWidth,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-			viewPortBottom+.25f*viewPortHeight,
-			0.05f*viewPortHeight,
+			//viewportLeft+.02f*viewportWidth,
+			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f,
+			viewportBottom+.25f*viewportHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			"Position:"
 		);
 		*/
-		float posElapsedRemainingHeight=viewPortBottom+.15f*viewPortHeight;
+		float posElapsedRemainingHeight=viewportBottom+.15f*viewportHeight;
 		LGL_GetFont().DrawString
 		(
-			//viewPortLeft+.125f*viewPortWidth,
-			//0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
+			//viewportLeft+.125f*viewportWidth,
+			//0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.11f,
+			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f,
 			posElapsedRemainingHeight,
-			0.05f*viewPortHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			tmpStr
@@ -2629,11 +2629,11 @@ Turntable_DrawWaveform
 		
 		LGL_GetFont().DrawString
 		(
-			//viewPortLeft+.125f*viewPortWidth,
-			//0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.095f,
+			//viewportLeft+.125f*viewportWidth,
+			//0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.11f,
+			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.095f,
 			posElapsedRemainingHeight,
-			0.05f*viewPortHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			"/"
@@ -2672,10 +2672,10 @@ Turntable_DrawWaveform
 		/*
 		LGL_GetFont().DrawString
 		(
-			//viewPortLeft+.02f*viewPortWidth,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-			viewPortBottom+.15f*viewPortHeight,
-			0.05f*viewPortHeight,
+			//viewportLeft+.02f*viewportWidth,
+			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f,
+			viewportBottom+.15f*viewportHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			"Remaining:"
@@ -2683,10 +2683,10 @@ Turntable_DrawWaveform
 		*/
 		LGL_GetFont().DrawString
 		(
-			//viewPortLeft+.125f*viewPortWidth,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
+			//viewportLeft+.125f*viewportWidth,
+			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.11f,
 			posElapsedRemainingHeight,
-			0.05f*viewPortHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			tmpStr
@@ -2696,18 +2696,18 @@ Turntable_DrawWaveform
 		float percent=soundPositionSeconds/soundLengthSeconds;
 		LGL_GetFont().DrawString
 		(
-			viewPortLeft+.02f*viewPortWidth,
-			viewPortBottom+.25f*viewPortHeight,
-			viewPortHeight/15.0f,
+			viewportLeft+.02f*viewportWidth,
+			viewportBottom+.25f*viewportHeight,
+			viewportHeight/15.0f,
 			1,1,1,1,
 			false,.5f,
 			"Percent:"
 		);
 		LGL_GetFont().DrawString
 		(
-			viewPortLeft+.125f*viewPortWidth,
-			viewPortBottom+.25f*viewPortHeight,
-			viewPortHeight/15.0f,
+			viewportLeft+.125f*viewportWidth,
+			viewportBottom+.25f*viewportHeight,
+			viewportHeight/15.0f,
 			1,1,1,1,
 			false,.5f,
 			"%.2f",
@@ -2748,20 +2748,20 @@ Turntable_DrawWaveform
 		}
 		LGL_GetFont().DrawString
 		(
-			//viewPortLeft+.02f*viewPortWidth,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.009f,
-			viewPortBottom+.15f*viewPortHeight,
-			0.05f*viewPortHeight,
+			//viewportLeft+.02f*viewportWidth,
+			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f,
+			viewportBottom+.15f*viewportHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			"Remaining:"
 		);
 		LGL_GetFont().DrawString
 		(
-			//viewPortLeft+.125f*viewPortWidth,
-			0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.11f,
-			viewPortBottom+.15f*viewPortHeight,
-			0.05f*viewPortHeight,
+			//viewportLeft+.125f*viewportWidth,
+			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.11f,
+			viewportBottom+.15f*viewportHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			false,.5f,
 			tmpStr
@@ -2771,9 +2771,9 @@ Turntable_DrawWaveform
 		/*
 		LGL_GetFont().DrawString
 		(
-			pointLeft+.02f*viewPortWidth,
-			viewPortBottom+.02f*viewPortHeight,
-			viewPortHeight/15.0f,
+			pointLeft+.02f*viewportWidth,
+			viewportBottom+.02f*viewportHeight,
+			viewportHeight/15.0f,
 			1,1,1,1,
 			false,.5f,
 			"Save Points:"
@@ -2981,8 +2981,8 @@ Turntable_DrawWaveform
 				LGL_GetFont().DrawString
 				(
 					lft+i*wth+.6f*spc,
-					bot+0.25f*0.05f*viewPortHeight,//+0.0275f*viewPortHeight,
-					0.05f*viewPortHeight,
+					bot+0.25f*0.05f*viewportHeight,//+0.0275f*viewportHeight,
+					0.05f*viewportHeight,
 					0.25f+0.75f*savePointSetScalar,
 					0.25f+0.75f*savePointSetScalar,
 					0.25f+0.75f*savePointSetScalar,
@@ -2998,10 +2998,10 @@ Turntable_DrawWaveform
 	Turntable_DrawSliders
 	(
 		which,
-		viewPortLeft,
-		viewPortRight,
-		viewPortBottom,
-		viewPortTop,
+		viewportLeft,
+		viewportRight,
+		viewportBottom,
+		viewportTop,
 		eq0,
 		eq1,
 		eq2,
@@ -3016,10 +3016,10 @@ void
 Turntable_DrawSliders
 (
 	int		which,
-	float		viewPortLeft,
-	float		viewPortRight,
-	float		viewPortBottom,
-	float		viewPortTop,
+	float		viewportLeft,
+	float		viewportRight,
+	float		viewportBottom,
+	float		viewportTop,
 	float		eq0,
 	float		eq1,
 	float		eq2,
@@ -3029,8 +3029,8 @@ Turntable_DrawSliders
 	float		freqSenseBrightness
 )
 {
-	float viewPortWidth = viewPortRight - viewPortLeft;
-	float viewPortHeight = viewPortTop - viewPortBottom;
+	float viewportWidth = viewportRight - viewportLeft;
+	float viewportHeight = viewportTop - viewportBottom;
 
 	float coolR;
 	float coolG;
@@ -3042,17 +3042,17 @@ Turntable_DrawSliders
 	float warmB;
 	GetColorWarm(warmR,warmG,warmB);
 
-	float lft=0.5f+0.5f*viewPortWidth*WAVE_WIDTH_PERCENT+0.0075f;
-	float wth=(viewPortWidth*0.25f)/16.0f;
-	//float bot=viewPortBottom+0.24f*viewPortHeight;
-	//float top=bot+0.075f*viewPortHeight;
+	float lft=0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.0075f;
+	float wth=(viewportWidth*0.25f)/16.0f;
+	//float bot=viewportBottom+0.24f*viewportHeight;
+	//float top=bot+0.075f*viewportHeight;
 	float spc=wth*0.75f;
 	float eq[3];
 	
-	float sliderB=viewPortBottom+(0.5f-0.075f/2.0f)*viewPortHeight+spc*(-1);
-	float sliderT=viewPortBottom+(0.5f+0.075f/2.0f)*viewPortHeight+spc*(2.5f);
+	float sliderB=viewportBottom+(0.5f-0.075f/2.0f)*viewportHeight+spc*(-1);
+	float sliderT=viewportBottom+(0.5f+0.075f/2.0f)*viewportHeight+spc*(2.5f);
 
-	float textB=sliderB-0.075f*viewPortHeight;
+	float textB=sliderB-0.075f*viewportHeight;
 	
 	eq[0]=0.5f*eq0;
 	eq[1]=0.5f*eq1;
@@ -3239,7 +3239,7 @@ Turntable_DrawSliders
 		(
 			sliderL+0.5f*spc,
 			textB,
-			0.05f*viewPortHeight,
+			0.05f*viewportHeight,
 			1,1,1,1,
 			true,
 			0.75f,

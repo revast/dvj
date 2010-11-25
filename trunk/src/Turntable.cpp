@@ -3322,10 +3322,6 @@ LGL_ClipRectEnable(ViewportLeft,ViewportRight,ViewportBottom,ViewportTop);
 				volBack*vol
 			);
 		}
-		else
-		{
-			LGL_Assert(LGL_AudioChannels()==2 || LGL_AudioChannels()==4 || LGL_AudioChannels()==6);
-		}
 	}
 
 	WhiteFactor = LGL_Max(0.0f,WhiteFactor-4.0f*LGL_Min(LGL_SecondsSinceLastFrame(),1.0f/60.0f));
@@ -5272,6 +5268,18 @@ GetSoundLoadedFully()
 		Sound!=NULL &&
 		Sound->IsLoaded()
 	);
+}
+
+float
+TurntableObj::
+GetSoundPositionPercent()
+{
+	if(GetSoundLoaded()==false)
+	{
+		return(0.0f);
+	}
+
+	return(Sound->GetPositionSeconds(Channel)/Sound->GetLengthSeconds());
 }
 
 int
