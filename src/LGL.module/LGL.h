@@ -468,7 +468,7 @@ private:
 
 //Video
 
-void		LGL_SwapBuffers(bool endFrame=true);
+void		LGL_SwapBuffers(bool endFrame=true, bool clearBackBuffer=true);
 void		LGL_FullScreenToggle();
 void		LGL_FullScreen(bool inFullScreen);
 bool		LGL_IsFullScreen();
@@ -592,13 +592,13 @@ bool		LGL_ShaderAvailableVert();
 bool		LGL_ShaderAvailableFrag();
 
 
-class LGL_ShaderObj
+class LGL_Shader
 {
 
 public:
 
-			LGL_ShaderObj(char* inDescription);
-			~LGL_ShaderObj();
+			LGL_Shader(char* inDescription);
+			~LGL_Shader();
 
 	char*		GetDescription();
 	void		SetDescription(char* inDescription);
@@ -610,6 +610,7 @@ public:
 	bool		FragCompiled();
 
 	bool		Link();
+	bool		IsLinked();
 
 	bool		Enable(bool enable=true);
 	bool		Disable();

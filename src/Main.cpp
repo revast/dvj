@@ -922,14 +922,9 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			LGL_SwapBuffers(false);
+			LGL_SwapBuffers(false,false);
 			LGL_SetActiveDisplay(1);
-			LGL_DrawRectToScreen
-			(
-				0,1,
-				0,1,
-				0,0,0,1
-			);
+			LGL_ClearBackBuffer();
 			if(0)
 			{
 				DrawFrame(false);
@@ -944,14 +939,9 @@ int main(int argc, char** argv)
 				float top=1.0f;
 				Visualizer->SetViewportVisuals(left,right,bottom,top);
 			}
-			LGL_SwapBuffers();
+			LGL_SwapBuffers(true,false);
 			LGL_SetActiveDisplay(0);
-			LGL_DrawRectToScreen
-			(
-				0,1,
-				0,1,
-				0,0,0,1
-			);
+			LGL_ClearBackBuffer();
 		}
 	}
 }
