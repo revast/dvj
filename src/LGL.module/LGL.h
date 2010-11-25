@@ -468,7 +468,7 @@ private:
 
 //Video
 
-void		LGL_SwapBuffers();
+void		LGL_SwapBuffers(bool endFrame=true);
 void		LGL_FullScreenToggle();
 void		LGL_FullScreen(bool inFullScreen);
 bool		LGL_IsFullScreen();
@@ -484,12 +484,12 @@ int		LGL_GetActiveDisplay();
 void		LGL_SetActiveDisplay(int display);
 bool		LGL_VSync();
 
-void		LGL_ViewPortDisplay
+void		LGL_ViewportDisplay
 		(
 			float left=0,	float right=1,
 			float bottom=0,	float top=1
 		);
-void		LGL_GetViewPortDisplay
+void		LGL_GetViewportDisplay
 		(
 			float&	left,	float&	right,
 			float&	bottom,	float&	top
@@ -546,7 +546,7 @@ void		LGL_DrawRectToScreen
 			float rotation=0
 		);
 
-void		LGL_ViewPortWorld
+void		LGL_ViewportWorld
 		(
 			float EyeX,	float EyeY,	float EyeZ,
 			float TargetX,	float TargetY,	float TargetZ,
@@ -845,7 +845,7 @@ public:
 	void		UpdatePixelBufferObjects();
 	void		DeletePixelBufferObjects();
 	void		FrameBufferUpdate();
-	void		FrameBufferViewPort
+	void		FrameBufferViewport
 			(
 				float	left,	float	right,
 				float	bottom,	float	top

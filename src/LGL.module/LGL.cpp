@@ -248,34 +248,36 @@ typedef struct
 	int			DisplayResolutionX[LGL_DISPLAY_MAX];
 	int			DisplayResolutionY[LGL_DISPLAY_MAX];
 	int			DisplayRefreshRate[LGL_DISPLAY_MAX];
-	int			WindowResolutionX;
-	int			WindowResolutionY;
+	int			WindowResolutionX[LGL_DISPLAY_MAX];
+	int			WindowResolutionY[LGL_DISPLAY_MAX];
 	bool			WindowFullscreen;
 	bool			VSync;
 
-	SDL_WindowID		WindowID;
+	SDL_WindowID		WindowID[LGL_DISPLAY_MAX];
 	SDL_GLContext		GLContext;
-	//SDL_Surface*		GLVideoSurface;
+	SDL_WindowID		MasterWindowID;
+	int			MasterWindowResolutionX;
+	int			MasterWindowResolutionY;
 
-	float			DisplayViewPortLeft[LGL_DISPLAY_MAX];
-	float			DisplayViewPortRight[LGL_DISPLAY_MAX];
-	float			DisplayViewPortBottom[LGL_DISPLAY_MAX];
-	float			DisplayViewPortTop[LGL_DISPLAY_MAX];
+	float			DisplayViewportLeft[LGL_DISPLAY_MAX];
+	float			DisplayViewportRight[LGL_DISPLAY_MAX];
+	float			DisplayViewportBottom[LGL_DISPLAY_MAX];
+	float			DisplayViewportTop[LGL_DISPLAY_MAX];
 
-	float			ViewPortLeft;
-	float			ViewPortRight;
-	float			ViewPortBottom;
-	float			ViewPortTop;
+	float			ViewportLeft;
+	float			ViewportRight;
+	float			ViewportBottom;
+	float			ViewportTop;
 
-	float			ViewPortEyeX;
-	float			ViewPortEyeY;
-	float			ViewPortEyeZ;
-	float			ViewPortTargetX;
-	float			ViewPortTargetY;
-	float			ViewPortTargetZ;
-	float			ViewPortUpX;
-	float			ViewPortUpY;
-	float			ViewPortUpZ;
+	float			ViewportEyeX;
+	float			ViewportEyeY;
+	float			ViewportEyeZ;
+	float			ViewportTargetX;
+	float			ViewportTargetY;
+	float			ViewportTargetZ;
+	float			ViewportUpX;
+	float			ViewportUpY;
+	float			ViewportUpZ;
 
 	int			GPUSpeed;
 	int			GPUTemp;
@@ -1580,8 +1582,8 @@ LGL_Init
 	LGL.HomeDir[0]='\0';
 	LGL.Username[0]='\0';
 	
-	LGL_ViewPortDisplay(0,1,0,1);
-	LGL_ViewPortWorld
+	LGL_ViewportDisplay(0,1,0,1);
+	LGL_ViewportWorld
 	(
 		1,1,1,
 		0,0,0,
@@ -1683,104 +1685,72 @@ LGL_Init
 
 printf("%i screens!\n",LGL.DisplayCount);
 
-	for(int a=0;a<LGL.DisplayCount;a++)
+	for(int d=0;d<LGL.DisplayCount;d++)
 	{
-		SDL_SelectVideoDisplay(a);
+		SDL_SelectVideoDisplay(d);
 		SDL_DisplayMode mode;
 		SDL_GetDesktopDisplayMode(&mode);
 
-		LGL.DisplayResolutionX[a] = mode.w;
-		LGL.DisplayResolutionY[a] = mode.h;
+		LGL.DisplayResolutionX[d] = mode.w;
+		LGL.DisplayResolutionY[d] = mode.h;
 
-/*
-if(a==1)
-{
-	LGL.DisplayResolutionY[a]/=3;
-}
-*/
+		LGL.DisplayRefreshRate[d] = mode.refresh_rate ? mode.refresh_rate : 60;
 
-		LGL.DisplayRefreshRate[a] = mode.refresh_rate ? mode.refresh_rate : 60;
-
-printf("\tScreen[%i]: %i x %i\n",a,
-	LGL.DisplayResolutionX[a],
-	LGL.DisplayResolutionY[a]
-);
 		SDL_DisplayMode displayMode;
-		SDL_GetWindowDisplayMode(LGL.WindowID,&displayMode);
-		displayMode.w=LGL.DisplayResolutionX[a];
-		displayMode.h=LGL.DisplayResolutionY[a];
+		SDL_GetWindowDisplayMode(LGL.WindowID[d],&displayMode);
+		displayMode.w=LGL.DisplayResolutionX[d];
+		displayMode.h=LGL.DisplayResolutionY[d];
 		displayMode.refresh_rate=60;
-		SDL_SetWindowDisplayMode(LGL.WindowID,&displayMode);
+		SDL_SetWindowDisplayMode(LGL.WindowID[d],&displayMode);
 	}
 
 	SDL_SelectVideoDisplay(0);
 
-	if
-	(
-		inWindowResolutionX==9999 &&
-		inWindowResolutionY==9999
-	)
+	//Determine WindowResolutions
+	LGL.MasterWindowResolutionX=0;
+	LGL.MasterWindowResolutionY=0;
+	for(int d=0;d<LGL.DisplayCount;d++)
 	{
-		if(LGL.DisplayCount==1)
+		if(d==0)
 		{
-			LGL.WindowResolutionX=LGL_DisplayResolutionX();
-			LGL.WindowResolutionY=LGL_DisplayResolutionY()-100;
+			if
+			(
+				inWindowResolutionX==9999 &&
+				inWindowResolutionY==9999
+			)
+			{
+				LGL.WindowResolutionX[d]=LGL_DisplayResolutionX();
+				LGL.WindowResolutionY[d]=LGL_DisplayResolutionY()-100;
+			}
+			else
+			{
+				LGL.WindowFullscreen=false;
+				LGL.WindowResolutionX[d]=inWindowResolutionX;
+				LGL.WindowResolutionY[d]=inWindowResolutionY;
+			}
 		}
 		else
 		{
-			LGL.WindowFullscreen=true;
-			LGL.WindowResolutionX=0;
-			LGL.WindowResolutionY=0;
-			for(int a=0;a<LGL.DisplayCount;a++)
-			{
-				LGL.WindowResolutionX+=LGL.DisplayResolutionX[a];
-				LGL.WindowResolutionY=LGL_Max
-				(
-					LGL.WindowResolutionY,
-					LGL.DisplayResolutionY[a]
-				);
-			}
+			LGL.WindowResolutionX[d]=LGL_DisplayResolutionX();
+			LGL.WindowResolutionY[d]=LGL_DisplayResolutionY();
 		}
-	}
-	else
-	{
-		LGL.WindowFullscreen=false;
-		LGL.WindowResolutionX=inWindowResolutionX;
-		LGL.WindowResolutionY=inWindowResolutionY;
-	}
 
-	for(int a=0;a<LGL.DisplayCount;a++)
-	{
-		LGL.DisplayViewPortLeft[a]=0;
-		for(int b=0;b<a;b++)
+		if(LGL.MasterWindowResolutionX<LGL.WindowResolutionX[d])
 		{
-			LGL.DisplayViewPortLeft[a]+=LGL.WindowFullscreen ? LGL.DisplayResolutionX[b] : LGL.WindowResolutionX;
+			LGL.MasterWindowResolutionX=LGL.WindowResolutionX[d];
 		}
-		LGL.DisplayViewPortRight[a]=LGL.DisplayViewPortLeft[a]+(LGL.WindowFullscreen ? LGL.DisplayResolutionX[a] : LGL.WindowResolutionX);
-		LGL.DisplayViewPortLeft[a]/=LGL.WindowResolutionX;
-		LGL.DisplayViewPortRight[a]/=LGL.WindowResolutionX;
-
-#ifdef	LGL_OSX
-		if
-		(
-			a==0 &&
-			LGL.WindowFullscreen &&
-			LGL.DisplayCount > 1
-		)
+		if(LGL.MasterWindowResolutionY<LGL.WindowResolutionY[d])
 		{
-			//LGL.DisplayResolutionY[a]-=70;	//OSX Dock
+			LGL.MasterWindowResolutionY=LGL.WindowResolutionY[d];
 		}
-#endif	//LGL_OSX
-		LGL.DisplayViewPortBottom[a]=(LGL.WindowResolutionY-LGL.DisplayResolutionY[a])/(float)LGL.WindowResolutionY;
-		LGL.DisplayViewPortTop[a]=1.0f;
 	}
 
-	if(LGL.WindowFullscreen==false)
+	for(int d=0;d<LGL.DisplayCount;d++)
 	{
-		LGL.DisplayViewPortLeft[0]=0.0f;
-		LGL.DisplayViewPortRight[0]=1.0f;
-		LGL.DisplayViewPortBottom[0]=0.0f;
-		LGL.DisplayViewPortTop[0]=1.0f;
+		LGL.DisplayViewportLeft[d]=0.0f;
+		LGL.DisplayViewportRight[d]=LGL.WindowResolutionX[d]/(float)LGL.MasterWindowResolutionX;
+		LGL.DisplayViewportBottom[d]=0.0f;
+		LGL.DisplayViewportTop[d]=LGL.WindowResolutionY[d]/(float)LGL.MasterWindowResolutionY;
 	}
 
 #endif	//LGL_NO_GRAPHICS
@@ -2015,70 +1985,63 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	//Initialize Video
 
 #ifndef	LGL_NO_GRAPHICS
-	SDL_SelectVideoDisplay(0);
 
-	int windowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
-	if(LGL.WindowFullscreen)
+	for(int d=LGL.DisplayCount-1;d>=0;d--)
 	{
-		if(LGL.DisplayCount>1)
+		SDL_SelectVideoDisplay(d);
+
+		int windowFlags = SDL_WINDOW_OPENGL;// | SDL_WINDOW_SHOWN;
+		if(d>0)
 		{
 			windowFlags |= SDL_WINDOW_BORDERLESS;
 		}
-		else
+		/*
+		if(LGL.WindowFullscreen)
 		{
 			windowFlags |= SDL_WINDOW_FULLSCREEN;
 			windowFlags |= SDL_WINDOW_BORDERLESS;
 		}
+		*/
+
+		LGL.WindowID[d] = SDL_CreateWindow
+		(
+			inWindowTitle,
+			SDL_WINDOWPOS_CENTERED,
+			SDL_WINDOWPOS_CENTERED,
+			LGL.WindowResolutionX[d],
+			LGL.WindowResolutionY[d],
+			windowFlags
+		);
+
+		if(LGL.WindowID[d]==0)
+		{
+			printf
+			(
+				"LGL_Init(): SDL_SetVideoMode \
+				(%i,%i) failed for display %i... %s\n",
+				LGL.WindowResolutionX[d],
+				LGL.WindowResolutionY[d],
+				d,
+				SDL_GetError()
+			);
+			return(false);
+		}
 	}
-	LGL.WindowID = SDL_CreateWindow
+
+	SDL_SelectVideoDisplay(0);
+	LGL.MasterWindowID = SDL_CreateWindow
 	(
 		inWindowTitle,
-		LGL.WindowFullscreen ? 0 : SDL_WINDOWPOS_CENTERED,
-		LGL.WindowFullscreen ? 0 : SDL_WINDOWPOS_CENTERED,
-		LGL.WindowResolutionX,
-		LGL.WindowResolutionY,
-		windowFlags
+		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED,
+		LGL.MasterWindowResolutionX,
+		LGL.MasterWindowResolutionY,
+		SDL_WINDOW_OPENGL// | SDL_WINDOW_SHOWN
 	);
-
-	if(LGL.WindowID==0)
-	{
-		printf
-		(
-			"LGL_Init(): SDL_SetVideoMode \
-			(%i,%i) failed... %s\n",
-			LGL.WindowResolutionX,
-			LGL.WindowResolutionY,
-			SDL_GetError()
-		);
-		return(false);
-	}
-	else
-	{
-		LGL.GLContext = SDL_GL_CreateContext(LGL.WindowID);
-		SDL_GL_MakeCurrent(LGL.WindowID, LGL.GLContext);
-		/*
-		LGL.GLVideoSurface =
-			SDL_CreateRGBSurfaceFrom
-			(
-				NULL,
-				LGL.WindowResolutionX,
-				LGL.WindowResolutionY,
-				32,
-				0, 0, 0, 0, 0
-			);
-		int surface_flags=SDL_OPENGL;
-		if(LGL.WindowFullscreen)
-		{
-			surface_flags |= SDL_FULLSCREEN;
-		}
-		LGL.GLVideoSurface->flags |= surface_flags;
-		*/
-	}
+	LGL.GLContext = SDL_GL_CreateContext(LGL.MasterWindowID);
+	SDL_GL_MakeCurrent(LGL.WindowID[0], LGL.GLContext);
 
 	//GL Settings
-
-	LGL.VSync = (LGL.WindowFullscreen && LGL.DisplayCount>1) ? false : true;
-	SDL_GL_SetSwapInterval(LGL_VSync());	//VSYNC
 
 	glDrawBuffer(GL_BACK);
 	glReadBuffer(GL_FRONT);
@@ -2177,6 +2140,14 @@ printf("\tScreen[%i]: %i x %i\n",a,
 	gl2DeleteBuffers=		(gl2DeleteBuffers_Func)SDL_GL_GetProcAddress
 					("glDeleteBuffers");
 #endif	//LGL_NO_GRAPHICS
+
+	for(int d=LGL.DisplayCount-1;d>=0;d--)
+	{
+		LGL_SetActiveDisplay(d);
+		LGL_SwapBuffers();
+		LGL_SwapBuffers();
+		SDL_ShowWindow(LGL.WindowID[d]);
+	}
 
 	//Video Decoding via avcodec
 	lgl_av_register_all();
@@ -3279,7 +3250,7 @@ int lgl_font_gl_buffer_int[FONT_BUFFER_SIZE];
 int* lgl_font_gl_buffer_int_ptr;
 
 void
-LGL_SwapBuffers()
+lgl_EndFrame()
 {
 	if(lgl_lgl_initialized && LGL.AudioOutCallbackTimer.SecondsSinceLastReset()>1.0f)
 	{
@@ -3696,21 +3667,6 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 		LGL_GetJP8k()->LGL_INTERNAL_SwapBuffers();
 	}
 
-#ifdef	LGL_NO_GRAPHICS
-	LGL_DelaySeconds(1.0f/60.0f-LGL_SecondsSinceThisFrame());
-#else
-	//SDL_GL_SwapBuffers();
-	if
-	(
-		LGL.FPSMax < LGL_DisplayRefreshRate()
-	)
-	{
-		LGL_DelaySeconds(1.0f/LGL.FPSMax-LGL_SecondsSinceThisFrame());
-	}
-
-	SDL_GL_SwapWindow(LGL.WindowID);
-#endif	//LGL_NO_GRAPHICS
-
 	lgl_font_gl_buffer_ptr = &(lgl_font_gl_buffer[0]);
 	lgl_font_gl_buffer_int_ptr = &(lgl_font_gl_buffer_int[0]);
 
@@ -3763,7 +3719,7 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 #endif	//LGL_LINUX
 	}
 
-	LGL_ClearBackBuffer();
+	//LGL_ClearBackBuffer();
 
 	if(LGL.RecordMovie)
 	{
@@ -3797,6 +3753,60 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 		}
 		LGL.FPSGraph[59]=1.0/LGL.SecondsSinceLastFrame;
 		LGL.FPSGraphTimer.Reset();
+	}
+}
+
+void
+LGL_SwapBuffers(bool endFrame)
+{
+#ifdef	LGL_NO_GRAPHICS
+	LGL_DelaySeconds(1.0f/60.0f-LGL_SecondsSinceThisFrame());
+#else
+	if
+	(
+		LGL.FPSMax < LGL_DisplayRefreshRate()
+	)
+	{
+		LGL_DelaySeconds(1.0f/LGL.FPSMax-LGL_SecondsSinceThisFrame());
+	}
+
+	{
+		bool vsync=endFrame;//true;
+		/*
+		if(LGL.DisplayNow==0 && LGL.DisplayCount>0)
+		{
+			vsync=false;
+		}
+		*/
+		SDL_GL_SetSwapInterval(vsync);	//VSYNC
+		SDL_GL_SwapWindow(LGL.WindowID[LGL.DisplayNow]);
+		LGL_ClearBackBuffer();
+		/*
+		int activeDisplayPrev=LGL_GetActiveDisplay();
+		for(int d=0;d<LGL.DisplayCount;d++)
+		{
+			LGL_SetActiveDisplay(d);
+			bool vsync=true;
+			if(d==0 && LGL.DisplayCount>0)
+			{
+				vsync=false;
+			}
+			SDL_GL_SetSwapInterval(vsync);	//VSYNC
+			SDL_GL_SwapWindow(LGL.WindowID[d]);
+			LGL_ClearBackBuffer();
+		}
+		LGL_SetActiveDisplay(activeDisplayPrev);
+		*/
+	}
+
+#endif	//LGL_NO_GRAPHICS
+
+	if(endFrame)
+	{
+		int activeDisplayPrev=LGL_GetActiveDisplay();
+		LGL_SetActiveDisplay(0);
+		lgl_EndFrame();
+		LGL_SetActiveDisplay(activeDisplayPrev);
 	}
 }
 
@@ -3848,13 +3858,13 @@ LGL_IsFullScreen()
 int
 LGL_WindowResolutionX()
 {
-	return(LGL.WindowResolutionX);
+	return(LGL.WindowResolutionX[LGL.DisplayNow]);
 }
 
 int
 LGL_WindowResolutionY()
 {
-	return(LGL.WindowResolutionY);
+	return(LGL.WindowResolutionY[LGL.DisplayNow]);
 }
 
 int
@@ -3898,8 +3908,8 @@ LGL_WindowAspectRatio()
 {
 	return
 	(
-		LGL.WindowResolutionX/(float)
-		LGL.WindowResolutionY
+		LGL.WindowResolutionX[LGL.DisplayNow]/(float)
+		LGL.WindowResolutionY[LGL.DisplayNow]
 	);
 }
 
@@ -3929,12 +3939,14 @@ LGL_SetActiveDisplay(int display)
 	display=(int)(LGL_Clamp(0,display,LGL.DisplayCount-1));
 	LGL.DisplayNow=display;
 
-	float left=	(0.0f-LGL.DisplayViewPortLeft[display])*(1.0f/(LGL.DisplayViewPortRight[display]-LGL.DisplayViewPortLeft[display]));
-	float right=	(1.0f-LGL.DisplayViewPortLeft[display])*(1.0f/(LGL.DisplayViewPortRight[display]-LGL.DisplayViewPortLeft[display]));
-	float bottom=	(0.0f-LGL.DisplayViewPortBottom[display])*(1.0f/(LGL.DisplayViewPortTop[display]-LGL.DisplayViewPortBottom[display]));
-	float top=	(1.0f-LGL.DisplayViewPortBottom[display])*(1.0f/(LGL.DisplayViewPortTop[display]-LGL.DisplayViewPortBottom[display]));
+	SDL_GL_MakeCurrent(LGL.WindowID[LGL.DisplayNow], LGL.GLContext);
 
-	LGL_ViewPortDisplay
+	float left=	(0.0f-LGL.DisplayViewportLeft[display])*(1.0f/(LGL.DisplayViewportRight[display]-LGL.DisplayViewportLeft[display]));
+	float right=	(1.0f-LGL.DisplayViewportLeft[display])*(1.0f/(LGL.DisplayViewportRight[display]-LGL.DisplayViewportLeft[display]));
+	float bottom=	(0.0f-LGL.DisplayViewportBottom[display])*(1.0f/(LGL.DisplayViewportTop[display]-LGL.DisplayViewportBottom[display]));
+	float top=	(1.0f-LGL.DisplayViewportBottom[display])*(1.0f/(LGL.DisplayViewportTop[display]-LGL.DisplayViewportBottom[display]));
+
+	LGL_ViewportDisplay
 	(
 		left,
 		right,
@@ -3955,7 +3967,7 @@ lgl_glScreenify2D()
 {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	glOrtho(LGL.ViewPortLeft,LGL.ViewPortRight,LGL.ViewPortBottom,LGL.ViewPortTop,0,1);
+	glOrtho(LGL.ViewportLeft,LGL.ViewportRight,LGL.ViewportBottom,LGL.ViewportTop,0,1);
 }
 
 void
@@ -3971,9 +3983,9 @@ lgl_glScreenify3D()
 	/*
 	gluLookAt
 	(
-		LGL.ViewPortEyeX,LGL.ViewPortEyeY,LGL.ViewPortEyeZ,
-		LGL.ViewPortTargetX,LGL.ViewPortTargetY,LGL.ViewPortTargetZ,
-		LGL.ViewPortUpX,LGL.ViewPortUpY,LGL.ViewPortUpZ
+		LGL.ViewportEyeX,LGL.ViewportEyeY,LGL.ViewportEyeZ,
+		LGL.ViewportTargetX,LGL.ViewportTargetY,LGL.ViewportTargetZ,
+		LGL.ViewportUpX,LGL.ViewportUpY,LGL.ViewportUpZ
 	);
 	*/
 	printf("lgl_glScreenify3D(): Warning! Function not yet implemented in linux...\n");
@@ -3984,7 +3996,7 @@ lgl_glScreenify3D()
 }
 
 void
-LGL_ViewPortDisplay
+LGL_ViewportDisplay
 (
 	float	left,
 	float	right,
@@ -3996,21 +4008,21 @@ LGL_ViewPortDisplay
 	{
 		LGL_DrawLogWrite
 		(
-			"LGL_ViewPortDisplay|%.3f|%.3f|%.3f|%.3f\n",
+			"LGL_ViewportDisplay|%.3f|%.3f|%.3f|%.3f\n",
 			left,
 			right,
 			bottom,
 			top
 		);
 	}
-	LGL.ViewPortLeft=left;
-	LGL.ViewPortRight=right;
-	LGL.ViewPortBottom=bottom;
-	LGL.ViewPortTop=top;
+	LGL.ViewportLeft=left;
+	LGL.ViewportRight=right;
+	LGL.ViewportBottom=bottom;
+	LGL.ViewportTop=top;
 }
 
 void
-LGL_GetViewPortDisplay
+LGL_GetViewportDisplay
 (
 	float&	left,
 	float&	right,
@@ -4018,10 +4030,10 @@ LGL_GetViewPortDisplay
 	float&	top
 )
 {
-	left=LGL.ViewPortLeft;
-	right=LGL.ViewPortRight;
-	bottom=LGL.ViewPortBottom;
-	top=LGL.ViewPortTop;
+	left=LGL.ViewportLeft;
+	right=LGL.ViewportRight;
+	bottom=LGL.ViewportBottom;
+	top=LGL.ViewportTop;
 }
 
 void
@@ -4046,25 +4058,25 @@ LGL_ClipRectEnable
 		LGL.DrawLog.push_back(neo);
 	}
 
-	int sLeft = LGL.WindowResolutionX*(LGL.DisplayViewPortLeft[LGL.DisplayNow] + left *
+	int sLeft = LGL.WindowResolutionX[LGL.DisplayNow]*(LGL.DisplayViewportLeft[LGL.DisplayNow] + left *
 		(
-			LGL.DisplayViewPortRight[LGL.DisplayNow] -
-			LGL.DisplayViewPortLeft[LGL.DisplayNow]
+			LGL.DisplayViewportRight[LGL.DisplayNow] -
+			LGL.DisplayViewportLeft[LGL.DisplayNow]
 		));
-	int sRight = LGL.WindowResolutionX*(LGL.DisplayViewPortLeft[LGL.DisplayNow] + right *
+	int sRight = LGL.WindowResolutionX[LGL.DisplayNow]*(LGL.DisplayViewportLeft[LGL.DisplayNow] + right *
 		(
-			LGL.DisplayViewPortRight[LGL.DisplayNow] -
-			LGL.DisplayViewPortLeft[LGL.DisplayNow]
+			LGL.DisplayViewportRight[LGL.DisplayNow] -
+			LGL.DisplayViewportLeft[LGL.DisplayNow]
 		));
-	int sBottom = LGL.WindowResolutionY*(LGL.DisplayViewPortBottom[LGL.DisplayNow] + bottom *
+	int sBottom = LGL.WindowResolutionY[LGL.DisplayNow]*(LGL.DisplayViewportBottom[LGL.DisplayNow] + bottom *
 		(
-			LGL.DisplayViewPortTop[LGL.DisplayNow] -
-			LGL.DisplayViewPortBottom[LGL.DisplayNow]
+			LGL.DisplayViewportTop[LGL.DisplayNow] -
+			LGL.DisplayViewportBottom[LGL.DisplayNow]
 		));
-	int sTop = LGL.WindowResolutionY*(LGL.DisplayViewPortBottom[LGL.DisplayNow] + top *
+	int sTop = LGL.WindowResolutionY[LGL.DisplayNow]*(LGL.DisplayViewportBottom[LGL.DisplayNow] + top *
 		(
-			LGL.DisplayViewPortTop[LGL.DisplayNow] -
-			LGL.DisplayViewPortBottom[LGL.DisplayNow]
+			LGL.DisplayViewportTop[LGL.DisplayNow] -
+			LGL.DisplayViewportBottom[LGL.DisplayNow]
 		));
 
 	glEnable(GL_SCISSOR_TEST);
@@ -4082,10 +4094,10 @@ LGL_ClipRectEnable
 	{
 		glScissor
 		(
-			(int)(left*LGL.WindowResolutionX),
-			(int)(bottom*LGL.WindowResolutionY),
-			(int)((right-left)*LGL.WindowResolutionX),
-			(int)((top-bottom)*LGL.WindowResolutionY)
+			(int)(left*LGL.WindowResolutionX[LGL.DisplayNow]),
+			(int)(bottom*LGL.WindowResolutionY[LGL.DisplayNow]),
+			(int)((right-left)*LGL.WindowResolutionX[LGL.DisplayNow]),
+			(int)((top-bottom)*LGL.WindowResolutionY[LGL.DisplayNow])
 		);
 	}
 }
@@ -4605,24 +4617,24 @@ LGL_DrawRectToScreen
 }
 
 void
-LGL_ViewPortWorld
+LGL_ViewportWorld
 (
 	float EyeX, float EyeY, float EyeZ,
 	float TargetX, float TargetY, float TargetZ,
 	float UpX, float UpY, float UpZ
 )
 {
-	LGL.ViewPortEyeX=EyeX;
-	LGL.ViewPortEyeY=EyeY;
-	LGL.ViewPortEyeZ=EyeZ;
+	LGL.ViewportEyeX=EyeX;
+	LGL.ViewportEyeY=EyeY;
+	LGL.ViewportEyeZ=EyeZ;
 	
-	LGL.ViewPortTargetX=TargetX;
-	LGL.ViewPortTargetY=TargetY;
-	LGL.ViewPortTargetZ=TargetZ;
+	LGL.ViewportTargetX=TargetX;
+	LGL.ViewportTargetY=TargetY;
+	LGL.ViewportTargetZ=TargetZ;
 	
-	LGL.ViewPortUpX=UpX;
-	LGL.ViewPortUpY=UpY;
-	LGL.ViewPortUpZ=UpZ;
+	LGL.ViewportUpX=UpX;
+	LGL.ViewportUpY=UpY;
+	LGL.ViewportUpZ=UpZ;
 }
 
 void
@@ -6050,10 +6062,10 @@ LGL_Image
 
 	FrameBufferImage=true;
 	ReadFromFrontBuffer=inReadFromFrontBuffer;
-	FrameBufferViewPort(left,right,bottom,top);
+	FrameBufferViewport(left,right,bottom,top);
 
-	TexW=LGL_NextPowerOfTwo(LGL.WindowResolutionX);
-	TexH=LGL_NextPowerOfTwo(LGL.WindowResolutionY);
+	TexW=LGL_NextPowerOfTwo(LGL.WindowResolutionX[LGL.DisplayNow]);
+	TexH=LGL_NextPowerOfTwo(LGL.WindowResolutionY[LGL.DisplayNow]);
 	TextureGL=0;
 	TextureGLMine=true;
 
@@ -6153,8 +6165,8 @@ DrawToScreen
 				neo,
 				"fbd|%i|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f\n",
 				ReadFromFrontBuffer?1:0,
-				LeftInt/(float)LGL.WindowResolutionX,BottomInt/(float)LGL.WindowResolutionY,
-				WidthInt/(float)LGL.WindowResolutionX,HeightInt/(float)LGL.WindowResolutionY,
+				LeftInt/(float)LGL.WindowResolutionX[LGL.DisplayNow],BottomInt/(float)LGL.WindowResolutionY[LGL.DisplayNow],
+				WidthInt/(float)LGL.WindowResolutionX[LGL.DisplayNow],HeightInt/(float)LGL.WindowResolutionY[LGL.DisplayNow],
 				left,right,
 				bottom,top,
 				rotation,
@@ -6690,7 +6702,7 @@ DrawToScreen
 //FIXME: FrameBufferImage UGLY fudge factor, due to lousy nVidia Drivers
 				if(LGL.FrameBufferTextureGlitchFix)
 				{
-					d=-0.05/LGL.WindowResolutionX;
+					d=-0.05/LGL.WindowResolutionX[LGL.DisplayNow];
 				}
 //#endif	//LGL_LINUX
 				glTexCoord2d
@@ -7309,7 +7321,7 @@ FrameBufferUpdate()
 
 void
 LGL_Image::
-FrameBufferViewPort
+FrameBufferViewport
 (
 	float	left,	float	right,
 	float	bottom,	float	top
@@ -7320,15 +7332,15 @@ FrameBufferViewPort
 #endif	//LGL_NO_GRAPHICS
 	if(!FrameBufferImage)
 	{
-		printf("LGL_Image::FrameBufferViewPort(): Error! ");
+		printf("LGL_Image::FrameBufferViewport(): Error! ");
 		printf("'%s' is not a FrameBufferImage!\n",Path);
 		LGL_Exit();
 	}
 
-	LeftInt=	(int)floor(left*LGL.WindowResolutionX);
-	BottomInt=	(int)floor(bottom*LGL.WindowResolutionY);
-	WidthInt=	((int)ceil(right*LGL.WindowResolutionX))-LeftInt;
-	HeightInt=	((int)ceil(top*LGL.WindowResolutionY))-BottomInt;
+	LeftInt=	(int)floor(left*LGL.WindowResolutionX[LGL.DisplayNow]);
+	BottomInt=	(int)floor(bottom*LGL.WindowResolutionY[LGL.DisplayNow]);
+	WidthInt=	((int)ceil(right*LGL.WindowResolutionX[LGL.DisplayNow]))-LeftInt;
+	HeightInt=	((int)ceil(top*LGL.WindowResolutionY[LGL.DisplayNow]))-BottomInt;
 	ImgW=WidthInt;
 	ImgH=HeightInt;
 }
@@ -17469,6 +17481,12 @@ LGL_ProcessInput()
 		//Keyboard
 		if(event.type==SDL_KEYDOWN)
 		{
+			if(event.key.windowID!=SDL_GetWindowID(LGL.WindowID[0]))
+			{
+				//Only care about events for interface window
+				continue;
+			}
+
 			if(event.key.keysym.sym > 256)
 			{
 				event.key.keysym.sym = 256 + (event.key.keysym.sym % LGL_KEY_MAX);
@@ -17525,6 +17543,12 @@ LGL_ProcessInput()
 		}
 		if(event.type==SDL_KEYUP)
 		{
+			if(event.key.windowID!=SDL_GetWindowID(LGL.WindowID[0]))
+			{
+				//Only care about events for interface window
+				continue;
+			}
+
 			if(event.key.keysym.sym > 256)
 			{
 				event.key.keysym.sym = 256 + (event.key.keysym.sym % LGL_KEY_MAX);
@@ -17545,6 +17569,12 @@ LGL_ProcessInput()
 
 		if(event.type==SDL_MOUSEMOTION)
 		{
+			if(event.motion.windowID!=SDL_GetWindowID(LGL.WindowID[0]))
+			{
+				//Only care about events for interface window
+				continue;
+			}
+
 			bool wiimotePointerOverride=false;
 			for(int a=0;a<8;a++)
 			{
@@ -17560,15 +17590,21 @@ LGL_ProcessInput()
 			}
 			if(wiimotePointerOverride==false)
 			{
-				LGL.MouseDX=event.motion.x/(float)LGL.WindowResolutionX-LGL.MouseX;
-				LGL.MouseDY=(1.0-event.motion.y/(float)LGL.WindowResolutionY)-LGL.MouseY;
-				LGL.MouseX=event.motion.x/(float)LGL.WindowResolutionX;
-				LGL.MouseY=(1.0-event.motion.y/(float)LGL.WindowResolutionY);
+				LGL.MouseDX=event.motion.x/(float)LGL.WindowResolutionX[LGL.DisplayNow]-LGL.MouseX;
+				LGL.MouseDY=(1.0-event.motion.y/(float)LGL.WindowResolutionY[LGL.DisplayNow])-LGL.MouseY;
+				LGL.MouseX=event.motion.x/(float)LGL.WindowResolutionX[LGL.DisplayNow];
+				LGL.MouseY=(1.0-event.motion.y/(float)LGL.WindowResolutionY[LGL.DisplayNow]);
 			}
 		}
 
 		if(event.type==SDL_MOUSEBUTTONDOWN)
 		{
+			if(event.button.windowID!=SDL_GetWindowID(LGL.WindowID[0]))
+			{
+				//Only care about events for interface window
+				continue;
+			}
+
 			if(event.button.button==SDL_BUTTON_LEFT)
 			{
 				LGL.MouseDown[LGL_MOUSE_LEFT]=true;
@@ -17591,6 +17627,12 @@ LGL_ProcessInput()
 		
 		if(event.type==SDL_MOUSEBUTTONUP)
 		{
+			if(event.button.windowID!=SDL_GetWindowID(LGL.WindowID[0]))
+			{
+				//Only care about events for interface window
+				continue;
+			}
+
 			if(event.button.button==SDL_BUTTON_LEFT)
 			{
 				LGL.MouseDown[LGL_MOUSE_LEFT]=false;
@@ -17615,6 +17657,15 @@ LGL_ProcessInput()
 
 		if(event.type==SDL_MULTIGESTURE)
 		{
+			/*
+			if(SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID)!=SDL_GetWindowID(LGL.WindowID[0]))
+			{
+printf("Multitouch OUT: %i vs %i\n",SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID),SDL_GetWindowID(LGL.WindowID[0]));
+				//Only care about events for interface window
+				continue;
+			}
+			*/
+
 			LGL.MultiTouchID=event.mgesture.touchId;
 			if(multiTouchXPrev!=-1.0f)
 			{
@@ -19274,41 +19325,25 @@ lgl_MouseSanityCheck
 float
 LGL_MouseX()
 {
-	return
-	(
-		(LGL.MouseX-LGL.DisplayViewPortLeft[LGL.DisplayNow])/
-		(LGL.DisplayViewPortRight[LGL.DisplayNow]-LGL.DisplayViewPortLeft[LGL.DisplayNow])
-	);
+	return(LGL.MouseX);
 }
 
 float
 LGL_MouseY()
 {
-	return
-	(
-		(LGL.MouseY-LGL.DisplayViewPortBottom[LGL.DisplayNow])/
-		(LGL.DisplayViewPortTop[LGL.DisplayNow]-LGL.DisplayViewPortBottom[LGL.DisplayNow])
-	);
+	return(LGL.MouseY);
 }
 
 float
 LGL_MouseDX()
 {
-	return
-	(
-		(LGL.MouseDX-LGL.DisplayViewPortLeft[LGL.DisplayNow])/
-		(LGL.DisplayViewPortRight[LGL.DisplayNow]-LGL.DisplayViewPortLeft[LGL.DisplayNow])
-	);
+	return(LGL.MouseDX);
 }
 
 float
 LGL_MouseDY()
 {
-	return
-	(
-		(LGL.MouseDY-LGL.DisplayViewPortBottom[LGL.DisplayNow])/
-		(LGL.DisplayViewPortTop[LGL.DisplayNow]-LGL.DisplayViewPortBottom[LGL.DisplayNow])
-	);
+	return(LGL.MouseDY);
 }
 
 bool
@@ -19386,8 +19421,8 @@ LGL_MouseWarp
 {
 	SDL_WarpMouse
 	(
-		(int)(x*LGL.WindowResolutionX),
-		(int)((1.0-y)*LGL.WindowResolutionY)
+		(int)(x*LGL.WindowResolutionX[LGL.DisplayNow]),
+		(int)((1.0-y)*LGL.WindowResolutionY[LGL.DisplayNow])
 	);
 	LGL.MouseDX=x-LGL.MouseX;
 	LGL.MouseDY=x-LGL.MouseY;
@@ -27101,7 +27136,7 @@ LGL_ScreenShot
 	temp=SDL_CreateRGBSurface
 	(
 		SDL_SWSURFACE,
-		LGL.WindowResolutionX, LGL.WindowResolutionY, 24,
+		LGL.WindowResolutionX[LGL.DisplayNow], LGL.WindowResolutionY[LGL.DisplayNow], 24,
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN
 		0x000000FF, 0x0000FF00, 0x00FF0000, 0
 #else
@@ -27114,7 +27149,7 @@ LGL_ScreenShot
 		LGL_Exit();
 	}
 
-	pixels=(unsigned char*)malloc(3*LGL.WindowResolutionX*LGL.WindowResolutionY);
+	pixels=(unsigned char*)malloc(3*LGL.WindowResolutionX[LGL.DisplayNow]*LGL.WindowResolutionY[LGL.DisplayNow]);
 	if(pixels==NULL)
 	{
 		printf("LGL_ScreenShot(): Error! Unable to malloc() pixel buffer.\n");
@@ -27125,18 +27160,18 @@ LGL_ScreenShot
 	glReadPixels
 	(
 		0, 0,
-		LGL.WindowResolutionX, LGL.WindowResolutionY,
+		LGL.WindowResolutionX[LGL.DisplayNow], LGL.WindowResolutionY[LGL.DisplayNow],
 		GL_RGB, GL_UNSIGNED_BYTE,
 		pixels
 	);
 
-	for(int i=0;i<LGL.WindowResolutionY;i++)
+	for(int i=0;i<LGL.WindowResolutionY[LGL.DisplayNow];i++)
 	{
 		memcpy
 		(
 			((char*)temp->pixels)+temp->pitch*i,
-			pixels+3*LGL.WindowResolutionX*(LGL.WindowResolutionY-i-1),
-			LGL.WindowResolutionX*3
+			pixels+3*LGL.WindowResolutionX[LGL.DisplayNow]*(LGL.WindowResolutionY[LGL.DisplayNow]-i-1),
+			LGL.WindowResolutionX[LGL.DisplayNow]*3
 		);
 	}
 

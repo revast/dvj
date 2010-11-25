@@ -128,6 +128,7 @@ const	char*				GetSoundPathShort();
 	bool				GetRecordScratch();
 	bool				GetSoundLoaded();
 	bool				GetSoundLoadedFully();
+	float				GetSoundPositionPercent();
 	int				GetMode();
 
 	void				SetLowRez(bool lowRez);

@@ -212,6 +212,17 @@ NextFrame
 						if(min<0.0f) min=0.0f;
 						float max=vid->GetLengthSeconds()-10.0f;
 						if(max<0.0f) max=vid->GetLengthSeconds();
+
+						/*
+						float cand = LGL_Clamp
+						(
+							min,
+							LGL_RandFloat(-10.0f,10.0f)+tts[t]->GetSoundPositionPercent()*vid->GetLengthSeconds()-10.0f,
+							max
+						);
+						vid->SetTime(cand);
+						*/
+
 						vid->SetTime(LGL_RandFloat(min,max));
 					}
 					else

@@ -522,8 +522,10 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 	}
 
 	Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
+	/*
 	if(LGL_DisplayCount()>1 && LGL_IsFullScreen())
 	{
+		int activeDisplayPrev=LGL_GetActiveDisplay();
 		LGL_SetActiveDisplay(1);
 		Visualizer->SetViewportVisuals(0.0f,1.0f,0.0f,1.0f);
 		Visualizer->DrawVisuals(visualsQuadrent,visualizerZoomOutPercent,GetMixer().GetTurntables());
@@ -532,8 +534,9 @@ void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
 		float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
 		float top=1.0f;
 		Visualizer->SetViewportVisuals(left,right,bottom,top);
-		LGL_SetActiveDisplay(0);
+		LGL_SetActiveDisplay(activeDisplayPrev);
 	}
+	*/
 	/*
 	else if(EIGHT_WAY==false)
 	{
@@ -912,7 +915,38 @@ int main(int argc, char** argv)
 		}
 		*/
 		LGL_MouseVisible(false);
-		LGL_SwapBuffers();
+
+		if(LGL_DisplayCount()==1)
+		{
+			LGL_SwapBuffers();
+		}
+		else
+		{
+			LGL_SwapBuffers(false);
+			LGL_SetActiveDisplay(1);
+			LGL_DrawRectToScreen
+			(
+				0,1,
+				0,1,
+				0,0,0,1
+			);
+			if(0)
+			{
+				DrawFrame(false);
+			}
+			else
+			{
+				Visualizer->SetViewportVisuals(0.0f,1.0f,0.0f,1.0f);
+				Visualizer->DrawVisuals(false,0.0f,GetMixer().GetTurntables());
+				float left=0.0f;
+				float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
+				float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
+				float top=1.0f;
+				Visualizer->SetViewportVisuals(left,right,bottom,top);
+			}
+			LGL_SwapBuffers();
+			LGL_SetActiveDisplay(0);
+		}
 	}
 }
 
