@@ -1683,7 +1683,7 @@ LGL_Init
 	LGL.DisplayCount=SDL_GetNumVideoDisplays();
 	LGL.DisplayNow=0;
 
-printf("%i screens!\n",LGL.DisplayCount);
+printf("%i displays!\n",LGL.DisplayCount);
 
 	for(int d=0;d<LGL.DisplayCount;d++)
 	{
@@ -1693,7 +1693,10 @@ printf("%i screens!\n",LGL.DisplayCount);
 
 		LGL.DisplayResolutionX[d] = mode.w;
 		LGL.DisplayResolutionY[d] = mode.h;
-
+printf("\t[%i]: %i x %i\n",
+	d,
+	LGL.DisplayResolutionX[d],
+	LGL.DisplayResolutionY[d]);
 		LGL.DisplayRefreshRate[d] = mode.refresh_rate ? mode.refresh_rate : 60;
 
 		SDL_DisplayMode displayMode;
@@ -1703,6 +1706,7 @@ printf("%i screens!\n",LGL.DisplayCount);
 		displayMode.refresh_rate=60;
 		SDL_SetWindowDisplayMode(LGL.WindowID[d],&displayMode);
 	}
+printf("\n");
 
 	SDL_SelectVideoDisplay(0);
 
@@ -1731,8 +1735,8 @@ printf("%i screens!\n",LGL.DisplayCount);
 		}
 		else
 		{
-			LGL.WindowResolutionX[d]=LGL_DisplayResolutionX();
-			LGL.WindowResolutionY[d]=LGL_DisplayResolutionY();
+			LGL.WindowResolutionX[d]=LGL.DisplayResolutionX[d];
+			LGL.WindowResolutionY[d]=LGL.DisplayResolutionY[d];
 		}
 
 		if(LGL.MasterWindowResolutionX<LGL.WindowResolutionX[d])
@@ -2012,6 +2016,10 @@ printf("%i screens!\n",LGL.DisplayCount);
 			LGL.WindowResolutionY[d],
 			windowFlags
 		);
+printf("CreateWindow(%i): %i x %i\n",
+	d,
+	LGL.WindowResolutionX[d],
+	LGL.WindowResolutionY[d]);
 
 		if(LGL.WindowID[d]==0)
 		{

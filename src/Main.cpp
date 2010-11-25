@@ -946,6 +946,12 @@ int main(int argc, char** argv)
 			}
 			LGL_SwapBuffers();
 			LGL_SetActiveDisplay(0);
+			LGL_DrawRectToScreen
+			(
+				0,1,
+				0,1,
+				0,0,0,1
+			);
 		}
 	}
 }
