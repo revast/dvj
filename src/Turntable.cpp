@@ -3880,6 +3880,11 @@ DrawFrame
 				videoSecondsBufferedLeft=VideoFront->GetSecondsBufferedLeft();
 				videoSecondsBufferedRight=VideoFront->GetSecondsBufferedRight();
 			}
+			if(GetVideoBrightnessPreview()==0.0f)
+			{
+				videoSecondsBufferedLeft=0;
+				videoSecondsBufferedRight=0;
+			}
 				
 			float recallPos=-1.0f;
 
