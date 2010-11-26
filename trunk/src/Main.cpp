@@ -116,7 +116,7 @@ void InitializeGlobals()
 	GetInput().AddChild(&GetInputMouse());
 	GetInput().AddChild(&GetInputMultiTouch());
 	GetInput().AddChild(&GetInputOsc());
-	//GetInput().AddChild(&GetInputXponent());
+	GetInput().AddChild(&GetInputXponent());
 	GetInput().AddChild(new InputXsessionObj);
 	GetInput().AddChild(new InputWiimoteObj);
 	GetInput().AddChild(new InputTesterObj);
