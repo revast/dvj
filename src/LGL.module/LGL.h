@@ -1086,6 +1086,7 @@ private:
 	int			FPSMissed;
 	int			FPSDisplayedHitCounter;
 	int			FPSDisplayedMissCounter;
+	unsigned long		FPSDisplayedHitMissFrameNumber;
 	LGL_Timer		FPSDisplayedTimer;
 	LGL_Timer		FPSDisplayedConstTimeTimer;
 	double			LengthSeconds;

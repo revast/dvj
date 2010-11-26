@@ -95,9 +95,9 @@
 #ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
-#define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
-#define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(1.0f-0.8f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(1.0f-0.7f)
+#define	LGL_PRIORITY_AUDIO_ENCODE	(1.0f-0.75f)
 #define	LGL_PRIORITY_OSC		(0.85f)
 #else
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
@@ -258,6 +258,8 @@ typedef struct
 	SDL_WindowID		MasterWindowID;
 	int			MasterWindowResolutionX;
 	int			MasterWindowResolutionY;
+
+	SDL_threadID		ThreadIDMain;
 
 	float			DisplayViewportLeft[LGL_DISPLAY_MAX];
 	float			DisplayViewportRight[LGL_DISPLAY_MAX];
@@ -2049,6 +2051,8 @@ printf("CreateWindow(%i): %i x %i\n",
 	LGL.GLContext = SDL_GL_CreateContext(LGL.MasterWindowID);
 	SDL_GL_MakeCurrent(LGL.WindowID[0], LGL.GLContext);
 
+	LGL.ThreadIDMain = SDL_ThreadID();
+
 	//GL Settings
 
 	glDrawBuffer(GL_BACK);
@@ -3749,6 +3753,14 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 		}
 
 		LGL.SecondsSinceLastFrame=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
+		for(int a=0;a<10;a++)
+		{
+			if(LGL.SecondsSinceLastFrame<0.5f*((a+1.0f)/60.0f+(a+2.0f)/60.0f))
+			{
+				LGL.SecondsSinceLastFrame=(a+1.0f)/60.0f;
+				break;
+			}
+		}
 		LGL.SecondsSinceLastFrameTimer.Reset();
 	}
 	LGL.SecondsSinceExecution=LGL.SecondsSinceExecutionTimer.SecondsSinceLastReset();
@@ -3815,9 +3827,9 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 	if(endFrame)
 	{
 		int activeDisplayPrev=LGL_GetActiveDisplay();
-		LGL_SetActiveDisplay(0);
+		LGL.DisplayNow=0;	//Fake out
 		lgl_EndFrame();
-		LGL_SetActiveDisplay(activeDisplayPrev);
+		LGL.DisplayNow=activeDisplayPrev;
 	}
 }
 
@@ -8582,6 +8594,7 @@ Init()
 	FPSMissed=0;
 	FPSDisplayedHitCounter=0;
 	FPSDisplayedMissCounter=0;
+	FPSDisplayedHitMissFrameNumber=0;
 	LengthSeconds=0;
 	TimeSeconds=0;
 	TimeSecondsPrev=0;
@@ -8850,12 +8863,20 @@ GetImage()
 		//Find the nearest framebuffer
 		if(frameNumber<FrameBufferReady[0]->GetFrameNumber())
 		{
-			FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
+			if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
+			{
+				FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
+				FPSDisplayedMissCounter++;
+			}
 			buffer=FrameBufferReady[0];
 		}
 		else if(frameNumber>FrameBufferReady[FrameBufferReady.size()-1]->GetFrameNumber())
 		{
-			FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
+			if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
+			{
+				FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
+				FPSDisplayedMissCounter++;
+			}
 			buffer=FrameBufferReady[FrameBufferReady.size()-1];
 		}
 		else
@@ -8872,13 +8893,17 @@ GetImage()
 			
 			if(buffer)
 			{
-				if(frameNumber==buffer->GetFrameNumber())
+				if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
 				{
-					FPSDisplayedHitCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
-				}
-				else
-				{
-					FPSDisplayedMissCounter+=(frameNumber!=FrameNumberDisplayed) ? 1 : 0;
+					FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
+					if(frameNumber==buffer->GetFrameNumber())
+					{
+						FPSDisplayedHitCounter++;
+					}
+					else
+					{
+						FPSDisplayedMissCounter++;
+					}
 				}
 			}
 		}
@@ -27100,7 +27125,8 @@ LGL_DrawFPSGraph
 		true,.5*alpha,
 		temp
 	);
-	
+
+	/*
 	int lowest=999;
 	for(int a=0;a<60;a++)
 	{
@@ -27116,6 +27142,7 @@ LGL_DrawFPSGraph
 		true,.5*alpha,
 		temp
 	);
+	*/
 
 	LGL_DrawLineToScreen
 	(
@@ -28549,6 +28576,27 @@ Lock
 )
 {
 	if(Promiscuous) return(true);
+
+const bool debugMainThreadWaits=true;
+	if(debugMainThreadWaits)
+	{
+		if(SDL_ThreadID()==LGL.ThreadIDMain)
+		{
+			if
+			(
+				blockUntilTimeout &&
+				timeoutSeconds>0 &&
+				SDL_SemValue(Sem)==0
+			)
+			{
+				printf("Main Thread Wait:\n");
+				printf("\tSem = %s\n",Name);
+				printf("\tLocking thread = %s\n",LockOwner);
+				printf("\tNote = %s\n",Note);
+				printf("\n");
+			}
+		}
+	}
 
 	bool ret=false;
 	if(blockUntilTimeout==false)
