@@ -103,6 +103,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"fpsMax=60\n");
 		fprintf(fd,"audioSamplePeriod=512\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"drawTurntablePreviews=1\n");
 		fprintf(fd,"videoBufferFrames=20\n");
 		fprintf(fd,"videoBufferFramesFreqSense=2\n");
 		fprintf(fd,"\n");
@@ -725,6 +726,13 @@ GetAudioSamplePeriod()
 {
 	int period=LGL_Clamp(32,dvjrcConfigFile->read<int>("audioSamplePeriod",512),2048);
 	return(period);
+}
+
+bool
+GetDrawTurntablePreviews()
+{
+	int previews=LGL_Clamp(0,dvjrcConfigFile->read<int>("drawTurntablePreviews",1),1);
+	return(previews==1);
 }
 
 bool

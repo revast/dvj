@@ -2929,6 +2929,7 @@ NextFrame
 			GlitchLength=0;
 			GlitchPitch=1.0f;
 			SmoothWaveformScrollingSample=0.0f;
+			SmoothWaveformScrollingSampleRate=1.0f;
 			VideoOffsetSeconds=LGL_RandFloat(0,1000.0f);
 
 			VideoEncoderPercent=-1.0f;
@@ -3007,16 +3008,20 @@ NextFrame
 
 		//Smooth waveform scrolling
 
+//double smoothWaveformScrollingSamplePrev=SmoothWaveformScrollingSample;
 		float speed=Sound->GetSpeed(Channel);
-		double proposedDelta = (LGL_AudioAvailable()?1:0)*speed*Sound->GetHz()*(1.0f/LGL_GetFPSMax());
+		double proposedDelta = SmoothWaveformScrollingSampleRate*(LGL_AudioAvailable()?1:0)*speed*Sound->GetHz()*1.0f/LGL_GetFPSMax();//LGL_SecondsSinceLastFrame();
 		double currentSample=Sound->GetPositionSamples(Channel);
 		double diff=fabs(currentSample-(SmoothWaveformScrollingSample+proposedDelta));
 		double diffMax=LGL_AudioCallbackSamples()*16*LGL_Max(1,fabsf(Sound->GetSpeed(Channel)));
 		double deltaFrame = LGL_SecondsSinceLastFrame();
+//printf("Proposed: %.2f (%i) (%.2f)\n",(float)proposedDelta,(int)(LGL_SecondsSinceLastFrame()*60.0f),(float)diff);
+		/*
 		if(deltaFrame <= 5.0f/60.0f)
 		{
 			deltaFrame = 1.0f/60.0f;
 		}
+		*/
 		if
 		(
 			PauseMultiplier==0 &&
@@ -3065,16 +3070,48 @@ if(badFlash<0) badFlash=0.0f;
 LGL_ClipRectEnable(ViewportLeft,ViewportRight,ViewportBottom,ViewportTop);
 #endif
 
+/*
+int framesPast=(int)(60.0f/LGL_SecondsSinceLastFrame());
+
+float pctXDiff=0.5f-0.5f*diff/diffMax;
+LGL_DrawLineToScreen
+(
+	pctXDiff,1.0f,
+	pctXDiff,0.95f
+);
+
+float pctXRate=0.25f+(SmoothWaveformScrollingSampleRate*0.25f);
+LGL_DrawLineToScreen
+(
+	pctXRate,0.80f,
+	pctXRate,0.75f,
+	0,0,1,1
+);
+
+float pctXProposedInitial=0.5f+proposedDelta/diffMax;
+LGL_DrawLineToScreen
+(
+	pctXProposedInitial,0.95f,
+	pctXProposedInitial,0.90f
+);
+*/
+
+		const float rateDelta=2.0f;
+
 		float constantThreashold=1024;//diffMax/2;
-		if(diff<constantThreashold)
+		if(0 && diff<constantThreashold)
 		{
 			//We're accurate enough
+//printf("\t\t\t\t\t\tOK!\n");
 			SmoothWaveformScrollingSample+=proposedDelta;
+			SmoothWaveformScrollingSampleRate=
+				(1.0f-rateDelta*0.1f*LGL_SecondsSinceLastFrame())*SmoothWaveformScrollingSampleRate+
+				(0.0f+rateDelta*0.1f*LGL_SecondsSinceLastFrame())*1.0f;
 		}
 		else if(diff<diffMax)
 		{
 			//Let's change our scrolling speed to get more accurate
-			float deltaFactor=(diff-constantThreashold)/(diffMax-constantThreashold);
+			float deltaFactor=(diff/*-constantThreashold*/)/(diffMax*0.5f/*-constantThreashold*/);
 			float deltaMultiplier;
 			if(Sound->GetSpeed(Channel)>0.0f)
 			{
@@ -3088,16 +3125,49 @@ LGL_ClipRectEnable(ViewportLeft,ViewportRight,ViewportBottom,ViewportTop);
 			{
 				deltaMultiplier=(currentSample<SmoothWaveformScrollingSample+proposedDelta) ? (1.0f+deltaFactor) : (1.0f-deltaFactor);
 			}
-			//deltaMultiplier=powf(deltaMultiplier,2);
-			proposedDelta*=deltaMultiplier*LGL_SecondsSinceLastFrame()*60.0f;
+			SmoothWaveformScrollingSampleRate=
+				(1.0f-rateDelta*LGL_SecondsSinceLastFrame())*SmoothWaveformScrollingSampleRate+
+				(0.0f+rateDelta*LGL_SecondsSinceLastFrame())*deltaMultiplier;
+			/*
+			SmoothWaveformScrollingSampleRate=
+				(1.0f-rateDelta*LGL_SecondsSinceLastFrame())*SmoothWaveformScrollingSampleRate+
+				(0.0f+rateDelta*LGL_SecondsSinceLastFrame())*
+					(
+						deltaMultiplier+
+						(SmoothWaveformScrollingSampleRate-1.0f)
+					);
+			*/
+
+			//proposedDelta*=deltaMultiplier;
+/*
+float pctXProposedRevised=0.5f+proposedDelta/diffMax;
+LGL_DrawLineToScreen
+(
+	pctXProposedRevised,0.95f,
+	pctXProposedRevised,0.90f,
+	(framesPast>1) ? 1 : 0,(framesPast>1) ? 0 : 1,0,1
+);
+*/
+//printf("\t\t\t\t\t\tDelta! (%.2f) (%.2f)\n",proposedDelta,deltaMultiplier);
 			SmoothWaveformScrollingSample+=proposedDelta;
 		}
 		else
 		{
+//printf("\t\t\t\t\t\tFUCK!\n");
 			//Fuck, we're really far off. Screw smooth scrolling, just jump to currentSample
 			SmoothWaveformScrollingSample=currentSample;
 		}
 		SmoothWaveformScrollingSample=LGL_Clamp(0,SmoothWaveformScrollingSample,Sound->GetLengthSamples());
+
+/*
+float pctXFinalDelta=0.5f+(SmoothWaveformScrollingSample-smoothWaveformScrollingSamplePrev)/diffMax;
+LGL_DrawLineToScreen
+(
+	pctXFinalDelta,0.90f,
+	pctXFinalDelta,0.85f,
+	(framesPast>1) ? 1 : 0,(framesPast>1) ? 0 : 1,0,1
+);
+*/
 
 		if(Looping())
 		{
@@ -3576,73 +3646,76 @@ DrawFrame
 				}
 			}
 
-			Visualizer->DrawVideos
-			(
-				this,
-				left,
-				right,
-				bottom,
-				top,
-				true
-			);
-			if(FreqSenseBrightness>0.0f)
+			if(GetDrawTurntablePreviews())
 			{
-				float volAve;
-				float volMax;
-				float freqFactor;
-				GetFreqMetaData(volAve,volMax,freqFactor);
-
-				if
+				Visualizer->DrawVideos
 				(
-					GetFreqBrightness(false,freqFactor,2*volAve)==0.0f &&
-					GetFreqBrightness(true,freqFactor,2*volAve)==0.0f
-				)
+					this,
+					left,
+					right,
+					bottom,
+					top,
+					true
+				);
+				if(FreqSenseBrightness>0.0f)
 				{
-					freqFactor=0.0f;
+					float volAve;
+					float volMax;
+					float freqFactor;
+					GetFreqMetaData(volAve,volMax,freqFactor);
+
+					if
+					(
+						GetFreqBrightness(false,freqFactor,2*volAve)==0.0f &&
+						GetFreqBrightness(true,freqFactor,2*volAve)==0.0f
+					)
+					{
+						freqFactor=0.0f;
+					}
+
+					float r=
+						(1.0f-freqFactor)*coolR+
+						(0.0f+freqFactor)*warmR;
+					float g=
+						(1.0f-freqFactor)*coolG+
+						(0.0f+freqFactor)*coolG;
+					float b=
+						(1.0f-freqFactor)*coolB+
+						(0.0f+freqFactor)*coolB;
+
+					LGL_DrawLineToScreen
+					(
+						left,bottom,
+						right,bottom,
+						r,g,b,1.0f,
+						1.0f,
+						true
+					);
+					LGL_DrawLineToScreen
+					(
+						right,bottom,
+						right,top,
+						r,g,b,1.0f,
+						1.0f,
+						true
+					);
+					LGL_DrawLineToScreen
+					(
+						right,top,
+						left,top,
+						r,g,b,1.0f,
+						1.0f,
+						true
+					);
+					LGL_DrawLineToScreen
+					(
+						left,top,
+						left,bottom,
+						r,g,b,1.0f,
+						1.0f,
+						true
+					);
 				}
-
-				float r=
-					(1.0f-freqFactor)*coolR+
-					(0.0f+freqFactor)*warmR;
-				float g=
-					(1.0f-freqFactor)*coolG+
-					(0.0f+freqFactor)*coolG;
-				float b=
-					(1.0f-freqFactor)*coolB+
-					(0.0f+freqFactor)*coolB;
-
-				LGL_DrawLineToScreen
-				(
-					left,bottom,
-					right,bottom,
-					r,g,b,1.0f,
-					1.0f,
-					true
-				);
-				LGL_DrawLineToScreen
-				(
-					right,bottom,
-					right,top,
-					r,g,b,1.0f,
-					1.0f,
-					true
-				);
-				LGL_DrawLineToScreen
-				(
-					right,top,
-					left,top,
-					r,g,b,1.0f,
-					1.0f,
-					true
-				);
-				LGL_DrawLineToScreen
-				(
-					left,top,
-					left,bottom,
-					r,g,b,1.0f,
-					1.0f,
-					true
-				);
 			}
 		}
 		rectAlpha=0.0f;

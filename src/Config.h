@@ -183,6 +183,9 @@ int
 GetAudioSamplePeriod();
 
 bool
+GetDrawTurntablePreviews();
+
+bool
 GetWireMemory();
 
 bool
