@@ -1400,7 +1400,6 @@ Turntable_DrawWaveform
 				break;
 			}
 		}
-
 		//Tristrip!
 		if(!lowRez)
 		{
