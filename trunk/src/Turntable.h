@@ -60,6 +60,8 @@ public:
 					);
 	void				SetFocus(bool inFocus=true);
 	bool				GetFocus() const;
+	int				GetWhich() const;
+	int				GetTarget() const;
 	void				SetTurntableNumber(int num);
 	void				SetVisualizer(VisualizerObj* viz);
 	float				GetVisualBrightnessPreview();
@@ -315,6 +317,9 @@ public:
 
 	int				GetSoundChannel();
 
+static	bool				GetFileEverOpened();
+static	float				GetSecondsSinceFileEverOpened();
+
 private:
 
 	float				BPM;
@@ -345,6 +350,7 @@ static	LGL_Image*			LoopImage;
 
 	LGL_Timer			Mode0BackspaceTimer;
 static	bool				FileEverOpened;
+static	LGL_Timer			FileEverOpenedTimer;
 static	bool				SurroundMode;
 
 	int				AspectRatioMode;	//0: Respect AR

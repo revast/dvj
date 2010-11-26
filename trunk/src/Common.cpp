@@ -1258,6 +1258,7 @@ Turntable_DrawWaveform
 		long samplesPerLoopPeriod = secondsPerLoopPeriod*44100.0;
 
 		//Experimental frequency-sensitive renderer
+#if 1
 		for(int z=-pointResolution;z<pointResolution*2;z++)
 		{
 			int a=z+pointResolution;
@@ -1284,12 +1285,10 @@ Turntable_DrawWaveform
 				);
 
 				zeroCrossingFactor=GetFreqBrightness(true,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak());
-				/*
-				if(freqSensitiveMode==1)
+				if(0)
 				{
 					magnitudeAve*=(GetFreqBrightness(false,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak()) + zeroCrossingFactor > 0.0f) ? 1.0f : 0.0f;
 				}
-				*/
 
 				magnitudeAve*=volumeMultiplierNow*0.5f;
 				magnitudeMax*=volumeMultiplierNow*0.5f;
@@ -1415,7 +1414,7 @@ Turntable_DrawWaveform
 		}
 
 		//Linestrip top!
-		for(int a=0;a<pointsToDrawIndexEnd/*-pointsToDrawIndexStart*/;a++)
+		for(int a=0;a<pointsToDrawIndexEnd;a++)
 		{
 			if(overdriven[a])
 			{
@@ -1454,6 +1453,7 @@ Turntable_DrawWaveform
 			3.5f,
 			!lowRez
 		);
+#endif
 
 		//Draw Center Needle Rectangle
 		LGL_DrawRectToScreen

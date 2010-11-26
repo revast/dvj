@@ -991,6 +991,40 @@ ForceVideoToBackOfRandomQueue
 	}
 }
 
+bool
+VisualizerObj::
+GetProjectorClear()
+{
+	return(ProjectorClear);
+}
+
+void
+VisualizerObj::
+SetProjectorClear
+(
+	bool	clear
+)
+{
+	ProjectorClear=clear;
+}
+
+bool
+VisualizerObj::
+GetProjectorPreviewClear()
+{
+	return(ProjectorPreviewClear);
+}
+
+void
+VisualizerObj::
+SetProjectorPreviewClear
+(
+	bool	clear
+)
+{
+	ProjectorPreviewClear=clear;
+}
+
 void
 VisualizerObj::
 PopulateCharStarBufferWithScrollTextFile
@@ -1067,6 +1101,11 @@ DrawVideos
 	bool		preview
 )
 {
+	if(tt->GetMode()!=2)
+	{
+		return;
+	}
+
 	float lOrig=l;
 	float rOrig=r;
 	float wOrig=r-l;
@@ -1131,8 +1170,8 @@ DrawVideos
 							projH = LGL_DisplayResolutionY(projDisplay);
 						}
 						float projAR = projW/(float)projH;
-						float imageAR = image->GetWidth()/(float)image->GetHeight();
-						if(LGL_DisplayCount()==1 && tt->GetAspectRatioMode()==0) projAR=imageAR;
+						//float imageAR = image->GetWidth()/(float)image->GetHeight();
+						//if(LGL_DisplayCount()==1 && tt->GetAspectRatioMode()==0) projAR=imageAR;
 						float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
 
 						float midX = 0.5f*(l+r);
@@ -1146,7 +1185,11 @@ DrawVideos
 						float myB = b;
 						float myT = t;
 
-						//FIXME: ZOMG more than one pass is insane!!
+						myL=LGL_Max(l,myL);
+						myR=LGL_Min(r,myR);
+						myB=LGL_Max(b,myB);
+						myT=LGL_Min(t,myT);
+
 						static LGL_Shader imageShader("Image Shader");
 						if(imageShader.VertCompiled()==false)
 						{
@@ -1166,6 +1209,30 @@ DrawVideos
 							"brightnessScalar",
 							br
 						);
+
+						float alpha=0.0f;
+						if(preview==false)
+						{
+							if
+							(
+								LGL_GetActiveDisplay()==0 &&
+								ProjectorPreviewClear
+							)
+							{
+								alpha=1.0f;
+								ProjectorPreviewClear=false;
+							}
+
+							if
+							(
+								LGL_GetActiveDisplay()==1 &&
+								ProjectorClear
+							)
+							{
+								alpha=1.0f;
+								ProjectorClear=false;
+							}
+						}
 						image->DrawToScreen
 						(
 							myL,myR,myB,myT,
@@ -1173,7 +1240,7 @@ DrawVideos
 							1.0f,
 							1.0f,
 							1.0f,
-							0.0f
+							alpha
 						);
 						imageShader.Disable();
 					}
@@ -1184,6 +1251,7 @@ DrawVideos
 
 	if(oscilloscopeBright > 0.0f)
 	{
+		bool drewOscilloscope=false;
 		//FIXME: This should be a single path for uniform oscilloscope rendering
 		if(tt->GetAudioInputMode())
 		{
@@ -1232,6 +1300,7 @@ DrawVideos
 					3.0f,
 					true
 				);
+				drewOscilloscope=true;
 			}
 		}
 		else
@@ -1242,6 +1311,31 @@ DrawVideos
 				oscilloscopeBright,
 				preview
 			);
+			drewOscilloscope=true;
+		}
+
+		if(drewOscilloscope)
+		{
+			if(preview==false)
+			{
+				if
+				(
+					LGL_GetActiveDisplay()==0 &&
+					ProjectorPreviewClear
+				)
+				{
+					ProjectorPreviewClear=false;
+				}
+
+				if
+				(
+					LGL_GetActiveDisplay()==1 &&
+					ProjectorClear
+				)
+				{
+					ProjectorClear=false;
+				}
+			}
 		}
 	}
 
@@ -1281,6 +1375,30 @@ DrawVideos
 				float myR = r;
 				float myB = b;
 				float myT = t;
+
+				float alpha=0.0f;
+				if(preview==false)
+				{
+					if
+					(
+						LGL_GetActiveDisplay()==0 &&
+						ProjectorPreviewClear
+					)
+					{
+						alpha=1.0f;
+						ProjectorPreviewClear=false;
+					}
+
+					if
+					(
+						LGL_GetActiveDisplay()==1 &&
+						ProjectorClear
+					)
+					{
+						alpha=1.0f;
+						ProjectorClear=false;
+					}
+				}
 
 				if(tt->GetAspectRatioMode()==0)
 				{
@@ -1364,6 +1482,10 @@ DrawVideos
 					//At this point we're filling the whole screen, so...
 					float myL13rd = myL + (1.0f/3.0f)*(myR-myL);
 					float myL23rd = myL + (2.0f/3.0f)*(myR-myL);
+					myL=LGL_Max(l,myL);
+					myR=LGL_Min(r,myR);
+					myB=LGL_Max(b,myB);
+					myT=LGL_Min(t,myT);
 					image->DrawToScreen
 					(
 						myL13rd,myL,
@@ -1372,7 +1494,7 @@ DrawVideos
 						videoBright,
 						videoBright,
 						videoBright,
-						preview?1.0f:0.0f
+						alpha
 					);
 					image->DrawToScreen
 					(
@@ -1382,7 +1504,7 @@ DrawVideos
 						videoBright,
 						videoBright,
 						videoBright,
-						preview?1.0f:0.0f
+						alpha
 					);
 					image->DrawToScreen
 					(
@@ -1392,12 +1514,16 @@ DrawVideos
 						videoBright,
 						videoBright,
 						videoBright,
-						preview?1.0f:0.0f
+						alpha
 					);
 				}
 
 				if(tt->GetAspectRatioMode()!=2)
 				{
+					myL=LGL_Max(l,myL);
+					myR=LGL_Min(r,myR);
+					myB=LGL_Max(b,myB);
+					myT=LGL_Min(t,myT);
 					image->DrawToScreen
 					(
 						myL,myR,myB,myT,
@@ -1405,17 +1531,28 @@ DrawVideos
 						videoBright,
 						videoBright,
 						videoBright,
-						preview?1.0f:0.0f
+						alpha
 					);
 				}
 
-				if(vid->GetFPSMissed()>0)
-				{
-					VideoFPSDisplay=5.0f;
-				}
-				else
+				if(preview)
 				{
 					VideoFPSDisplay-=LGL_SecondsSinceLastFrame();
+					if
+					(
+						tt->GetPaused()==false &&
+						GetInput().WaveformRecordHold(tt->GetTarget())==false
+					)
+					{
+						if(vid->GetFPSMissed()>0)
+						{
+							VideoFPSDisplay=5.0f;
+						}
+						else if(vid->GetFPSDisplayed()<vid->GetFPS()*0.90f)
+						{
+							VideoFPSDisplay=5.0f;
+						}
+					}
 				}
 
 				if
@@ -1443,6 +1580,16 @@ DrawVideos
 						0.75f,
 						"%i",
 						vid->GetFPSDisplayed()
+					);
+
+					LGL_GetFont().DrawString
+					(
+						rOrig-0.3f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
+						br,br,br,br,
+						false,
+						0.75f,
+						"(%i)",
+						LGL_FPS()
 					);
 
 					if(vid->GetFPSMissed())

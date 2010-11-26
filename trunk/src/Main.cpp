@@ -116,7 +116,7 @@ void InitializeGlobals()
 	GetInput().AddChild(&GetInputMouse());
 	GetInput().AddChild(&GetInputMultiTouch());
 	GetInput().AddChild(&GetInputOsc());
-	GetInput().AddChild(&GetInputXponent());
+	//GetInput().AddChild(&GetInputXponent());
 	GetInput().AddChild(new InputXsessionObj);
 	GetInput().AddChild(new InputWiimoteObj);
 	GetInput().AddChild(new InputTesterObj);
@@ -893,12 +893,14 @@ int main(int argc, char** argv)
 		}
 		if
 		(
-			drawFPS &&
-			VisualizerFullScreen==false //&&
-			//LGL_SecondsSinceExecution()>15.0f
+			drawFPS ||
+			(
+				VisualizerFullScreen==false &&
+				TurntableObj::GetSecondsSinceFileEverOpened()>2.0f &&
+				drawFPSSpike>0.0f
+			)
 		)
 		{
-			drawFPSSpike=5.0f;
 			LGL_DrawFPSGraph
 			(
 				0.875f,0.975f,
@@ -943,6 +945,9 @@ int main(int argc, char** argv)
 			LGL_SetActiveDisplay(0);
 			LGL_ClearBackBuffer();
 		}
+
+		Visualizer->SetProjectorClear();
+		Visualizer->SetProjectorPreviewClear();
 	}
 }
 

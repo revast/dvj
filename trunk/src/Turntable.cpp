@@ -43,6 +43,7 @@ VisualizerObj* TurntableObj::Visualizer=NULL;
 LGL_Image* TurntableObj::NoiseImage[NOISE_IMAGE_COUNT_256_64];
 LGL_Image* TurntableObj::LoopImage=NULL;
 bool TurntableObj::FileEverOpened=false;
+LGL_Timer TurntableObj::FileEverOpenedTimer;
 bool TurntableObj::SurroundMode=false;
 
 const char* audioExtension = "flac";
@@ -859,9 +860,7 @@ NextFrame
 	}
 
 
-	unsigned int target =
-		(Focus ? TARGET_FOCUS : 0) |
-		((Which==0) ? TARGET_TOP : TARGET_BOTTOM);
+	unsigned int target = GetTarget();
 	float candidate = 0.0f;
 
 #ifdef	LGL_OSX
@@ -2866,6 +2865,7 @@ NextFrame
 			if(FileEverOpened==false)
 			{
 				FileEverOpened=true;
+				FileEverOpenedTimer.Reset();
 
 				//Enforce surround
 				SurroundMode=Sound->GetChannelCount()==4;
@@ -4405,6 +4405,22 @@ GetFocus() const
 	return(Focus);
 }
 
+int
+TurntableObj::
+GetWhich() const
+{
+	return(Which);
+}
+
+int
+TurntableObj::
+GetTarget() const
+{
+	int target = (Focus ? TARGET_FOCUS : 0) |
+		((Which==0) ? TARGET_TOP : TARGET_BOTTOM);
+	return(target);
+}
+
 void
 TurntableObj::
 SetTurntableNumber
@@ -5512,6 +5528,27 @@ TurntableObj::
 GetSoundChannel()
 {
 	return(Sound ? Channel : -1);
+}
+
+bool
+TurntableObj::
+GetFileEverOpened()
+{
+	return(FileEverOpened);
+}
+
+float
+TurntableObj::
+GetSecondsSinceFileEverOpened()
+{
+	if(FileEverOpened)
+	{
+		return(FileEverOpenedTimer.SecondsSinceLastReset());
+	}
+	else
+	{
+		return(0.0f);
+	}
 }
 
 void

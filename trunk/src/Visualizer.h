@@ -81,6 +81,11 @@ public:
 					const
 					char*	pathShort
 				);
+	
+	bool			GetProjectorClear();
+	void			SetProjectorClear(bool clear=true);
+	bool			GetProjectorPreviewClear();
+	void			SetProjectorPreviewClear(bool clear=true);
 
 private:
 
@@ -132,6 +137,9 @@ private:
 	float			LowMemoryWarningScalar;
 	int			LowMemoryMB;
 	LGL_Timer		LowMemoryTimer;
+
+	bool			ProjectorClear;
+	bool			ProjectorPreviewClear;
 	
 static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
 
