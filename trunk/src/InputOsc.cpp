@@ -914,6 +914,25 @@ InputOscObj(int port) :
 			}
 		}
 
+		//FreqSenseLEDBrightness
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformFreqSenseLEDBrightnessOscElement[a],
+					WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformFreqSenseLEDBrightness,
+					false
+				);
+			}
+		}
+
 		//AudioInputToggle
 		{
 			for(int a=0;a<2;a++)
@@ -1835,6 +1854,18 @@ WaveformFreqSenseBrightness
 {
 	float brightness=-1;
 	brightness = WaveformFreqSenseBrightnessOscElement[GetIndexFromTarget(target)].GetFloat();
+	return(brightness);
+}
+
+float
+InputOscObj::
+WaveformFreqSenseLEDBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1;
+	brightness = WaveformFreqSenseLEDBrightnessOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(brightness);
 }
 

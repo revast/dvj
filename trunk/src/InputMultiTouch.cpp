@@ -945,6 +945,35 @@ WaveformFreqSenseBrightnessDelta
 	return(delta);
 }
 
+float
+InputMultiTouchObj::
+WaveformFreqSenseLEDBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1;
+	return(brightness);
+}
+
+float
+InputMultiTouchObj::
+WaveformFreqSenseLEDBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED)
+		{
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
+		}
+	}
+	return(delta);
+}
+
 bool
 InputMultiTouchObj::
 WaveformAudioInputToggle

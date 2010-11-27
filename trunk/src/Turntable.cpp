@@ -664,6 +664,7 @@ TurntableObj
 	VideoBrightness=1.0f;
 	OscilloscopeBrightness=0.0f;
 	FreqSenseBrightness=0.0f;
+	FreqSenseLEDBrightness=0.0f;
 	AudioInputMode=false;
 
 	VideoEncoder=NULL;
@@ -1420,7 +1421,7 @@ NextFrame
 	else if(Mode==2)
 	{
 		SecondsLast=SecondsNow;
-		SecondsNow=Sound->GetPositionSeconds(Channel);
+		SecondsNow=GetTimeSeconds();
 
 		VolumeKill = GetInput().WaveformGainKill(target);
 
@@ -2343,6 +2344,26 @@ NextFrame
 			{
 				SelectNewVideo();
 			}
+		}
+
+		//LEDs
+		newBright=GetInput().WaveformFreqSenseLEDBrightness(target);
+		if(newBright==-1.0f)
+		{
+			float delta = GetInput().WaveformFreqSenseLEDBrightnessDelta(target);
+			if(delta!=0.0f)
+			{
+				newBright=LGL_Clamp
+				(
+					0.0f,
+					FreqSenseLEDBrightness+delta,
+					1.0f
+				);
+			}
+		}
+		if(newBright!=-1.0f)
+		{
+			FreqSenseLEDBrightness=newBright;
 		}
 
 		float newRate=GetInput().WaveformVideoAdvanceRate(target);
@@ -3657,7 +3678,7 @@ DrawFrame
 					top,
 					true
 				);
-				if(FreqSenseBrightness>0.0f)
+				if(FreqSenseLEDBrightness>0.0f)
 				{
 					float volAve;
 					float volMax;
@@ -3688,7 +3709,7 @@ DrawFrame
 						left,bottom,
 						right,bottom,
 						r,g,b,1.0f,
-						1.0f,
+						3.0f,
 						true
 					);
 					LGL_DrawLineToScreen
@@ -3696,7 +3717,7 @@ DrawFrame
 						right,bottom,
 						right,top,
 						r,g,b,1.0f,
-						1.0f,
+						3.0f,
 						true
 					);
 					LGL_DrawLineToScreen
@@ -3704,7 +3725,7 @@ DrawFrame
 						right,top,
 						left,top,
 						r,g,b,1.0f,
-						1.0f,
+						3.0f,
 						true
 					);
 					LGL_DrawLineToScreen
@@ -3712,7 +3733,7 @@ DrawFrame
 						left,top,
 						left,bottom,
 						r,g,b,1.0f,
-						1.0f,
+						3.0f,
 						true
 					);
 				}
@@ -4167,6 +4188,7 @@ DrawFrame
 				VideoBrightness,					//58
 				OscilloscopeBrightness,					//59
 				FreqSenseBrightness,					//60
+				FreqSenseLEDBrightness,					//60
 				Channel,						//61
 				recallPos						//62
 			);
@@ -4647,6 +4669,28 @@ GetFreqSenseBrightnessFinal()
 	);
 }
 
+float
+TurntableObj::
+GetFreqSenseLEDBrightnessPreview()
+{
+	return
+	(
+		GetVisualBrightnessPreview()*
+		FreqSenseLEDBrightness
+	);
+}
+
+float
+TurntableObj::
+GetFreqSenseLEDBrightnessFinal()
+{
+	return
+	(
+		GetVisualBrightnessFinal()*
+		FreqSenseLEDBrightness
+	);
+}
+
 void
 TurntableObj::
 SetMixerVolumeFront
@@ -4941,6 +4985,13 @@ GetTimeSeconds()
 	}
 }
 
+float
+TurntableObj::
+GetTimeSecondsPrev()
+{
+	return(SecondsLast);
+}
+
 bool
 TurntableObj::
 GetFreqMetaData
@@ -4960,11 +5011,17 @@ GetFreqMetaData
 	{
 		if(Sound)
 		{
+			float timeNow=GetTimeSeconds();
+			float timePrev=GetTimeSecondsPrev();
+			if(timePrev>timeNow-1.0f/60.0f)
+			{
+				timePrev=timeNow-1.0f/60.0f;
+			}
 			ret=
 				Sound->GetMetadata
 				(
-					GetTimeSeconds(),
-					GetTimeSeconds()+1.0f/60.0f,
+					timePrev,
+					timeNow,
 					freqFactor,
 					volAve,
 					volMax

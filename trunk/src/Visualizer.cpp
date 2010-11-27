@@ -160,6 +160,25 @@ VisualizerObj()
 		}
 		NOISE_IMAGE_INITIALIZED=true;
 	}
+
+	std::vector<IpEndpointName> inLEDClientList = GetLEDClientList();
+	for(unsigned int a=0;a<inLEDClientList.size();a++)
+	{
+		char host[2048];
+		inLEDClientList[a].AddressAsString(host);
+		LEDClientList.push_back
+		(
+			new LGL_LEDClient
+			(
+				host,
+				inLEDClientList[a].port
+			)
+		);
+	}
+	LEDBrightnessMin=0.0f;
+	LEDR=0.0f;
+	LEDG=0.0f;
+	LEDB=0.0f;
 }
 
 VisualizerObj::
@@ -167,7 +186,12 @@ VisualizerObj::
 {
 	delete	BlueScreenOfDeath;
 	//delete	AccumulationNow;
-	//TODO: Take care of scroll text buffers
+
+	for(unsigned int a=0;a<LEDClientList.size();a++)
+	{
+		delete LEDClientList[a];
+	}
+	LEDClientList.clear();
 }
 
 void
@@ -489,6 +513,112 @@ DrawVisuals
 	}
 	*/
 	LGL_ClipRectDisable();
+
+	//Frequency-sensitive LEDs
+
+	if(LGL_GetActiveDisplay()==0)
+	{
+		if(LEDTimer.SecondsSinceLastReset()>=1.0f/30.0f)
+		{
+			LEDTimer.Reset();
+
+			float ledR=0.0f;
+			float ledG=0.0f;
+			float ledB=0.0f;
+
+			for(int t=0;t<2;t++)
+			{
+				float ejectBrightnessScalar=tts[t]->GetEjectVisualBrightnessScalar();
+				float freqSenseLEDBright = tts[t]->GetFreqSenseLEDBrightnessFinal();
+				freqSenseLEDBright*=ejectBrightnessScalar;
+
+				float volAve;
+				float volMax;
+				float freqFactor;
+				tts[t]->GetFreqMetaData(volAve,volMax,freqFactor);
+				float brLow = GetFreqBrightness(false,freqFactor,volAve);
+				float brHigh = GetFreqBrightness(true,freqFactor,volAve);
+
+				float coolR;
+				float coolG;
+				float coolB;
+				GetColorCool(coolR,coolG,coolB);
+
+				float warmR;
+				float warmG;
+				float warmB;
+				GetColorWarm(warmR,warmG,warmB);
+
+				const float lowFactor=0.25f;
+
+				ledR+=LGL_Min
+				(
+					freqSenseLEDBright,
+					freqSenseLEDBright*
+					(
+						(1.0f-freqFactor)*coolR*brLow*lowFactor+
+						(0.0f+freqFactor)*warmR*brHigh
+					)
+				);
+				ledG+=LGL_Min
+				(
+					freqSenseLEDBright,
+					freqSenseLEDBright*
+					(
+						(1.0f-freqFactor)*coolG*brLow*lowFactor+
+						(0.0f+freqFactor)*warmG*brHigh
+					)
+				);
+				ledB+=LGL_Min
+				(
+					freqSenseLEDBright,
+					freqSenseLEDBright*
+					(
+						(1.0f-freqFactor)*coolB*brLow*lowFactor+
+						(0.0f+freqFactor)*warmB*brHigh
+					)
+				);
+			}
+
+			float ledBrightnessMinPrev=LEDBrightnessMin;
+			LEDBrightnessMin=LGL_Max(0.0f,LEDBrightnessMin-LGL_SecondsSinceLastFrame()*30.0f);
+		
+			float ledBrightnessNow=ledR+ledG+ledB;
+
+			if
+			(
+				ledBrightnessMinPrev>0.0f &&
+				ledBrightnessNow<LEDBrightnessMin
+			)
+			{
+				float ledBrightnessScalar=LEDBrightnessMin/ledBrightnessMinPrev;
+				ledR=LGL_Min(1.0f,LEDR*ledBrightnessScalar);
+				ledG=LGL_Min(1.0f,LEDG*ledBrightnessScalar);
+				ledB=LGL_Min(1.0f,LEDB*ledBrightnessScalar);
+			}
+			else
+			{
+				LEDBrightnessMin=ledBrightnessNow;
+			}
+
+			LEDR=ledR;
+			LEDG=ledG;
+			LEDB=ledB;
+			for(unsigned int a=0;a<LEDClientList.size();a++)
+			{
+				LEDClientList[a]->SetColor
+				(
+					ledR,
+					ledG,
+					ledB
+				);
+			}
+		}
+		else
+		{
+			//Wait...
+		}
+	}
 }
 
 /*

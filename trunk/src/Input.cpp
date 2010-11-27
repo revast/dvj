@@ -97,6 +97,8 @@ float	InputWaveformVideoBrightnessDelta(unsigned int target) { return(GetInput()
 float	InputWaveformVideoAdvanceRate(unsigned int target) { return(GetInput().WaveformVideoAdvanceRate(target)); }
 float	InputWaveformFreqSenseBrightness(unsigned int target) { return(GetInput().WaveformFreqSenseBrightness(target)); }
 float	InputWaveformFreqSenseBrightnessDelta(unsigned int target) { return(GetInput().WaveformFreqSenseBrightnessDelta(target)); }
+float	InputWaveformFreqSenseLEDBrightness(unsigned int target) { return(GetInput().WaveformFreqSenseLEDBrightness(target)); }
+float	InputWaveformFreqSenseLEDBrightnessDelta(unsigned int target) { return(GetInput().WaveformFreqSenseLEDBrightnessDelta(target)); }
 float	InputWaveformAudioInputToggle(unsigned int target) { return(GetInput().WaveformAudioInputToggle(target)); }
 float	InputWaveformVideoAspectRatioNext(unsigned int target) { return(GetInput().WaveformVideoAspectRatioNext(target)); }
 float	InputWaveformOscilloscopeBrightness(unsigned int target) { return(GetInput().WaveformOscilloscopeBrightness(target)); }
@@ -1346,6 +1348,44 @@ WaveformFreqSenseBrightnessDelta
 	for(unsigned int a=0;a<Children.size();a++)
 	{
 		delta+=Children[a]->WaveformFreqSenseBrightnessDelta(target);
+	}
+
+	return(delta);
+}
+
+float
+InputObj::
+WaveformFreqSenseLEDBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1.0f;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformFreqSenseLEDBrightness(target);
+		if(candidate!=-1.0f)
+		{
+			brightness=candidate;
+		}
+	}
+
+	return(brightness);
+}
+
+float
+InputObj::
+WaveformFreqSenseLEDBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		delta+=Children[a]->WaveformFreqSenseLEDBrightnessDelta(target);
 	}
 
 	return(delta);

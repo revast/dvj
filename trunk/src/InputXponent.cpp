@@ -2047,6 +2047,39 @@ WaveformFreqSenseBrightness
 	return(brightness);
 }
 
+float
+InputXponentObj::
+WaveformFreqSenseLEDBrightness
+(
+	unsigned int	target
+)	const
+{
+	float brightness=-1.0f;
+
+	if(LGL_GetXponent())
+	{
+		if((target & TARGET_BOTTOM))
+		{
+			//FIXME: Left / Right is asymmmetric, for Zebbler, for now... Shoudln't be, though..
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_RIGHT_MOD_1))
+			{
+				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_RIGHT_MOD_1);
+				brightness = ((knob == -1.0f) ? 1.0f : knob);
+			}
+		}
+		else if((target & TARGET_TOP))
+		{
+			if(LGL_GetXponent()->GetKnobTweak(LGL_XPONENT_KNOB_LEFT_MOD_4))
+			{
+				float knob = LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_MOD_4);
+				brightness = ((knob == -1.0f) ? 1.0f : knob);
+			}
+		}
+	}
+
+	return(brightness);
+}
+
 bool
 InputXponentObj::
 WaveformAudioInputToggle

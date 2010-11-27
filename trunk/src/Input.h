@@ -99,6 +99,8 @@ float	InputWaveformVideoBrightnessDelta(unsigned int target);
 float	InputWaveformVideoAdvanceRate(unsigned int target);
 float	InputWaveformFreqSenseBrightness(unsigned int target);
 float	InputWaveformFreqSenseBrightnessDelta(unsigned int target);
+float	InputWaveformFreqSenseLEDBrightness(unsigned int target);
+float	InputWaveformFreqSenseLEDBrightnessDelta(unsigned int target);
 float	InputWaveformAudioInputToggle(unsigned int target);
 float	InputWaveformVideoAspectRatioNext(unsigned int target);
 float	InputWaveformOscilloscopeBrightness(unsigned int target);
@@ -122,6 +124,7 @@ typedef enum
 	GUI_ELEMENT_VIS_VIDEO,
 	GUI_ELEMENT_VIS_OSCILLOSCOPE,
 	GUI_ELEMENT_VIS_FREQSENSE,
+	GUI_ELEMENT_VIS_FREQSENSE_LED,
 	GUI_ELEMENT_SAVEPOINT_BPM_ALPHA,
 	GUI_ELEMENT_SAVEPOINT_BPM_OMEGA,
 	GUI_ELEMENT_SAVEPOINT_0,
@@ -235,6 +238,9 @@ virtual	float	WaveformVideoBrightnessDelta	(unsigned int target)	const;	//How br
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual	float	WaveformFreqSenseBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	float	WaveformFreqSenseBrightnessDelta(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
+virtual	float	WaveformFreqSenseLEDBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
+virtual	float	WaveformFreqSenseLEDBrightnessDelta
+						(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	bool	WaveformAudioInputToggle	(unsigned int target)	const;	//Set audio input mode
 virtual	bool	WaveformVideoAspectRatioNext	(unsigned int target)	const;	//Advance to next aspect ratio mode
 virtual	float	WaveformOscilloscopeBrightness	(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader

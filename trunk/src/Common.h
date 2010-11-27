@@ -172,6 +172,7 @@ Turntable_DrawWaveform
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
+	float		freqSenseLEdBrightness,
 	int		channel,
 	float		recallPos
 );
@@ -190,7 +191,8 @@ Turntable_DrawSliders
 	float		gain,
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
-	float		freqSenseBrightness
+	float		freqSenseBrightness,
+	float		freqSenseLEDBrightness
 );
 
 void

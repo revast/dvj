@@ -102,6 +102,7 @@ typedef enum
 	WAVEFORM_VIDEO_SELECT,
 	WAVEFORM_VIDEO_BRIGHTNESS,
 	WAVEFORM_FREQ_SENSE_BRIGHTNESS,
+	WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS,
 	WAVEFORM_OSCILLOSCOPE_BRIGHTNESS,
 	WAVEFORM_AUDIO_INPUT_TOGGLE,
 	WAVEFORM_VIDEO_ASPECT_RATIO_NEXT,
@@ -272,6 +273,9 @@ GetOscServerPort();
 
 std::vector<IpEndpointName>
 GetOscClientList();
+
+std::vector<IpEndpointName>
+GetLEDClientList();
 
 std::vector<int>
 GetOscClientAutoPortList();
