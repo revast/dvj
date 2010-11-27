@@ -3666,8 +3666,8 @@ DrawFrame
 
 					if
 					(
-						GetFreqBrightness(false,freqFactor,2*volAve)==0.0f &&
-						GetFreqBrightness(true,freqFactor,2*volAve)==0.0f
+						GetFreqBrightness(false,freqFactor,2*volAve,(AudioInputMode ? GetEQLo() : 0.5f))==0.0f &&
+						GetFreqBrightness(true,freqFactor,2*volAve,(AudioInputMode ? GetEQHi() : 0.5f))==0.0f
 					)
 					{
 						freqFactor=0.0f;
@@ -4954,7 +4954,7 @@ GetFreqMetaData
 	
 	if(AudioInputMode)
 	{
-		ret=LGL_AudioInMetadata(volAve,volMax,freqFactor);
+		ret=LGL_AudioInMetadata(volAve,volMax,freqFactor,GetGain(),GetEQMid()*0.5f);
 	}
 	else
 	{

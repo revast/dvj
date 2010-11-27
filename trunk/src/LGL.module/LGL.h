@@ -1436,7 +1436,9 @@ LGL_AudioInMetadata
 (
 	float&	volAve,
 	float&	volMax,
-	float&	freqFactor
+	float&	freqFactor,
+	float	gain=1.0f,
+	float	freqEQBalance=0.5f
 );
 
 void
@@ -1597,7 +1599,14 @@ public:
 
 const	float*		GetWaveform();
 const	float*		GetSpectrum();
-	void		GetMetadata(float& volAve, float& volMax, float& freqFactor);
+	void		GetMetadata
+			(
+				float&	volAve,
+				float&	volMax,
+				float&	freqFactor,
+				float	gain=1.0f,
+				float	freqEQBalance=0.5f
+			);
 	
 virtual	void		Update();
 	bool		IsPlaying();
@@ -1679,7 +1688,11 @@ virtual	int		MixIntoStream
 	bool		GetDistanceLessThanEuclidean(LGL_AudioGrain* queryGrain, float distance);
 	bool		GetDistanceGreaterThanEuclidean(LGL_AudioGrain* queryGrain, float distance);
 
-	void		CalculateWaveformDerivatives();
+	void		CalculateWaveformDerivatives
+			(
+				float	gain=1.0f,
+				float	freqEQBalance=0.5f
+			);
 	void		CalculateSpectrum();
 	void		CalculateSpectrumMipMaps();
 	void		NullifyWaveformAndSpectrum();
@@ -1702,6 +1715,8 @@ private:
 	float		VolAve;
 	float		VolMax;
 	float		FreqFactor;
+	float		Gain;
+	float		FreqEQBalance;
 
 	long		LengthSamples;
 	long		SpectrumSamples;

@@ -206,7 +206,8 @@ GetFreqBrightness
 (
 	bool	hi,
 	float	freqFactor,
-	float	vol
+	float	vol,
+	float	exagertionFactor=0.5f
 );
 
 #endif	//_DVJ_COMMON_H_
