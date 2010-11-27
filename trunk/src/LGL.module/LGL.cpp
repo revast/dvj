@@ -14089,7 +14089,6 @@ lgl_analyze_wave_segment
 		magnitudeTotal*=gain;
 
 		float val=1.0f;
-freqEQBalance*=1.5;
 		if(freqEQBalance<0.5f)
 		{
 			val=freqEQBalance*2.0f;
