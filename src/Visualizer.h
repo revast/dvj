@@ -143,6 +143,14 @@ private:
 	
 static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
 
+	std::vector<LGL_LEDClient*>
+				LEDClientList;
+	LGL_Timer		LEDTimer;
+	float			LEDBrightnessMin;
+	float			LEDR;
+	float			LEDG;
+	float			LEDB;
+
 };
 
 #endif	//_DVJ_VISUALIZER_H_

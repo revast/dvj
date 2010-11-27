@@ -3205,7 +3205,33 @@ private:
 
 //LEDs
 
-void		LGL_SetLEDs(float r, float g, float b);
+class LGL_LEDClient
+{
+
+public:
+
+		LGL_LEDClient(const char* hostname, int port=6038);
+		~LGL_LEDClient();
+
+	void	SetColor(float red, float green, float blue);
+
+private:
+
+	char	Hostname[2048];
+	int	Port;
+
+	int	SocketInstance;
+};
+
+void		LGL_SetLEDs
+		(
+			const char*	hostname,
+			int		port,
+			int&		socketInstance,
+			float		r,
+			float		g,
+			float		b
+		);
 
 
 

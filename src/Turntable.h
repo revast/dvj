@@ -72,6 +72,8 @@ public:
 	float				GetOscilloscopeBrightnessFinal();
 	float				GetFreqSenseBrightnessPreview();
 	float				GetFreqSenseBrightnessFinal();
+	float				GetFreqSenseLEDBrightnessPreview();
+	float				GetFreqSenseLEDBrightnessFinal();
 	float				GetEjectVisualBrightnessScalar();
 	bool				GetAudioInputMode();
 
@@ -101,6 +103,7 @@ public:
 	float				GetVideoTimeSeconds();
 	bool				GetVideoSolo();
 	float				GetTimeSeconds();
+	float				GetTimeSecondsPrev();
 	bool				GetFreqMetaData(float& volAve, float& volMax, float& freqFactor);
 	float				GetVolumePeak();
 
@@ -290,6 +293,7 @@ static	VisualizerObj*			Visualizer;
 	float				VideoBrightness;
 	float				OscilloscopeBrightness;
 	float				FreqSenseBrightness;
+	float				FreqSenseLEDBrightness;
 	bool				AudioInputMode;
 	LGL_Timer			VideoFrontRadiusIncreaseDelayTimer;
 

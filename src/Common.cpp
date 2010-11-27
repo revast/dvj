@@ -984,6 +984,7 @@ Turntable_DrawWaveform
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
+	float		freqSenseLEDBrightness,
 	int		channel,
 	float		recallPos
 )
@@ -3013,7 +3014,8 @@ Turntable_DrawWaveform
 		volumeMultiplierNow,
 		videoBrightness,
 		oscilloscopeBrightness,
-		freqSenseBrightness
+		freqSenseBrightness,
+		freqSenseLEDBrightness
 	);
 }
 
@@ -3031,7 +3033,8 @@ Turntable_DrawSliders
 	float		gain,
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
-	float		freqSenseBrightness
+	float		freqSenseBrightness,
+	float		freqSenseLEDBrightness
 )
 {
 	float viewportWidth = viewportRight - viewportLeft;
@@ -3072,22 +3075,24 @@ Turntable_DrawSliders
 	letters[1]='M';
 	letters[2]='H';
 	letters[3]='G';
-	letters[9]='V';
-	letters[10]='O';
-	letters[11]='F';
+	letters[8]='V';
+	letters[9]='O';
+	letters[10]='F';
+	letters[11]='L';
 
-	DVJ_GuiElement dragElements[12];
+	DVJ_GuiElement guiElements[12];
 	for(int l=0;l<12;l++)
 	{
-		dragElements[l]=GUI_ELEMENT_NULL;
+		guiElements[l]=GUI_ELEMENT_NULL;
 	}
-	dragElements[0]=GUI_ELEMENT_EQ_LOW;
-	dragElements[1]=GUI_ELEMENT_EQ_MID;
-	dragElements[2]=GUI_ELEMENT_EQ_HIGH;
-	dragElements[3]=GUI_ELEMENT_EQ_GAIN;
-	dragElements[9]=GUI_ELEMENT_VIS_VIDEO;
-	dragElements[10]=GUI_ELEMENT_VIS_OSCILLOSCOPE;
-	dragElements[11]=GUI_ELEMENT_VIS_FREQSENSE;
+	guiElements[0]=GUI_ELEMENT_EQ_LOW;
+	guiElements[1]=GUI_ELEMENT_EQ_MID;
+	guiElements[2]=GUI_ELEMENT_EQ_HIGH;
+	guiElements[3]=GUI_ELEMENT_EQ_GAIN;
+	guiElements[8]=GUI_ELEMENT_VIS_VIDEO;
+	guiElements[9]=GUI_ELEMENT_VIS_OSCILLOSCOPE;
+	guiElements[10]=GUI_ELEMENT_VIS_FREQSENSE;
+	guiElements[11]=GUI_ELEMENT_VIS_FREQSENSE_LED;
 
 	float levels[12];
 	for(int l=0;l<12;l++)
@@ -3098,13 +3103,14 @@ Turntable_DrawSliders
 	levels[1]=eq[1];
 	levels[2]=eq[2];
 	levels[3]=LGL_Clamp(0.0f,gain*0.5f,1.0f);
-	levels[9]=videoBrightness;
-	levels[10]=oscilloscopeBrightness;
-	levels[11]=freqSenseBrightness;
+	levels[8]=videoBrightness;
+	levels[9]=oscilloscopeBrightness;
+	levels[10]=freqSenseBrightness;
+	levels[11]=freqSenseLEDBrightness;
 
 	for(int f=0;f<12;f++)
 	{
-		if(dragElements[f]==GUI_ELEMENT_NULL)
+		if(guiElements[f]==GUI_ELEMENT_NULL)
 		{
 			continue;
 		}
@@ -3114,7 +3120,7 @@ Turntable_DrawSliders
 
 		//Mouse Input
 		{
-			DVJ_GuiElement guiElementNow=dragElements[f];
+			DVJ_GuiElement guiElementNow=guiElements[f];
 
 			float dragFloat=LGL_Clamp
 			(

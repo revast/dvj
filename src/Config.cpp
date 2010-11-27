@@ -125,7 +125,19 @@ CreateDefaultDVJRC
 		fprintf(fd,"wireMemory=1\n");
 		fprintf(fd,"escDuringScanExits=1\n");
 		fprintf(fd,"\n");
-		fprintf(fd,"oscServerPort=7000\n");
+		fprintf(fd,"ledClient_000_Host = localhost\n");
+		fprintf(fd,"ledClient_000_Port = 0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"ledClient_001_Host = localhost\n");
+		fprintf(fd,"ledClient_001_Port = 0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"ledClient_002_Host = localhost\n");
+		fprintf(fd,"ledClient_002_Port = 0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"ledClient_003_Host = localhost\n");
+		fprintf(fd,"ledClient_003_Port = 0\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"# You may add up to ledClient_0255, if you so desire.\n");
 		fprintf(fd,"\n");
 		fclose(fd);
 	}
@@ -1314,6 +1326,8 @@ PrepareInputMap()
 		("waveformVideoBrightness",		true,	"LGL_KEY_NONE",		"video_brightness");
 	dvjInputMap[WAVEFORM_FREQ_SENSE_BRIGHTNESS].Set
 		("waveformFreqSenseBrightness",		true,	"LGL_KEY_NONE",		"freq_sense_brightness");
+	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS].Set
+		("waveformFreqSenseLEDBrightness",	true,	"LGL_KEY_NONE",		"freq_sense_led_brightness");
 	dvjInputMap[WAVEFORM_OSCILLOSCOPE_BRIGHTNESS].Set
 		("waveformOscilloscopeBrightness",	true,	"LGL_KEY_NONE",		"oscilloscope_brightness");
 	dvjInputMap[WAVEFORM_AUDIO_INPUT_TOGGLE].Set
@@ -1640,6 +1654,40 @@ GetOscClientList()
 		sprintf(keyPort,"oscClient_%03i_Port",a);
 		std::string hostStr = inputOscConfigFile->read<std::string>(keyHost,"");
 		int port=inputOscConfigFile->read<int>(keyPort,0);
+		if
+		(
+			port>=1024 &&
+			hostStr.c_str()[0]!='\0'
+		)
+		{
+			ret.push_back
+			(
+				IpEndpointName
+				(
+					hostStr.c_str(),
+					port
+				)
+			);
+		}
+	}
+
+	return(ret);
+}
+
+std::vector<IpEndpointName>
+GetLEDClientList()
+{
+	std::vector<IpEndpointName> ret;
+
+	char keyHost[512];
+	char keyPort[512];
+
+	for(int a=0;a<256;a++)
+	{
+		sprintf(keyHost,"ledClient_%03i_Host",a);
+		sprintf(keyPort,"ledClient_%03i_Port",a);
+		std::string hostStr = dvjrcConfigFile->read<std::string>(keyHost,"");
+		int port=dvjrcConfigFile->read<int>(keyPort,0);
 		if
 		(
 			port>=1024 &&
