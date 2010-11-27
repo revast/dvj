@@ -74,6 +74,7 @@
 #endif //LGL_LINUX_VIDCAM
 
 #ifdef	LGL_OSX
+
 #include <Aliases.h>
 #include <mach/mach_init.h>
 #include <mach/thread_policy.h>
@@ -2773,7 +2774,9 @@ LGL_AudioInMetadata
 (
 	float&	volAve,
 	float&	volMax,
-	float&	freqFactor
+	float&	freqFactor,
+	float	gain,
+	float	freqEQBalance
 )
 {
 	volAve=0.0f;
@@ -2827,7 +2830,9 @@ LGL_AudioInMetadata
 	(
 		volAve,
 		volMax,
-		freqFactor
+		freqFactor,
+		gain,
+		freqEQBalance
 	);
 	/*
 	volAve/=weightTotal;
@@ -13121,12 +13126,17 @@ LGL_AudioGrain()
 	SpectrumMono=NULL;
 	SpectrumMipMaps=NULL;
 	SpectrumMipMapsError=NULL;
+	VolAve=0.0f;
+	VolMax=0.0f;
+	FreqFactor=0.0f;
+	Gain=1.0f;
+	FreqEQBalance=0.5f;
 
+	LengthSamples=0;
+	SpectrumSamples=512;
 	StartDelaySamples=0;
 	CurrentPositionSamplesInt=0;
 	CurrentPositionSamplesFloat=0.0f;
-	LengthSamples=0;
-	SpectrumSamples=512;
 	PlaybackPercent=0;
 	VolumeFrontLeft=1.0f;
 	VolumeFrontRight=1.0f;
@@ -13252,10 +13262,12 @@ GetMetadata
 (
 	float&	volAve,
 	float&	volMax,
-	float&	freqFactor
+	float&	freqFactor,
+	float	gain,
+	float	freqEQBalance
 )
 {
-	CalculateWaveformDerivatives();
+	CalculateWaveformDerivatives(gain,freqEQBalance);
 
 	volAve=VolAve;
 	volMax=VolMax;
@@ -14014,7 +14026,9 @@ lgl_analyze_wave_segment
 	unsigned long	len16,
 	bool		loaded,
 	int		hz,
-	int		channels
+	int		channels,
+	float		gain=1.0f,
+	float		freqEQBalance=0.5f
 )
 {
 	assert(sampleLast>=sampleFirst);
@@ -14070,35 +14084,25 @@ lgl_analyze_wave_segment
 
 	int samplesScanned=(int)(sampleLast-sampleFirst);
 
-	if(LGL_GetXponent())
+	//EQ Affects Analysis
 	{
-		float knobGain=LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_GAIN);
-		if(knobGain>=0.0f)
+		magnitudeTotal*=gain;
+
+		float val=1.0f;
+freqEQBalance*=1.5;
+		if(freqEQBalance<0.5f)
 		{
-			magnitudeTotal*=1.0f+7.0f*LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_GAIN);
+			val=freqEQBalance*2.0f;
 		}
-		float knobMid=LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_MID);
-		if(knobMid>=0.0f)
+		else if(freqEQBalance==0.5f)
 		{
-			float val=1.0f;
-			if(knobMid==-1.0f)
-			{
-				val=1.0f;
-			}
-			else if(knobMid<0.5f)
-			{
-				val=knobMid*2.0f;
-			}
-			else if(knobMid==0.5f)
-			{
-				val=1.0f;
-			}
-			else if(knobMid>0.5f)
-			{
-				val=powf(knobMid*2.0f,3.0f);
-			}
-			zeroCrossings*=val;
+			val=1.0f;
 		}
+		else if(freqEQBalance>0.5f)
+		{
+			val=powf(2.0f,8.0f*(freqEQBalance-0.5f));
+		}
+		zeroCrossings*=val;
 	}
 
 	magnitudeAve=(magnitudeTotal/samplesScanned)/(1<<15);
@@ -14131,9 +14135,18 @@ lgl_analyze_wave_segment
 
 void
 LGL_AudioGrain::
-CalculateWaveformDerivatives()
+CalculateWaveformDerivatives
+(
+	float	gain,
+	float	freqEQBalance
+)
 {
-	if(WaveformMonoFloat!=NULL)
+	if
+	(
+		WaveformMonoFloat!=NULL &&
+		Gain==gain &&
+		FreqEQBalance==freqEQBalance
+	)
 	{
 		//We've already calculated this.
 		assert(WaveformLeftFloat!=NULL);
@@ -14147,13 +14160,15 @@ CalculateWaveformDerivatives()
 	WaveformRightFloat=new float[LengthSamples];
 	WaveformMonoFloat=new float[LengthSamples];
 
+	Gain=gain;
+	FreqEQBalance=freqEQBalance;
+
 	for(int a=0;a<LengthSamples;a++)
 	{
 		WaveformLeftFloat[a]=(waveform16[a*2]+32768)/65536.0f;
 		WaveformRightFloat[a]=(waveform16[a*2+1]+32768)/65536.0f;
 		WaveformMonoFloat[a]=0.5f*(WaveformLeftFloat[a]+WaveformRightFloat[a]);
 	}
-
 	lgl_analyze_wave_segment
 	(
 		0,
@@ -14165,7 +14180,9 @@ CalculateWaveformDerivatives()
 		LengthSamples,
 		true,
 		44100,	//HACK,
-		2
+		2,
+		Gain,
+		FreqEQBalance
 	);
 }
 

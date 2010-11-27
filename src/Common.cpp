@@ -1126,8 +1126,8 @@ Turntable_DrawWaveform
 
 		if
 		(
-			GetFreqBrightness(false,freqFactor,2*volAve*volumeMultiplierNow) ||
-			GetFreqBrightness(true,freqFactor,2*volAve*volumeMultiplierNow)
+			GetFreqBrightness(false,freqFactor,2*volAve*volumeMultiplierNow,eq0) ||
+			GetFreqBrightness(true,freqFactor,2*volAve*volumeMultiplierNow,eq2)
 		)
 		{
 			LGL_DrawAudioInWaveform
@@ -3341,7 +3341,8 @@ GetFreqBrightness
 (
 	bool	hi,
 	float	freqFactor,
-	float	vol
+	float	vol,
+	float	exagerationFactor
 )
 {
 	float freqMag;
@@ -3381,7 +3382,26 @@ GetFreqBrightness
 		freqMag*=volMagNormalized;
 	}
 	
-	float brightFactor;
+	float brightFactor=1.0f;
+	//EQ Affects Analysis
+	if(exagerationFactor!=-1.0f)
+	{
+		if(hi)
+		{
+			//0 => 0
+			//.5 => 1
+			//1 => 4
+			brightFactor=exagerationFactor*powf(2.0f,(exagerationFactor*4.0f));
+		}
+		else
+		{
+			brightFactor=exagerationFactor;
+			//0 => 0
+			//.5 => 1
+			//1 => 2
+		}
+	}
+	/*
 	if(hi)
 	{
 		brightFactor = 4.0f;
@@ -3406,6 +3426,7 @@ GetFreqBrightness
 			}
 		}
 	}
+	*/
 	float ret=freqMag*brightFactor;
 
 	if(hi)
