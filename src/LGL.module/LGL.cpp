@@ -28772,6 +28772,18 @@ lgl_set_leds
 	struct sockaddr_in sock;
 	struct hostent *hp;
 
+	if
+	(
+		host==NULL ||
+		host[0]=='\0' ||
+		port==0
+	)
+	{
+		return;
+	}
+
+	bzero(&sock,sizeof(sock));
+
 	const int packet_size = 536;
 	const int header_size = 21;
 	const unsigned char header[] = {4,1,220,74,1,0,1,1,0,0,0,0,0,0,0,0,255,255,255,255,0};
@@ -28785,10 +28797,18 @@ lgl_set_leds
 		memcpy(buffer,header,header_size);
 	}
 
-	if (socketInstance < 0) fprintf(stderr, "Error creating socket");
+	if (socketInstance < 0)
+	{
+		fprintf(stderr, "lgl_set_leds(): Error creating socket\n");
+		return;
+	}
 
 	hp = gethostbyname(host);
-	if (hp==0) fprintf(stderr, "Unknown host");
+	if (hp==0)
+	{
+		fprintf(stderr, "lgl_set_leds(): Unknown host\n");
+		return;
+	}
 
 	sock.sin_family = hp->h_addrtype;
 	sock.sin_port = htons(port);
@@ -28808,9 +28828,12 @@ lgl_set_leds
 				break;
 		}
 	}
-	call=sendto(socketInstance, buffer, 536, 0, (struct sockaddr*) &sock, sizeof(struct sockaddr_in));
+	call=sendto(socketInstance, buffer, packet_size, 0, (struct sockaddr*) &sock, sizeof(struct sockaddr_in));
 	//close(socketInstance);
-	if (call < 0) fprintf(stderr, "Failed to send");
+	if (call < 0)
+	{
+		fprintf(stderr, "lgl_set_leds(): Failed to send (%i) (%i) (%i)\n",packet_size,hp->h_length,call);
+	}
 }
 
 void
@@ -28841,11 +28864,11 @@ LGL_LEDClient::
 LGL_LEDClient
 (
 	const char*	hostname,
-	int		udpPort
+	int		port
 )
 {
 	strcpy(Hostname,hostname);
-	Port=udpPort;
+	Port=port;
 
 	SocketInstance=-1;
 }
