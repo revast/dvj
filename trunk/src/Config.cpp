@@ -1305,9 +1305,9 @@ PrepareInputMap()
 	dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_FORWARD].Set
 		("waveformSavePointShiftAllForward",	true,	"LGL_KEY_UNKNOWN",	"save_point/shift_all/forward");
 	dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_NOW].Set
-		("waveformSavePointJumpNow",		true,	"LGL_KEY_B",		"save_point/jump/now");
+		("waveformSavePointJumpNow",		true,	"LGL_KEY_T",		"save_point/jump/now");
 	dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE].Set
-		("waveformSavePointJumpAtMeasure",	true,	"LGL_KEY_T",		"save_point/jump/at_measure");
+		("waveformSavePointJumpAtMeasure",	true,	"LGL_KEY_B",		"save_point/jump/at_measure");
 	dvjInputMap[WAVEFORM_QUANTIZATION_PERIOD_HALF].Set
 		("waveformQuantizationPeriodHalf",	true,	"LGL_KEY_J",		"quantization_period/half");
 	dvjInputMap[WAVEFORM_QUANTIZATION_PERIOD_DOUBLE].Set
@@ -1704,7 +1704,6 @@ GetLEDClientList()
 			);
 		}
 	}
-
 	return(ret);
 }
 

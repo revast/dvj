@@ -289,6 +289,7 @@ WaveformPitchbendDelta
 )	const
 {
 	const float RATE_SLOW = 0.005f;
+	const float RATE_MID = 0.005f;
 	const float RATE_FAST = 0.1f;
 
 	float delta=0.0f;
@@ -299,6 +300,8 @@ WaveformPitchbendDelta
 		(
 			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaDownSlowKey()) ? -RATE_SLOW*LGL_SecondsSinceLastFrame() : 0) +
 			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaUpSlowKey()) ? RATE_SLOW*LGL_SecondsSinceLastFrame() : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaDownKey()) ? -RATE_MID*LGL_SecondsSinceLastFrame() : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaUpKey()) ? RATE_MID*LGL_SecondsSinceLastFrame() : 0) +
 			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaDownFastKey()) ? -RATE_FAST*LGL_SecondsSinceLastFrame() : 0) +
 			(LGL_KeyDown(GetInputKeyboardWaveformPitchbendDeltaUpFastKey()) ? RATE_FAST*LGL_SecondsSinceLastFrame() : 0)
 		);
