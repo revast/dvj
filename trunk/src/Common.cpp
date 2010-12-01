@@ -619,6 +619,19 @@ Turntable_DrawDirTree
 	float*		inBPMList
 )
 {
+	if(filterText==NULL)
+	{
+		filterText="";
+	}
+	if(path==NULL)
+	{
+		path="";
+	}
+	if(nameArray==NULL)
+	{
+		return;
+	}
+
 	float coolR;
 	float coolG;
 	float coolB;
@@ -648,6 +661,10 @@ Turntable_DrawDirTree
 	)
 	{
 		const char* fileNow=nameArray[b];
+		if(fileNow==NULL)
+		{
+			continue;
+		}
 		
 		float R=1.0f;
 		float G=1.0f;

@@ -104,7 +104,12 @@ public:
 	bool				GetVideoSolo();
 	float				GetTimeSeconds();
 	float				GetTimeSecondsPrev();
-	bool				GetFreqMetaData(float& volAve, float& volMax, float& freqFactor);
+	bool				GetFreqMetaData
+					(
+						float&	volAve,
+						float&	volMax,
+						float&	freqFactor
+					);
 	float				GetVolumePeak();
 
 	bool				GetSavePointIndexAtNull() const;
