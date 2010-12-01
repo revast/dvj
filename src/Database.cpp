@@ -43,7 +43,7 @@ const char*
 DatabaseFilterObj::
 GetDir()
 {
-	return(Dir);
+	return(Dir ? Dir : "");
 }
 
 void

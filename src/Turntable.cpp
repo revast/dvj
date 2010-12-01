@@ -3762,6 +3762,10 @@ DrawFrame
 
 		unsigned int fileNum=DatabaseFilteredEntries.size();
 		const char* nameArray[5];
+		for(int a=0;a<5;a++)
+		{
+			nameArray[a][0]='\0';
+		}
 		bool isDirBits[5];
 		bool loadableBits[5];
 		bool alreadyPlayedBits[5];
@@ -4979,8 +4983,14 @@ GetTimeSeconds()
 		}
 		else
 		{
-			return(SmoothWaveformScrollingSample/Sound->GetHz());
-			//return(Sound->GetPositionSeconds(Channel));
+			if(LGL_FPS()>50)
+			{
+				return(SmoothWaveformScrollingSample/Sound->GetHz());
+			}
+			else
+			{
+				return(Sound->GetPositionSeconds(Channel));
+			}
 		}
 	}
 }
