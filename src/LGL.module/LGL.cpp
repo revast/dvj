@@ -12154,10 +12154,7 @@ void
 LGL_InputBuffer::
 ClearBuffer()
 {
-	for(int a=0;a<1024;a++)
-	{
-		Buffer[a]='\0';
-	}
+	bzero(Buffer,1024);
 }
 
 void
