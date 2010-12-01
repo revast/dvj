@@ -3764,7 +3764,7 @@ DrawFrame
 		const char* nameArray[5];
 		for(int a=0;a<5;a++)
 		{
-			nameArray[a][0]='\0';
+			nameArray[a]="";
 		}
 		bool isDirBits[5];
 		bool loadableBits[5];
