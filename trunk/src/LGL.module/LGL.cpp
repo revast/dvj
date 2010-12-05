@@ -28829,7 +28829,7 @@ lgl_set_leds
 	//close(socketInstance);
 	if (call < 0)
 	{
-		fprintf(stderr, "lgl_set_leds(): Failed to send (%i) (%i) (%i)\n",packet_size,hp->h_length,call);
+		//fprintf(stderr, "lgl_set_leds(): Failed to send (%i) (%i) (%i)\n",packet_size,hp->h_length,call);
 	}
 }
 
