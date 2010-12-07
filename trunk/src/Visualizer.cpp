@@ -179,6 +179,18 @@ VisualizerObj()
 	LEDR=0.0f;
 	LEDG=0.0f;
 	LEDB=0.0f;
+
+	ProjMapCornerX[0]=0.0f;
+	ProjMapCornerY[0]=0.0f;
+
+	ProjMapCornerX[1]=0.0f;
+	ProjMapCornerY[1]=1.0f;
+
+	ProjMapCornerX[2]=1.0f;
+	ProjMapCornerY[2]=1.0f;
+
+	ProjMapCornerX[3]=1.0f;
+	ProjMapCornerY[3]=0.0f;
 }
 
 VisualizerObj::
@@ -617,6 +629,15 @@ DrawVisuals
 		else
 		{
 			//Wait...
+		}
+	}
+
+	//Projection Map Corners
+	if(LGL_GetActiveDisplay()==0)
+	{
+		for(int a=0;a<4;a++)
+		{
+			//TODO
 		}
 	}
 }
@@ -1320,26 +1341,6 @@ DrawVideos
 						myB=LGL_Max(b,myB);
 						myT=LGL_Min(t,myT);
 
-						static LGL_Shader imageShader("Image Shader");
-						if(imageShader.VertCompiled()==false)
-						{
-							imageShader.VertCompile("data/glsl/bright_image.vert.glsl");
-						}
-						if(imageShader.FragCompiled()==false)
-						{
-							imageShader.FragCompile("data/glsl/bright_image.frag.glsl");
-						}
-						if(imageShader.IsLinked()==false)
-						{
-							imageShader.Link();
-						}
-						imageShader.Enable();
-						imageShader.SetUniformAttributeFloat
-						(
-							"brightnessScalar",
-							br
-						);
-
 						float alpha=0.0f;
 						if(preview==false)
 						{
@@ -1370,9 +1371,9 @@ DrawVideos
 							1.0f,
 							1.0f,
 							1.0f,
-							alpha
+							alpha,
+							br
 						);
-						imageShader.Disable();
 					}
 				}
 			}

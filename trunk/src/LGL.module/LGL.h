@@ -801,13 +801,9 @@ public:
 				float bottom=0, float top=1,
 				float rotation=0,
 				float r=1, float g=1, float b=1, float a=1,
-				bool fadetoedges=false,
-				bool fademanual=false,
-				float fademanualangle=0,
-				float fademanualmag0=0,
-				float fademanualmag1=0,
-				float leftsubimage=0, float rightsubimage=1,
-				float bottomsubimage=0, float topsubimage=1
+				float brightnessScalar=1.0f,
+				float leftsubimage=0.0f, float rightsubimage=1.0f,
+				float bottomsubimage=0.0f, float topsubimage=1.0f
 			);
 	void		DrawToScreenAsLine
 			(
@@ -837,7 +833,8 @@ public:
 	void		UnloadSurfaceFromTexture();
 	void		UpdateTexture
 			(
-				int x, int y,
+				int w,
+				int h,
 				int bytesperpixel,
 				unsigned char* data,
 				bool inLinearInterpolation=true,
@@ -928,6 +925,39 @@ const	char*		GetPathShort() const;
 	int		ReferenceCount;
 	long		FrameNumber;
 	char		VideoPath[2048];
+
+	//YUV
+
+	void		YUV_Construct();
+	void		YUV_Destruct();
+	bool		YUV_Available();
+	void		YUV_ConstructTextures();
+	void		YUV_DestructTextures();
+	void		YUV_UpdatePixelBufferObjects();
+	void		YUV_DeletePixelBufferObjects();
+	void		YUV_UpdateTexture
+			(
+				int w,
+				int h,
+				unsigned char* dataY,
+				unsigned char* dataU,
+				unsigned char* dataV,
+				const char* name="RAM Image"
+			);
+
+	int		YUV_ImgW;
+	int		YUV_ImgH;
+	int		YUV_TexW;
+	int		YUV_TexH;
+
+	GLuint		YUV_TextureGL[3];
+
+	GLuint		YUV_PixelBufferObjectFrontGL[3];
+	GLuint		YUV_PixelBufferObjectBackGL[3];
+	GLsizei		YUV_PixelBufferObjectSize;
+
+static	LGL_Shader	ImageShader;
+static	LGL_Shader	YUV_ImageShader;
 };
 
 class LGL_Animation
@@ -1014,29 +1044,48 @@ public:
 				lgl_FrameBuffer();
 				~lgl_FrameBuffer();
 	
-	unsigned char*		SwapInNewBuffer
+	void			SwapInNewBufferRGB
 				(
 					char*		videoPath,
-					unsigned char*	buffer,
+					unsigned char*&	bufferRGB,
+					unsigned int&	bufferRGBBytes,
 					int		bufferWidth,
 					int		bufferHeight,
-					unsigned int&	bufferBytes,
+					long		frameNumber
+				);
+	void			SwapInNewBufferYUV
+				(
+					char*		videoPath,
+					unsigned char*&	bufferYUV,
+					unsigned int&	bufferYUVBytes,
+					int		bufferWidth,
+					int		bufferHeight,
 					long		frameNumber
 				);
 	const char*		GetVideoPath() const;
-	unsigned char*		GetBuffer() const;
+	unsigned char*		GetBufferRGB() const;
+	unsigned int		GetBufferRGBBytes() const;
+	unsigned char*		GetBufferYUV() const;
+	unsigned int		GetBufferYUVBytes() const;
 	int			GetBufferWidth() const;
 	int			GetBufferHeight() const;
-	unsigned int		GetBufferBytes() const;
 	long			GetFrameNumber() const;
+	unsigned char*		GetBufferY() const;
+	unsigned int		GetBufferYBytes() const;
+	unsigned char*		GetBufferU() const;
+	unsigned int		GetBufferUBytes() const;
+	unsigned char*		GetBufferV() const;
+	unsigned int		GetBufferVBytes() const;
 
 private:
 
 	char			VideoPath[2048];
-	unsigned char*		Buffer;
+	unsigned char*		BufferRGB;
+	unsigned int		BufferRGBBytes;
+	unsigned char*		BufferYUV;
+	unsigned int		BufferYUVBytes;
 	int			BufferWidth;
 	int			BufferHeight;
-	unsigned int		BufferBytes;
 	long			FrameNumber;
 
 };
@@ -1115,10 +1164,16 @@ private:
 	AVFrame*		FrameNative;
 	AVFrame*		FrameRGB;
 	unsigned char*		BufferRGB;
+	unsigned int		BufferRGBBytes;
 	int			BufferWidth;
 	int			BufferHeight;
-	unsigned int		BufferBytes;
 	SwsContext*		SwsConvertContextBGRA;
+
+	unsigned char*		BufferYUV;
+	unsigned int		BufferYUVBytes;
+
+	unsigned char*		BufferYUVAsRGB;
+	unsigned int		BufferYUVAsRGBBytes;
 
 	bool			IsImage;
 	LGL_Image*		Image;
@@ -1141,6 +1196,8 @@ private:
 	long			GetNextFrameNumberToDecodeForwards();
 	long			GetNextFrameNumberToDecodeBackwards();
 	lgl_FrameBuffer*	GetRecycledFrameBuffer();
+
+	bool			IsYUV420P();
 };
 
 class LGL_VideoEncoder

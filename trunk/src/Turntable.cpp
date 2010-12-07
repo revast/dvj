@@ -799,7 +799,10 @@ TurntableObj::
 		Sound->PrepareForDelete();
 		for(;;)
 		{
-			if(Sound->ReadyForDelete())
+			if
+			(
+				Sound->ReadyForDelete()
+			)
 			{
 				break;
 			}

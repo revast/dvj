@@ -988,6 +988,28 @@ typedef void (*gl2DeleteBuffers_Func)
 );
 gl2DeleteBuffers_Func gl2DeleteBuffers=NULL;
 
+typedef void (*gl2ActiveTexture_Func)
+(
+	GLenum			texture
+);
+gl2ActiveTexture_Func gl2ActiveTexture=NULL;
+
+typedef void (*gl2MultiTexCoord2f_Func)
+(
+	GLenum			target,
+	GLfloat			s,
+	GLfloat			t
+);
+gl2MultiTexCoord2f_Func gl2MultiTexCoord2f=NULL;
+
+typedef void (*gl2MultiTexCoord2d_Func)
+(
+	GLenum			target,
+	GLfloat			s,
+	GLfloat			t
+);
+gl2MultiTexCoord2d_Func gl2MultiTexCoord2d=NULL;
+
 bool
 LGL_JackInit()
 {
@@ -2152,6 +2174,12 @@ printf("CreateWindow(%i): %i x %i\n",
 					("glUnmapBuffer");
 	gl2DeleteBuffers=		(gl2DeleteBuffers_Func)SDL_GL_GetProcAddress
 					("glDeleteBuffers");
+	gl2ActiveTexture=		(gl2ActiveTexture_Func)SDL_GL_GetProcAddress
+					("glActiveTexture");
+	gl2MultiTexCoord2f=		(gl2MultiTexCoord2f_Func)SDL_GL_GetProcAddress
+					("glMultiTexCoord2f");
+	gl2MultiTexCoord2d=		(gl2MultiTexCoord2d_Func)SDL_GL_GetProcAddress
+					("glMultiTexCoord2d");
 #endif	//LGL_NO_GRAPHICS
 
 	for(int d=LGL.DisplayCount-1;d>=0;d--)
@@ -5873,6 +5901,9 @@ SetUniformAttributeFloatPrivate
 	return(true);
 }
 
+LGL_Shader LGL_Image::ImageShader("Image Shader");
+LGL_Shader LGL_Image::YUV_ImageShader("YUV Image Shader");
+
 LGL_Image::
 LGL_Image
 (
@@ -5914,6 +5945,8 @@ LGL_Image
 
 	FrameNumber=-1;
 	VideoPath[0]='\0';
+
+	YUV_Construct();
 }
 
 LGL_Image::
@@ -6048,6 +6081,8 @@ LGL_Image
 
 	FrameNumber=-1;
 	VideoPath[0]='\0';
+
+	YUV_Construct();
 }
 
 LGL_Image::
@@ -6128,6 +6163,8 @@ LGL_Image
 
 	FrameNumber=-1;
 	VideoPath[0]='\0';
+
+	YUV_Construct();
 }
 
 LGL_Image::
@@ -6143,6 +6180,8 @@ LGL_Image::
 		assert(ReferenceCount==0);
 	}
 	UnloadSurfaceFromTexture();
+
+	YUV_Destruct();
 }
 
 void
@@ -6170,12 +6209,11 @@ DrawToScreen
 	float bottom, float top,
 	float rotation,
 	float r, float g, float b, float a,
-	bool fadetoedges,
-	bool fademanual, float fademanualangle,
-	float fademanualmag0,
-	float fademanualmag1,
-	float leftsubimage, float rightsubimage,
-	float bottomsubimage, float topsubimage
+	float brightnessScalar,
+	float leftsubimage,
+	float rightsubimage,
+	float bottomsubimage,
+	float topsubimage
 )
 {
 #ifdef	LGL_NO_GRAPHICS
@@ -6183,15 +6221,6 @@ DrawToScreen
 #endif	//LGL_NO_GRAPHICS
 
 	lgl_glScreenify2D();
-
-	if
-	(
-		fadetoedges ||
-		fademanual
-	)
-	{
-		glShadeModel(GL_SMOOTH);
-	}
 
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
 	{
@@ -6241,7 +6270,41 @@ DrawToScreen
 	if(b>1) b=1;
 	if(a>1) a=1;
 
-	if(TextureGL==0)
+	//Prepare RGB vs YUV (Alpha)
+
+	GLuint textureGL=TextureGL;
+	bool alphaChannel=AlphaChannel;
+	int imgW=ImgW;
+	int imgH=ImgH;
+	int texW=TexW;
+	int texH=TexH;
+	LGL_Shader* shader=&ImageShader;
+	bool enableShader=brightnessScalar!=1.0f;
+	if(YUV_Available())
+	{
+		textureGL=YUV_TextureGL[0];
+		alphaChannel=false;
+		imgW=YUV_ImgW;
+		imgH=YUV_ImgH;
+		texW=YUV_TexW;
+		texH=YUV_TexH;
+		shader=&YUV_ImageShader;
+		enableShader=true;
+	}
+
+	//Prepare RGB vs YUV (Omega)
+
+	if(enableShader)
+	{
+		shader->Enable();
+		shader->SetUniformAttributeFloat
+		(
+			"brightnessScalar",
+			brightnessScalar
+		);
+	}
+
+	if(textureGL==0)
 	{
 		LoadSurfaceToTexture(LinearInterpolation);
 	}
@@ -6255,7 +6318,7 @@ DrawToScreen
 	//Draw
 
 	glColor4f(r,g,b,a);
-	if(AlphaChannel==true || a<1 || fadetoedges)
+	if(alphaChannel==true || a<1)
 	{
 		glEnable(GL_BLEND);
 	}
@@ -6263,569 +6326,308 @@ DrawToScreen
 	{
 		glDisable(GL_BLEND);
 	}
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D,TextureGL);
-	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
 
-	if(fadetoedges && fademanual)
+	//Activate appropriate textures
+	if(YUV_Available())
 	{
-		fadetoedges=false;
-		fademanual=true;
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[0]);
+
+		gl2ActiveTexture(GL_TEXTURE1_ARB);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[1]);
+
+		gl2ActiveTexture(GL_TEXTURE2_ARB);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[2]);
+		
+		shader->SetUniformAttributeInt
+		(
+			"myTextureY",
+			0
+		);
+		shader->SetUniformAttributeInt
+		(
+			"myTextureU",
+			1
+		);
+		shader->SetUniformAttributeInt
+		(
+			"myTextureV",
+			2
+		);
+	}
+	else
+	{
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D,textureGL);
 	}
 
-	float cxsubimage=.5*(leftsubimage+rightsubimage);
-	float cysubimage=.5*(bottomsubimage+topsubimage);
+	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
 
-	if(fadetoedges)
+	if(FrameBufferImage)
 	{
-		//Assumes SDL image, not a framebuffer image
+		//We're not upside down
 		glBegin(GL_QUADS);
 		{
 			glNormal3f(0,0,-1);
-			//Lower Left
-
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				leftsubimage*(float)ImgW/(float)TexW,
-				cysubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(-width*.5,0);
-
-			glColor4f(r,g,b,a);
-			glTexCoord2f
-			(
-				cxsubimage*(float)ImgW/(float)TexW,
-				cysubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(0,0);
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				cxsubimage*(float)ImgW/(float)TexW,
-				rightsubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(0,-height*.5);
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				leftsubimage*(float)ImgW/(float)TexW,
-				topsubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(-width*.5,-height*.5);
-			
-			//Lower Right
-
-			glColor4f(r,g,b,a);
-			glTexCoord2f
-			(
-				cxsubimage*(float)ImgW/(float)TexW,
-				cysubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(0,0);
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				rightsubimage*(float)ImgW/(float)TexW,
-				cysubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f( width*.5,0);
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				rightsubimage*(float)ImgW/(float)TexW,
-				topsubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f( width*.5,-height*.5);
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				cxsubimage*(float)ImgW/(float)TexW,
-				topsubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(0,-height*.5);
-			
-			//Upper Left
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				leftsubimage*(float)ImgW/(float)TexW,
-				bottomsubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(-width*.5, height*.5);
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				cxsubimage*(float)ImgW/(float)TexW,
-				bottomsubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(0, height*.5);
-			
-			glColor4f(r,g,b,a);
-			glTexCoord2f
-			(
-				cxsubimage*(float)ImgW/(float)TexW,
-				cysubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(0,0);
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				leftsubimage*(float)ImgW/(float)TexW,
-				cysubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(-width*.5,0);
-			
-			//Upper Right
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				cxsubimage*(float)ImgW/(float)TexW,
-				bottomsubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(0, height*.5);
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				rightsubimage*(float)ImgW/(float)TexW,
-				bottomsubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f( width*.5, height*.5);
-			
-			glColor4f(0,0,0,0);
-			glTexCoord2f
-			(
-				rightsubimage*(float)ImgW/(float)TexW,
-				cysubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f( width*.5,0);
-			
-			glColor4f(r,g,b,a);
-			glTexCoord2f
-			(
-				cxsubimage*(float)ImgW/(float)TexW,
-				cysubimage*(float)ImgH/(float)TexH
-			);
-			glVertex2f(0,0);
-		}
-		glEnd();
-	}
-	else if(fademanual)
-	{
-//FIXME: DrawToScreen fade manual doesn't respect the subimage parameters
-		float& angle=fademanualangle;
-		float mag0=fademanualmag0;//*LGL_Max(width,height);
-		float mag1=fademanualmag1;//*LGL_Max(width,height);
-		float nx;
-		float ny;
-		float u;
-		float radius=LGL_Max(.5*width,.5*height); //.5* for inner circle mag=1. sqrt(2)=out
-		float fade0x=cos(angle)*mag0*radius;
-		float fade0y=sin(angle)*mag0*radius;
-		float fade1x=cos(angle)*mag1*radius;
-		float fade1y=sin(angle)*mag1*radius;
-		float fadeslope;
-		bool fadevertical=false;
-		if(fabs(cos(angle))<.0001)
-		{
-			fadevertical=true;
-		}
-		else
-		{
-			fadeslope=fade0y/fade0x;
-		}
-		float normslope=0;
-		float norm0b=0;	//as in y=a*x+b, where a is normslope
-		float norm1b=0;
-		bool normvertical=false;
-		if(fabs(sin(angle))<.0001)
-		{
-			normvertical=true;
-		}
-		else
-		{
-			normslope=-fade0x/fade0y;
-			//b=y-a*x
-			norm0b=fade0y-normslope*fade0x;
-			norm1b=fade1y-normslope*fade1x;
-		}
-		bool normhorizontal=fadevertical;
-		float xInt0;
-		float xInt1;
-		float yInt0;
-		float yInt1;
-		float texX;
-		float texY;
-
-		glBegin(GL_POLYGON);
-		{
-			glNormal3f(0,0,-1);
-			//Begin [LL,UL)
-
-			//Find LL's fade-value, u
-			lgl_NearestPointOnLine
-			(
-				fade0x, fade0y,
-				fade1x, fade1y,
-				-radius, -radius,
-				&nx,&ny,&u
-			);
-			if(u>=0 && u<=1)
+			float d=0;
+//#ifdef	LGL_LINUX
+//FIXME: FrameBufferImage UGLY fudge factor, due to lousy nVidia Drivers
+			if(LGL.FrameBufferTextureGlitchFix)
 			{
-				glColor4f(r*u,g*u,b*u,a*u);
-				glTexCoord2f
-				(
-					0*(float)ImgW/(float)TexW,
-					1*(float)ImgH/(float)TexH
-				);
-				glVertex2f(-width*.5,-height*.5);
+				d=-0.05/LGL.WindowResolutionX[LGL.DisplayNow];
 			}
-
-			if(normvertical==false)
+//#endif	//LGL_LINUX
+			if(YUV_Available())
 			{
-				//Find y-intercepts of Norm0, Norm1 with left edge
-				yInt0=normslope*-radius+norm0b;
-				yInt1=normslope*-radius+norm1b;
-				for(int z=0;z<2;z++)
+				for(int c=0;c<3;c++)
 				{
-					if
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else if(c==2) target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
 					(
-						(z==0 && yInt0<=yInt1) ||
-						(z==1 && yInt0>yInt1)
-					)
-					{
-						if(yInt0>-radius && yInt0<radius)
-						{
-							texY=1.0-.5*((yInt0+radius)/radius);
-							glColor4f(0,0,0,0);
-							glTexCoord2f
-							(
-								0*(float)ImgW/(float)TexW,
-								texY*(float)ImgH/(float)TexH
-							);
-							glVertex2f(-width*.5,yInt0);
-						}
-					}
-					else
-					{
-						if(yInt1>-radius && yInt1<radius)
-						{
-							texY=1.0-.5*((yInt1+radius)/radius);
-							glColor4f(r,g,b,a);
-							glTexCoord2f
-							(
-								0*(float)ImgW/(float)TexW,
-								texY*(float)ImgH/(float)TexH
-							);
-							glVertex2f(-width*.5,yInt1);
-						}
-					}
+						target,
+						leftsubimage*(float)imgW/(float)texW,
+						topsubimage*(float)imgH/(float)texH
+					);
 				}
 			}
-			//End [LL,UL)
-			//Begin [UL,UR)
-
-			//Find UL's fade-value, u
-			lgl_NearestPointOnLine
-			(
-				fade0x, fade0y,
-				fade1x, fade1y,
-				-radius, radius,
-				&nx,&ny,&u
-			);
-			if(u>=0 && u<=1)
+			else
 			{
-				glColor4f(r*u,g*u,b*u,a*u);
-				glTexCoord2f
+				glTexCoord2d
 				(
-					0*(float)ImgW/(float)TexW,
-					0*(float)ImgH/(float)TexH
+					leftsubimage*(float)imgW/(float)texW,
+					topsubimage*(float)imgH/(float)texH
 				);
-				glVertex2f(-width*.5,height*.5);
 			}
+			glVertex2d(-width*.5+d, height*.5);
 			
-			if(normhorizontal==false)
+			if(YUV_Available())
 			{
-				//Find x-intercepts of Norm0, Norm1 with top edge
-				//x=(y-b)/a
-				xInt0=(radius-norm0b)/normslope;
-				xInt1=(radius-norm1b)/normslope;
-				for(int z=0;z<2;z++)
+				for(int c=0;c<3;c++)
 				{
-					if
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else if(c==2) target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
 					(
-						(z==0 && xInt0<=xInt1) ||
-						(z==1 && xInt0>xInt1)
-					)
-					{
-						if(xInt0>-radius && xInt0<radius)
-						{
-							texX=.5*((xInt0+radius)/radius);
-							glColor4f(0,0,0,0);
-							glTexCoord2f
-							(
-								texX*(float)ImgW/(float)TexW,
-								0*(float)ImgH/(float)TexH
-							);
-							glVertex2f(xInt0,.5*height);
-						}
-					}
-					else
-					{
-						if(xInt1>-radius && xInt1<radius)
-						{
-							texX=.5*((xInt1+radius)/radius);
-							glColor4f(r,g,b,a);
-							glTexCoord2f
-							(
-								texX*(float)ImgW/(float)TexW,
-								0*(float)ImgH/(float)TexH
-							);
-							glVertex2f(xInt1,.5*height);
-						}
-					}
+						target,
+						rightsubimage*(float)imgW/(float)texW,
+						topsubimage*(float)imgH/(float)texH
+					);
 				}
 			}
-			//End [UL,UR)
-			//Begin [UR,LR)
-
-			//Find UR's fade-value, u
-			lgl_NearestPointOnLine
-			(
-				fade0x, fade0y,
-				fade1x, fade1y,
-				radius, radius,
-				&nx,&ny,&u
-			);
-			if(u>=0 && u<=1)
+			else
 			{
-				glColor4f(r*u,g*u,b*u,a*u);
-				glTexCoord2f
+				glTexCoord2d
 				(
-					1*(float)ImgW/(float)TexW,
-					0*(float)ImgH/(float)TexH
+					rightsubimage*(float)imgW/(float)texW,
+					topsubimage*(float)imgH/(float)texH
 				);
-				glVertex2f(width*.5,height*.5);
 			}
+			glVertex2d(width*.5+d, height*.5);
 			
-			if(normvertical==false)
+			if(YUV_Available())
 			{
-				//Find y-intercepts of Norm0, Norm1 with right edge
-				yInt0=normslope*radius+norm0b;
-				yInt1=normslope*radius+norm1b;
-				for(int z=0;z<2;z++)
+				for(int c=0;c<3;c++)
 				{
-					if
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else if(c==2) target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
 					(
-						(z==0 && yInt0>=yInt1) ||
-						(z==1 && yInt0<yInt1)
-					)
-					{
-						if(yInt0>-radius && yInt0<radius)
-						{
-							texY=1.0-.5*((yInt0+radius)/radius);
-							glColor4f(0,0,0,0);
-							glTexCoord2f
-							(
-								1*(float)ImgW/(float)TexW,
-								texY*(float)ImgH/(float)TexH
-							);
-							glVertex2f(width*.5,yInt0);
-						}
-					}
-					else
-					{
-						if(yInt1>-radius && yInt1<radius)
-						{
-							texY=1.0-.5*((yInt1+radius)/radius);
-							glColor4f(r,g,b,a);
-							glTexCoord2f
-							(
-								1*(float)ImgW/(float)TexW,
-								texY*(float)ImgH/(float)TexH
-							);
-							glVertex2f(width*.5,yInt1);
-						}
-					}
+						target,
+						rightsubimage*(float)imgW/(float)texW,
+						bottomsubimage*(float)imgH/(float)texH
+					);
 				}
 			}
-			//End [UR,LR)
-			//Begin [LR,LL)
-
-			//Find LR's fade-value, u
-			lgl_NearestPointOnLine
-			(
-				fade0x, fade0y,
-				fade1x, fade1y,
-				radius, -radius,
-				&nx,&ny,&u
-			);
-			if(u>=0 && u<=1)
+			else
 			{
-				glColor4f(r*u,g*u,b*u,a*u);
-				glTexCoord2f
+				glTexCoord2d
 				(
-					1*(float)ImgW/(float)TexW,
-					1*(float)ImgH/(float)TexH
+					rightsubimage*(float)imgW/(float)texW,
+					bottomsubimage*(float)imgH/(float)texH
 				);
-				glVertex2f(width*.5,-height*.5);
 			}
+			glVertex2d(width*.5+d,-height*.5);
 			
-			if(normhorizontal==false)
+			if(YUV_Available())
 			{
-				//Find x-intercepts of Norm0, Norm1 with bottom edge
-				//x=(y-b)/a
-				xInt0=(-radius-norm0b)/normslope;
-				xInt1=(-radius-norm1b)/normslope;
-				for(int z=0;z<2;z++)
+				for(int c=0;c<3;c++)
 				{
-					if
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else if(c==2) target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
 					(
-						(z==0 && xInt0>=xInt1) ||
-						(z==1 && xInt0<xInt1)
-					)
-					{
-						if(xInt0>-radius && xInt0<radius)
-						{
-							texX=.5*((xInt0+radius)/radius);
-							glColor4f(0,0,0,0);
-							glTexCoord2f
-							(
-								texX*(float)ImgW/(float)TexW,
-								1*(float)ImgH/(float)TexH
-							);
-							glVertex2f(xInt0,-.5*height);
-						}
-					}
-					else
-					{
-						if(xInt1>-radius && xInt1<radius)
-						{
-							texX=.5*((xInt1+radius)/radius);
-							glColor4f(r,g,b,a);
-							glTexCoord2f
-							(
-								texX*(float)ImgW/(float)TexW,
-								1*(float)ImgH/(float)TexH
-							);
-							glVertex2f(xInt1,-.5*height);
-						}
-					}
+						target,
+						leftsubimage*(float)imgW/(float)texW,
+						bottomsubimage*(float)imgH/(float)texH
+					);
 				}
 			}
-			//End [UL,UR)
+			else
+			{
+				glTexCoord2d
+				(
+					leftsubimage*(float)imgW/(float)texW,
+					bottomsubimage*(float)imgH/(float)texH
+				);
+			}
+			glVertex2d(-width*.5+d,-height*.5);
 		}
 		glEnd();
 	}
 	else
 	{
-		if(FrameBufferImage)
-		{
-			//We're not upside down
-			glBegin(GL_QUADS);
-			{
-				glNormal3f(0,0,-1);
-				float d=0;
-//#ifdef	LGL_LINUX
-//FIXME: FrameBufferImage UGLY fudge factor, due to lousy nVidia Drivers
-				if(LGL.FrameBufferTextureGlitchFix)
-				{
-					d=-0.05/LGL.WindowResolutionX[LGL.DisplayNow];
-				}
-//#endif	//LGL_LINUX
-				glTexCoord2d
-				(
-					leftsubimage*(float)ImgW/(float)TexW,
-					topsubimage*(float)ImgH/(float)TexH
-				);
-				glVertex2d(-width*.5+d, height*.5);
-				
-				glTexCoord2d
-				(
-					rightsubimage*(float)ImgW/(float)TexW,
-					topsubimage*(float)ImgH/(float)TexH
-				);
-				glVertex2d(width*.5+d, height*.5);
-				
-				glTexCoord2d
-				(
-					rightsubimage*(float)ImgW/(float)TexW,
-					bottomsubimage*(float)ImgH/(float)TexH
-				);
-				glVertex2d(width*.5+d,-height*.5);
-				
-				glTexCoord2d
-				(
-					leftsubimage*(float)ImgW/(float)TexW,
-					bottomsubimage*(float)ImgH/(float)TexH
-				);
-				glVertex2d(-width*.5+d,-height*.5);
-			}
-			glEnd();
-		}
-		else
-		{
-			//We're an SDL image, so we're upside down
+		//We're an SDL image, so we're upside down
 
-			//Below fixes gibberish lines on right, bottom
-			int delta=LinearInterpolation?1:0;
-			
-			glBegin(GL_QUADS);
+		//Below fixes gibberish lines on right, bottom
+		int delta=LinearInterpolation?1:0;
+		
+		glBegin(GL_QUADS);
+		{
+			glNormal3f(0,0,-1);
+			if(YUV_Available())
 			{
-				glNormal3f(0,0,-1);
-				glTexCoord2f
-				(
-					leftsubimage*(float)ImgW/(float)TexW,
-					bottomsubimage*(float)ImgH/(float)TexH
-				);
-				glVertex2f(-width*.5, height*.5);
-				
-				glTexCoord2f
-				(
-					rightsubimage*(float)(ImgW-delta)/(float)TexW,
-					bottomsubimage*(float)ImgH/(float)TexH
-				);
-				glVertex2f( width*.5, height*.5);
-				
-				glTexCoord2f
-				(
-					rightsubimage*(float)(ImgW-delta)/(float)TexW,
-					topsubimage*(float)(ImgH-delta)/(float)TexH
-				);
-				glVertex2f( width*.5,-height*.5);
-				
-				glTexCoord2f
-				(
-					leftsubimage*(float)ImgW/(float)TexW,
-					topsubimage*(float)(ImgH-delta)/(float)TexH
-				);
-				glVertex2f(-width*.5,-height*.5);
+				for(int c=0;c<3;c++)
+				{
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else if(c==2) target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
+					(
+						target,
+						leftsubimage*(float)imgW/(float)texW,
+						bottomsubimage*(float)imgH/(float)texH
+					);
+				}
 			}
-			glEnd();
+			else
+			{
+				glTexCoord2f
+				(
+					leftsubimage*(float)imgW/(float)texW,
+					bottomsubimage*(float)imgH/(float)texH
+				);
+			}
+			glVertex2f(-width*.5, height*.5);
+			
+			if(YUV_Available())
+			{
+				for(int c=0;c<3;c++)
+				{
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else if(c==2) target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
+					(
+						target,
+						rightsubimage*(float)imgW/(float)texW,
+						bottomsubimage*(float)imgH/(float)texH
+					);
+				}
+			}
+			else
+			{
+				glTexCoord2f
+				(
+					rightsubimage*(float)(imgW-delta)/(float)texW,
+					bottomsubimage*(float)imgH/(float)texH
+				);
+			}
+			glVertex2f( width*.5, height*.5);
+			
+			if(YUV_Available())
+			{
+				for(int c=0;c<3;c++)
+				{
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else if(c==2) target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
+					(
+						target,
+						rightsubimage*(float)imgW/(float)texW,
+						topsubimage*(float)imgH/(float)texH
+					);
+				}
+			}
+			else
+			{
+				glTexCoord2f
+				(
+					rightsubimage*(float)(imgW-delta)/(float)texW,
+					topsubimage*(float)(imgH-delta)/(float)texH
+				);
+			}
+			glVertex2f( width*.5,-height*.5);
+			
+			if(YUV_Available())
+			{
+				for(int c=0;c<3;c++)
+				{
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else if(c==2) target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
+					(
+						target,
+						leftsubimage*(float)imgW/(float)texW,
+						topsubimage*(float)imgH/(float)texH
+					);
+				}
+			}
+			else
+			{
+				glTexCoord2f
+				(
+					leftsubimage*(float)imgW/(float)texW,
+					topsubimage*(float)(imgH-delta)/(float)texH
+				);
+			}
+			glVertex2f(-width*.5,-height*.5);
 		}
+		glEnd();
 	}
 
-	if
-	(
-		fadetoedges ||
-		fademanual
-	)
+	if(YUV_Available())
 	{
-		glShadeModel(GL_FLAT);
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+		glDisable(GL_TEXTURE_2D);
+
+		gl2ActiveTexture(GL_TEXTURE1_ARB);
+		glDisable(GL_TEXTURE_2D);
+
+		gl2ActiveTexture(GL_TEXTURE2_ARB);
+		glDisable(GL_TEXTURE_2D);
+
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+	}
+	else
+	{
+		glDisable(GL_TEXTURE_2D);
 	}
 
 	glDisable(GL_BLEND);
-	glDisable(GL_TEXTURE_2D);
+
+	if(enableShader)
+	{
+		shader->Disable();
+	}
 }
 
 void
@@ -7124,26 +6926,31 @@ void
 LGL_Image::
 UpdateTexture
 (
-	int		x,
-	int		y,
+	int		w,
+	int		h,
 	int		bytesperpixel,
 	unsigned char*	data,
 	bool		inLinearInterpolation,
 	const char*	name
 )
 {
+	if(YUV_Available())
+	{
+		YUV_Destruct();
+		YUV_Construct();
+	}
+
 	if
 	(
-		x>TexW ||
-		x<TexW/2 ||
-		y>TexH ||
-		y<TexH/2
+		w>TexW ||
+		w<TexW/2 ||
+		h>TexH ||
+		h<TexH/2
 	)
 	{
-		//FIXME: Must delete glTexture, and make a new one.
 		UnloadSurfaceFromTexture();
-		ImgW=x;
-		ImgH=y;
+		ImgW=w;
+		ImgH=h;
 		TexW=LGL_NextPowerOfTwo(ImgW);
 		TexH=LGL_NextPowerOfTwo(ImgH);
 
@@ -7168,18 +6975,22 @@ UpdateTexture
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	}
 
-	if(x!=ImgW)
+	if(w!=ImgW)
 	{
-		ImgW=LGL_Min(x,TexW);
+		ImgW=LGL_Min(w,TexW);
 	}
-	if(y!=ImgH)
+	if(h!=ImgH)
 	{
-		ImgH=LGL_Min(y,TexH);
+		ImgH=LGL_Min(h,TexH);
 	}
 	assert(bytesperpixel==3 || bytesperpixel==4);
-	assert(data!=NULL);
+	if(data==NULL)
+	{
+printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
+		return;
+	}
 	LinearInterpolation=inLinearInterpolation;
-	assert(name);
+	if(name==NULL) name = "NULL Name";
 	if(name[0]=='!')
 	{
 		sprintf(Path,"%s",name);
@@ -7397,14 +7208,14 @@ int
 LGL_Image::
 GetWidth()
 {
-	return(ImgW);
+	return(YUV_Available() ? YUV_ImgW : ImgW);
 }
 
 int
 LGL_Image::
 GetHeight()
 {
-	return(ImgH);
+	return(YUV_Available() ? YUV_ImgH : ImgH);
 }
 
 int
@@ -7962,6 +7773,340 @@ SetVideoPath
 	strcpy(VideoPath,videoPath);
 }
 
+//YUV
+
+void
+LGL_Image::
+YUV_Construct()
+{
+	YUV_ImgW=0;
+	YUV_ImgH=0;
+	YUV_TexW=0;
+	YUV_TexH=0;
+
+	for(int c=0;c<3;c++)
+	{
+		YUV_TextureGL[c]=0;
+		YUV_PixelBufferObjectFrontGL[c]=0;
+		YUV_PixelBufferObjectBackGL[c]=0;
+	}
+
+	if(ImageShader.IsLinked()==false)
+	{
+		if(ImageShader.VertCompiled()==false)
+		{
+			ImageShader.VertCompile("data/glsl/image_rgb.vert.glsl");
+		}
+		if(ImageShader.FragCompiled()==false)
+		{
+			ImageShader.FragCompile("data/glsl/image_rgb.frag.glsl");
+		}
+		if(ImageShader.IsLinked()==false)
+		{
+			ImageShader.Link();
+		}
+	}
+
+	if(YUV_ImageShader.IsLinked()==false)
+	{
+		if(YUV_ImageShader.VertCompiled()==false)
+		{
+			YUV_ImageShader.VertCompile("data/glsl/image_yuv.vert.glsl");
+		}
+		if(YUV_ImageShader.FragCompiled()==false)
+		{
+			YUV_ImageShader.FragCompile("data/glsl/image_yuv.frag.glsl");
+		}
+		if(YUV_ImageShader.IsLinked()==false)
+		{
+			YUV_ImageShader.Link();
+		}
+	}
+}
+
+void
+LGL_Image::
+YUV_Destruct()
+{
+	YUV_DestructTextures();
+	YUV_DeletePixelBufferObjects();
+}
+
+bool
+LGL_Image::
+YUV_Available()
+{
+	return(YUV_ImgW!=0);
+}
+
+void
+LGL_Image::
+YUV_ConstructTextures()
+{
+	for(int c=0;c<3;c++)
+	{
+		int w = (c==0) ? YUV_TexW : (YUV_TexW/2);
+		int h = (c==0) ? YUV_TexH : (YUV_TexH/2);
+		glGenTextures(1,&YUV_TextureGL[c]);
+		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[c]);
+		glTexImage2D
+		(
+			GL_TEXTURE_2D,
+			0,			//Level of Detail=0
+			GL_LUMINANCE,		//Internal Format
+			w,
+			h,
+			0,			//Boarder=0
+			GL_LUMINANCE,
+			GL_UNSIGNED_BYTE,
+			NULL
+		);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	}
+}
+
+void
+LGL_Image::
+YUV_DestructTextures()
+{
+	for(int c=0;c<3;c++)
+	{
+		if(YUV_TextureGL[c]!=0)
+		{
+			glDeleteTextures(1,&(YUV_TextureGL[c]));
+			YUV_TextureGL[c]=0;
+		}
+	}
+
+	YUV_DeletePixelBufferObjects();
+}
+
+void
+LGL_Image::
+YUV_UpdatePixelBufferObjects()
+{
+	if
+	(
+		YUV_ImgW<0 ||
+		YUV_ImgH<0
+	)
+	{
+		printf("LGL_Image::YUV_UpdatePixelBufferObjects(): Cannot create pixel buffer object with negative dimensions (%i x %i)!\n",YUV_ImgW,YUV_ImgH);
+		return;
+	}
+
+	GLsizei sizeY = YUV_ImgW*YUV_ImgH;
+	GLsizei sizeUV = sizeY/4;
+
+	if(sizeY>YUV_PixelBufferObjectSize)
+	{
+		YUV_DeletePixelBufferObjects();
+	}
+
+	for(int c=0;c<3;c++)
+	{
+		if(YUV_PixelBufferObjectFrontGL[c]==0)
+		{
+			//Make a Pixel Buffer Object
+			gl2GenBuffers(1,&(YUV_PixelBufferObjectFrontGL[c]));
+			gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,YUV_PixelBufferObjectFrontGL[c]);
+			gl2BufferData
+			(
+				GL_PIXEL_UNPACK_BUFFER,
+				(GLsizeiptr)(&((c==0) ? sizeY : sizeUV)),
+				NULL,
+				GL_STREAM_DRAW
+			);
+			gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+
+			//Make a Pixel Buffer Object
+			gl2GenBuffers(1,&(YUV_PixelBufferObjectBackGL[c]));
+			gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,YUV_PixelBufferObjectBackGL[c]);
+			gl2BufferData
+			(
+				GL_PIXEL_UNPACK_BUFFER,
+				(GLsizeiptr)(&((c==0) ? sizeY : sizeUV)),
+				NULL,
+				GL_STREAM_DRAW
+			);
+			gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+
+			PixelBufferObjectSize=sizeY;
+		}
+	}
+}
+
+void
+LGL_Image::
+YUV_DeletePixelBufferObjects()
+{
+	for(int c=0;c<3;c++)
+	{
+		if(YUV_PixelBufferObjectFrontGL[c]>0)
+		{
+			gl2DeleteBuffers(1,&(YUV_PixelBufferObjectFrontGL[c]));
+			gl2DeleteBuffers(1,&(YUV_PixelBufferObjectBackGL[c]));
+			YUV_PixelBufferObjectFrontGL[c]=0;
+			YUV_PixelBufferObjectBackGL[c]=0;
+			YUV_PixelBufferObjectSize=0;
+		}
+	}
+}
+
+void
+LGL_Image::
+YUV_UpdateTexture
+(
+	int		w,
+	int		h,
+	unsigned char*	dataY,
+	unsigned char*	dataU,
+	unsigned char*	dataV,
+	const char*	name
+)
+{
+	if
+	(
+		w>YUV_TexW ||
+		w<YUV_TexW/2 ||
+		h>YUV_TexH ||
+		h<YUV_TexH/2
+	)
+	{
+		YUV_DestructTextures();
+
+		YUV_ImgW=w;
+		YUV_ImgH=h;
+		YUV_TexW=LGL_NextPowerOfTwo(YUV_ImgW);
+		YUV_TexH=LGL_NextPowerOfTwo(YUV_ImgH);
+
+		YUV_ConstructTextures();
+	}
+
+	if(w!=YUV_ImgW)
+	{
+		ImgW=LGL_Min(w,TexW);
+	}
+	if(h!=YUV_ImgH)
+	{
+		ImgH=LGL_Min(h,TexH);
+	}
+
+	if
+	(
+		dataY==NULL ||
+		dataU==NULL ||
+		dataV==NULL
+	)
+	{
+printf("LGL_Image::YUV_UpdateTexture(): NULL data! WTF!\n");
+		return;
+	}
+
+	if(name==NULL) name = "NULL Name";
+	if(name[0]=='!')
+	{
+		sprintf(Path,"%s",name);
+		sprintf(PathShort,"%s",name);
+	}
+	else
+	{
+		sprintf(Path,"!%s",name);
+		sprintf(PathShort,"!%s",name);
+	}
+
+	YUV_UpdatePixelBufferObjects();
+
+	bool pboReady =
+		gl2IsBuffer(YUV_PixelBufferObjectFrontGL[0]) &&
+		gl2IsBuffer(YUV_PixelBufferObjectFrontGL[1]) &&
+		gl2IsBuffer(YUV_PixelBufferObjectFrontGL[2]);
+
+	if
+	(
+		YUV_TextureGL[0]==0 ||
+		YUV_TextureGL[1]==0 ||
+		YUV_TextureGL[2]==0
+	)
+	{
+		YUV_ConstructTextures();
+	}
+
+	unsigned char* dataYUV[3];
+	dataYUV[0]=dataY;
+	dataYUV[1]=dataU;
+	dataYUV[2]=dataV;
+	for(int c=0;c<3;c++)
+	{
+		int imgWNow = (c==0) ? YUV_ImgW : (YUV_ImgW/2);
+		int imgHNow = (c==0) ? YUV_ImgH : (YUV_ImgH/2);
+
+		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[c]);
+		if(pboReady)
+		{
+			gl2BindBuffer
+			(
+				GL_PIXEL_UNPACK_BUFFER,
+				YUV_PixelBufferObjectFrontGL[c]
+			);
+			gl2BufferData
+			(
+				GL_PIXEL_UNPACK_BUFFER,
+				imgWNow*imgHNow,
+				dataYUV[c],
+				GL_STREAM_DRAW
+			);
+		}
+		else
+		{
+			gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+		}
+
+		glTexSubImage2D
+		(
+			GL_TEXTURE_2D,
+			0,			//Level of Detail=0
+			0,			//X-Offset
+			0,			//Y-Offset
+			imgWNow,
+			imgHNow,
+			GL_LUMINANCE,
+			GL_UNSIGNED_BYTE,
+			pboReady?0:dataYUV[c]
+		);
+
+		/*
+		if(pboReady)
+		{
+			gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
+			gl2BufferData(GL_PIXEL_UNPACK_BUFFER, ImgW*ImgH*bytesperpixel, 0, GL_STREAM_DRAW);
+			GLubyte* pbo = (GLubyte*)gl2MapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+			if(pbo)
+			{
+				memcpy(pbo,data,ImgW*ImgH*bytesperpixel);
+				gl2UnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+			}
+		}
+		*/
+
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+
+		//Swap
+		/*
+		GLuint tmp=PixelBufferObjectBackGL;
+		PixelBufferObjectBackGL=PixelBufferObjectFrontGL;
+		PixelBufferObjectFrontGL=tmp;
+		*/
+	}
+
+	LinearInterpolation=true;
+}
+
+
+
 int
 ThreadAnimationLoader
 (
@@ -8443,42 +8588,83 @@ bool lgl_FrameBufferSortPredicate(const lgl_FrameBuffer* d1, const lgl_FrameBuff
 lgl_FrameBuffer::
 lgl_FrameBuffer()
 {
-	Buffer = NULL;
-	BufferBytes=0;
+	BufferRGB=NULL;
+	BufferRGBBytes=0;
+	BufferYUV=NULL;
+	BufferYUVBytes=0;
+	BufferWidth=0;
+	BufferHeight=0;
 	FrameNumber=-1;
 }
 
 lgl_FrameBuffer::
 ~lgl_FrameBuffer()
 {
-	free(Buffer);
-	Buffer=NULL;
-	BufferBytes=0;
+	if(BufferRGB)
+	{
+		free(BufferRGB);
+		BufferRGB=NULL;
+	}
+	BufferRGBBytes=0;
+
+	if(BufferYUV)
+	{
+		free(BufferYUV);
+		BufferYUV=NULL;
+	}
+	BufferYUVBytes=0;
+
 	FrameNumber=-1;
 }
 
-unsigned char*
+void
 lgl_FrameBuffer::
-SwapInNewBuffer
+SwapInNewBufferRGB
 (
 	char*		videoPath,
-	unsigned char*	buffer,
+	unsigned char*&	bufferRGB,
+	unsigned int&	bufferRGBBytes,
 	int		bufferWidth,
 	int		bufferHeight,
-	unsigned int&	bufferBytes,
 	long		frameNumber
 )
 {
 	strcpy(VideoPath,videoPath?videoPath:"");
-	unsigned char* bufferOld=Buffer;
-	unsigned int bufferBytesOld=BufferBytes;
-	Buffer=buffer;
+	unsigned char* bufferRGBOld=BufferRGB;
+	unsigned int bufferRGBBytesOld=BufferRGBBytes;
+	BufferRGB=bufferRGB;
 	BufferWidth=bufferWidth;
 	BufferHeight=bufferHeight;
-	BufferBytes=bufferBytes;
-	bufferBytes=bufferBytesOld;
+	BufferRGBBytes=bufferRGBBytes;
+	bufferRGBBytes=bufferRGBBytesOld;
 	FrameNumber=frameNumber;
-	return(bufferOld);
+
+	bufferRGB=bufferRGBOld;
+}
+
+void
+lgl_FrameBuffer::
+SwapInNewBufferYUV
+(
+	char*		videoPath,
+	unsigned char*&	bufferYUV,
+	unsigned int&	bufferYUVBytes,
+	int		bufferWidth,
+	int		bufferHeight,
+	long		frameNumber
+)
+{
+	strcpy(VideoPath,videoPath?videoPath:"");
+	unsigned char* bufferYUVOld=BufferYUV;
+	unsigned int bufferYUVBytesOld=BufferYUVBytes;
+	BufferYUV=bufferYUV;
+	BufferWidth=bufferWidth;
+	BufferHeight=bufferHeight;
+	BufferYUVBytes=bufferYUVBytes;
+	bufferYUVBytes=bufferYUVBytesOld;
+	FrameNumber=frameNumber;
+
+	bufferYUV=bufferYUVOld;
 }
 
 const char*
@@ -8490,9 +8676,30 @@ GetVideoPath()	const
 
 unsigned char*
 lgl_FrameBuffer::
-GetBuffer()	const
+GetBufferRGB()	const
 {
-	return(Buffer);
+	return(BufferRGB);
+}
+
+unsigned int
+lgl_FrameBuffer::
+GetBufferRGBBytes()	const
+{
+	return(BufferRGBBytes);
+}
+
+unsigned char*
+lgl_FrameBuffer::
+GetBufferYUV()	const
+{
+	return(BufferYUV);
+}
+
+unsigned int
+lgl_FrameBuffer::
+GetBufferYUVBytes()	const
+{
+	return(BufferYUVBytes);
 }
 
 int
@@ -8509,18 +8716,63 @@ GetBufferHeight()	const
 	return(BufferHeight);
 }
 
-unsigned int
-lgl_FrameBuffer::
-GetBufferBytes()	const
-{
-	return(BufferBytes);
-}
-
 long
 lgl_FrameBuffer::
 GetFrameNumber()	const
 {
 	return(FrameNumber);
+}
+
+unsigned char*
+lgl_FrameBuffer::
+GetBufferY()	const
+{
+	return(BufferYUV);
+}
+
+unsigned int
+lgl_FrameBuffer::
+GetBufferYBytes()	const
+{
+	return(BufferWidth*BufferHeight);
+}
+
+unsigned char*
+lgl_FrameBuffer::
+GetBufferU()	const
+{
+	return
+	(
+		BufferYUV ?
+		&BufferYUV[GetBufferYBytes()] :
+		NULL
+	);
+}
+
+unsigned int
+lgl_FrameBuffer::
+GetBufferUBytes()	const
+{
+	return((BufferWidth*BufferHeight)/4);
+}
+
+unsigned char*
+lgl_FrameBuffer::
+GetBufferV()	const
+{
+	return
+	(
+		BufferYUV ?
+		&BufferYUV[GetBufferYBytes()+GetBufferUBytes()] :
+		NULL
+	);
+}
+
+unsigned int
+lgl_FrameBuffer::
+GetBufferVBytes()	const
+{
+	return((BufferWidth*BufferHeight)/4);
 }
 
 
@@ -8583,6 +8835,8 @@ LGL_VideoDecoder::
 		delete FrameBufferRecycled[a];
 		FrameBufferRecycled[a]=NULL;
 	}
+
+	//TODO: Doesn't this leak BufferRGB / BufferYUV...?
 }
 
 void
@@ -8613,13 +8867,19 @@ Init()
 	CodecContext=NULL;
 	Codec=NULL;
 	VideoStreamIndex=-1;
-	FrameNative=NULL;
+	FrameNative=NULL;	//Memleak?
 	FrameRGB=NULL;
 	BufferRGB=NULL;
+	BufferRGBBytes=0;
 	BufferWidth=-1;
 	BufferHeight=-1;
-	BufferBytes=0;
 	SwsConvertContextBGRA=NULL;
+
+	BufferYUV=NULL;
+	BufferYUVBytes=0;
+
+	BufferYUVAsRGB=NULL;
+	BufferYUVAsRGBBytes=0;
 
 	IsImage=false;
 	Image=NULL;
@@ -8630,20 +8890,20 @@ Init()
 #if 0
 	const int width = 1920;
 	const int height = 1080;
-	unsigned int bufferBytes=4*width*height;//GetProjectorQuadrentResX()*GetProjectorQuadrentResY();
+	unsigned int bufferRGBBytes=4*width*height;//GetProjectorQuadrentResX()*GetProjectorQuadrentResY();
 	for(long int a=0;a<FrameBufferAddRadius+FrameBufferSubtractRadius;a++)
 	{
 		try
 		{
-			unsigned char* buffer=new uint8_t[bufferBytes];
+			unsigned char* buffer=new uint8_t[bufferRGBBytes];
 			lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
-			unsigned char* oldie = frameBuffer->SwapInNewBuffer
+			unsigned char* oldie = frameBuffer->SwapInNewBufferRGB
 			(
 				NULL,
 				buffer,
+				bufferRGBBytes,
 				width,
 				height,
-				bufferBytes,
 				-9999-a
 			);
 			if(oldie)
@@ -8854,7 +9114,7 @@ GetImage()
 	}
 
 	long frameNumber = SecondsToFrameNumber(TimeSeconds);
-	lgl_FrameBuffer* buffer=NULL;
+	lgl_FrameBuffer* frameBuffer=NULL;
 
 	{
 		LGL_ScopeLock lock(FrameBufferReadySemaphore);
@@ -8873,7 +9133,7 @@ GetImage()
 				FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
 				FPSDisplayedMissCounter++;
 			}
-			buffer=FrameBufferReady[0];
+			frameBuffer=FrameBufferReady[0];
 		}
 		else if(frameNumber>FrameBufferReady[FrameBufferReady.size()-1]->GetFrameNumber())
 		{
@@ -8882,7 +9142,7 @@ GetImage()
 				FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
 				FPSDisplayedMissCounter++;
 			}
-			buffer=FrameBufferReady[FrameBufferReady.size()-1];
+			frameBuffer=FrameBufferReady[FrameBufferReady.size()-1];
 		}
 		else
 		{
@@ -8891,17 +9151,17 @@ GetImage()
 			{
 				if((long)fabsf(frameNumber-FrameBufferReady[a]->GetFrameNumber())<nearestDistance)
 				{
-					buffer=FrameBufferReady[a];
+					frameBuffer=FrameBufferReady[a];
 					nearestDistance=(long)fabsf(frameNumber-FrameBufferReady[a]->GetFrameNumber());
 				}
 			}
 			
-			if(buffer)
+			if(frameBuffer)
 			{
 				if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
 				{
 					FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
-					if(frameNumber==buffer->GetFrameNumber())
+					if(frameNumber==frameBuffer->GetFrameNumber())
 					{
 						FPSDisplayedHitCounter++;
 					}
@@ -8913,13 +9173,14 @@ GetImage()
 			}
 		}
 
-		if(buffer==NULL)
+		if(frameBuffer==NULL)
 		{
+			//FIXME: If we just made the imade, it contains junk.
 			return(Image);
 		}
 
 		//Is our image already up to date?
-		if(Image->GetFrameNumber()==buffer->GetFrameNumber())
+		if(Image->GetFrameNumber()==frameBuffer->GetFrameNumber())
 		{
 			FrameNumberDisplayed=Image->GetFrameNumber();
 			return(Image);
@@ -8941,35 +9202,67 @@ GetImage()
 		return(Image);
 	}
 
-/*
-printf("Calling UpdateTexture() w/ buffer frame %i (%0.16x) (%i) (%s)\n",
-	buffer->GetFrameNumber(),
-	buffer->GetBuffer(),
-	buffer->GetBufferBytes(),
-	buffer->GetVideoPath());
-*/
-
-/*
-int checksum = 0;
-unsigned char* buf = buffer->GetBuffer();
-for(int a=0;a<buffer->GetBufferBytes();a++)
+if(IsYUV420P()==false)
 {
-	checksum+=buf[a];
-}
-printf("Checksum: %i\n",checksum);
-*/
-
 	Image->UpdateTexture
 	(
-		buffer->GetBufferWidth(),
-		buffer->GetBufferHeight(),
+		frameBuffer->GetBufferWidth(),
+		frameBuffer->GetBufferHeight(),
 		4,
-		buffer->GetBuffer(),
+		frameBuffer->GetBufferRGB(),
 		true,
 		name
 	);
-	Image->SetFrameNumber(buffer->GetFrameNumber());
-	FrameNumberDisplayed=buffer->GetFrameNumber();
+}
+else
+{
+	/*
+	if(BufferYUVAsRGB==NULL)
+	{
+		BufferYUVAsRGBBytes=BufferWidth*BufferHeight*4;
+		BufferYUVAsRGB=new unsigned char[BufferYUVAsRGBBytes];
+	}
+
+	if(unsigned char* bufChosen = frameBuffer->GetBufferV())
+	{
+		int width=(bufChosen == frameBuffer->GetBufferY()) ? frameBuffer->GetBufferWidth() : (frameBuffer->GetBufferWidth()/2);
+		int height=(bufChosen == frameBuffer->GetBufferY()) ? frameBuffer->GetBufferHeight() : (frameBuffer->GetBufferHeight()/2);
+		for(int h=0;h<height;h++)
+		{
+			for(int w=0;w<width;w++)
+			{
+				for(int c=0;c<3;c++)
+				{
+					BufferYUVAsRGB[c+4*(w+h*width)]=
+						bufChosen[(w+h*width)];
+				}
+			}
+		}
+
+		Image->UpdateTexture
+		(
+			width,
+			height,
+			4,
+			BufferYUVAsRGB,
+			true,
+			name
+		);
+	}
+	*/
+
+	Image->YUV_UpdateTexture
+	(
+		BufferWidth,
+		BufferHeight,
+		frameBuffer->GetBufferY(),
+		frameBuffer->GetBufferU(),
+		frameBuffer->GetBufferV(),
+		name
+	);
+}
+	Image->SetFrameNumber(frameBuffer->GetFrameNumber());
+	FrameNumberDisplayed=frameBuffer->GetFrameNumber();
 
 	if(FPSDisplayedTimer.SecondsSinceLastReset()>=1.0f)
 	{
@@ -9330,7 +9623,10 @@ printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
 	FPSTimestamp=CodecContext->time_base.den/(double)CodecContext->time_base.num;
 	FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
 
-	if(FrameNative==NULL) FrameNative=lgl_avcodec_alloc_frame();
+	if(FrameNative==NULL)
+	{
+		FrameNative=lgl_avcodec_alloc_frame();
+	}
 	if(FrameRGB==NULL) FrameRGB=lgl_avcodec_alloc_frame();
 
 	if(FrameNative==NULL || FrameRGB==NULL)
@@ -9423,10 +9719,42 @@ MaybeDecodeImage()
 		}
 		if(result>=0)
 		{
-			// Is this a packet from the video stream?
+			//Is this a packet from the video stream?
 			if(Packet.stream_index==VideoStreamIndex)
 			{
-				// Decode video frame
+				//Setup YUV FrameNative
+				{
+					unsigned int bufferYUVBytesNow=avpicture_get_size
+					(
+						CodecContext->pix_fmt, 
+						BufferWidth,
+						BufferHeight
+					);
+					if
+					(
+						BufferYUV==NULL ||
+						BufferYUVBytes<bufferYUVBytesNow
+					)
+					{
+						BufferYUVBytes=bufferYUVBytesNow;
+						delete BufferYUV;
+						BufferYUV=new uint8_t[BufferYUVBytes];
+					}
+/*
+					//Update FrameRGB to point to BufferRGB.
+					avpicture_fill
+					(
+						(AVPicture*)FrameNative,
+						BufferYUV,
+						CodecContext->pix_fmt,
+						BufferWidth,
+						BufferHeight
+					);
+printf("fill 0: %i vs %i\n",(int)BufferYUV,(int)FrameNative->data[0]);
+*/
+				}
+
+				//Decode video frame
 				int frameFinished=0;
 				{
 					LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
@@ -9437,50 +9765,64 @@ MaybeDecodeImage()
 						&frameFinished, 
 						&Packet
 					);
+unsigned char* bufYUVNow=BufferYUV;
+for(int c=0;c<3;c++)
+{
+	int width = (c==0) ? BufferWidth : (BufferWidth/2);
+	int height = (c==0) ? BufferHeight : (BufferHeight/2);
+	for(int h=0;h<height;h++)
+	{
+		memcpy(bufYUVNow,&(FrameNative->data[c][h*FrameNative->linesize[c]]),width);
+		bufYUVNow+=width;
+	}
+}
 				}
 
 				// Did we get a video frame?
 				if(frameFinished)
 				{
 					{
-						LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
-
-						unsigned int bufferBytesNow=avpicture_get_size
-						(
-							PIX_FMT_BGRA,
-							BufferWidth,
-							BufferHeight
-						);
-						if
-						(
-							BufferRGB==NULL ||
-							BufferBytes<bufferBytesNow
-						)
+						if(IsYUV420P()==false)
 						{
-							BufferBytes=bufferBytesNow;
-							delete BufferRGB;
-							BufferRGB=new uint8_t[BufferBytes];
-						}
+							LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 
-						//Update FrameRGB to point to BufferRGB.
-						avpicture_fill
-						(
-							(AVPicture*)FrameRGB,
-							BufferRGB,
-							PIX_FMT_BGRA,
-							BufferWidth,
-							BufferHeight
-						);
-						sws_scale
-						(
-							SwsConvertContextBGRA,
-							FrameNative->data,
-							FrameNative->linesize,
-							0, 
-							BufferHeight,
-							FrameRGB->data,
-							FrameRGB->linesize
-						);
+							unsigned int bufferBytesNow=avpicture_get_size
+							(
+								PIX_FMT_BGRA,
+								BufferWidth,
+								BufferHeight
+							);
+							if
+							(
+								BufferRGB==NULL ||
+								BufferRGBBytes<bufferBytesNow
+							)
+							{
+								BufferRGBBytes=bufferBytesNow;
+								delete BufferRGB;
+								BufferRGB=new uint8_t[BufferRGBBytes];
+							}
+							//Update FrameRGB to point to BufferRGB.
+							avpicture_fill
+							(
+								(AVPicture*)FrameRGB,
+								BufferRGB,
+								PIX_FMT_BGRA,
+								BufferWidth,
+								BufferHeight
+							);
+
+							sws_scale
+							(
+								SwsConvertContextBGRA,
+								FrameNative->data,
+								FrameNative->linesize,
+								0, 
+								BufferHeight,
+								FrameRGB->data,
+								FrameRGB->linesize
+							);
+						}
 					}
 					frameRead=true;
 				}
@@ -9509,16 +9851,31 @@ MaybeDecodeImage()
 		LGL_ScopeLock pathLock(PathSemaphore);
 		//Prepare a framebuffer, and swap its buffer with BufferRGB
 		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
-		unsigned char* swappedOutBuffer = frameBuffer->SwapInNewBuffer
+
+		if(IsYUV420P()==false)
+		{
+			frameBuffer->SwapInNewBufferRGB
+			(
+				Path,
+				BufferRGB,	//Changes...
+				BufferRGBBytes,	//Changes...
+				BufferWidth,
+				BufferHeight,
+				frameNumberTarget
+			);
+		}
+		else
+		{
+		frameBuffer->SwapInNewBufferYUV
 		(
 			Path,
-			BufferRGB,
+			BufferYUV,	//Changes...
+			BufferYUVBytes,	//Changes...
 			BufferWidth,
 			BufferHeight,
-			BufferBytes,	//Changes...
 			frameNumberTarget
 		);
-		BufferRGB=swappedOutBuffer;
+		}
 
 		//Add framebuffer to FrameBufferReady, and sort.
 		{
@@ -9885,6 +10242,19 @@ GetRecycledFrameBuffer()
 		return(frameBuffer);
 	}
 }
+
+bool
+LGL_VideoDecoder::
+IsYUV420P()
+{
+	return
+	(
+		CodecContext &&
+		CodecContext->pix_fmt==PIX_FMT_YUV420P
+	);
+}
+
+
 
 float LGL_VideoEncoder::BitrateMaxMBps=3.2f;
 
