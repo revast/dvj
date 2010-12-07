@@ -1816,7 +1816,7 @@ Turntable_DrawWaveform
 				noiseBottom,noiseTop,
 				0,
 				warmR,warmG,warmB,0.0f,
-				false,false,0,0,0,
+				1.0f,
 				0,1.0f,
 				0,LGL_Min(1,4*(noiseHeight/noiseWidth)/noiseRelativeWidth)
 			);
@@ -2959,7 +2959,7 @@ Turntable_DrawWaveform
 					bot,top,
 					0,
 					savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],
-					false,false,0,0,0,
+					1.0f,
 					0,1.0f/32.0f,
 					0,1.0f/8.0f
 				);

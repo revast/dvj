@@ -151,6 +151,12 @@ static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
 	float			LEDG;
 	float			LEDB;
 
+				//0: Bottom Left
+				//1: Top Left
+				//2: Top Right
+				//3: Bottom Right
+	float			ProjMapCornerX[4];
+	float			ProjMapCornerY[4];
 };
 
 #endif	//_DVJ_VISUALIZER_H_
