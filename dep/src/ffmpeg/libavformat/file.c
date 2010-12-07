@@ -79,6 +79,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
 
 //dvj
 fcntl(fd,F_NOCACHE,1);
+fcntl(fd,F_RDAHEAD,1);
 
     h->priv_data = (void *) (intptr_t) fd;
     return 0;
