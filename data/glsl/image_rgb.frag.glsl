@@ -1,3 +1,5 @@
+//image_rgb.frag.glsl
+
 uniform sampler2D tex;
 uniform float brightnessScalar;
 
