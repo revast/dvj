@@ -1,3 +1,5 @@
+//image_rgb.vert.glsl
+
 void main()
 {
 	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
