@@ -11,8 +11,9 @@ LIB_ZTRON	= $(MACOS_ZTRON)/lib
 LIB_LOCAL	= /usr/local/lib
 BIN_LOCAL	= /usr/local/bin
 DST_DVJ		= $(MACOS_DVJ)/dvj
-DST_GLSL	= $(MACOS_DVJ)/data/glsl
+DVJ_GLSL	= $(MACOS_DVJ)/data/glsl
 DST_ZTRON	= $(MACOS_ZTRON)/ZEBBLERTRON
+ZTRON_GLSL	= $(MACOS_ZTRON)/data/glsl
 
 ROOT_DVJ	= root.dvj
 ROOT_DVJ_NOSVN	= $(ROOT_DVJ).nosvn
@@ -23,7 +24,7 @@ all:
 	rm -fv dvj.dmg
 	rm -fv ZEBBLERTRON.dmg
 	cp -v $(SRC_DVJ) $(DST_DVJ)
-	cp -v $(SRC_GLSL)/* $(DST_GLSL)
+	cp -v $(SRC_GLSL)/* $(DVJ_GLSL)
 	cp -v $(BIN_LOCAL)/jackd $(MACOS_DVJ)
 	cp -v $(LIB_LOCAL)/libSDL_image-1.2.0.dylib $(LIB_DVJ)
 	cp -v $(LIB_LOCAL)/libpng12.0.dylib $(LIB_DVJ)
@@ -49,6 +50,7 @@ all:
 	install_name_tool -change $(LIB_LOCAL)/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(LIB_DVJ)/libSDL_net-1.2.0.dylib
 	install_name_tool -change $(LIB_LOCAL)/liboscpack.so @executable_path/lib/liboscpack.so $(DST_DVJ)
 	cp -v $(DST_DVJ) $(DST_ZTRON)
+	cp -v $(DVJ_GLSL)/* $(ZTRON_GLSL)
 	cp -v $(MACOS_DVJ)/jackd $(MACOS_ZTRON)
 	cp -v $(LIB_DVJ)/*.dylib $(LIB_ZTRON)
 	cp -v $(LIB_DVJ)/jack/*.so $(LIB_ZTRON)/jack
