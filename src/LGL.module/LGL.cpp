@@ -8795,10 +8795,7 @@ lgl_video_decoder_thread
 		dec->MaybeLoadVideo();
 		bool imageDecoded=dec->MaybeDecodeImage();
 		dec->MaybeRecycleBuffers();
-		if(imageDecoded==false)
-		{
-			LGL_DelayMS(1);
-		}
+		LGL_DelayMS(imageDecoded ? 0 : 1);
 	}
 
 	return(0);
