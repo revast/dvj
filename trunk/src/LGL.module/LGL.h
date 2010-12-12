@@ -1119,7 +1119,7 @@ public:
 	//Thread Functions
 
 	void			MaybeLoadVideo();
-	void			MaybeDecodeImage();
+	bool			MaybeDecodeImage();
 	void			MaybeRecycleBuffers();
 	bool			GetThreadTerminate();
 
