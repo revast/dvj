@@ -122,6 +122,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"colorWarmB=1.0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"audioInPassThru=0\n");
+		fprintf(fd,"alwaysUseAudioInForFreqSense=0\n");
 		fprintf(fd,"wireMemory=1\n");
 		fprintf(fd,"escDuringScanExits=1\n");
 		fprintf(fd,"\n");
@@ -765,6 +766,13 @@ bool
 GetAudioInPassThru()
 {
 	int passThru=LGL_Clamp(0,dvjrcConfigFile->read<int>("audioInPassThru",0),1);
+	return(passThru!=0);
+}
+
+bool
+GetConfigAlwaysUseAudioInForFreqSense()
+{
+	int passThru=LGL_Clamp(0,dvjrcConfigFile->read<int>("alwaysUseAudioInForFreqSense",0),1);
 	return(passThru!=0);
 }
 

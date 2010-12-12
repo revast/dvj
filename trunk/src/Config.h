@@ -195,11 +195,14 @@ GetEscDuringScanExits();
 bool
 GetAudioInPassThru();
 
-int
-GetVideoBufferFrames();
+bool
+GetConfigAlwaysUseAudioInForFreqSense();
 
 int
 GetVideoBufferFramesFreqSense();
+
+int
+GetVideoBufferFrames();
 
 int	GetInputKeyboardFocusChangeKey();
 int	GetInputKeyboardFocusBottomKey();
