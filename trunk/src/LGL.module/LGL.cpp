@@ -6220,8 +6220,6 @@ DrawToScreen
 	return;
 #endif	//LGL_NO_GRAPHICS
 
-	lgl_glScreenify2D();
-
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
 	{
 		char* neo=new char[1024];
@@ -6260,11 +6258,73 @@ DrawToScreen
 		LGL.DrawLog.push_back(neo);
 	}
 
+	//glTranslatef(left+width*.5,bottom+height*.5,0);
+	//glRotatef(360.0*(rotation/(LGL_PI*2)),0,0,1);
+
+	float x[4];
+	float y[4];
+
+	float d=0;
+//#ifdef	LGL_LINUX
+//FIXME: FrameBufferImage UGLY fudge factor, due to lousy nVidia Drivers
+	if(LGL.FrameBufferTextureGlitchFix)
+	{
+		d=-0.05/LGL.WindowResolutionX[LGL.DisplayNow];
+	}
+//#endif	//LGL_LINUX
+	x[0]=left+d;
+	y[0]=top;
+	x[1]=right+d;
+	y[1]=top;
+	x[2]=right;
+	y[2]=bottom;
+	x[3]=left;
+	y[3]=bottom;
+
+	DrawToScreen
+	(
+		x,
+		y,
+		r,
+		g,
+		b,
+		a,
+		brightnessScalar,
+		leftsubimage,
+		rightsubimage,
+		bottomsubimage,
+		topsubimage
+	);
+}
+
+void
+LGL_Image::
+DrawToScreen
+(
+	float	x[4],
+	float	y[4],
+	float	r,
+	float	g,
+	float	b,
+	float	a,
+	float	brightnessScalar,
+	float	leftsubimage,
+	float	rightsubimage,
+	float	bottomsubimage,
+	float	topsubimage
+)
+{
+#ifdef	LGL_NO_GRAPHICS
+	return;
+#endif	//LGL_NO_GRAPHICS
+
+	lgl_glScreenify2D();
+
 	if(r<0) r=0;
 	if(g<0) g=0;
 	if(b<0) b=0;
 	if(a<0) a=0;
-	
+
 	if(r>1) r=1;
 	if(g>1) g=1;
 	if(b>1) b=1;
@@ -6308,12 +6368,6 @@ DrawToScreen
 	{
 		LoadSurfaceToTexture(LinearInterpolation);
 	}
-
-	float width=right-left;
-	float height=top-bottom;
-
-	glTranslatef(left+width*.5,bottom+height*.5,0);
-	glRotatef(360.0*(rotation/(LGL_PI*2)),0,0,1);
 
 	//Draw
 
@@ -6405,7 +6459,7 @@ DrawToScreen
 					topsubimage*(float)imgH/(float)texH
 				);
 			}
-			glVertex2d(-width*.5+d, height*.5);
+			glVertex2d(x[0],y[0]);
 			
 			if(YUV_Available())
 			{
@@ -6431,7 +6485,7 @@ DrawToScreen
 					topsubimage*(float)imgH/(float)texH
 				);
 			}
-			glVertex2d(width*.5+d, height*.5);
+			glVertex2d(x[1],y[1]);
 			
 			if(YUV_Available())
 			{
@@ -6457,7 +6511,7 @@ DrawToScreen
 					bottomsubimage*(float)imgH/(float)texH
 				);
 			}
-			glVertex2d(width*.5+d,-height*.5);
+			glVertex2d(x[2],y[2]);
 			
 			if(YUV_Available())
 			{
@@ -6483,7 +6537,7 @@ DrawToScreen
 					bottomsubimage*(float)imgH/(float)texH
 				);
 			}
-			glVertex2d(-width*.5+d,-height*.5);
+			glVertex2d(x[3],y[3]);
 		}
 		glEnd();
 	}
@@ -6521,7 +6575,7 @@ DrawToScreen
 					bottomsubimage*(float)imgH/(float)texH
 				);
 			}
-			glVertex2f(-width*.5, height*.5);
+			glVertex2d(x[0],y[0]);
 			
 			if(YUV_Available())
 			{
@@ -6547,7 +6601,7 @@ DrawToScreen
 					bottomsubimage*(float)imgH/(float)texH
 				);
 			}
-			glVertex2f( width*.5, height*.5);
+			glVertex2d(x[1],y[1]);
 			
 			if(YUV_Available())
 			{
@@ -6573,7 +6627,7 @@ DrawToScreen
 					topsubimage*(float)(imgH-delta)/(float)texH
 				);
 			}
-			glVertex2f( width*.5,-height*.5);
+			glVertex2d(x[2],y[2]);
 			
 			if(YUV_Available())
 			{
@@ -6599,7 +6653,7 @@ DrawToScreen
 					topsubimage*(float)(imgH-delta)/(float)texH
 				);
 			}
-			glVertex2f(-width*.5,-height*.5);
+			glVertex2d(x[3],y[3]);
 		}
 		glEnd();
 	}
@@ -17929,7 +17983,7 @@ LGL_ProcessInput()
 
 			if(event.key.keysym.sym != 0)
 			{
-//printf("KeyDown: %i (%i, %i)\n",event.key.keysym.sym, LGL_KEY_LCTRL, LGL_KEY_RSHIFT);
+//printf("KeyDown: %i (%i, %i)\n",event.key.keysym.sym, LGL_KEY_RALT);
 				LGL.KeyStroke[event.key.keysym.sym]=LGL.KeyDown[event.key.keysym.sym]==false;
 				LGL.KeyDown[event.key.keysym.sym]=true;
 				if(LGL.KeyStroke[event.key.keysym.sym])
