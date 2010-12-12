@@ -169,7 +169,7 @@ FileScroll
 	{
 		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_NULL)
 		{
-			if(LGL_MultiTouchFingerCount()>=2)
+			if(LGL_MultiTouchFingerCount()==2)
 			{
 				scroll=LGL_MultiTouchDY2()*-250.0f;
 			}
