@@ -1713,6 +1713,7 @@ DrawVideos
 						vid->GetFPSDisplayed()
 					);
 
+					/*
 					LGL_GetFont().DrawString
 					(
 						rOrig-0.3f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
@@ -1722,6 +1723,7 @@ DrawVideos
 						"(%i)",
 						LGL_FPS()
 					);
+					*/
 
 					if(vid->GetFPSMissed())
 					{
