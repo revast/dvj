@@ -5016,7 +5016,11 @@ GetFreqMetaData
 {
 	bool ret=false;
 	
-	if(AudioInputMode)
+	if
+	(
+		AudioInputMode ||
+		GetConfigAlwaysUseAudioInForFreqSense()
+	)
 	{
 		ret=LGL_AudioInMetadata(volAve,volMax,freqFactor,GetGain(),GetEQMid()*0.5f);
 	}
