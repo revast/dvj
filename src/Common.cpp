@@ -233,28 +233,32 @@ Main_DrawGlowLines
 		);
 		if(LGL_DisplayCount()>1)
 		{
-			int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
-			int projW = LGL_DisplayResolutionX(projDisplay);
-			int projH = LGL_DisplayResolutionY(projDisplay);
-			
-			float projAR = projW/(float)projH;
-			float targetAR = 1.0f*LGL_DisplayResolutionX()/(float)((1.0f-quadrentSplitY)*LGL_DisplayResolutionY());
-			
-			float myL = 0.5f - (0.5f * (projAR/targetAR));
-			float myR = 0.5f + (0.5f * (projAR/targetAR));
+			//Draw projector-AR indicator lines
+			float myL = GetVisualizer()->GetViewportVisualsL();
+			float myR = GetVisualizer()->GetViewportVisualsR();
+			float myB = GetVisualizer()->GetViewportVisualsB();
+			float myT = GetVisualizer()->GetViewportVisualsT();
+
+			GetVisualizer()->GetProjectorARCoordsFromViewportCoords
+			(
+				myL,
+				myR,
+				myB,
+				myT
+			);
 
 			LGL_DrawLineToScreen
 			(
-				myL,quadrentSplitY,
-				myL,1.0f,
+				myL,myB,
+				myL,myT,
 				2*coolR*br,2*coolG*br,2*coolB*br,0.5f*br,
 				7-a,
 				false
 			);
 			LGL_DrawLineToScreen
 			(
-				myR,quadrentSplitY,
-				myR,1.0f,
+				myR,myB,
+				myR,myT,
 				2*coolR*br,2*coolG*br,2*coolB*br,0.5f*br,
 				7-a,
 				false

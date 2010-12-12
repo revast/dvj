@@ -147,7 +147,7 @@ void InitializeGlobals()
 		ParticlePointersActive[a]=false;
 	}
 
-	Visualizer=new VisualizerObj;
+	Visualizer=GetVisualizer();
 	GetMixer().SetVisualizer(Visualizer);
 }
 

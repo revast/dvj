@@ -4290,64 +4290,6 @@ DrawWave
 	bool	preview
 )
 {
-	float w = right-left;
-	float h = top-bottom;
-	float midX = 0.5f*(left+right);
-	float midY = 0.5f*(bottom+top);
-
-	int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
-	int projW;
-	int projH;
-	if(LGL_DisplayCount()==1)
-	{
-		projW = Visualizer->GetViewportVisualsWidth() * LGL_DisplayResolutionX();
-		projH = Visualizer->GetViewportVisualsHeight() * LGL_DisplayResolutionY();
-	}
-	else
-	{
-		projW = LGL_DisplayResolutionX(projDisplay);
-		projH = LGL_DisplayResolutionY(projDisplay);
-	}
-	float projAR = projW/(float)projH;
-	float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
-
-	float myL = left;
-	float myR = right;
-	float myB = bottom;
-	float myT = top;
-	
-	myL = midX - 0.5f * w * (projAR/targetAR);
-	myR = midX + 0.5f * w * (projAR/targetAR);
-
-	//Make sure we're not too wide
-	float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
-	float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
-	if(myL<targetLimitL)
-	{
-		float scaleFactor = (midX-targetLimitL)/(midX-myL);
-		myB = midY - 0.5f * h * scaleFactor;
-		myT = midY + 0.5f * h * scaleFactor;
-		myL = targetLimitL;
-		myR = targetLimitR;
-	}
-
-	//Make sure we're not too tall
-	float targetLimitB = midY - 0.5f * h * (targetAR/projAR);
-	float targetLimitT = midY + 0.5f * h * (targetAR/projAR);
-	if(myB<targetLimitB)
-	{
-		float scaleFactor = (midY-targetLimitB)/(midY-myB);
-		myL = midX - (midX-myL) * scaleFactor;
-		myR = midX + (myR-midX) * scaleFactor;
-		myB = targetLimitB;
-		myT = targetLimitT;
-	}
-
-	left = myL;
-	right = myR;
-	bottom = myB;
-	top = myT;
-
 	if(Sound==NULL)
 	{
 		return;
@@ -4358,6 +4300,14 @@ DrawWave
 	{
 		return;
 	}
+
+	GetVisualizer()->GetProjectorARCoordsFromViewportCoords
+	(
+		left,
+		right,
+		bottom,
+		top
+	);
 
 	float midHeight = 0.5f*(top+bottom);
 	bottom =

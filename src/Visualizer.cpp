@@ -31,6 +31,19 @@
 bool NOISE_IMAGE_INITIALIZED=false;
 LGL_Image* VisualizerObj::NoiseImage[NOISE_IMAGE_COUNT_128_128];
 
+VisualizerObj* visualizer=NULL;
+
+VisualizerObj*
+GetVisualizer()
+{
+	if(visualizer==NULL)
+	{
+		visualizer=new VisualizerObj;
+	}
+
+	return(visualizer);
+}
+
 VisualizerObj::
 VisualizerObj()
 {
@@ -53,8 +66,6 @@ VisualizerObj()
 
 		left = 0.5f - (0.5f * (projAR/targetAR));
 		right = 0.5f + (0.5f * (projAR/targetAR));
-
-		//right = projAspect * (top-bottom);
 	}
 
 	SetViewportVisuals(left,right,bottom,top);
@@ -180,17 +191,11 @@ VisualizerObj()
 	LEDG=0.0f;
 	LEDB=0.0f;
 
-	ProjMapCornerX[0]=0.0f;
-	ProjMapCornerY[0]=0.0f;
-
-	ProjMapCornerX[1]=0.0f;
-	ProjMapCornerY[1]=1.0f;
-
-	ProjMapCornerX[2]=1.0f;
-	ProjMapCornerY[2]=1.0f;
-
-	ProjMapCornerX[3]=1.0f;
-	ProjMapCornerY[3]=0.0f;
+	for(int a=0;a<4;a++)
+	{
+		ProjMapOffsetX[a]=0.0f;
+		ProjMapOffsetY[a]=0.0f;
+	}
 }
 
 VisualizerObj::
@@ -214,7 +219,7 @@ NextFrame
 	TurntableObj**	tts
 )
 {
-	//Frequency-sensitive video mixing
+	//Frequency-sensitive video SetTime()
 	for(int t=0;t<2;t++)
 	{
 		if(tts[t]->GetFreqSenseBrightnessPreview()>0.0f)
@@ -274,6 +279,12 @@ NextFrame
 		}
 	}
 
+	if(LGL_KeyDown(LGL_KEY_RALT))
+	{
+		//
+	}
+
+	/*
 	if
 	(
 		ScrollTextCurrentAmbientFileBuffer.empty() &&
@@ -331,6 +342,7 @@ NextFrame
 			ScrollTextCurrentAmbientFileBuffer.erase((std::vector<char*>::iterator)(&(ScrollTextCurrentAmbientFileBuffer[0])));
 		}
 	}
+	*/
 
 	return;
 }
@@ -423,40 +435,7 @@ DrawVisuals
 		}
 	}
 
-	if(LGL_AudioAvailable())
-	{
-		if(LGL_VidCamAvailable())
-		{
-			/*
-			LGL_VidCamImageRaw()->DrawToScreen
-			(
-				l,r,
-				b,t,
-				0,
-				1,1,1,1
-			);
-			*/
-			LGL_VidCamImageProcessed()->DrawToScreen
-			(
-				l,r,
-				b,t,
-				0,
-				1,1,1,1
-			);
-		}
-		/*
-		float s=2.0f*LGL_SecondsSinceLastFrame();
-		float y=2.0-(1+0);//LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_YAXIS));
-		AccumulationNow->DrawToScreen
-		(
-			l-y*s*w,	r+y*s*w,
-			b-y*s*h,	t+y*s*h,
-			2*s*0.0f,//LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS),
-			1.0-s,1.0-s,1.0-s,0.0f
-		);
-		*/
-	}
-	else
+	if(LGL_AudioAvailable()==false)
 	{
 		if(LGL_AudioWasOnceAvailable())
 		{
@@ -467,18 +446,6 @@ DrawVisuals
 				0,
 				1,1,1,1
 			);
-		}
-		else
-		{
-			/*
-			NoSound->DrawToScreen
-			(
-				l,r,
-				b,t,
-				0,
-				1,1,1,1
-			);
-			*/
 		}
 	}
 
@@ -635,9 +602,51 @@ DrawVisuals
 	//Projection Map Corners
 	if(LGL_GetActiveDisplay()==0)
 	{
-		for(int a=0;a<4;a++)
+		if(LGL_KeyDown(LGL_KEY_RALT))
 		{
-			//TODO
+			for(int a=0;a<4;a++)
+			{
+				float x;
+				float y;
+	
+				if(a==0)
+				{
+					//Bottom Left
+					x=l+0.02*w;
+					y=b+0.02*h;
+				}
+				else if(a==1)
+				{
+					//Top Left
+					x=l+0.02*w;
+					y=b+0.92*h;
+				}
+				else if(a==2)
+				{
+					//Top Right
+					x=l+0.92*w;
+					y=b+0.92*h;
+				}
+				else if(a==3)
+				{
+					//Bottom Right
+					x=l+0.92*w;
+					y=b+0.02*h;
+				}
+
+				LGL_GetFont().DrawString
+				(
+					x,
+					y,
+					h*0.04f,
+					1.0f,1.0f,1.0f,1.0f,
+					false,
+					0.75f,
+					"%i, %i",
+					(int)ProjMapOffsetX[a],
+					(int)ProjMapOffsetY[a]
+				);
+			}
 		}
 	}
 }
@@ -926,6 +935,34 @@ SetViewportVisuals
 
 float
 VisualizerObj::
+GetViewportVisualsL()
+{
+	return(ViewportVisualsLeft);
+}
+
+float
+VisualizerObj::
+GetViewportVisualsR()
+{
+	return(ViewportVisualsRight);
+}
+
+float
+VisualizerObj::
+GetViewportVisualsB()
+{
+	return(ViewportVisualsBottom);
+}
+
+float
+VisualizerObj::
+GetViewportVisualsT()
+{
+	return(ViewportVisualsTop);
+}
+
+float
+VisualizerObj::
 GetViewportVisualsWidth()
 {
 	return(ViewportVisualsRight-ViewportVisualsLeft);
@@ -1178,6 +1215,118 @@ SetProjectorPreviewClear
 
 void
 VisualizerObj::
+GetProjectorARCoordsFromViewportCoords
+(
+	float&	l,
+	float&	r,
+	float&	b,
+	float&	t
+)
+{
+	int projW;
+	int projH;
+	if(LGL_DisplayCount()==1)
+	{
+		projW = ViewportVisualsWidth * LGL_DisplayResolutionX();
+		projH = ViewportVisualsHeight * LGL_DisplayResolutionY();
+	}
+	else
+	{
+		int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
+		projW = LGL_DisplayResolutionX(projDisplay);
+		projH = LGL_DisplayResolutionY(projDisplay);
+	}
+	float projAR = projW/(float)projH;
+
+	GetTargetARCoordsFromViewportCoords
+	(
+		projAR,
+		l,
+		r,
+		b,
+		t
+	);
+}
+
+void
+VisualizerObj::
+GetImageARCoordsFromViewportCoords
+(
+	LGL_Image*	image,
+	float&		l,
+	float&		r,
+	float&		b,
+	float&		t
+)
+{
+	float imageAR = image->GetWidth()/(float)image->GetHeight();
+
+	GetTargetARCoordsFromViewportCoords
+	(
+		imageAR,
+		l,
+		r,
+		b,
+		t
+	);
+}
+
+void
+VisualizerObj::
+GetTargetARCoordsFromViewportCoords
+(
+	float	targetAR,
+	float&	l,
+	float&	r,
+	float&	b,
+	float&	t
+)
+{
+	float w=r-l;
+	float h=t-b;
+	float midX = 0.5f*(l+r);
+	float midY = 0.5f*(b+t);
+	float viewportAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
+
+	float viewportLimitL = midX - 0.5f * w * (targetAR/viewportAR);
+	float viewportLimitR = midX + 0.5f * w * (targetAR/viewportAR);
+	float viewportLimitB = midY - 0.5f * h * (viewportAR/targetAR);
+	float viewportLimitT = midY + 0.5f * h * (viewportAR/targetAR);
+
+	l=LGL_Max(l,viewportLimitL);
+	r=LGL_Min(r,viewportLimitR);
+	b=LGL_Max(b,viewportLimitB);
+	t=LGL_Min(t,viewportLimitT);
+
+	/*
+	//Make sure we're not too wide
+	float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
+	float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
+	if(myL<targetLimitL)
+	{
+		float scaleFactor = (midX-targetLimitL)/(midX-myL);
+		myB = midY - 0.5f * h * scaleFactor;
+		myT = midY + 0.5f * h * scaleFactor;
+		myL = targetLimitL;
+		myR = targetLimitR;
+	}
+
+	//Make sure we're not too tall
+	float targetLimitB = midY - 0.5f * h * (targetAR/projAR);
+	float targetLimitT = midY + 0.5f * h * (targetAR/projAR);
+	if(myB<targetLimitB)
+	{
+		float scaleFactor = (midY-targetLimitB)/(midY-myB);
+		myL = midX - (midX-myL) * scaleFactor;
+		myR = midX + (myR-midX) * scaleFactor;
+		myB = targetLimitB;
+		myT = targetLimitT;
+	}
+	*/
+}
+
+void
+VisualizerObj::
 PopulateCharStarBufferWithScrollTextFile
 (
 	std::vector<char*>&	buffer,
@@ -1263,8 +1412,8 @@ DrawVideos
 	float bOrig=b;
 	float tOrig=t;
 	float hOrig=t-b;
-	float w=r-l;
-	float h=t-b;
+	//float w=r-l;
+	//float h=t-b;
 
 	float videoBright = preview ? tt->GetVideoBrightnessPreview() : tt->GetVideoBrightnessFinal();
 	float oscilloscopeBright = preview ? tt->GetOscilloscopeBrightnessPreview() : tt->GetOscilloscopeBrightnessFinal();
@@ -1307,39 +1456,18 @@ DrawVideos
 						image->GetFrameNumber()!=-1
 					)
 					{
-						int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
-						int projW;
-						int projH;
-						if(LGL_DisplayCount()==1)
-						{
-							projW = ViewportVisualsWidth * LGL_DisplayResolutionX();
-							projH = ViewportVisualsHeight * LGL_DisplayResolutionY();
-						}
-						else
-						{
-							projW = LGL_DisplayResolutionX(projDisplay);
-							projH = LGL_DisplayResolutionY(projDisplay);
-						}
-						float projAR = projW/(float)projH;
-						//float imageAR = image->GetWidth()/(float)image->GetHeight();
-						//if(LGL_DisplayCount()==1 && tt->GetAspectRatioMode()==0) projAR=imageAR;
-						float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
-
-						float midX = 0.5f*(l+r);
-						//float midY = 0.5f*(b+t);
-
-						float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
-						float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
-
-						float myL = targetLimitL;
-						float myR = targetLimitR;
+						float myL = l;
+						float myR = r;
 						float myB = b;
 						float myT = t;
 
-						myL=LGL_Max(l,myL);
-						myR=LGL_Min(r,myR);
-						myB=LGL_Max(b,myB);
-						myT=LGL_Min(t,myT);
+						GetProjectorARCoordsFromViewportCoords
+						(
+							myL,
+							myR,
+							myB,
+							myT
+						);
 
 						float alpha=0.0f;
 						if(preview==false)
@@ -1481,32 +1609,6 @@ DrawVideos
 				image->GetFrameNumber()!=-1
 			)
 			{
-				int projDisplay = LGL_Max(0,LGL_DisplayCount()-1);
-				int projW;
-				int projH;
-				if(LGL_DisplayCount()==1)
-				{
-					projW = ViewportVisualsWidth * LGL_DisplayResolutionX();
-					projH = ViewportVisualsHeight * LGL_DisplayResolutionY();
-				}
-				else
-				{
-					projW = LGL_DisplayResolutionX(projDisplay);
-					projH = LGL_DisplayResolutionY(projDisplay);
-				}
-				float projAR = projW/(float)projH;
-				float imageAR = image->GetWidth()/(float)image->GetHeight();
-				if(LGL_DisplayCount()==1 && tt->GetAspectRatioMode()==0) projAR=imageAR;
-				float targetAR = w*LGL_DisplayResolutionX()/(float)(h*LGL_DisplayResolutionY());
-
-				float midX = 0.5f*(l+r);
-				float midY = 0.5f*(b+t);
-
-				float myL = l;
-				float myR = r;
-				float myB = b;
-				float myT = t;
-
 				float alpha=0.0f;
 				if(preview==false)
 				{
@@ -1531,86 +1633,69 @@ DrawVideos
 					}
 				}
 
-				if(tt->GetAspectRatioMode()==0)
+				float myL = l;
+				float myR = r;
+				float myB = b;
+				float myT = t;
+
+				if(tt->GetAspectRatioMode()!=2)
 				{
-					//Respect AR
-
-					//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
-
-					myL = midX - 0.5f * w * (imageAR/targetAR);
-					myR = midX + 0.5f * w * (imageAR/targetAR);
-					myB = midY - 0.5f * h;
-					myT = midY + 0.5f * h;
-
-					//Make sure we're not too wide
-					float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
-					float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
-					if(myL<targetLimitL)
+					if(tt->GetAspectRatioMode()==0)
 					{
-						float scaleFactor = (midX-targetLimitL)/(midX-myL);
-						myB = midY - 0.5f * h * scaleFactor;
-						myT = midY + 0.5f * h * scaleFactor;
-						myL = targetLimitL;
-						myR = targetLimitR;
+						//Respect Image AR
+
+						GetProjectorARCoordsFromViewportCoords
+						(
+							myL,
+							myR,
+							myB,
+							myT
+						);
+
+						GetImageARCoordsFromViewportCoords
+						(
+							image,
+							myL,
+							myR,
+							myB,
+							myT
+						);
+					}
+					else if(tt->GetAspectRatioMode()==1)
+					{
+						//Fill (but respect projector AR)
+
+						GetProjectorARCoordsFromViewportCoords
+						(
+							myL,
+							myR,
+							myB,
+							myT
+						);
 					}
 
-					//Make sure we're not too tall
-					float targetLimitB = midY - 0.5f * h * (targetAR/projAR);
-					float targetLimitT = midY + 0.5f * h * (targetAR/projAR);
-					if(myB<targetLimitB)
-					{
-						float scaleFactor = (midY-targetLimitB)/(midY-myB);
-						myL = midX - (midX-myL) * scaleFactor;
-						myR = midX + (myR-midX) * scaleFactor;
-						myB = targetLimitB;
-						myT = targetLimitT;
-					}
+					image->DrawToScreen
+					(
+						myL,myR,myB,myT,
+						0,
+						videoBright,
+						videoBright,
+						videoBright,
+						alpha
+					);
 				}
-				else if(tt->GetAspectRatioMode()==1)
-				{
-					//Fill (but respect projector AR)
-					//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
-					float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
-					float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
-
-					myL = targetLimitL;
-					myR = targetLimitR;
-					myB = b;
-					myT = t;
-
-					//Make sure we're not too wide
-					if(myL<l)
-					{
-						float scaleFactor = (midX-l)/(midX-myL);
-						myB = midY - 0.5f * h * scaleFactor;
-						myT = midY + 0.5f * h * scaleFactor;
-						myL = l;
-						myR = r;
-					}
-				}
-				else if(tt->GetAspectRatioMode()==2)
+				else //tt->GetAspectRatioMode()==2
 				{
 					//Zebbler-tiling
-					//Fill as much width-wise as our AR says we should, possibly making it too wide. Span the height.
-					float targetLimitL = midX - 0.5f * w * (projAR/targetAR);
-					float targetLimitR = midX + 0.5f * w * (projAR/targetAR);
 
-					myL = targetLimitL;
-					myR = targetLimitR;
-					myB = b;
-					myT = t;
+					GetProjectorARCoordsFromViewportCoords
+					(
+						myL,
+						myR,
+						myB,
+						myT
+					);
 
-					//Make sure we're not too wide
-					if(myL<l)
-					{
-						float scaleFactor = (midX-l)/(midX-myL);
-						myB = midY - 0.5f * h * scaleFactor;
-						myT = midY + 0.5f * h * scaleFactor;
-						myL = l;
-						myR = r;
-					}
-
-					//At this point we're filling the whole screen, so...
 					float myL13rd = myL + (1.0f/3.0f)*(myR-myL);
 					float myL23rd = myL + (2.0f/3.0f)*(myR-myL);
 					myL=LGL_Max(l,myL);
@@ -1641,23 +1726,6 @@ DrawVideos
 					(
 						myR,myL23rd,
 						myB,myT,
-						0,
-						videoBright,
-						videoBright,
-						videoBright,
-						alpha
-					);
-				}
-
-				if(tt->GetAspectRatioMode()!=2)
-				{
-					myL=LGL_Max(l,myL);
-					myR=LGL_Min(r,myR);
-					myB=LGL_Max(b,myB);
-					myT=LGL_Min(t,myT);
-					image->DrawToScreen
-					(
-						myL,myR,myB,myT,
 						0,
 						videoBright,
 						videoBright,

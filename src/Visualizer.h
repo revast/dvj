@@ -27,6 +27,11 @@
 #include "LGL.module/LGL.h"
 #include <vector>
 
+class VisualizerObj;
+
+VisualizerObj*
+GetVisualizer();
+
 class TurntableObj;
 
 using namespace std;
@@ -58,6 +63,10 @@ public:
 					float	left,	float	right,
 					float	bottom,	float	top
 				);
+	float			GetViewportVisualsL();
+	float			GetViewportVisualsR();
+	float			GetViewportVisualsB();
+	float			GetViewportVisualsT();
 	float			GetViewportVisualsWidth();
 	float			GetViewportVisualsHeight();
 	float			GetViewportRight();
@@ -87,7 +96,32 @@ public:
 	bool			GetProjectorPreviewClear();
 	void			SetProjectorPreviewClear(bool clear=true);
 
+	void			GetImageARCoordsFromViewportCoords
+				(
+					LGL_Image*	image,
+					float&		l,
+					float&		r,
+					float&		b,
+					float&		t
+				);
+	void			GetProjectorARCoordsFromViewportCoords
+				(
+					float&	l,
+					float&	r,
+					float&	b,
+					float&	t
+				);
+
 private:
+
+	void			GetTargetARCoordsFromViewportCoords
+				(
+					float	targetAR,
+					float&	l,
+					float&	r,
+					float&	b,
+					float&	t
+				);
 
 	void			PopulateCharStarBufferWithScrollTextFile(std::vector<char*>& buffer, const char* path);
 
@@ -155,8 +189,8 @@ static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
 				//1: Top Left
 				//2: Top Right
 				//3: Bottom Right
-	float			ProjMapCornerX[4];
-	float			ProjMapCornerY[4];
+	float			ProjMapOffsetX[4];
+	float			ProjMapOffsetY[4];
 };
 
 #endif	//_DVJ_VISUALIZER_H_
