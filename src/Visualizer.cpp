@@ -344,6 +344,18 @@ NextFrame
 	}
 	*/
 
+	//Projection Map Offset
+	if(LGL_KeyDown(LGL_KEY_RALT))
+	{
+		int which=GetWhichProjMapCorner();
+
+		if(LGL_MultiTouchFingerCount()==3)
+		{
+			ProjMapOffsetX[which]+=LGL_MultiTouchDX()*0.1f;
+			ProjMapOffsetY[which]+=LGL_MultiTouchDY()*0.1f;
+		}
+	}
+
 	return;
 }
 
@@ -602,8 +614,31 @@ DrawVisuals
 	//Projection Map Corners
 	if(LGL_GetActiveDisplay()==0)
 	{
+		float myL=l;
+		float myR=r;
+		float myB=b;
+		float myT=t;
+
+		GetProjectorARCoordsFromViewportCoords
+		(
+			myL,
+			myR,
+			myB,
+			myT
+		);
+
+		myL-=0.075f*w;
+		myR+=0.02f*w;
+		myT-=0.10f*h;
+		myB+=0.12f*h;
+
+		myL=LGL_Max(l+0.02f*w,myL);
+		myR=LGL_Min(r-0.05f*w,myR);
+
 		if(LGL_KeyDown(LGL_KEY_RALT))
 		{
+			int resX=(int)(ViewportVisualsWidth*LGL_DisplayResolutionX());
+			int resY=(int)(ViewportVisualsHeight*LGL_DisplayResolutionY());
 			for(int a=0;a<4;a++)
 			{
 				float x;
@@ -612,39 +647,52 @@ DrawVisuals
 				if(a==0)
 				{
 					//Bottom Left
-					x=l+0.02*w;
-					y=b+0.02*h;
+					x=myL;
+					y=myB;
 				}
 				else if(a==1)
 				{
 					//Top Left
-					x=l+0.02*w;
-					y=b+0.92*h;
+					x=myL;
+					y=myT;
 				}
 				else if(a==2)
 				{
 					//Top Right
-					x=l+0.92*w;
-					y=b+0.92*h;
+					x=myR;
+					y=myT;
 				}
 				else if(a==3)
 				{
 					//Bottom Right
-					x=l+0.92*w;
-					y=b+0.02*h;
+					x=myR;
+					y=myB;
 				}
+
+				float bri=(GetWhichProjMapCorner()==a) ? 1.0f : 0.5f;
 
 				LGL_GetFont().DrawString
 				(
 					x,
 					y,
 					h*0.04f,
-					1.0f,1.0f,1.0f,1.0f,
+					bri,bri,bri,1.0f,
 					false,
 					0.75f,
-					"%i, %i",
-					(int)ProjMapOffsetX[a],
-					(int)ProjMapOffsetY[a]
+					"x: %i",
+					(int)(ProjMapOffsetX[a]*resX)
+				);
+
+				LGL_GetFont().DrawString
+				(
+					x,
+					y-2*h*0.04f,
+					h*0.04f,
+					bri,bri,bri,1.0f,
+					false,
+					0.75f,
+					"y: %i",
+					(int)(ProjMapOffsetY[a]*resY)
 				);
 			}
 		}
@@ -1325,6 +1373,39 @@ GetTargetARCoordsFromViewportCoords
 	*/
 }
 
+int
+VisualizerObj::
+GetWhichProjMapCorner()
+{
+	int which=0;
+	float midX=0.5f*(ViewportVisualsLeft+ViewportVisualsRight);
+	float midY=0.5f*(ViewportVisualsBottom+ViewportVisualsTop);
+	if(LGL_MouseX()<midX)
+	{
+		if(LGL_MouseY()<midY)
+		{
+			which=0;
+		}
+		else
+		{
+			which=1;
+		}
+	}
+	else
+	{
+		if(LGL_MouseY()<midY)
+		{
+			which=3;
+		}
+		else
+		{
+			which=2;
+		}
+	}
+
+	return(which);
+}
+
 void
 VisualizerObj::
 PopulateCharStarBufferWithScrollTextFile
@@ -1674,15 +1755,45 @@ DrawVideos
 						);
 					}
 
-					image->DrawToScreen
-					(
-						myL,myR,myB,myT,
-						0,
-						videoBright,
-						videoBright,
-						videoBright,
-						alpha
-					);
+					if(LGL_GetActiveDisplay()==0)
+					{
+						image->DrawToScreen
+						(
+							myL,myR,myB,myT,
+							0,
+							videoBright,
+							videoBright,
+							videoBright,
+							alpha
+						);
+					}
+					else
+					{
+						float x[4];
+						float y[4];
+						//LT
+						x[0]=myL+ProjMapOffsetX[1];
+						y[0]=myT+ProjMapOffsetY[1];
+						//RT
+						x[1]=myR+ProjMapOffsetX[2];
+						y[1]=myT+ProjMapOffsetY[2];
+						//RB
+						x[2]=myR+ProjMapOffsetX[3];
+						y[2]=myB+ProjMapOffsetY[3];
+						//LB
+						x[3]=myL+ProjMapOffsetX[0];
+						y[3]=myB+ProjMapOffsetY[0];
+
+						image->DrawToScreen
+						(
+							x,
+							y,
+							videoBright,
+							videoBright,
+							videoBright,
+							alpha
+						);
+					}
 				}
 				else //tt->GetAspectRatioMode()==2
 				{

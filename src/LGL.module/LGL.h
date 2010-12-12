@@ -807,6 +807,15 @@ public:
 				float leftsubimage=0.0f, float rightsubimage=1.0f,
 				float bottomsubimage=0.0f, float topsubimage=1.0f
 			);
+	void		DrawToScreen
+			(
+				float x[4],
+				float y[4],
+				float r=1, float g=1, float b=1, float a=1,
+				float brightnessScalar=1.0f,
+				float leftsubimage=0.0f, float rightsubimage=1.0f,
+				float bottomsubimage=0.0f, float topsubimage=1.0f
+			);
 	void		DrawToScreenAsLine
 			(
 				float x1, float y1,

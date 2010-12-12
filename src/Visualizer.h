@@ -122,6 +122,8 @@ private:
 					float&	b,
 					float&	t
 				);
+	
+	int			GetWhichProjMapCorner();
 
 	void			PopulateCharStarBufferWithScrollTextFile(std::vector<char*>& buffer, const char* path);
 
@@ -185,10 +187,10 @@ static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
 	float			LEDG;
 	float			LEDB;
 
-				//0: Bottom Left
-				//1: Top Left
-				//2: Top Right
-				//3: Bottom Right
+				//0: LB
+				//1: LT
+				//2: RT
+				//3: RB
 	float			ProjMapOffsetX[4];
 	float			ProjMapOffsetY[4];
 };
