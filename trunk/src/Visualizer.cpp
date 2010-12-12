@@ -1755,45 +1755,48 @@ DrawVideos
 						);
 					}
 
+					float x[4];
+					float y[4];
+
 					if(LGL_GetActiveDisplay()==0)
 					{
-						image->DrawToScreen
-						(
-							myL,myR,myB,myT,
-							0,
-							videoBright,
-							videoBright,
-							videoBright,
-							alpha
-						);
+						//LB
+						x[0]=myL;
+						y[0]=myB;
+						//RB
+						x[1]=myR;
+						y[1]=myB;
+						//RT
+						x[2]=myR;
+						y[2]=myT;
+						//LT
+						x[3]=myL;
+						y[3]=myT;
 					}
 					else
 					{
-						float x[4];
-						float y[4];
-						//LT
-						x[0]=myL+ProjMapOffsetX[1];
-						y[0]=myT+ProjMapOffsetY[1];
-						//RT
-						x[1]=myR+ProjMapOffsetX[2];
-						y[1]=myT+ProjMapOffsetY[2];
-						//RB
-						x[2]=myR+ProjMapOffsetX[3];
-						y[2]=myB+ProjMapOffsetY[3];
 						//LB
-						x[3]=myL+ProjMapOffsetX[0];
-						y[3]=myB+ProjMapOffsetY[0];
-
-						image->DrawToScreen
-						(
-							x,
-							y,
-							videoBright,
-							videoBright,
-							videoBright,
-							alpha
-						);
+						x[0]=myL+ProjMapOffsetX[0];
+						y[0]=myB+ProjMapOffsetY[0];
+						//RB
+						x[1]=myR+ProjMapOffsetX[3];
+						y[1]=myB+ProjMapOffsetY[3];
+						//RT
+						x[2]=myR+ProjMapOffsetX[2];
+						y[2]=myT+ProjMapOffsetY[2];
+						//LT
+						x[3]=myL+ProjMapOffsetX[1];
+						y[3]=myT+ProjMapOffsetY[1];
 					}
+					image->DrawToScreen
+					(
+						x,
+						y,
+						videoBright,
+						videoBright,
+						videoBright,
+						alpha
+					);
 				}
 				else //tt->GetAspectRatioMode()==2
 				{

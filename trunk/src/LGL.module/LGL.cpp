@@ -5931,6 +5931,9 @@ LGL_Image
 	PixelBufferObjectBackGL=0;
 	PixelBufferObjectSize=0;
 
+	FrameBufferImage=false;
+	InvertY=false;
+
 	if(loadToGLTexture)
 	{
 		LoadSurfaceToTexture
@@ -6057,6 +6060,7 @@ LGL_Image
 	TextureGL=0;
 	TextureGLMine=true;
 	FrameBufferImage=false;
+	InvertY=true;
 	if(data)
 	{
 		LoadSurfaceToTexture(LinearInterpolation);
@@ -6133,6 +6137,7 @@ LGL_Image
 	SurfaceSDL=NULL;
 
 	FrameBufferImage=true;
+	InvertY=false;
 	ReadFromFrontBuffer=inReadFromFrontBuffer;
 	FrameBufferViewport(left,right,bottom,top);
 
@@ -6273,13 +6278,13 @@ DrawToScreen
 	}
 //#endif	//LGL_LINUX
 	x[0]=left+d;
-	y[0]=top;
+	y[0]=top;//(InvertY==false) ? top : bottom;
 	x[1]=right+d;
-	y[1]=top;
+	y[1]=top;//(InvertY==false) ? top : bottom;
 	x[2]=right;
-	y[2]=bottom;
+	y[2]=bottom;//(InvertY==false) ? bottom : top;
 	x[3]=left;
-	y[3]=bottom;
+	y[3]=bottom;//(InvertY==false) ? bottom : top;
 
 	DrawToScreen
 	(
@@ -6318,6 +6323,89 @@ DrawToScreen
 	return;
 #endif	//LGL_NO_GRAPHICS
 
+	//xy[4]
+	//0: LT
+	//1: RT
+	//2: RB
+	//3: LB
+
+	//xy[9]
+	//0: CC
+	//1: LT
+	//2: CT
+	//3: RT
+	//4: RC
+	//5: RB
+	//6: CB
+	//7: LB
+	//8: LC
+	float x2[9];
+	float y2[9];
+	float x2t[9];
+	float y2t[9];
+
+	int imgW=ImgW;
+	int imgH=ImgH;
+	int texW=TexW;
+	int texH=TexH;
+
+	if(YUV_Available())
+	{
+		imgW=YUV_ImgW;
+		imgH=YUV_ImgH;
+		texW=YUV_TexW;
+		texH=YUV_TexH;
+	}
+
+	float imgTexW=(float)imgW/(float)texW;
+	float imgTexH=(float)imgH/(float)texH;
+
+	//0: CC
+	x2[0]=0.25f*(x[0]+x[1]+x[2]+x[3]);
+	y2[0]=0.25f*(y[0]+y[1]+y[2]+y[3]);
+	x2t[0]=0.5f*(leftsubimage+rightsubimage)*imgTexW;
+	y2t[0]=0.5f*(bottomsubimage+topsubimage)*imgTexH;
+	//1: LT
+	x2[1]=x[0];
+	y2[1]=y[0];
+	x2t[1]=leftsubimage*imgTexW;
+	y2t[1]=topsubimage*imgTexH;
+	//2: CT
+	x2[2]=0.5f*(x[0]+x[1]);
+	y2[2]=0.5f*(y[0]+y[1]);
+	x2t[2]=x2t[0];
+	y2t[2]=topsubimage*imgTexH;
+	//3: RT
+	x2[3]=x[1];
+	y2[3]=y[1];
+	x2t[3]=rightsubimage*imgTexW;
+	y2t[3]=topsubimage*imgTexH;
+	//4: RC
+	x2[4]=0.5f*(x[1]+x[2]);
+	y2[4]=0.5f*(y[1]+y[2]);
+	x2t[4]=rightsubimage*imgTexW;
+	y2t[4]=y2t[0];
+	//5: RB
+	x2[5]=x[2];
+	y2[5]=y[2];
+	x2t[5]=rightsubimage*imgTexW;
+	y2t[5]=bottomsubimage*imgTexH;
+	//6: CB
+	x2[6]=0.5f*(x[2]+x[3]);
+	y2[6]=0.5f*(y[2]+y[3]);
+	x2t[6]=x2t[0];
+	y2t[6]=bottomsubimage*imgTexH;
+	//7: LB
+	x2[7]=x[3];
+	y2[7]=y[3];
+	x2t[7]=leftsubimage*imgTexW;
+	y2t[7]=bottomsubimage*imgTexH;
+	//8: LC
+	x2[8]=0.5f*(x[3]+x[0]);
+	y2[8]=0.5f*(y[3]+y[0]);
+	x2t[8]=leftsubimage*imgTexW;
+	y2t[8]=y2t[0];
+
 	lgl_glScreenify2D();
 
 	if(r<0) r=0;
@@ -6334,10 +6422,6 @@ DrawToScreen
 
 	GLuint textureGL=TextureGL;
 	bool alphaChannel=AlphaChannel;
-	int imgW=ImgW;
-	int imgH=ImgH;
-	int texW=TexW;
-	int texH=TexH;
 	LGL_Shader* shader=&ImageShader;
 	bool enableShader=brightnessScalar!=1.0f;
 	if(YUV_Available())
@@ -6421,242 +6505,54 @@ DrawToScreen
 
 	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
 
-	if(FrameBufferImage)
+	glBegin(GL_TRIANGLE_FAN);
 	{
-		//We're not upside down
-		glBegin(GL_QUADS);
-		{
-			glNormal3f(0,0,-1);
-			float d=0;
+		glNormal3f(0,0,-1);
+		float d=0;
 //#ifdef	LGL_LINUX
 //FIXME: FrameBufferImage UGLY fudge factor, due to lousy nVidia Drivers
-			if(LGL.FrameBufferTextureGlitchFix)
-			{
-				d=-0.05/LGL.WindowResolutionX[LGL.DisplayNow];
-			}
-//#endif	//LGL_LINUX
-			if(YUV_Available())
-			{
-				for(int c=0;c<3;c++)
-				{
-					GLenum target;
-					if(c==0) target = GL_TEXTURE0_ARB;
-					else if(c==1) target = GL_TEXTURE1_ARB;
-					else if(c==2) target = GL_TEXTURE2_ARB;
-					glMultiTexCoord2d
-					(
-						target,
-						leftsubimage*(float)imgW/(float)texW,
-						topsubimage*(float)imgH/(float)texH
-					);
-				}
-			}
-			else
-			{
-				glTexCoord2d
-				(
-					leftsubimage*(float)imgW/(float)texW,
-					topsubimage*(float)imgH/(float)texH
-				);
-			}
-			glVertex2d(x[0],y[0]);
-			
-			if(YUV_Available())
-			{
-				for(int c=0;c<3;c++)
-				{
-					GLenum target;
-					if(c==0) target = GL_TEXTURE0_ARB;
-					else if(c==1) target = GL_TEXTURE1_ARB;
-					else if(c==2) target = GL_TEXTURE2_ARB;
-					glMultiTexCoord2d
-					(
-						target,
-						rightsubimage*(float)imgW/(float)texW,
-						topsubimage*(float)imgH/(float)texH
-					);
-				}
-			}
-			else
-			{
-				glTexCoord2d
-				(
-					rightsubimage*(float)imgW/(float)texW,
-					topsubimage*(float)imgH/(float)texH
-				);
-			}
-			glVertex2d(x[1],y[1]);
-			
-			if(YUV_Available())
-			{
-				for(int c=0;c<3;c++)
-				{
-					GLenum target;
-					if(c==0) target = GL_TEXTURE0_ARB;
-					else if(c==1) target = GL_TEXTURE1_ARB;
-					else if(c==2) target = GL_TEXTURE2_ARB;
-					glMultiTexCoord2d
-					(
-						target,
-						rightsubimage*(float)imgW/(float)texW,
-						bottomsubimage*(float)imgH/(float)texH
-					);
-				}
-			}
-			else
-			{
-				glTexCoord2d
-				(
-					rightsubimage*(float)imgW/(float)texW,
-					bottomsubimage*(float)imgH/(float)texH
-				);
-			}
-			glVertex2d(x[2],y[2]);
-			
-			if(YUV_Available())
-			{
-				for(int c=0;c<3;c++)
-				{
-					GLenum target;
-					if(c==0) target = GL_TEXTURE0_ARB;
-					else if(c==1) target = GL_TEXTURE1_ARB;
-					else if(c==2) target = GL_TEXTURE2_ARB;
-					glMultiTexCoord2d
-					(
-						target,
-						leftsubimage*(float)imgW/(float)texW,
-						bottomsubimage*(float)imgH/(float)texH
-					);
-				}
-			}
-			else
-			{
-				glTexCoord2d
-				(
-					leftsubimage*(float)imgW/(float)texW,
-					bottomsubimage*(float)imgH/(float)texH
-				);
-			}
-			glVertex2d(x[3],y[3]);
-		}
-		glEnd();
-	}
-	else
-	{
-		//We're an SDL image, so we're upside down
-
-		//Below fixes gibberish lines on right, bottom
-		int delta=LinearInterpolation?1:0;
-		
-		glBegin(GL_QUADS);
+		if(LGL.FrameBufferTextureGlitchFix)
 		{
-			glNormal3f(0,0,-1);
-			if(YUV_Available())
-			{
-				for(int c=0;c<3;c++)
-				{
-					GLenum target;
-					if(c==0) target = GL_TEXTURE0_ARB;
-					else if(c==1) target = GL_TEXTURE1_ARB;
-					else if(c==2) target = GL_TEXTURE2_ARB;
-					glMultiTexCoord2d
-					(
-						target,
-						leftsubimage*(float)imgW/(float)texW,
-						bottomsubimage*(float)imgH/(float)texH
-					);
-				}
-			}
-			else
-			{
-				glTexCoord2f
-				(
-					leftsubimage*(float)imgW/(float)texW,
-					bottomsubimage*(float)imgH/(float)texH
-				);
-			}
-			glVertex2d(x[0],y[0]);
-			
-			if(YUV_Available())
-			{
-				for(int c=0;c<3;c++)
-				{
-					GLenum target;
-					if(c==0) target = GL_TEXTURE0_ARB;
-					else if(c==1) target = GL_TEXTURE1_ARB;
-					else if(c==2) target = GL_TEXTURE2_ARB;
-					glMultiTexCoord2d
-					(
-						target,
-						rightsubimage*(float)imgW/(float)texW,
-						bottomsubimage*(float)imgH/(float)texH
-					);
-				}
-			}
-			else
-			{
-				glTexCoord2f
-				(
-					rightsubimage*(float)(imgW-delta)/(float)texW,
-					bottomsubimage*(float)imgH/(float)texH
-				);
-			}
-			glVertex2d(x[1],y[1]);
-			
-			if(YUV_Available())
-			{
-				for(int c=0;c<3;c++)
-				{
-					GLenum target;
-					if(c==0) target = GL_TEXTURE0_ARB;
-					else if(c==1) target = GL_TEXTURE1_ARB;
-					else if(c==2) target = GL_TEXTURE2_ARB;
-					glMultiTexCoord2d
-					(
-						target,
-						rightsubimage*(float)imgW/(float)texW,
-						topsubimage*(float)imgH/(float)texH
-					);
-				}
-			}
-			else
-			{
-				glTexCoord2f
-				(
-					rightsubimage*(float)(imgW-delta)/(float)texW,
-					topsubimage*(float)(imgH-delta)/(float)texH
-				);
-			}
-			glVertex2d(x[2],y[2]);
-			
-			if(YUV_Available())
-			{
-				for(int c=0;c<3;c++)
-				{
-					GLenum target;
-					if(c==0) target = GL_TEXTURE0_ARB;
-					else if(c==1) target = GL_TEXTURE1_ARB;
-					else if(c==2) target = GL_TEXTURE2_ARB;
-					glMultiTexCoord2d
-					(
-						target,
-						leftsubimage*(float)imgW/(float)texW,
-						topsubimage*(float)imgH/(float)texH
-					);
-				}
-			}
-			else
-			{
-				glTexCoord2f
-				(
-					leftsubimage*(float)imgW/(float)texW,
-					topsubimage*(float)(imgH-delta)/(float)texH
-				);
-			}
-			glVertex2d(x[3],y[3]);
+			d=-0.05/LGL.WindowResolutionX[LGL.DisplayNow];
 		}
-		glEnd();
+//#endif	//LGL_LINUX
+
+		for(int v=0;v<10;v++)
+		{
+			bool last=(v==9);
+			if(last)
+			{
+				v=1;
+			}
+			if(YUV_Available())
+			{
+				for(int c=0;c<3;c++)
+				{
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else if(c==2) target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
+					(
+						target,
+						x2t[v],
+						y2t[v]
+					);
+				}
+			}
+			else
+			{
+				glTexCoord2d
+				(
+					x2t[v],
+					y2t[v]
+				);
+			}
+			glVertex2d(x2[v],y2[v]);
+			if(last) break;
+		}
 	}
+	glEnd();
 
 	if(YUV_Available())
 	{
@@ -9133,11 +9029,16 @@ GetImage()
 				Image->SetFrameNumber(-1);
 			}
 		}
-		
+
 		return(Image);
 	}
 
 	//Ensure Image Exists
+	if(Image->InvertY==false)
+	{
+		delete Image;
+		Image=NULL;
+	}
 	if(Image==NULL)
 	{
 		Image = new LGL_Image

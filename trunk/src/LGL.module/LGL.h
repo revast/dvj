@@ -927,6 +927,7 @@ const	char*		GetPathShort() const;
 	//glFrameBuffer stuff
 
 	bool		FrameBufferImage;
+	bool		InvertY;
 	bool		ReadFromFrontBuffer;
 	int		LeftInt;
 	int		BottomInt;
