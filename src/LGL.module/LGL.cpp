@@ -103,10 +103,10 @@
 #else
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(0.8f-1.0f)
-#define	LGL_PRIORITY_AUDIO_DECODE	(0.7f-1.0f)
-#define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f-1.0f)
-#define	LGL_PRIORITY_OSC		(0.85f-1.0f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(0.8f)
+#define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
+#define	LGL_PRIORITY_OSC		(0.85f)
 #endif
 
 #define LGL_EQ_SAMPLES_FFT	(512)
@@ -8793,9 +8793,12 @@ lgl_video_decoder_thread
 			break;
 		}
 		dec->MaybeLoadVideo();
-		dec->MaybeDecodeImage();
+		bool imageDecoded=dec->MaybeDecodeImage();
 		dec->MaybeRecycleBuffers();
-		LGL_DelayMS(1);
+		if(imageDecoded==false)
+		{
+			LGL_DelayMS(1);
+		}
 	}
 
 	return(0);
@@ -9663,7 +9666,7 @@ printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
 	VideoOK=true;
 }
 
-void
+bool
 LGL_VideoDecoder::
 MaybeDecodeImage()
 {
@@ -9677,19 +9680,19 @@ MaybeDecodeImage()
 		VideoOK==false
 	)
 	{
-		return;
+		return(false);
 	}
 
 	//Find frameNumber of image to add
 	long frameNumberTarget=GetNextFrameNumberToDecode();
 	if(frameNumberTarget==-1)
 	{
-		return;
+		return(false);
 	}
 
 	if(frameNumberTarget >= SecondsToFrameNumber(GetLengthSeconds())-1)
 	{
-		return;
+		return(false);
 	}
 
 	//Seek to the appropriate frame...
@@ -9866,15 +9869,15 @@ for(int c=0;c<3;c++)
 		}
 		else
 		{
-		frameBuffer->SwapInNewBufferYUV
-		(
-			Path,
-			BufferYUV,	//Changes...
-			BufferYUVBytes,	//Changes...
-			BufferWidth,
-			BufferHeight,
-			frameNumberTarget
-		);
+			frameBuffer->SwapInNewBufferYUV
+			(
+				Path,
+				BufferYUV,	//Changes...
+				BufferYUVBytes,	//Changes...
+				BufferWidth,
+				BufferHeight,
+				frameNumberTarget
+			);
 		}
 
 		//Add framebuffer to FrameBufferReady, and sort.
@@ -9889,6 +9892,8 @@ for(int c=0;c<3;c++)
 			);
 		}
 	}
+
+	return(frameRead);
 }
 
 void
