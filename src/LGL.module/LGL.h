@@ -381,7 +381,7 @@ public:
 
 private:
 
-	Uint32		TimeAtLastReset;
+	timeval		TimeAtLastReset;
 };
 
 
@@ -1429,6 +1429,13 @@ const	char*		GetPathShort() const;
 
 LGL_Font&
 LGL_GetFont();
+
+void
+LGL_DebugPrintf
+(
+	const char* string,
+	...
+);
 
 class LGL_InputBuffer
 {
