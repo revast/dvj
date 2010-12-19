@@ -1088,6 +1088,7 @@ public:
 	unsigned int		GetBufferUBytes() const;
 	unsigned char*		GetBufferV() const;
 	unsigned int		GetBufferVBytes() const;
+	void			Invalidate();
 
 private:
 
@@ -1127,6 +1128,7 @@ public:
 	void			SetFrameBufferAddBackwards(bool addBackwards=true);
 	int			GetFrameBufferAddRadius() const;
 	void			SetFrameBufferAddRadius(int frames);
+	void			InvalidateAllFrameBuffers();
 
 	//Thread Functions
 
@@ -1190,6 +1192,7 @@ private:
 	bool			IsImage;
 	LGL_Image*		Image;
 	bool			VideoOK;
+	LGL_Semaphore		VideoOKSemaphore;
 
 public:
 	float			StoredBrightness;	//Hate this!
