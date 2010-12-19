@@ -3312,13 +3312,19 @@ lgl_EndFrame()
 			LGL.AudioOutDisconnected=true;
 			if(LGL.AudioUsingJack)
 			{
-				if(LGL.AudioOutReconnectTimer.SecondsSinceLastReset()>1.0f)
+				if(0 && LGL.AudioOutReconnectTimer.SecondsSinceLastReset()>1.0f)
 				{
-					printf("Trying to revive JACK!\n");
-					jack_client_close(jack_client);
-					system("killall jackd");
+					printf("Trying to revive JACK! (Alpha)\n");
+					//jack_client_close(jack_client);
+					printf("\tRevive: Killing prior JACK!\n");
+					system("killall -9 jackd");
+					printf("\tRevive: Waiting half a second!\n");
+					LGL_DelayMS(500);
+					printf("\tRevive: LGL_JackInit(): Alpha!\n");
 					LGL_JackInit();
+					printf("\tRevive: LGL_JackInit(): Alpha!\n");
 					LGL.AudioOutReconnectTimer.Reset();
+					printf("Trying to revive JACK! (Omega)\n");
 				}
 			}
 		}
@@ -6378,42 +6384,42 @@ DrawToScreen
 	//1: LT
 	x2[1]=x[0];
 	y2[1]=y[0];
-	x2t[1]=leftsubimage*imgTexW;
-	y2t[1]=topsubimage*imgTexH;
+	x2t[1]=leftsubimage*imgTexW+1.0f/imgW;
+	y2t[1]=topsubimage*imgTexH-1.0f/imgH;
 	//2: CT
 	x2[2]=0.5f*(x[0]+x[1]);
 	y2[2]=0.5f*(y[0]+y[1]);
 	x2t[2]=x2t[0];
-	y2t[2]=topsubimage*imgTexH;
+	y2t[2]=topsubimage*imgTexH-1.0f/imgH;
 	//3: RT
 	x2[3]=x[1];
 	y2[3]=y[1];
-	x2t[3]=rightsubimage*imgTexW;
-	y2t[3]=topsubimage*imgTexH;
+	x2t[3]=rightsubimage*imgTexW-1.0f/imgW;
+	y2t[3]=topsubimage*imgTexH-1.0f/imgH;
 	//4: RC
 	x2[4]=0.5f*(x[1]+x[2]);
 	y2[4]=0.5f*(y[1]+y[2]);
-	x2t[4]=rightsubimage*imgTexW;
+	x2t[4]=rightsubimage*imgTexW-1.0f/imgW;
 	y2t[4]=y2t[0];
 	//5: RB
 	x2[5]=x[2];
 	y2[5]=y[2];
-	x2t[5]=rightsubimage*imgTexW;
-	y2t[5]=bottomsubimage*imgTexH;
+	x2t[5]=rightsubimage*imgTexW-1.0f/imgW;
+	y2t[5]=bottomsubimage*imgTexH+1.0f/imgH;
 	//6: CB
 	x2[6]=0.5f*(x[2]+x[3]);
 	y2[6]=0.5f*(y[2]+y[3]);
 	x2t[6]=x2t[0];
-	y2t[6]=bottomsubimage*imgTexH;
+	y2t[6]=bottomsubimage*imgTexH+1.0f/imgH;
 	//7: LB
 	x2[7]=x[3];
 	y2[7]=y[3];
-	x2t[7]=leftsubimage*imgTexW;
-	y2t[7]=bottomsubimage*imgTexH;
+	x2t[7]=leftsubimage*imgTexW+1.0f/imgW;
+	y2t[7]=bottomsubimage*imgTexH+1.0f/imgH;
 	//8: LC
 	x2[8]=0.5f*(x[3]+x[0]);
 	y2[8]=0.5f*(y[3]+y[0]);
-	x2t[8]=leftsubimage*imgTexW;
+	x2t[8]=leftsubimage*imgTexW+1.0f/imgW;
 	y2t[8]=y2t[0];
 
 	lgl_glScreenify2D();
@@ -6946,7 +6952,8 @@ UpdateTexture
 	assert(bytesperpixel==3 || bytesperpixel==4);
 	if(data==NULL)
 	{
-printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
+LGL_Assertf(data!=NULL,("LGL_Image::UpdateTexture(): NULL data! WTF!\n"));
+//printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
 		return;
 	}
 	LinearInterpolation=inLinearInterpolation;
@@ -8735,6 +8742,13 @@ GetBufferVBytes()	const
 	return((BufferWidth*BufferHeight)/4);
 }
 
+void
+lgl_FrameBuffer::
+Invalidate()
+{
+	FrameNumber=-1;
+}
+
 
 
 int
@@ -8767,7 +8781,8 @@ LGL_VideoDecoder
 	const char* path
 ) :
 	FrameBufferReadySemaphore("FrameBufferReady Semaphore"),
-	PathSemaphore("Path Semaphore")
+	PathSemaphore("Path Semaphore"),
+	VideoOKSemaphore("VideoOK Semaphore")
 {
 	Init();
 	SetVideo(path);
@@ -9040,15 +9055,11 @@ GetImage()
 			}
 		}
 
+		Image->InvertY=false;
 		return(Image);
 	}
 
 	//Ensure Image Exists
-	if(Image->InvertY==false)
-	{
-		delete Image;
-		Image=NULL;
-	}
 	if(Image==NULL)
 	{
 		Image = new LGL_Image
@@ -9062,9 +9073,17 @@ GetImage()
 		);
 		Image->SetFrameNumber(-1);
 	}
+	LGL_DebugPrintf("IsYUV420p(): %i (%i)",IsYUV420P(),Image->InvertY);
 	if(strcmp(Path,"NULL")==0)
 	{
 		Image->SetFrameNumber(-1);
+		return(Image);
+	}
+
+	LGL_ScopeLock videoOKLock(VideoOKSemaphore,0.0f);
+
+	if(videoOKLock.GetLockObtained()==false)
+	{
 		return(Image);
 	}
 
@@ -9181,6 +9200,15 @@ if(IsYUV420P()==false)
 }
 else
 {
+	Image->YUV_UpdateTexture
+	(
+		BufferWidth,
+		BufferHeight,
+		frameBuffer->GetBufferY(),
+		frameBuffer->GetBufferU(),
+		frameBuffer->GetBufferV(),
+		name
+	);
 	/*
 	if(BufferYUVAsRGB==NULL)
 	{
@@ -9215,16 +9243,6 @@ else
 		);
 	}
 	*/
-
-	Image->YUV_UpdateTexture
-	(
-		BufferWidth,
-		BufferHeight,
-		frameBuffer->GetBufferY(),
-		frameBuffer->GetBufferU(),
-		frameBuffer->GetBufferV(),
-		name
-	);
 }
 	Image->SetFrameNumber(frameBuffer->GetFrameNumber());
 	FrameNumberDisplayed=frameBuffer->GetFrameNumber();
@@ -9422,6 +9440,21 @@ SetFrameBufferAddRadius
 
 void
 LGL_VideoDecoder::
+InvalidateAllFrameBuffers()
+{
+	{
+		LGL_ScopeLock lock(FrameBufferReadySemaphore);
+		for(unsigned int a=0;a<FrameBufferReady.size();a++)
+		{
+			FrameBufferReady[a]->Invalidate();
+		}
+	}
+
+	MaybeRecycleBuffers();
+}
+
+void
+LGL_VideoDecoder::
 MaybeLoadVideo()
 {
 	if(PathNext[0]=='\0')
@@ -9466,166 +9499,171 @@ MaybeLoadVideo()
 
 	//Go for it!!
 
-	UnloadVideo();
-	VideoOK=false;
-	IsImage=false;
-
-	if(LGL_FileExtensionIsImage(Path))
 	{
-		IsImage=true;
-		return;
-	}
+		LGL_ScopeLock videoOkLock(VideoOKSemaphore);
+		VideoOK=false;
+		IsImage=false;
+		UnloadVideo();
 
-	LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
-
-	//Open file
-	AVFormatContext* fc=NULL;
-	{
-		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
-		if(lgl_av_open_input_file(&fc, Path, NULL, 0, NULL)!=0)
+		if(LGL_FileExtensionIsImage(Path))
 		{
-			printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open '%s'\n",Path);
+			IsImage=true;
 			return;
 		}
-	}
 
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 
-	//Find streams
-	if(lgl_av_find_stream_info(fc)<0)
-	{
-		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find streams for '%s'\n",Path);
-		return;
-	}
-
-
-	// Find the first video stream
-	for(unsigned int i=0; i<fc->nb_streams; i++)
-	{
-		if(fc->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO)
+		//Open file
+		AVFormatContext* fc=NULL;
 		{
-			VideoStreamIndex=i;
-			break;
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			if(lgl_av_open_input_file(&fc, Path, NULL, 0, NULL)!=0)
+			{
+				printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open '%s'\n",Path);
+				return;
+			}
 		}
-	}
-	if(VideoStreamIndex==-1)
-	{
-		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find video stream for '%s' in %i streams\n",Path,fc->nb_streams);
-		return;
-	}
 
-	// Get a pointer to the codec context for the video stream
-	CodecContext=fc->streams[VideoStreamIndex]->codec;
-	FormatContext=fc;	//Only set this once fc is fully initialized
 
-	// Find the decoder for the video stream
-	Codec=lgl_avcodec_find_decoder(CodecContext->codec_id);
-	if(Codec==NULL)
-	{
-		printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
-		UnloadVideo();
-		return;
-	}
-
-	// Inform the codec that we can handle truncated bitstreams -- i.e.,
-	// bitstreams where frame boundaries can fall in the middle of packets
-	if(Codec->capabilities & CODEC_CAP_TRUNCATED)
-	{
-		CodecContext->flags|=CODEC_FLAG_TRUNCATED;
-	}
-
-	// Open codec
-	{
-		LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
-		if(lgl_avcodec_open(CodecContext, Codec)<0)
+		//Find streams
+		if(lgl_av_find_stream_info(fc)<0)
 		{
-			printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
+			printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find streams for '%s'\n",Path);
+			return;
+		}
+
+
+		// Find the first video stream
+		for(unsigned int i=0; i<fc->nb_streams; i++)
+		{
+			if(fc->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO)
+			{
+				VideoStreamIndex=i;
+				break;
+			}
+		}
+		if(VideoStreamIndex==-1)
+		{
+			printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find video stream for '%s' in %i streams\n",Path,fc->nb_streams);
+			return;
+		}
+
+		// Get a pointer to the codec context for the video stream
+		CodecContext=fc->streams[VideoStreamIndex]->codec;
+		FormatContext=fc;	//Only set this once fc is fully initialized
+
+		// Find the decoder for the video stream
+		Codec=lgl_avcodec_find_decoder(CodecContext->codec_id);
+		if(Codec==NULL)
+		{
+			printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't find codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
 			UnloadVideo();
 			return;
 		}
-	}
 
-	LengthSeconds=FormatContext->duration/(double)(AV_TIME_BASE);
-	FPS=
-		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(double)
-		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den;
-/*
-printf("FPS A = %i / %i (%.2f)\n",
+		// Inform the codec that we can handle truncated bitstreams -- i.e.,
+		// bitstreams where frame boundaries can fall in the middle of packets
+		if(Codec->capabilities & CODEC_CAP_TRUNCATED)
+		{
+			CodecContext->flags|=CODEC_FLAG_TRUNCATED;
+		}
+
+		// Open codec
+		{
+			LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+			if(lgl_avcodec_open(CodecContext, Codec)<0)
+			{
+				printf("LGL_VideoDecoder::MaybeLoadVideo(): Couldn't open codec for '%s'. Codec = '%s'\n",Path,CodecContext->codec_name);
+				UnloadVideo();
+				return;
+			}
+		}
+
+		LengthSeconds=FormatContext->duration/(double)(AV_TIME_BASE);
+		FPS=
+			FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(double)
+			FormatContext->streams[VideoStreamIndex]->r_frame_rate.den;
+	/*
+	printf("FPS A = %i / %i (%.2f)\n",
+			FormatContext->streams[VideoStreamIndex]->r_frame_rate.num,
+			FormatContext->streams[VideoStreamIndex]->r_frame_rate.den,
+			FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(float)
+			FormatContext->streams[VideoStreamIndex]->r_frame_rate.den);
+	printf("FPS B = %i / %i (%.2f)\n",
+			FormatContext->streams[VideoStreamIndex]->time_base.num,
+			FormatContext->streams[VideoStreamIndex]->time_base.den,
+			FormatContext->streams[VideoStreamIndex]->time_base.num/(float)
+			FormatContext->streams[VideoStreamIndex]->time_base.den);
+	printf("FPS C = %i / %i (%.2f)\n",
+			FormatContext->streams[VideoStreamIndex]->codec->time_base.num,
+			FormatContext->streams[VideoStreamIndex]->codec->time_base.den,
+			FormatContext->streams[VideoStreamIndex]->codec->time_base.num/(float)
+			FormatContext->streams[VideoStreamIndex]->codec->time_base.den);
+	printf("VidStream->r_frame_rate = %i / %i (%.2f)\n",
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num,
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den,
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(float)
 		FormatContext->streams[VideoStreamIndex]->r_frame_rate.den);
-printf("FPS B = %i / %i (%.2f)\n",
+	printf("VidStream->time_base = %i / %i (%.2f) (%.2f)\n",
 		FormatContext->streams[VideoStreamIndex]->time_base.num,
 		FormatContext->streams[VideoStreamIndex]->time_base.den,
 		FormatContext->streams[VideoStreamIndex]->time_base.num/(float)
-		FormatContext->streams[VideoStreamIndex]->time_base.den);
-printf("FPS C = %i / %i (%.2f)\n",
+		FormatContext->streams[VideoStreamIndex]->time_base.den,
+		FormatContext->streams[VideoStreamIndex]->time_base.den/(float)
+		FormatContext->streams[VideoStreamIndex]->time_base.num);
+	printf("VidStream->codec->time_base = %i / %i (%.2f) (%.2f)\n",
 		FormatContext->streams[VideoStreamIndex]->codec->time_base.num,
 		FormatContext->streams[VideoStreamIndex]->codec->time_base.den,
 		FormatContext->streams[VideoStreamIndex]->codec->time_base.num/(float)
-		FormatContext->streams[VideoStreamIndex]->codec->time_base.den);
-printf("VidStream->r_frame_rate = %i / %i (%.2f)\n",
-	FormatContext->streams[VideoStreamIndex]->r_frame_rate.num,
-	FormatContext->streams[VideoStreamIndex]->r_frame_rate.den,
-	FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(float)
-	FormatContext->streams[VideoStreamIndex]->r_frame_rate.den);
-printf("VidStream->time_base = %i / %i (%.2f) (%.2f)\n",
-	FormatContext->streams[VideoStreamIndex]->time_base.num,
-	FormatContext->streams[VideoStreamIndex]->time_base.den,
-	FormatContext->streams[VideoStreamIndex]->time_base.num/(float)
-	FormatContext->streams[VideoStreamIndex]->time_base.den,
-	FormatContext->streams[VideoStreamIndex]->time_base.den/(float)
-	FormatContext->streams[VideoStreamIndex]->time_base.num);
-printf("VidStream->codec->time_base = %i / %i (%.2f) (%.2f)\n",
-	FormatContext->streams[VideoStreamIndex]->codec->time_base.num,
-	FormatContext->streams[VideoStreamIndex]->codec->time_base.den,
-	FormatContext->streams[VideoStreamIndex]->codec->time_base.num/(float)
-	FormatContext->streams[VideoStreamIndex]->codec->time_base.den,
-	FormatContext->streams[VideoStreamIndex]->codec->time_base.den/(float)
-	FormatContext->streams[VideoStreamIndex]->codec->time_base.num);
-printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
-*/
-	FPSTimestamp=CodecContext->time_base.den/(double)CodecContext->time_base.num;
-	FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
+		FormatContext->streams[VideoStreamIndex]->codec->time_base.den,
+		FormatContext->streams[VideoStreamIndex]->codec->time_base.den/(float)
+		FormatContext->streams[VideoStreamIndex]->codec->time_base.num);
+	printf("ticks_per_frame = %i\n",CodecContext->ticks_per_frame);
+	*/
+		FPSTimestamp=CodecContext->time_base.den/(double)CodecContext->time_base.num;
+		FPS=FormatContext->streams[VideoStreamIndex]->nb_frames/LengthSeconds;
 
-	if(FrameNative==NULL)
-	{
-		FrameNative=lgl_avcodec_alloc_frame();
+		if(FrameNative==NULL)
+		{
+			FrameNative=lgl_avcodec_alloc_frame();
+		}
+		if(FrameRGB==NULL) FrameRGB=lgl_avcodec_alloc_frame();
+
+		if(FrameNative==NULL || FrameRGB==NULL)
+		{
+			printf("LGL_Video::MaybeChangeVideo(): Couldn't open frames for '%s'\n",Path);
+			return;
+		}
+
+		// Determine required buffer size and pseudo-allocate buffer
+		BufferWidth=CodecContext->width;
+		BufferHeight=CodecContext->height;
+
+		SwsConvertContextBGRA = sws_getContext
+		(
+			//src
+			BufferWidth,
+			BufferHeight, 
+			CodecContext->pix_fmt, 
+			//dst
+			BufferWidth,
+			BufferHeight,
+			PIX_FMT_BGRA,
+			SWS_FAST_BILINEAR,
+			NULL,
+			NULL,
+			NULL
+		);
+		if(SwsConvertContextBGRA==NULL)
+		{
+			printf("LGL_VideoDecoder::MaybeLoadVideo(): NULL SwsConvertContextBGRA for '%s'\n",Path);
+			return;
+		}
+
+		InvalidateAllFrameBuffers();
+
+		VideoOK=true;
 	}
-	if(FrameRGB==NULL) FrameRGB=lgl_avcodec_alloc_frame();
-
-	if(FrameNative==NULL || FrameRGB==NULL)
-	{
-		printf("LGL_Video::MaybeChangeVideo(): Couldn't open frames for '%s'\n",Path);
-		return;
-	}
-
-	// Determine required buffer size and pseudo-allocate buffer
-	BufferWidth=CodecContext->width;
-	BufferHeight=CodecContext->height;
-
-	SwsConvertContextBGRA = sws_getContext
-	(
-		//src
-		BufferWidth,
-		BufferHeight, 
-		CodecContext->pix_fmt, 
-		//dst
-		BufferWidth,
-		BufferHeight,
-		PIX_FMT_BGRA,
-		SWS_FAST_BILINEAR,
-		NULL,
-		NULL,
-		NULL
-	);
-	if(SwsConvertContextBGRA==NULL)
-	{
-		printf("LGL_VideoDecoder::MaybeLoadVideo(): NULL SwsConvertContextBGRA for '%s'\n",Path);
-		return;
-	}
-	
-	VideoOK=true;
 }
 
 bool
@@ -9895,6 +9933,7 @@ MaybeRecycleBuffers()
 	{
 		if
 		(
+			FrameBufferReady[a]->GetFrameNumber()==-1 ||
 			strcmp(FrameBufferReady[a]->GetVideoPath(),path)!=0 ||
 			(
 				fabsf(frameNumberNow-FrameBufferReady[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
@@ -29113,8 +29152,10 @@ Init
 	}
 	if(LockObtained==false)
 	{
+		/*
 		printf("Lock not obtained!! (timeout = %.2f) (sem = %s)\n",timeoutSeconds,Semaphore ? "OK" : "NULL");
 		printf("\tLikely, you haven't yet called LGL_Init()...\n");
+		*/
 	}
 }
 
