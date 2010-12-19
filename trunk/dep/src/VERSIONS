@@ -1,6 +1,6 @@
 library		version				src
 
-SDL		2010.11.13 (6:04am EST)		hg clone http://hg.libsdl.org/SDL
+SDL		2010.12.18 (5:17pm PST)		hg clone http://hg.libsdl.org/SDL
 SDL_image	1.2.7				http://www.libsdl.org/projects/SDL_image/release/SDL_image-1.2.7.tar.gz
 SDL_net		1.2.7				[1] http://www.libsdl.org/projects/SDL_net/release/SDL_net-1.2.7.tar.gz
 ffmpeg		2010.07.29 (5pm EST)		svn export svn://svn.ffmpeg.org/ffmpeg/trunk ffmpeg

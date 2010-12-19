@@ -1,0 +1,5 @@
+repo: 74212992fb0868a6929180cd74dd67e38507340a
+node: fc718f26c15e354979929c89ff840a60d358c500
+branch: default
+latesttag: pre-touch-removal
+latesttagdistance: 180
