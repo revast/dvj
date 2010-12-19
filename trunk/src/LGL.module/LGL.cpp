@@ -481,6 +481,8 @@ typedef struct
 	std::vector<long>	DrawLogDataLength;
 	float			DrawLogTimeOfNextDrawnFrame;
 
+	float			DebugPrintfY;
+
 	float			LastImageDrawAsLineLeftX;
 	float			LastImageDrawAsLineLeftY;
 	float			LastImageDrawAsLineRightX;
@@ -1671,6 +1673,8 @@ LGL_Init
 	LGL.DrawLogFileName[0]='\0';
 	LGL.DrawLogTimeOfNextDrawnFrame=0.0f;
 
+	LGL.DebugPrintfY=1.0f;
+
 	LGL.AudioSpec=(SDL_AudioSpec*)malloc(sizeof(SDL_AudioSpec));
 
 	atexit(LGL_ShutDown);
@@ -2744,7 +2748,11 @@ double
 LGL_Timer::
 SecondsSinceLastReset() const
 {
-	double ret=((double)SDL_GetTicks()-(double)TimeAtLastReset)/1000.0;
+	timeval timeNow;
+	gettimeofday(&timeNow,NULL);
+
+	double ret=timeNow.tv_sec-TimeAtLastReset.tv_sec;
+	ret+=(timeNow.tv_usec-TimeAtLastReset.tv_usec)/(1000.0*1000.0);
 	if(ret<0) ret=0;
 	return(ret);
 }
@@ -2753,7 +2761,7 @@ void
 LGL_Timer::
 Reset()
 {
-	TimeAtLastReset=lgl_sdl_initialized ? SDL_GetTicks() : 0;
+	gettimeofday(&TimeAtLastReset,NULL);
 }
 
 unsigned int
@@ -3307,8 +3315,8 @@ lgl_EndFrame()
 				if(LGL.AudioOutReconnectTimer.SecondsSinceLastReset()>1.0f)
 				{
 					printf("Trying to revive JACK!\n");
-					system("killall jackd");
 					jack_client_close(jack_client);
+					system("killall jackd");
 					LGL_JackInit();
 					LGL.AudioOutReconnectTimer.Reset();
 				}
@@ -3454,6 +3462,8 @@ lgl_EndFrame()
 			LGL.AudioInGrainListFixedSize.insert(LGL.AudioInGrainListFixedSize.begin(),neo);
 		}
 	}
+
+	LGL.DebugPrintfY=1.0f;
 
 	if(LGL.DrawLogFD)
 	{
@@ -12024,7 +12034,7 @@ const	char	*string,
 	LGL_Assert(string!=NULL);
 
 	//Process the formatted part of the string
-	char tmpstr[1024];
+	char tmpstr[2048];
 	va_list args;
 	va_start(args,string);
 	vsprintf(tmpstr,string,args);
@@ -12461,6 +12471,35 @@ LGL_GetFont()
 		LGL.Font=new LGL_Font(fontDir);
 	}
 	return(*(LGL.Font));
+}
+
+void
+LGL_DebugPrintf
+(
+	const char*	string
+	...
+)
+{
+	//Process the formatted part of the string
+	char tmpstr[2048];
+	va_list args;
+	va_start(args,string);
+	vsprintf(tmpstr,string,args);
+	va_end(args);
+
+	const float height=0.02f;
+	LGL.DebugPrintfY-=height*2.0f;
+
+	LGL_GetFont().DrawString
+	(
+		0.025f,
+		LGL.DebugPrintfY,
+		height,
+		1.0f,1.0f,1.0f,1.0f,
+		false,
+		1.0f,
+		tmpstr
+	);
 }
 
 LGL_InputBuffer::
@@ -17980,6 +18019,7 @@ LGL_ProcessInput()
 				LGL.MouseDY=(1.0-event.motion.y/(float)LGL.WindowResolutionY[LGL.DisplayNow])-LGL.MouseY;
 				LGL.MouseX=event.motion.x/(float)LGL.WindowResolutionX[LGL.DisplayNow];
 				LGL.MouseY=(1.0-event.motion.y/(float)LGL.WindowResolutionY[LGL.DisplayNow]);
+//printf("Mouse! %.2f, %.2f (%i)\n",LGL.MouseX,LGL.MouseY,SDL_GetMouseFocus());
 			}
 		}
 
@@ -18041,16 +18081,36 @@ LGL_ProcessInput()
 
 		//MultiTouch
 
+		//These should be unnecessary, as SDL_MULTIGESTURE should handle them.
+		bool deltaFinger=false;
+		if(event.type==SDL_FINGERDOWN)
+		{
+			LGL.MultiTouchFingerCount++;
+			deltaFinger=true;
+		}
+		if(event.type==SDL_FINGERUP)
+		{
+			LGL.MultiTouchFingerCount--;
+			deltaFinger=true;
+		}
+		if(deltaFinger)
+		{
+			LGL.MultiTouchX=-1.0f;
+			LGL.MultiTouchY=-1.0f;
+			multiTouchXPrev=-1.0f;
+			multiTouchYPrev=-1.0f;
+		}
+
 		if(event.type==SDL_MULTIGESTURE)
 		{
-			/*
+/*
 			if(SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID)!=SDL_GetWindowID(LGL.WindowID[0]))
 			{
 printf("Multitouch OUT: %i vs %i\n",SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID),SDL_GetWindowID(LGL.WindowID[0]));
 				//Only care about events for interface window
 				continue;
 			}
-			*/
+*/
 
 			LGL.MultiTouchID=event.mgesture.touchId;
 			if(multiTouchXPrev!=-1.0f)
