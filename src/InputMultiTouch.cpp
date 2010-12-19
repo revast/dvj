@@ -581,6 +581,7 @@ WaveformRecordSpeed
 			{
 				if(LGL_MultiTouchFingerCount()>=2)
 				{
+					//Don't be tempted to use a time multiplier...
 					speed=LGL_MultiTouchDX2()*50.0f;
 				}
 			}
