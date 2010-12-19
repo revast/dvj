@@ -35,10 +35,23 @@ static __inline__ void ConvertNSRect(NSRect *r)
     r->origin.y = CGDisplayPixelsHigh(kCGDirectMainDisplay) - r->origin.y - r->size.height;
 }
 
+//2010.12.19 - id: This is a cheesy HACK.
+//I only want to receive touch events for the 1st window.
+//So, I keep track of primaryListener.
+//Hopefully, SDL will fix the bugs I've reported soon.
+static Cocoa_WindowListener* primaryListener=NULL;
+static int primaryListenerCounter=0;
+
 @implementation Cocoa_WindowListener
 
 - (void)listen:(SDL_WindowData *)data
 {
+//2010.12.19 - id: This is a cheesy HACK.
+if(primaryListenerCounter<SDL_GetNumVideoDisplays())
+{
+    primaryListener=self;
+    primaryListenerCounter++;
+}
     NSNotificationCenter *center;
 
     _data = data;
@@ -297,6 +310,13 @@ static __inline__ void ConvertNSRect(NSRect *r)
 
 - (void)handleTouches:(cocoaTouchType)type withEvent:(NSEvent *)event
 {
+
+//2010.12.19 - id: This is a cheesy HACK.
+if(self != primaryListener)
+{
+	return;
+}
+
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
     NSSet *touches = 0;
     NSEnumerator *enumerator;
