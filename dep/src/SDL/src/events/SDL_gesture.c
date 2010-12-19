@@ -452,9 +452,10 @@ SDL_GestureTouch * SDL_GetGestureTouch(SDL_TouchID id) {
   return NULL;
 }
 
-int SDL_SendGestureMulti(SDL_GestureTouch* touch,float dTheta,float dDist) {
+int SDL_SendGestureMulti(SDL_GestureTouch* touch,float dTheta,float dDist,Uint32 windowID) {
   SDL_Event event;
   event.mgesture.type = SDL_MULTIGESTURE;
+  event.mgesture.windowID = windowID;
   event.mgesture.touchId = touch->id;
   event.mgesture.x = touch->centroid.x;
   event.mgesture.y = touch->centroid.y;
@@ -626,7 +627,7 @@ void SDL_GestureProcessEvent(SDL_Event* event)
         //knob.ang += dtheta;
         //printf("thetaSum = %f, distSum = %f\n",gdtheta,gdDist);
         //printf("id: %i dTheta = %f, dDist = %f\n",j,dtheta,dDist);
-        SDL_SendGestureMulti(inTouch,dtheta,dDist);
+        SDL_SendGestureMulti(inTouch,dtheta,dDist,event->tfinger.windowID);
       }
       else {
         //inTouch->gestureLast[j].dDist = 0;
