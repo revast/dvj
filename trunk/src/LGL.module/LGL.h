@@ -1093,10 +1093,9 @@ public:
 private:
 
 	char			VideoPath[2048];
-	unsigned char*		BufferRGB;
-	unsigned int		BufferRGBBytes;
-	unsigned char*		BufferYUV;
-	unsigned int		BufferYUVBytes;
+	unsigned char*		Buffer;
+	unsigned int		BufferBytes;
+	bool			BufferIsRGB;
 	int			BufferWidth;
 	int			BufferHeight;
 	long			FrameNumber;
@@ -3084,10 +3083,17 @@ float		LGL_FilesystemFreeSpaceMB();
 
 void		LGL_DrawFPSGraph
 		(
-			float left=0.8,		float right=0.9,
-			float bottom=0.8,	float top=0.9,
-			float brightness=1,
-			float alpha=1
+			float left=0.8f,	float right=0.9f,
+			float bottom=0.8f,	float top=0.9f,
+			float brightness=1.0f,
+			float alpha=1.0f
+		);
+void		LGL_DrawFrameTimeGraph
+		(
+			float left=0.8f,	float right=0.9f,
+			float bottom=0.6f,	float top=0.7f,
+			float brightness=1.0f,
+			float alpha=1.0f
 		);
 
 void		LGL_ScreenShot(const char* bmpFile="screenshot.bmp");

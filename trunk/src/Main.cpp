@@ -887,7 +887,7 @@ int main(int argc, char** argv)
 		);
 		*/
 		drawFPSSpike = LGL_Max(0.0f,drawFPSSpike-LGL_SecondsSinceLastFrame());
-		if(LGL_FPS()<50)
+		if(LGL_FPS()<50 || LGL_KeyDown(LGL_KEY_RALT))
 		{
 			drawFPSSpike=5.0f;
 		}
@@ -905,6 +905,13 @@ int main(int argc, char** argv)
 			(
 				0.875f,0.975f,
 				0.875f,0.975f,
+				drawFPS ? 1 : drawFPSSpike,
+				drawFPS ? 1 : drawFPSSpike
+			);
+			LGL_DrawFrameTimeGraph
+			(
+				0.875f,0.975f,
+				0.725f,0.825f,
 				drawFPS ? 1 : drawFPSSpike,
 				drawFPS ? 1 : drawFPSSpike
 			);

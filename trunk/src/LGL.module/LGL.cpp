@@ -96,10 +96,10 @@
 #ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
-#define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
-#define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
-#define	LGL_PRIORITY_OSC		(0.85f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(-0.5f)//0.8f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(-0.5f)//0.7f)
+#define	LGL_PRIORITY_AUDIO_ENCODE	(-0.5f)//0.75f)
+#define	LGL_PRIORITY_OSC		(-0.5f)//0.85f)
 #else
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
@@ -449,6 +449,10 @@ typedef struct
 	LGL_Timer		FPSTimer;
 	float			FPSGraph[60];
 	LGL_Timer		FPSGraphTimer;
+	float			FrameTimeMin;
+	float			FrameTimeAve;
+	float			FrameTimeMax;
+	float			FrameTimeGraph[60];
 	LGL_Font*		Font;
 	char			TimeOfDay[1024];
 	char			DateAndTimeOfDay[1024];
@@ -461,6 +465,7 @@ typedef struct
 	//Misc
 
 	bool			Running;
+	bool			MainThreadVsyncWait;
 	
 	double			SecondsSinceLastFrame;
 	LGL_Timer		SecondsSinceLastFrameTimer;
@@ -1752,7 +1757,7 @@ printf("\n");
 				inWindowResolutionY==9999
 			)
 			{
-				LGL.WindowResolutionX[d]=LGL_DisplayResolutionX();
+				LGL.WindowResolutionX[d]=LGL_DisplayResolutionX()-100;
 				LGL.WindowResolutionY[d]=LGL_DisplayResolutionY()-100;
 			}
 			else
@@ -1795,8 +1800,12 @@ printf("\n");
 	LGL.FPSTimer.Reset();
 	for(int a=0;a<60;a++)
 	{
-		LGL.FPSGraph[a]=0;
+		LGL.FPSGraph[a]=0.0f;
+		LGL.FrameTimeGraph[a]=0.0f;
 	}
+	LGL.FrameTimeMin=0.0f;
+	LGL.FrameTimeAve=0.0f;
+	LGL.FrameTimeMax=0.0f;
 	LGL.FPSGraphTimer.Reset();
 	LGL.Font=NULL;
 
@@ -3788,41 +3797,10 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 		LGL.FPSCounter=0;
 		LGL.FPSTimer.Reset();
 
-		LGL.SecondsSinceLastFrame=1.0/LGL.RecordMovieFPS;
-		LGL.SecondsSinceLastFrameTimer.Reset();
-	}
-	else
-	{
-		LGL.FPSCounter++;
-		if(LGL.FPSTimer.SecondsSinceLastReset()>=1)
-		{
-			LGL.FPS=LGL.FPSCounter;
-			LGL.FPSCounter=0;
-			LGL.FPSTimer.Reset();
-		}
-
-		LGL.SecondsSinceLastFrame=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
-		for(int a=0;a<10;a++)
-		{
-			if(LGL.SecondsSinceLastFrame<0.5f*((a+1.0f)/60.0f+(a+2.0f)/60.0f))
-			{
-				LGL.SecondsSinceLastFrame=(a+1.0f)/60.0f;
-				break;
-			}
-		}
-		LGL.SecondsSinceLastFrameTimer.Reset();
+		//LGL.SecondsSinceLastFrame=1.0/LGL.RecordMovieFPS;
+		//LGL.SecondsSinceLastFrameTimer.Reset();
 	}
 	LGL.SecondsSinceExecution=LGL.SecondsSinceExecutionTimer.SecondsSinceLastReset();
-	LGL.FramesSinceExecution++;
-	if(LGL.FPSGraphTimer.SecondsSinceLastReset()>=1.0/60.0)
-	{
-		for(int a=0;a<59;a++)
-		{
-			LGL.FPSGraph[a]=LGL.FPSGraph[a+1];
-		}
-		LGL.FPSGraph[59]=1.0/LGL.SecondsSinceLastFrame;
-		LGL.FPSGraphTimer.Reset();
-	}
 }
 
 void
@@ -3848,7 +3826,59 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 		}
 		*/
 		SDL_GL_SetSwapInterval(vsync);	//VSYNC
+		if(vsync)
+		{
+			float frameTime=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
+			for(int a=0;a<59;a++)
+			{
+				LGL.FrameTimeGraph[a]=LGL.FrameTimeGraph[a+1];
+			}
+			LGL.FrameTimeGraph[59]=frameTime;
+			LGL.MainThreadVsyncWait=true;
+		}
 		SDL_GL_SwapWindow(LGL.WindowID[LGL.DisplayNow]);
+		if(vsync)
+		{
+			LGL.MainThreadVsyncWait=false;
+			LGL.SecondsSinceLastFrame=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
+			//Quantize to n/60.0f
+			for(int a=0;a<10;a++)
+			{
+				if(LGL.SecondsSinceLastFrame<0.5f*((a+1.0f)/60.0f+(a+2.0f)/60.0f))
+				{
+					LGL.SecondsSinceLastFrame=(a+1.0f)/60.0f;
+					break;
+				}
+			}
+			LGL.SecondsSinceLastFrameTimer.Reset();
+
+			for(int a=0;a<59;a++)
+			{
+				LGL.FPSGraph[a]=LGL.FPSGraph[a+1];
+			}
+			LGL.FPSGraph[59]=1.0/LGL.SecondsSinceLastFrame;
+			LGL.FPSGraphTimer.Reset();
+
+			LGL.FPSCounter++;
+			if(LGL.FPSTimer.SecondsSinceLastReset()>=1)
+			{
+				LGL.FPS=LGL.FPSCounter;
+				LGL.FPSCounter=0;
+				LGL.FPSTimer.Reset();
+
+				
+				LGL.FrameTimeMin=1.0f;
+				LGL.FrameTimeAve=0.0f;
+				LGL.FrameTimeMax=0.0f;
+				for(int a=0;a<60;a++)
+				{
+					LGL.FrameTimeMin=LGL_Min(LGL.FrameTimeGraph[a],LGL.FrameTimeMin);
+					LGL.FrameTimeAve+=LGL.FrameTimeGraph[a];
+					LGL.FrameTimeMax=LGL_Max(LGL.FrameTimeGraph[a],LGL.FrameTimeMax);
+				}
+				LGL.FrameTimeAve/=60.0f;
+			}
+		}
 		if(clearBackBuffer)
 		{
 			LGL_ClearBackBuffer();
@@ -8555,10 +8585,9 @@ bool lgl_FrameBufferSortPredicate(const lgl_FrameBuffer* d1, const lgl_FrameBuff
 lgl_FrameBuffer::
 lgl_FrameBuffer()
 {
-	BufferRGB=NULL;
-	BufferRGBBytes=0;
-	BufferYUV=NULL;
-	BufferYUVBytes=0;
+	Buffer=NULL;
+	BufferBytes=0;
+	BufferIsRGB=true;
 	BufferWidth=0;
 	BufferHeight=0;
 	FrameNumber=-1;
@@ -8567,19 +8596,12 @@ lgl_FrameBuffer()
 lgl_FrameBuffer::
 ~lgl_FrameBuffer()
 {
-	if(BufferRGB)
+	if(Buffer)
 	{
-		free(BufferRGB);
-		BufferRGB=NULL;
+		free(Buffer);
+		Buffer=NULL;
 	}
-	BufferRGBBytes=0;
-
-	if(BufferYUV)
-	{
-		free(BufferYUV);
-		BufferYUV=NULL;
-	}
-	BufferYUVBytes=0;
+	BufferBytes=0;
 
 	FrameNumber=-1;
 }
@@ -8596,17 +8618,19 @@ SwapInNewBufferRGB
 	long		frameNumber
 )
 {
-	strcpy(VideoPath,videoPath?videoPath:"");
-	unsigned char* bufferRGBOld=BufferRGB;
-	unsigned int bufferRGBBytesOld=BufferRGBBytes;
-	BufferRGB=bufferRGB;
+	unsigned char* bufferOld=Buffer;
+	unsigned int bufferBytesOld=BufferBytes;
+
+	Buffer=bufferRGB;
+	BufferBytes=bufferRGBBytes;
 	BufferWidth=bufferWidth;
 	BufferHeight=bufferHeight;
-	BufferRGBBytes=bufferRGBBytes;
-	bufferRGBBytes=bufferRGBBytesOld;
 	FrameNumber=frameNumber;
+	strcpy(VideoPath,videoPath?videoPath:"");
+	BufferIsRGB=true;
 
-	bufferRGB=bufferRGBOld;
+	bufferRGB=bufferOld;
+	bufferRGBBytes=bufferBytesOld;
 }
 
 void
@@ -8621,17 +8645,19 @@ SwapInNewBufferYUV
 	long		frameNumber
 )
 {
-	strcpy(VideoPath,videoPath?videoPath:"");
-	unsigned char* bufferYUVOld=BufferYUV;
-	unsigned int bufferYUVBytesOld=BufferYUVBytes;
-	BufferYUV=bufferYUV;
+	unsigned char* bufferOld=Buffer;
+	unsigned int bufferBytesOld=BufferBytes;
+
+	Buffer=bufferYUV;
+	BufferBytes=bufferYUVBytes;
 	BufferWidth=bufferWidth;
 	BufferHeight=bufferHeight;
-	BufferYUVBytes=bufferYUVBytes;
-	bufferYUVBytes=bufferYUVBytesOld;
 	FrameNumber=frameNumber;
+	strcpy(VideoPath,videoPath?videoPath:"");
+	BufferIsRGB=false;
 
-	bufferYUV=bufferYUVOld;
+	bufferYUV=bufferOld;
+	bufferYUVBytes=bufferBytesOld;
 }
 
 const char*
@@ -8645,28 +8671,28 @@ unsigned char*
 lgl_FrameBuffer::
 GetBufferRGB()	const
 {
-	return(BufferRGB);
+	return(BufferIsRGB ? Buffer : NULL);
 }
 
 unsigned int
 lgl_FrameBuffer::
 GetBufferRGBBytes()	const
 {
-	return(BufferRGBBytes);
+	return(BufferIsRGB ? BufferBytes : 0);
 }
 
 unsigned char*
 lgl_FrameBuffer::
 GetBufferYUV()	const
 {
-	return(BufferYUV);
+	return(BufferIsRGB ? NULL : Buffer);
 }
 
 unsigned int
 lgl_FrameBuffer::
 GetBufferYUVBytes()	const
 {
-	return(BufferYUVBytes);
+	return(BufferIsRGB ? 0 : BufferBytes);
 }
 
 int
@@ -8694,7 +8720,7 @@ unsigned char*
 lgl_FrameBuffer::
 GetBufferY()	const
 {
-	return(BufferYUV);
+	return(BufferIsRGB ? NULL : Buffer);
 }
 
 unsigned int
@@ -8710,9 +8736,9 @@ GetBufferU()	const
 {
 	return
 	(
-		BufferYUV ?
-		&BufferYUV[GetBufferYBytes()] :
-		NULL
+		BufferIsRGB ?
+		NULL :
+		&Buffer[GetBufferYBytes()]
 	);
 }
 
@@ -8729,9 +8755,9 @@ GetBufferV()	const
 {
 	return
 	(
-		BufferYUV ?
-		&BufferYUV[GetBufferYBytes()+GetBufferUBytes()] :
-		NULL
+		BufferIsRGB ?
+		NULL :
+		&Buffer[GetBufferYBytes()+GetBufferUBytes()]
 	);
 }
 
@@ -9720,6 +9746,15 @@ MaybeDecodeImage()
 			LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
 			result = lgl_av_read_frame(FormatContext, &Packet);
 		}
+		while
+		(
+			LGL.MainThreadVsyncWait==false &&
+			LGL.Running &&
+			ThreadTerminate==false
+		)
+		{
+			LGL_DelayMS(1);
+		}
 		if(result>=0)
 		{
 			//Is this a packet from the video stream?
@@ -10255,6 +10290,7 @@ IsYUV420P()
 {
 	return
 	(
+		false &&
 		CodecContext &&
 		CodecContext->pix_fmt==PIX_FMT_YUV420P
 	);
@@ -11710,6 +11746,14 @@ ThreadFunc()
 	{
 		FlushBuffer();
 		LGL_DelayMS(5);
+		while
+		(
+			LGL.MainThreadVsyncWait==false &&
+			LGL.Running
+		)
+		{
+			LGL_DelayMS(1);
+		}
 		if
 		(
 			DestructHint ||
@@ -17121,6 +17165,18 @@ LoadToMemory()
 				eof
 			)
 			{
+				/*
+				while
+				(
+					LGL.MainThreadVsyncWait==false &&
+					LGL.Running &&
+					DestructorHint==false
+				)
+				{
+					//Meh. I don't mind audio decoding to happen always.
+					//LGL_DelayMS(1);
+				}
+				*/
 				totalFileBytesUsed+=packet.size;
 				// Is this a packet from the audio stream?
 				if(packet.stream_index==audioStreamIndex)
@@ -27493,6 +27549,8 @@ LGL_DrawFPSGraph
 	float	alpha
 )
 {
+	const float width = right-left;
+	const float height = top-bottom;
 	brightness = LGL_Clamp(0.0f,brightness,1.0f);
 	alpha = LGL_Clamp(0.0f,alpha,1.0f);
 	LGL_DrawRectToScreen
@@ -27510,45 +27568,45 @@ LGL_DrawFPSGraph
 		if(LGL.FPSGraph[a]>=50)
 		{
 			r=0;
-			g=.5*brightness;
+			g=.5f*brightness;
 			b=0;
 		}
 		else if(LGL.FPSGraph[a]>=30)
 		{
-			r=.5*brightness;
-			g=.5*brightness;
+			r=.5f*brightness;
+			g=.5f*brightness;
 			b=0;
 		}
 		else
 		{
-			r=.5*brightness;
+			r=.5f*brightness;
 			g=0;
 			b=0;
 		}
 
 		LGL_DrawRectToScreen
 		(
-			left+(right-left)*(a+0)/60.0,
-			left+(right-left)*(a+1)/60.0,
+			left+width*(a+0)/60.0f,
+			left+width*(a+1)/60.0f,
 			bottom,
-			bottom+(top-bottom)*LGL_Min(100,LGL.FPSGraph[a])/100.0,
+			bottom+height*LGL_Min(100.0f,LGL.FPSGraph[a])/100.0f,
 			r,g,b,alpha
 		);
 	}
 	LGL_DrawLineToScreen
 	(
 		left,
-		bottom+(top-bottom)*60.0/100.0,
+		bottom+height*60.0/100.0,
 		right,
-		bottom+(top-bottom)*60.0/100.0,
+		bottom+height*60.0/100.0,
 		0,brightness,0,.5*alpha
 	);
 	LGL_DrawLineToScreen
 	(
 		left,
-		bottom+(top-bottom)*30.0/100.0,
+		bottom+height*30.0/100.0,
 		right,
-		bottom+(top-bottom)*30.0/100.0,
+		bottom+height*30.0/100.0,
 		brightness,brightness,0,.5*alpha
 	);
 	
@@ -27558,8 +27616,8 @@ LGL_DrawFPSGraph
 	LGL_GetFont().DrawString
 	(
 		.5*(left+right),
-		.25*bottom+.75*top-.05*(top-bottom)-.05*(right-left),
-		.10*(top-bottom)+.10*(right-left),
+		.25*bottom+.75*top-.05*height-.05*width,
+		.10*height+.10*width,
 		.75*brightness,.75*brightness,.75*brightness,.75*alpha,
 		true,.5*alpha,
 		temp
@@ -27575,13 +27633,145 @@ LGL_DrawFPSGraph
 	LGL_GetFont().DrawString
 	(
 		.5*(left+right),
-		.75*bottom+.25*top-.05*(top-bottom)-.05*(right-left),
-		.10*(top-bottom)+.10*(right-left),
+		.75*bottom+.25*top-.05*height-.05*width,
+		.10*height+.10*width,
 		.75*brightness,.75*brightness,.75*brightness,.75*alpha,
 		true,.5*alpha,
 		temp
 	);
 	*/
+
+	LGL_DrawLineToScreen
+	(
+		left,bottom,
+		left,top,
+		brightness*.4,brightness*.2,brightness,.5*alpha
+	);
+	LGL_DrawLineToScreen
+	(
+		left,top,
+		right,top,
+		brightness*.4,brightness*.2,brightness,.5*alpha
+	);
+	LGL_DrawLineToScreen
+	(
+		right,top,
+		right,bottom,
+		brightness*.4,brightness*.2,brightness,.5*alpha
+	);
+	LGL_DrawLineToScreen
+	(
+		right,bottom,
+		left,bottom,
+		brightness*.4,brightness*.2,brightness,.5*alpha
+	);
+}
+
+void
+LGL_DrawFrameTimeGraph
+(
+	float	left,	float	right,
+	float	bottom,	float	top,
+	float	brightness,
+	float	alpha
+)
+{
+	const float width = right-left;
+	const float height = top-bottom;
+	brightness = LGL_Clamp(0.0f,brightness,1.0f);
+	alpha = LGL_Clamp(0.0f,alpha,1.0f);
+	LGL_DrawRectToScreen
+	(
+		left,right,
+		bottom,top,
+		0,0,.25*brightness,.5*alpha
+	);
+
+	float r=0;
+	float g=0;
+	float b=0;
+	float yellowPct=1.0f/3.0f;
+	float redPct=2.0f/3.0f;
+	for(int a=0;a<60;a++)
+	{
+		float h=LGL_Min(3.0f/60.0f,LGL.FrameTimeGraph[a])/(3.0f/60.0f);
+		if(h<yellowPct)
+		{
+			r=0;
+			g=.5*brightness;
+			b=0;
+		}
+		else if(h<redPct)
+		{
+			r=.5*brightness;
+			g=.5*brightness;
+			b=0;
+		}
+		else
+		{
+			r=.5*brightness;
+			g=0;
+			b=0;
+		}
+
+		LGL_DrawRectToScreen
+		(
+			left+width*(a+0)/60.0,
+			left+width*(a+1)/60.0,
+			bottom,
+			bottom+height*h,
+			r,g,b,alpha
+		);
+	}
+	LGL_DrawLineToScreen
+	(
+		left,
+		bottom+height*redPct,
+		right,
+		bottom+height*redPct,
+		brightness,0.0f,0.0f,.5f*alpha
+	);
+	LGL_DrawLineToScreen
+	(
+		left,
+		bottom+height*yellowPct,
+		right,
+		bottom+height*yellowPct,
+		brightness,brightness,0.0f,.5f*alpha
+	);
+
+	float textHeight=.10f*height+.10f*width;
+	
+	LGL_GetFont().DrawString
+	(
+		.5f*(left+right),
+		bottom+height*66.7f/100.0f + textHeight*0.25f,
+		textHeight,
+		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha ,
+		true,.5f*alpha,
+		"%.1f",
+		LGL.FrameTimeMax*1000.0f
+	);
+	LGL_GetFont().DrawString
+	(
+		.5f*(left+right),
+		bottom+height*33.3f/100.0f + textHeight*0.25f,
+		textHeight,
+		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha,
+		true,.5f*alpha,
+		"%.1f",
+		LGL.FrameTimeAve*1000.0f
+	);
+	LGL_GetFont().DrawString
+	(
+		.5f*(left+right),
+		bottom+height*0.0f/100.0f + textHeight*0.25f,
+		textHeight,
+		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha,
+		true,.5f*alpha,
+		"%.1f",
+		LGL.FrameTimeMin*1000.0f
+	);
 
 	LGL_DrawLineToScreen
 	(
