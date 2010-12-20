@@ -420,6 +420,7 @@ public:
 	bool		Unlock();
 	bool		IsLocked();
 	float		SecondsLocked();
+	void		PrintLockInfo();
 	
 	int		Value();
 
@@ -443,12 +444,16 @@ public:
 			LGL_ScopeLock
 			(
 				LGL_Semaphore&	semaphore,
-				float		timeoutSeconds=-1
+				float		timeoutSeconds=-1,
+				const char*	thread = "Nameless ScopeLock",
+				const char*	note = "Noteless ScopeLock (meh)"
 			);
 			LGL_ScopeLock
 			(
 				LGL_Semaphore*	semaphore,
-				float		timeoutSeconds=-1
+				float		timeoutSeconds=-1,
+				const char*	thread = "Nameless ScopeLock",
+				const char*	note = "Noteless ScopeLock (meh)"
 			);
 			~LGL_ScopeLock();
 
@@ -459,7 +464,9 @@ private:
 	void		Init
 			(
 				LGL_Semaphore*	semaphore,
-				float		timeoutSeconds=-1
+				float		timeoutSeconds=-1,
+				const char*	thread = "Nameless ScopeLock",
+				const char*	note = "Noteless ScopeLock (meh)"
 			);
 
 	LGL_Semaphore*	Semaphore;
@@ -916,6 +923,7 @@ const	char*		GetPathShort() const;
 	GLuint		PixelBufferObjectFrontGL;
 	GLuint		PixelBufferObjectBackGL;
 	GLsizei		PixelBufferObjectSize;
+	bool		PixelBufferVirgin;
 	bool		LinearInterpolation;
 
 	char		Path[2048];
@@ -1088,6 +1096,13 @@ public:
 	unsigned int		GetBufferUBytes() const;
 	unsigned char*		GetBufferV() const;
 	unsigned int		GetBufferVBytes() const;
+	AVPacket*		GetPacket();
+	void			SetPacket
+				(
+					AVPacket*	packet,
+					const char*	path,
+					long		frameNumber
+				);
 	void			Invalidate();
 
 private:
@@ -1099,6 +1114,7 @@ private:
 	int			BufferWidth;
 	int			BufferHeight;
 	long			FrameNumber;
+	AVPacket*		Packet;
 
 };
 
@@ -1132,6 +1148,8 @@ public:
 	//Thread Functions
 
 	void			MaybeLoadVideo();
+	bool			MaybeLoadImage();
+	bool			MaybeProcessImage();
 	bool			MaybeDecodeImage();
 	void			MaybeRecycleBuffers();
 	bool			GetThreadTerminate();
@@ -1159,7 +1177,9 @@ private:
 
 	std::vector<lgl_FrameBuffer*>
 				FrameBufferReady;
-	LGL_Semaphore		FrameBufferReadySemaphore;
+	std::vector<lgl_FrameBuffer*>
+				FrameBufferLoaded;
+	LGL_Semaphore		FrameBufferOmniSemaphore;
 	std::vector<lgl_FrameBuffer*>
 				FrameBufferRecycled;
 	bool			FrameBufferAddBackwards;
@@ -1167,7 +1187,9 @@ private:
 	int			FrameBufferSubtractRadius;
 
 	bool			ThreadTerminate;
-	SDL_Thread*		Thread;
+	SDL_Thread*		ThreadLoad;
+	SDL_Thread*		ThreadProcess;
+	SDL_Thread*		ThreadDecode;
 	LGL_Semaphore		PathSemaphore;
 
 	AVFormatContext*	FormatContext;
@@ -1192,6 +1214,7 @@ private:
 	LGL_Image*		Image;
 	bool			VideoOK;
 	LGL_Semaphore		VideoOKSemaphore;
+	int			VideoOKUserCount;
 
 public:
 	float			StoredBrightness;	//Hate this!
@@ -1205,6 +1228,12 @@ private:
 	double			FrameNumberToSeconds(long frameNumber);
 	long			SecondsToFrameNumber(double seconds);
 	long			FrameNumberToTimestamp(long FrameNumber);
+
+	long			GetNextFrameNumberToLoad();
+	long			GetNextFrameNumberToLoadPredictNext(std::vector<long>& frameNumList, bool mustNotBeLoaded=true);
+	long			GetNextFrameNumberToLoadForwards(std::vector<long>& frameNumList);
+	long			GetNextFrameNumberToLoadBackwards(std::vector<long>& frameNumList);
+
 	long			GetNextFrameNumberToDecode();
 	long			GetNextFrameNumberToDecodePredictNext(bool mustNotBeDecoded=true);
 	long			GetNextFrameNumberToDecodeForwards();
