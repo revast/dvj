@@ -95,11 +95,11 @@
 
 #ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
-#define	LGL_PRIORITY_MAIN		(0.9f)
+#define	LGL_PRIORITY_MAIN		(0.85f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(-0.5f)//0.8f)
-#define	LGL_PRIORITY_AUDIO_DECODE	(-0.5f)//0.7f)
-#define	LGL_PRIORITY_AUDIO_ENCODE	(-0.5f)//0.75f)
-#define	LGL_PRIORITY_OSC		(-0.5f)//0.85f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
+#define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
+#define	LGL_PRIORITY_OSC		(0.85f)
 #else
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
@@ -261,6 +261,7 @@ typedef struct
 	int			MasterWindowResolutionY;
 
 	SDL_threadID		ThreadIDMain;
+	SDL_threadID		ThreadIDWatch;
 
 	float			DisplayViewportLeft[LGL_DISPLAY_MAX];
 	float			DisplayViewportRight[LGL_DISPLAY_MAX];
@@ -452,6 +453,12 @@ typedef struct
 	float			FrameTimeMin;
 	float			FrameTimeAve;
 	float			FrameTimeMax;
+	int			FrameTimeGoodCount;
+	int			FrameTimeMediumCount;
+	int			FrameTimeBadCount;
+	int			FrameTimeGoodTotal;
+	int			FrameTimeMediumTotal;
+	int			FrameTimeBadTotal;
 	float			FrameTimeGraph[60];
 	LGL_Font*		Font;
 	char			TimeOfDay[1024];
@@ -1228,7 +1235,7 @@ int lgl_MidiInit2();
 LGL_Semaphore*
 lgl_get_av_semaphore()
 {
-	static LGL_Semaphore sem("av_semaphore");
+	static LGL_Semaphore sem("av_semaphore",true);	//Promiscuous?!
 	return(&sem);
 }
 
@@ -1806,6 +1813,12 @@ printf("\n");
 	LGL.FrameTimeMin=0.0f;
 	LGL.FrameTimeAve=0.0f;
 	LGL.FrameTimeMax=0.0f;
+	LGL.FrameTimeGoodCount=0;
+	LGL.FrameTimeMediumCount=0;
+	LGL.FrameTimeBadCount=0;
+	LGL.FrameTimeGoodTotal=0;
+	LGL.FrameTimeMediumTotal=0;
+	LGL.FrameTimeBadTotal=0;
 	LGL.FPSGraphTimer.Reset();
 	LGL.Font=NULL;
 
@@ -2088,6 +2101,7 @@ printf("CreateWindow(%i): %i x %i\n",
 	SDL_GL_MakeCurrent(LGL.WindowID[0], LGL.GLContext);
 
 	LGL.ThreadIDMain = SDL_ThreadID();
+	LGL.ThreadIDWatch = NULL;
 
 	//GL Settings
 
@@ -3809,14 +3823,6 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 #ifdef	LGL_NO_GRAPHICS
 	LGL_DelaySeconds(1.0f/60.0f-LGL_SecondsSinceThisFrame());
 #else
-	if
-	(
-		LGL.FPSMax < LGL_DisplayRefreshRate()
-	)
-	{
-		LGL_DelaySeconds(1.0f/LGL.FPSMax-LGL_SecondsSinceThisFrame());
-	}
-
 	{
 		bool vsync=endFrame;//true;
 		/*
@@ -3835,6 +3841,22 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 			}
 			LGL.FrameTimeGraph[59]=frameTime;
 			LGL.MainThreadVsyncWait=true;
+		}
+		//Enforce sub60fps
+		if(LGL.FPSMax<=30 && vsync)
+		{
+			for(;;)
+			{
+				float frameTime=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
+				if(frameTime<1.5f/60.0f)
+				{
+					LGL_DelayMS(1);
+				}
+				else
+				{
+					break;
+				}
+			}
 		}
 		SDL_GL_SwapWindow(LGL.WindowID[LGL.DisplayNow]);
 		if(vsync)
@@ -3857,6 +3879,18 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 				LGL.FPSGraph[a]=LGL.FPSGraph[a+1];
 			}
 			LGL.FPSGraph[59]=1.0/LGL.SecondsSinceLastFrame;
+			if(LGL.SecondsSinceLastFrame<=1.0f/60.0f)
+			{
+				LGL.FrameTimeGoodCount++;
+			}
+			else if(LGL.SecondsSinceLastFrame<=2.0f/60.0f)
+			{
+				LGL.FrameTimeMediumCount++;
+			}
+			else
+			{
+				LGL.FrameTimeBadCount++;
+			}
 			LGL.FPSGraphTimer.Reset();
 
 			LGL.FPSCounter++;
@@ -3877,6 +3911,12 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 					LGL.FrameTimeMax=LGL_Max(LGL.FrameTimeGraph[a],LGL.FrameTimeMax);
 				}
 				LGL.FrameTimeAve/=60.0f;
+				LGL.FrameTimeGoodTotal=LGL.FrameTimeGoodCount;
+				LGL.FrameTimeMediumTotal=LGL.FrameTimeMediumCount;
+				LGL.FrameTimeBadTotal=LGL.FrameTimeBadCount;
+				LGL.FrameTimeGoodCount=0;
+				LGL.FrameTimeMediumCount=0;
+				LGL.FrameTimeBadCount=0;
 			}
 		}
 		if(clearBackBuffer)
@@ -6324,13 +6364,13 @@ DrawToScreen
 	}
 //#endif	//LGL_LINUX
 	x[0]=left+d;
-	y[0]=top;//(InvertY==false) ? top : bottom;
+	y[0]=(InvertY==false) ? top : bottom;
 	x[1]=right+d;
-	y[1]=top;//(InvertY==false) ? top : bottom;
+	y[1]=(InvertY==false) ? top : bottom;
 	x[2]=right;
-	y[2]=bottom;//(InvertY==false) ? bottom : top;
+	y[2]=(InvertY==false) ? bottom : top;
 	x[3]=left;
-	y[3]=bottom;//(InvertY==false) ? bottom : top;
+	y[3]=(InvertY==false) ? bottom : top;
 
 	DrawToScreen
 	(
@@ -7020,6 +7060,18 @@ LGL_Assertf(data!=NULL,("LGL_Image::UpdateTexture(): NULL data! WTF!\n"));
 		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
 	}
 
+	//Swap
+	GLuint tmp=PixelBufferObjectBackGL;
+	PixelBufferObjectBackGL=PixelBufferObjectFrontGL;
+	PixelBufferObjectFrontGL=tmp;
+	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
+	if(PixelBufferVirgin)
+	{
+		pboReady=false;
+		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+		PixelBufferVirgin=false;
+	}
+
 	glTexSubImage2D
 	(
 		GL_TEXTURE_2D,
@@ -7048,13 +7100,6 @@ LGL_Assertf(data!=NULL,("LGL_Image::UpdateTexture(): NULL data! WTF!\n"));
 	*/
 
 	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
-
-	//Swap
-	/*
-	GLuint tmp=PixelBufferObjectBackGL;
-	PixelBufferObjectBackGL=PixelBufferObjectFrontGL;
-	PixelBufferObjectFrontGL=tmp;
-	*/
 }
 
 void
@@ -7105,6 +7150,7 @@ UpdatePixelBufferObjects()
 		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
 
 		PixelBufferObjectSize=size;
+		PixelBufferVirgin=true;
 	}
 }
 
@@ -8582,6 +8628,11 @@ bool lgl_FrameBufferSortPredicate(const lgl_FrameBuffer* d1, const lgl_FrameBuff
 	  return(d1->GetFrameNumber() < d2->GetFrameNumber());
 }
 
+bool lgl_LongSortPredicate(const long d1, const long d2)
+{
+	  return(d1 < d2);
+}
+
 lgl_FrameBuffer::
 lgl_FrameBuffer()
 {
@@ -8591,6 +8642,7 @@ lgl_FrameBuffer()
 	BufferWidth=0;
 	BufferHeight=0;
 	FrameNumber=-1;
+	Packet=NULL;
 }
 
 lgl_FrameBuffer::
@@ -8604,6 +8656,13 @@ lgl_FrameBuffer::
 	BufferBytes=0;
 
 	FrameNumber=-1;
+
+	SetPacket
+	(
+		NULL,
+		NULL,
+		-1
+	);
 }
 
 void
@@ -8768,6 +8827,33 @@ GetBufferVBytes()	const
 	return((BufferWidth*BufferHeight)/4);
 }
 
+AVPacket*
+lgl_FrameBuffer::
+GetPacket()
+{
+	return(Packet);
+}
+
+void
+lgl_FrameBuffer::
+SetPacket
+(
+	AVPacket*	packet,
+	const char*	path,
+	long		frameNumber
+)
+{
+	if(Packet)
+	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		lgl_av_free_packet(Packet);
+	}
+	Packet=packet;
+
+	strcpy(VideoPath,path?path:"");
+	FrameNumber=frameNumber;
+}
+
 void
 lgl_FrameBuffer::
 Invalidate()
@@ -8778,7 +8864,7 @@ Invalidate()
 
 
 int
-lgl_video_decoder_thread
+lgl_video_decoder_decode_thread
 (
 	void* ptr
 )
@@ -8801,12 +8887,66 @@ lgl_video_decoder_thread
 	return(0);
 }
 
+int
+lgl_video_decoder_load_thread
+(
+	void* ptr
+)
+{
+	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_DECODE,"LGL_VideoDecoder");
+	LGL_VideoDecoder* dec = (LGL_VideoDecoder*)ptr;
+
+	for(;;)
+	{
+		if(dec->GetThreadTerminate())
+		{
+			break;
+		}
+		dec->MaybeLoadVideo();
+		bool imageLoaded=dec->MaybeLoadImage();
+		dec->MaybeRecycleBuffers();
+		if(imageLoaded==false)
+		{
+			LGL_DelayMS(1);
+		}
+	}
+
+	return(0);
+}
+
+int
+lgl_video_decoder_process_thread
+(
+	void* ptr
+)
+{
+	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_DECODE,"LGL_VideoDecoder");
+	LGL_VideoDecoder* dec = (LGL_VideoDecoder*)ptr;
+
+	LGL.ThreadIDWatch = SDL_ThreadID();
+
+	for(;;)
+	{
+		if(dec->GetThreadTerminate())
+		{
+			break;
+		}
+		bool imageProcessed=dec->MaybeProcessImage();
+		if(imageProcessed==false)
+		{
+			LGL_DelayMS(1);
+		}
+	}
+
+	return(0);
+}
+
 LGL_VideoDecoder::
 LGL_VideoDecoder
 (
 	const char* path
 ) :
-	FrameBufferReadySemaphore("FrameBufferReady Semaphore"),
+	FrameBufferOmniSemaphore("FrameBufferLoaded Semaphore"),
 	PathSemaphore("Path Semaphore"),
 	VideoOKSemaphore("VideoOK Semaphore")
 {
@@ -8818,10 +8958,20 @@ LGL_VideoDecoder::
 ~LGL_VideoDecoder()
 {
 	ThreadTerminate=true;
-	if(Thread)
+	if(ThreadLoad)
 	{
-		LGL_ThreadWait(Thread);
-		Thread=NULL;
+		LGL_ThreadWait(ThreadLoad);
+		ThreadLoad=NULL;
+	}
+	if(ThreadProcess)
+	{
+		LGL_ThreadWait(ThreadProcess);
+		ThreadProcess=NULL;
+	}
+	if(ThreadDecode)
+	{
+		LGL_ThreadWait(ThreadDecode);
+		ThreadDecode=NULL;
 	}
 
 	UnloadVideo();
@@ -8885,6 +9035,7 @@ Init()
 	IsImage=false;
 	Image=NULL;
 	VideoOK=false;
+	VideoOKUserCount=0;
 	StoredBrightness=0.0f;
 
 	//Preallocate lgl_FrameBuffers
@@ -8934,7 +9085,10 @@ Init()
 #endif
 
 	ThreadTerminate=false;
-	Thread=LGL_ThreadCreate(lgl_video_decoder_thread,this);
+	ThreadLoad=LGL_ThreadCreate(lgl_video_decoder_load_thread,this);
+	ThreadProcess=LGL_ThreadCreate(lgl_video_decoder_process_thread,this);
+	//ThreadDecode=LGL_ThreadCreate(lgl_video_decoder_decode_thread,this);
+	ThreadDecode=NULL;
 }
 
 void
@@ -9099,19 +9253,20 @@ GetImage()
 		);
 		Image->SetFrameNumber(-1);
 	}
-	LGL_DebugPrintf("IsYUV420p(): %i (%i)",IsYUV420P(),Image->InvertY);
+
 	if(strcmp(Path,"NULL")==0)
 	{
 		Image->SetFrameNumber(-1);
 		return(Image);
 	}
 
+/*
 	LGL_ScopeLock videoOKLock(VideoOKSemaphore,0.0f);
-
 	if(videoOKLock.GetLockObtained()==false)
 	{
 		return(Image);
 	}
+*/
 
 	char path[2048];
 	{
@@ -9127,7 +9282,7 @@ GetImage()
 	lgl_FrameBuffer* frameBuffer=NULL;
 
 	{
-		LGL_ScopeLock lock(FrameBufferReadySemaphore);
+		LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"Main Thread","GetImage()");
 
 		//Early out if nothing decoded...
 		if(FrameBufferReady.size()==0)
@@ -9289,7 +9444,7 @@ double
 LGL_VideoDecoder::
 GetSecondsBufferedLeft()
 {
-	LGL_ScopeLock lock(FrameBufferReadySemaphore);
+	LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"Unknown","GetSecondsBufferedLeft()");
 
 	if(FrameBufferReady.size()==0)
 	{
@@ -9365,7 +9520,7 @@ double
 LGL_VideoDecoder::
 GetSecondsBufferedRight()
 {
-	LGL_ScopeLock lock(FrameBufferReadySemaphore);
+	LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"Unknown","GetSecondsBufferedRight()");
 
 	if(FrameBufferReady.size()==0)
 	{
@@ -9469,10 +9624,14 @@ LGL_VideoDecoder::
 InvalidateAllFrameBuffers()
 {
 	{
-		LGL_ScopeLock lock(FrameBufferReadySemaphore);
+		LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"load thread","MaybeLoadVideo()'s InvalidateAllFrameBuffers()");
 		for(unsigned int a=0;a<FrameBufferReady.size();a++)
 		{
 			FrameBufferReady[a]->Invalidate();
+		}
+		for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
+		{
+			FrameBufferLoaded[a]->Invalidate();
 		}
 	}
 
@@ -9525,8 +9684,25 @@ MaybeLoadVideo()
 
 	//Go for it!!
 
+	int delayCount=0;
+	for(;;)
 	{
-		LGL_ScopeLock videoOkLock(VideoOKSemaphore);
+		if(delayCount>0) LGL_DelayMS(1);
+		LGL_ScopeLock videoOkLock(VideoOKSemaphore,0.0f);
+		if(videoOkLock.GetLockObtained()==false)
+		{
+			continue;
+		}
+		if(VideoOKUserCount>0)
+		{
+			delayCount++;
+			if(delayCount>100)
+			{
+				printf("maybeLoadVideo() delay! (%i)\n",delayCount);
+			}
+			continue;
+		}
+
 		VideoOK=false;
 		IsImage=false;
 		UnloadVideo();
@@ -9689,7 +9865,432 @@ MaybeLoadVideo()
 		InvalidateAllFrameBuffers();
 
 		VideoOK=true;
+		break;
 	}
+}
+
+bool
+LGL_VideoDecoder::
+MaybeLoadImage()
+{
+	if
+	(
+		FormatContext==NULL ||
+		CodecContext==NULL ||
+		FrameNative==NULL ||
+		FrameRGB==NULL ||
+		strcmp(Path,"NULL")==0 ||
+		VideoOK==false
+	)
+	{
+		return(false);
+	}
+
+	//Chill, if we ARE waiting on vsync
+	while
+	(
+		LGL.MainThreadVsyncWait &&
+		LGL.Running &&
+		ThreadTerminate==false
+	)
+	{
+		LGL_DelayMS(1);
+	}
+
+	//Return early if we have enough frames loaded
+	{
+		LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"MaybeLoadImage()","Return Early (maybe)");
+		if(FrameBufferLoaded.size()>=5)
+		{
+			return(false);
+		}
+	}
+
+	//Find frameNumber of image to add
+	long frameNumberTarget=GetNextFrameNumberToLoad();
+	if(frameNumberTarget==-1)
+	{
+		return(false);
+	}
+
+	if(frameNumberTarget >= SecondsToFrameNumber(GetLengthSeconds())-1)
+	{
+		return(false);
+	}
+
+	//Lock the video
+	{
+		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
+		VideoOKUserCount++;
+	}
+
+	//Seek to the appropriate frame...
+	if(FrameNumberNext!=frameNumberTarget)
+	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		long timestampTarget=FrameNumberToTimestamp(frameNumberTarget);
+		lgl_av_seek_frame
+		(
+			FormatContext,
+			VideoStreamIndex,
+			timestampTarget,
+			AVSEEK_FLAG_ANY
+		);
+		FrameNumberNext=frameNumberTarget+1;
+	}
+
+	AVPacket* packet=new AVPacket;
+	lgl_av_init_packet(packet);
+	bool frameRead=false;
+	for(;;)
+	{
+		int result=0;
+		{
+			LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+			result = lgl_av_read_frame(FormatContext, packet);
+		}
+		if(result>=0)
+		{
+			//Is this a packet from the video stream?
+			if(packet->stream_index==VideoStreamIndex)
+			{
+				frameRead=true;
+			}
+		}
+		else
+		{
+			LengthSeconds=LGL_Max(0,FrameNumberToSeconds(frameNumberTarget));
+			break;
+		}
+
+		if(frameRead)
+		{
+			break;
+		}
+	}
+
+	//If we read a frame, put it into an lgl_FrameBuffer
+	if(frameRead)
+	{
+		LGL_ScopeLock pathLock(PathSemaphore);
+		//Prepare a framebuffer, and swap its buffer with BufferRGB
+		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
+
+		frameBuffer->SetPacket
+		(
+			packet,
+			Path,
+			frameNumberTarget
+		);
+
+		//Add framebuffer to FrameBufferLoaded, and sort.
+		{
+			LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"MaybeLoadImage()","Add to frameBuffer to FrameBufferLoaded");
+			FrameBufferLoaded.push_back(frameBuffer);
+/*
+printf("FBL: Adding %li\n",frameBuffer->GetFrameNumber());
+for(unsigned int z=0;z<FrameBufferLoaded.size();z++)
+{
+	printf("FBL[%i]: %li\n",z,FrameBufferLoaded[z]->GetFrameNumber());
+}
+*/
+			/*
+			std::sort
+			(
+				FrameBufferLoaded.begin(),
+				FrameBufferLoaded.end(),
+				lgl_FrameBufferSortPredicate
+			);
+			*/
+		}
+	}
+	else
+	{
+		//Free the packet that was allocated by lgl_av_read_frame
+		//(Is this right?)
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		lgl_av_free_packet(packet);
+	}
+
+	//Unlock the video
+	{
+		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
+		VideoOKUserCount--;
+	}
+	return(frameRead);
+}
+
+bool
+LGL_VideoDecoder::
+MaybeProcessImage()
+{
+	//Chill, if we're not waiting on vsync
+	while
+	(
+		LGL.MainThreadVsyncWait==false &&
+		LGL.Running &&
+		ThreadTerminate==false
+	)
+	{
+		LGL_DelayMS(1);
+	}
+
+	//Lock the video
+	{
+		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
+		VideoOKUserCount++;
+	}
+
+	if
+	(
+		FormatContext==NULL ||
+		CodecContext==NULL ||
+		FrameNative==NULL ||
+		FrameRGB==NULL ||
+		strcmp(Path,"NULL")==0 ||
+		VideoOK==false
+	)
+	{
+		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
+		VideoOKUserCount--;
+		return(false);
+	}
+
+	//Find the next lgl_FrameBuffer
+	lgl_FrameBuffer* frameBuffer=NULL;
+	{
+if(0 && FrameBufferOmniSemaphore.IsLocked())
+{
+	printf("Process Sem Wait 3!!! (FrameBufferOmniSemaphore)\n");
+	FrameBufferOmniSemaphore.PrintLockInfo();
+}
+		LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"ProcessImage()","Wait 3");
+		if(FrameBufferLoaded.size()!=0)
+		{
+			frameBuffer=FrameBufferLoaded[0];
+		}
+	}
+	if
+	(
+		frameBuffer==NULL ||
+		frameBuffer->GetFrameNumber()==-1
+	)
+	{
+		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
+		VideoOKUserCount--;
+		return(false);
+	}
+
+	//Setup YUV FrameNative
+	{
+		unsigned int bufferYUVBytesNow=avpicture_get_size
+		(
+			CodecContext->pix_fmt, 
+			BufferWidth,
+			BufferHeight
+		);
+		if
+		(
+			BufferYUV==NULL ||
+			BufferYUVBytes<bufferYUVBytesNow
+		)
+		{
+			BufferYUVBytes=bufferYUVBytesNow;
+			delete BufferYUV;
+			BufferYUV=new uint8_t[BufferYUVBytes];
+		}
+	}
+
+	//Get the AVPacket
+	AVPacket* packet = frameBuffer->GetPacket();
+	if(packet==NULL)
+	{
+		{
+			LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"ProcessImage()","Wait 5");
+			FrameBufferLoaded.erase
+			(
+				(std::vector<lgl_FrameBuffer*>::iterator)
+				(&(FrameBufferLoaded[0]))
+			);
+			FrameBufferRecycled.push_back(frameBuffer);
+		}
+		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
+		VideoOKUserCount--;
+		return(false);
+	}
+
+	//Decode video frame
+	int frameFinished=0;
+	{
+		LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+		lgl_avcodec_decode_video2
+		(
+			CodecContext,
+			FrameNative,
+			&frameFinished, 
+			packet
+		);
+
+		if(IsYUV420P())
+		{
+			//Do a line-by line memcpy... Laaaame!
+			unsigned char* bufYUVNow=BufferYUV;
+			for(int c=0;c<3;c++)
+			{
+				int width = (c==0) ? BufferWidth : (BufferWidth/2);
+				int height = (c==0) ? BufferHeight : (BufferHeight/2);
+				for(int h=0;h<height;h++)
+				{
+					memcpy(bufYUVNow,&(FrameNative->data[c][h*FrameNative->linesize[c]]),width);
+					bufYUVNow+=width;
+				}
+			}
+		}
+	}
+
+	if(frameFinished==false)
+	{
+		printf("Frame FAIL!!\n");
+	}
+
+	//Did we get a video frame?
+	bool frameRead=false;
+	if(frameFinished)
+	{
+		{
+			if(IsYUV420P()==false)
+			{
+				LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
+
+				unsigned int bufferBytesNow=avpicture_get_size
+				(
+					PIX_FMT_BGRA,
+					BufferWidth,
+					BufferHeight
+				);
+				if
+				(
+					BufferRGB==NULL ||
+					BufferRGBBytes<bufferBytesNow
+				)
+				{
+					BufferRGBBytes=bufferBytesNow;
+					delete BufferRGB;
+					BufferRGB=new uint8_t[BufferRGBBytes];
+				}
+				//Update FrameRGB to point to BufferRGB.
+				avpicture_fill
+				(
+					(AVPicture*)FrameRGB,
+					BufferRGB,
+					PIX_FMT_BGRA,
+					BufferWidth,
+					BufferHeight
+				);
+				sws_scale
+				(
+					SwsConvertContextBGRA,
+					FrameNative->data,
+					FrameNative->linesize,
+					0, 
+					BufferHeight,
+					FrameRGB->data,
+					FrameRGB->linesize
+				);
+			}
+		}
+		frameRead=true;
+	}
+
+	//If we read a frame, put it into our lgl_FrameBuffer
+	if(frameRead)
+	{
+		LGL_ScopeLock pathLock(PathSemaphore);
+
+		if(IsYUV420P()==false)
+		{
+			frameBuffer->SwapInNewBufferRGB
+			(
+				Path,
+				BufferRGB,	//Changes...
+				BufferRGBBytes,	//Changes...
+				BufferWidth,
+				BufferHeight,
+				frameBuffer->GetFrameNumber()
+			);
+		}
+		else
+		{
+			frameBuffer->SwapInNewBufferYUV
+			(
+				Path,
+				BufferYUV,	//Changes...
+				BufferYUVBytes,	//Changes...
+				BufferWidth,
+				BufferHeight,
+				frameBuffer->GetFrameNumber()
+			);
+		}
+
+		//Add framebuffer to FrameBufferReady, and sort.
+		{
+if(0 && FrameBufferOmniSemaphore.IsLocked())
+{
+	printf("Process Sem Wait 10!!! (FrameBufferOmniSemaphore)\n");
+	FrameBufferOmniSemaphore.PrintLockInfo();
+}
+			LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"ProcessImage()","Wait 10");
+			if(FrameBufferLoaded[0]==frameBuffer)
+			{
+				FrameBufferLoaded.erase
+				(
+					(std::vector<lgl_FrameBuffer*>::iterator)
+					(&(FrameBufferLoaded[0]))
+				);
+				FrameBufferReady.push_back(frameBuffer);
+				std::sort
+				(
+					FrameBufferReady.begin(),
+					FrameBufferReady.end(),
+					lgl_FrameBufferSortPredicate
+				);
+			}
+			else
+			{
+				//I've been recycled(?)
+			}
+/*
+printf("FBR: Adding %li\n",frameBuffer->GetFrameNumber());
+for(unsigned int z=0;z<FrameBufferReady.size();z++)
+{
+	printf("FBR[%i]: %li\n",z,FrameBufferReady[z]->GetFrameNumber());
+}
+*/
+		}
+	}
+	else
+	{
+		printf("Frame FAIL 2!!\n");
+	}
+
+	//Free the packet that was allocated by lgl_av_read_frame
+	{
+		char tmp[2048];
+		sprintf(tmp,frameBuffer->GetVideoPath() ? frameBuffer->GetVideoPath() : "");
+		frameBuffer->SetPacket
+		(
+			NULL,
+			frameRead ? tmp : NULL,
+			frameRead ? frameBuffer->GetFrameNumber() : -1
+		);
+	}
+
+	//Unlock the video
+	{
+		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
+		VideoOKUserCount--;
+	}
+	return(frameRead);
 }
 
 bool
@@ -9736,16 +10337,17 @@ MaybeDecodeImage()
 		FrameNumberNext=frameNumberTarget+1;
 	}
 
-	AVPacket Packet;
-	lgl_av_init_packet(&Packet);
+	AVPacket packet;
+	lgl_av_init_packet(&packet);
 	bool frameRead=false;
 	for(;;)
 	{
 		int result=0;
 		{
 			LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
-			result = lgl_av_read_frame(FormatContext, &Packet);
+			result = lgl_av_read_frame(FormatContext, &packet);
 		}
+		//Chill
 		while
 		(
 			LGL.MainThreadVsyncWait==false &&
@@ -9758,7 +10360,7 @@ MaybeDecodeImage()
 		if(result>=0)
 		{
 			//Is this a packet from the video stream?
-			if(Packet.stream_index==VideoStreamIndex)
+			if(packet.stream_index==VideoStreamIndex)
 			{
 				//Setup YUV FrameNative
 				{
@@ -9778,18 +10380,6 @@ MaybeDecodeImage()
 						delete BufferYUV;
 						BufferYUV=new uint8_t[BufferYUVBytes];
 					}
-/*
-					//Update FrameRGB to point to BufferRGB.
-					avpicture_fill
-					(
-						(AVPicture*)FrameNative,
-						BufferYUV,
-						CodecContext->pix_fmt,
-						BufferWidth,
-						BufferHeight
-					);
-printf("fill 0: %i vs %i\n",(int)BufferYUV,(int)FrameNative->data[0]);
-*/
 				}
 
 				//Decode video frame
@@ -9801,19 +10391,19 @@ printf("fill 0: %i vs %i\n",(int)BufferYUV,(int)FrameNative->data[0]);
 						CodecContext,
 						FrameNative,
 						&frameFinished, 
-						&Packet
+						&packet
 					);
-unsigned char* bufYUVNow=BufferYUV;
-for(int c=0;c<3;c++)
-{
-	int width = (c==0) ? BufferWidth : (BufferWidth/2);
-	int height = (c==0) ? BufferHeight : (BufferHeight/2);
-	for(int h=0;h<height;h++)
-	{
-		memcpy(bufYUVNow,&(FrameNative->data[c][h*FrameNative->linesize[c]]),width);
-		bufYUVNow+=width;
-	}
-}
+					unsigned char* bufYUVNow=BufferYUV;
+					for(int c=0;c<3;c++)
+					{
+						int width = (c==0) ? BufferWidth : (BufferWidth/2);
+						int height = (c==0) ? BufferHeight : (BufferHeight/2);
+						for(int h=0;h<height;h++)
+						{
+							memcpy(bufYUVNow,&(FrameNative->data[c][h*FrameNative->linesize[c]]),width);
+							bufYUVNow+=width;
+						}
+					}
 				}
 
 				// Did we get a video frame?
@@ -9868,7 +10458,7 @@ for(int c=0;c<3;c++)
 			// Free the packet that was allocated by lgl_av_read_frame
 			{
 				LGL_ScopeLock avCodecLock(LGL.AVCodecSemaphore);
-				lgl_av_free_packet(&Packet);
+				lgl_av_free_packet(&packet);
 			}
 		}
 		else
@@ -9917,7 +10507,7 @@ for(int c=0;c<3;c++)
 
 		//Add framebuffer to FrameBufferReady, and sort.
 		{
-			LGL_ScopeLock lock(FrameBufferReadySemaphore);
+			LGL_ScopeLock lock(FrameBufferOmniSemaphore);
 			FrameBufferReady.push_back(frameBuffer);
 			std::sort
 			(
@@ -9946,7 +10536,7 @@ MaybeRecycleBuffers()
 		strcpy(path,Path);
 	}
 
-	LGL_ScopeLock frameBufferReadyLock(FrameBufferReadySemaphore);
+	LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"load thread","MaybeRecycleBuffers()");
 
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
@@ -9964,35 +10554,39 @@ MaybeRecycleBuffers()
 
 	unsigned int totalBuffers=FrameBufferRecycled.size()+FrameBufferReady.size();
 
-	for(unsigned int a=0;a<FrameBufferReady.size();a++)
+	for(int l=0;l<2;l++)
 	{
-		if
-		(
-			FrameBufferReady[a]->GetFrameNumber()==-1 ||
-			strcmp(FrameBufferReady[a]->GetVideoPath(),path)!=0 ||
-			(
-				fabsf(frameNumberNow-FrameBufferReady[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
-				fabsf(frameNumberPredict-FrameBufferReady[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
-				fabsf((frameNumberNow-frameNumberLength)-FrameBufferReady[a]->GetFrameNumber())	> FrameBufferSubtractRadius &&
-				fabsf((frameNumberNow+frameNumberLength)-FrameBufferReady[a]->GetFrameNumber())	> FrameBufferSubtractRadius &&
-				GetNextFrameNumberToDecodePredictNext(false) != FrameBufferReady[a]->GetFrameNumber()
-			)
-		)
+		std::vector<lgl_FrameBuffer*>& list = (l==0) ? FrameBufferLoaded : FrameBufferReady;
+		for(unsigned int a=0;a<list.size();a++)
 		{
-			if((int)totalBuffers>FrameBufferAddRadius+FrameBufferSubtractRadius+4)
-			{
-				delete FrameBufferReady[a];
-				totalBuffers--;
-			}
-			else
-			{
-				FrameBufferRecycled.push_back(FrameBufferReady[a]);
-			}
-			FrameBufferReady.erase
+			if
 			(
-				(std::vector<lgl_FrameBuffer*>::iterator)
-				(&(FrameBufferReady[a]))
-			);
+				list[a]->GetFrameNumber()==-1 ||
+				strcmp(list[a]->GetVideoPath(),path)!=0 ||
+				(
+					fabsf(frameNumberNow-list[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
+					fabsf(frameNumberPredict-list[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
+					fabsf((frameNumberNow-frameNumberLength)-list[a]->GetFrameNumber())	> FrameBufferSubtractRadius &&
+					fabsf((frameNumberNow+frameNumberLength)-list[a]->GetFrameNumber())	> FrameBufferSubtractRadius &&
+					GetNextFrameNumberToDecodePredictNext(false) != list[a]->GetFrameNumber()
+				)
+			)
+			{
+				if((int)totalBuffers>FrameBufferAddRadius+FrameBufferSubtractRadius+4)
+				{
+					delete list[a];
+					totalBuffers--;
+				}
+				else
+				{
+					FrameBufferRecycled.push_back(list[a]);
+				}
+				list.erase
+				(
+					(std::vector<lgl_FrameBuffer*>::iterator)
+					(&(list[a]))
+				);
+			}
 		}
 	}
 }
@@ -10059,9 +10653,235 @@ FrameNumberToTimestamp
 
 long
 LGL_VideoDecoder::
+GetNextFrameNumberToLoad()
+{
+	std::vector<long> frameNumList;
+	{
+		LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"load thread","GetNextFrameNumberToLoad()");
+		for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
+		{
+			if(FrameBufferLoaded[a]->GetFrameNumber()!=-1)
+			{
+				frameNumList.push_back(FrameBufferLoaded[a]->GetFrameNumber());
+			}
+		}
+		for(unsigned int a=0;a<FrameBufferReady.size();a++)
+		{
+			if(FrameBufferReady[a]->GetFrameNumber()!=-1)
+			{
+				frameNumList.push_back(FrameBufferReady[a]->GetFrameNumber());
+			}
+		}
+	}
+	std::sort
+	(
+		frameNumList.begin(),
+		frameNumList.end(),
+		lgl_LongSortPredicate
+	);
+
+	long ret=-1;
+
+	ret = GetNextFrameNumberToLoadPredictNext(frameNumList);
+	if(ret!=-1)
+	{
+//printf("GNFNTL (A): %li\n",ret);
+		return(ret);
+	}
+
+	if(TimeSeconds>=TimeSecondsPrev)
+	{
+		ret = GetNextFrameNumberToLoadForwards(frameNumList);
+		if(ret!=-1)
+		{
+//printf("GNFNTL (B): %li\n",ret);
+			return(ret);
+		}
+		ret = GetNextFrameNumberToLoadBackwards(frameNumList);
+		if(ret!=-1)
+		{
+//printf("GNFNTL (C): %li\n",ret);
+			return(ret);
+		}
+	}
+	else
+	{
+		ret = GetNextFrameNumberToLoadBackwards(frameNumList);
+		if(ret!=-1)
+		{
+//printf("GNFNTL (D): %li\n",ret);
+			return(ret);
+		}
+		ret = GetNextFrameNumberToLoadForwards(frameNumList);
+		if(ret!=-1)
+		{
+//printf("GNFNTL (E): %li\n",ret);
+			return(ret);
+		}
+	}
+
+	return(-1);
+}
+
+long
+LGL_VideoDecoder::
+GetNextFrameNumberToLoadPredictNext
+(
+	std::vector<long>&	frameNumList,
+	bool			mustNotBeLoaded
+)
+{
+	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
+	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberLength==0)
+	{
+		return(0);
+	}
+
+	long frameNumberPrev = SecondsToFrameNumber(TimeSecondsPrev);
+	long frameNumberFind = frameNumberNow + (frameNumberNow-frameNumberPrev);
+
+	//Handle wrap-around
+	if(frameNumberFind<0) frameNumberFind=0;
+	frameNumberFind = frameNumberFind % frameNumberLength;
+
+	bool found=false;
+	for(unsigned int b=0;b<frameNumList.size();b++)
+	{
+		long frameNumberNow=frameNumList[b];
+		if(frameNumberFind==frameNumberNow)
+		{
+			found=true;
+			break;
+		}
+	}
+
+	if
+	(
+		found==false ||
+		mustNotBeLoaded==false
+	)
+	{
+		return(frameNumberFind);
+	}
+
+	return(-1);
+}
+
+long
+LGL_VideoDecoder::
+GetNextFrameNumberToLoadForwards
+(
+	std::vector<long>&	frameNumList
+)
+{
+	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
+	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberLength==0)
+	{
+		return(0);
+	}
+
+	long frameNumberFinal = frameNumberNow+FrameBufferAddRadius;
+	for(long a=frameNumberNow;a<frameNumberFinal;a++)
+	{
+		//Handle wrap-around
+		long frameNumberFind=a;
+		while(frameNumberFind>=frameNumberLength)
+		{
+			frameNumberFind-=frameNumberLength;
+		}
+
+		bool found=false;
+		for(unsigned int b=0;b<frameNumList.size();b++)
+		{
+			long frameNumberNow=frameNumList[b];
+			if(frameNumberFind<frameNumberNow)
+			{
+				return(frameNumberFind);
+			}
+			else if(frameNumberFind==frameNumberNow)
+			{
+				found=true;
+				break;
+			}
+			else //frameNumberFind>frameNumberNow
+			{
+				continue;
+			}
+		}
+
+		if(found==false)
+		{
+			return(frameNumberFind);
+		}
+	}
+
+	return(-1);
+}
+
+long
+LGL_VideoDecoder::
+GetNextFrameNumberToLoadBackwards
+(
+	std::vector<long>&	frameNumList
+)
+{
+	if(FrameBufferAddBackwards==false)
+	{
+		return(-1);
+	}
+
+	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
+	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
+	if(frameNumberLength==0)
+	{
+		return(0);
+	}
+
+	long frameNumberFinal = frameNumberNow+FrameBufferAddRadius;
+	for(long a=frameNumberNow;a<frameNumberFinal;a++)
+	{
+		//Handle wrap-around
+		long frameNumberFind=a;
+		while(frameNumberFind>=frameNumberLength)
+		{
+			frameNumberFind-=frameNumberLength;
+		}
+
+		bool found=false;
+		for(unsigned int b=frameNumList.size()-1;b>=0;b--)
+		{
+			long frameNumberNow=frameNumList[b];
+			if(frameNumberFind>frameNumberNow)
+			{
+				return(frameNumberFind);
+			}
+			else if(frameNumberFind==frameNumberNow)
+			{
+				found=true;
+				break;
+			}
+			else //frameNumberFind<frameNumberNow
+			{
+				continue;
+			}
+		}
+
+		if(found==false)
+		{
+			return(frameNumberFind);
+		}
+	}
+
+	return(-1);
+}
+
+long
+LGL_VideoDecoder::
 GetNextFrameNumberToDecode()
 {
-	LGL_ScopeLock lock(FrameBufferReadySemaphore);
+	LGL_ScopeLock lock(FrameBufferOmniSemaphore);
 
 	long ret=-1;
 
@@ -10590,7 +11410,7 @@ LGL_VideoEncoder
 		//DstCodecContext->rc_max_rate = DstCodecContext->bit_rate;
 		DstCodecContext->global_quality = 100;
 
-printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext->pix_fmt);
+		printf("Attempting to open DstCodec '%s' (%i)\n",DstCodec->name,DstCodecContext->pix_fmt);
 		{
 			if(lgl_avcodec_open(DstCodecContext, DstCodec) < 0)
 			{
@@ -11746,6 +12566,7 @@ ThreadFunc()
 	{
 		FlushBuffer();
 		LGL_DelayMS(5);
+		//chill
 		while
 		(
 			LGL.MainThreadVsyncWait==false &&
@@ -15367,7 +16188,7 @@ GetGrainsQueuedCount()
 //Audio1
 
 int
-lgl_SoundDecoderThread
+lgl_sound_decoder_thread
 (
 	void* object
 )
@@ -15447,7 +16268,7 @@ LGL_Sound
 	if(LoadInNewThread)
 	{
 		DeleteSemaphore.Lock("SoundDecoderThread","Decoding sound in new thread");
-		DecoderThread=LGL_ThreadCreate(lgl_SoundDecoderThread,this);
+		DecoderThread=LGL_ThreadCreate(lgl_sound_decoder_thread,this);
 		if(DecoderThread==NULL)
 		{
 			printf("Wow couldn't create an LGL_Sound DecoderThread! Crashy, crashy!\n");	//FIXME: CRASH!!!
@@ -17166,6 +17987,7 @@ LoadToMemory()
 			)
 			{
 				/*
+				//chill
 				while
 				(
 					LGL.MainThreadVsyncWait==false &&
@@ -27749,8 +28571,8 @@ LGL_DrawFrameTimeGraph
 		textHeight,
 		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha ,
 		true,.5f*alpha,
-		"%.1f",
-		LGL.FrameTimeMax*1000.0f
+		"%.0f%%",
+		LGL.FrameTimeMax/(1.0f/60.0f)*100.0f
 	);
 	LGL_GetFont().DrawString
 	(
@@ -27759,8 +28581,8 @@ LGL_DrawFrameTimeGraph
 		textHeight,
 		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha,
 		true,.5f*alpha,
-		"%.1f",
-		LGL.FrameTimeAve*1000.0f
+		"%.0f%%",
+		LGL.FrameTimeAve/(1.0f/60.0f)*100.0f
 	);
 	LGL_GetFont().DrawString
 	(
@@ -27769,8 +28591,39 @@ LGL_DrawFrameTimeGraph
 		textHeight,
 		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha,
 		true,.5f*alpha,
-		"%.1f",
-		LGL.FrameTimeMin*1000.0f
+		"%.0f%%",
+		LGL.FrameTimeMin/(1.0f/60.0f)*100.0f
+	);
+
+	LGL_GetFont().DrawString
+	(
+		right+0.05f*width,
+		bottom+height*66.7f/100.0f + textHeight*0.25f,
+		textHeight,
+		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha ,
+		false,.5f*alpha,
+		"%i",
+		LGL.FrameTimeBadTotal
+	);
+	LGL_GetFont().DrawString
+	(
+		right+0.05f*width,
+		bottom+height*33.3f/100.0f + textHeight*0.25f,
+		textHeight,
+		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha,
+		false,.5f*alpha,
+		"%i",
+		LGL.FrameTimeMediumTotal
+	);
+	LGL_GetFont().DrawString
+	(
+		right+0.05f*width,
+		bottom+height*0.0f/100.0f + textHeight*0.25f,
+		textHeight,
+		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha,
+		false,.5f*alpha,
+		"%i",
+		LGL.FrameTimeGoodTotal
 	);
 
 	LGL_DrawLineToScreen
@@ -29225,6 +30078,23 @@ const bool debugMainThreadWaits=true;
 				printf("\n");
 			}
 		}
+
+		if(SDL_ThreadID()==LGL.ThreadIDWatch)
+		{
+			if
+			(
+				blockUntilTimeout &&
+				timeoutSeconds>0 &&
+				SDL_SemValue(Sem)==0
+			)
+			{
+				printf("Watch Thread Wait:\n");
+				printf("\tSem = %s\n",Name);
+				printf("\tLocking thread = %s\n",LockOwner);
+				printf("\tNote = %s\n",Note);
+				printf("\n");
+			}
+		}
 	}
 
 	bool ret=false;
@@ -29281,6 +30151,16 @@ SecondsLocked()
 	else return(LGL_SecondsSinceExecution()-TimeOfLock);
 }
 
+void
+LGL_Semaphore::
+PrintLockInfo()
+{
+	printf("\tSem = %s\n",Name);
+	printf("\tLocking thread = %s\n",LockOwner);
+	printf("\tNote = %s\n",Note);
+	printf("\n");
+}
+
 int
 LGL_Semaphore::
 Value()
@@ -29296,13 +30176,17 @@ LGL_ScopeLock::
 LGL_ScopeLock
 (
 	LGL_Semaphore&	semaphore,
-	float		timeoutSeconds
+	float		timeoutSeconds,
+	const char*	thread,
+	const char*	note
 )
 {
 	Init
 	(
 		&semaphore,
-		timeoutSeconds
+		timeoutSeconds,
+		thread,
+		note
 	);
 }
 
@@ -29310,13 +30194,17 @@ LGL_ScopeLock::
 LGL_ScopeLock
 (
 	LGL_Semaphore*	semaphore,
-	float		timeoutSeconds
+	float		timeoutSeconds,
+	const char*	thread,
+	const char*	note
 )
 {
 	Init
 	(
 		semaphore,
-		timeoutSeconds
+		timeoutSeconds,
+		thread,
+		note
 	);
 }
 
@@ -29325,7 +30213,9 @@ LGL_ScopeLock::
 Init
 (
 	LGL_Semaphore*	semaphore,
-	float		timeoutSeconds
+	float		timeoutSeconds,
+	const char*	thread,
+	const char*	note
 )
 {
 	Semaphore=semaphore;
@@ -29334,8 +30224,8 @@ Init
 	{
 		LockObtained=Semaphore->Lock
 		(
-			"Nameless ScopeLock",
-			"Noteless ScopeLock (meh)",
+			thread,
+			note,
 			timeoutSeconds!=0,
 			timeoutSeconds
 		);

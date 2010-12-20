@@ -901,17 +901,20 @@ int main(int argc, char** argv)
 			)
 		)
 		{
+			/*
 			LGL_DrawFPSGraph
 			(
-				0.875f,0.975f,
+				0.85f,0.95f,
 				0.875f,0.975f,
 				drawFPS ? 1 : drawFPSSpike,
 				drawFPS ? 1 : drawFPSSpike
 			);
+			*/
 			LGL_DrawFrameTimeGraph
 			(
+				0.85f,0.95f,
 				0.875f,0.975f,
-				0.725f,0.825f,
+				//0.725f,0.825f,
 				drawFPS ? 1 : drawFPSSpike,
 				drawFPS ? 1 : drawFPSSpike
 			);
