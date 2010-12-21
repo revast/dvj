@@ -1492,8 +1492,11 @@ if(1)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		//Draw video buffer
 		if
 		(
-			videoSecondsBufferedLeft != 0 ||
-			videoSecondsBufferedRight != 0
+			0 &&
+			(
+				videoSecondsBufferedLeft != 0 ||
+				videoSecondsBufferedRight != 0
+			)
 		)
 		{
 			float secondsRadius = (soundPositionSamples - sampleLeft)/44100.0f;

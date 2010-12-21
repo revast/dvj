@@ -1063,7 +1063,8 @@ public:
 
 				lgl_FrameBuffer();
 				~lgl_FrameBuffer();
-	
+
+	void			NullifyBuffer();
 	void			SwapInNewBufferRGB
 				(
 					char*		videoPath,
@@ -3127,6 +3128,7 @@ void		LGL_DrawFrameTimeGraph
 			float brightness=1.0f,
 			float alpha=1.0f
 		);
+void		LGL_ResetFrameTimeGraph();
 
 void		LGL_ScreenShot(const char* bmpFile="screenshot.bmp");
 

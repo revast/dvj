@@ -1842,24 +1842,7 @@ printf("\n");
 	
 	//Time
 
-	LGL.FPS=0;
-	LGL.FPSMax=60;
-	LGL.FPSTimer.Reset();
-	for(int a=0;a<60;a++)
-	{
-		LGL.FPSGraph[a]=0.0f;
-		LGL.FrameTimeGraph[a]=0.0f;
-	}
-	LGL.FrameTimeMin=0.0f;
-	LGL.FrameTimeAve=0.0f;
-	LGL.FrameTimeMax=0.0f;
-	LGL.FrameTimeGoodCount=0;
-	LGL.FrameTimeMediumCount=0;
-	LGL.FrameTimeBadCount=0;
-	LGL.FrameTimeGoodTotal=0;
-	LGL.FrameTimeMediumTotal=0;
-	LGL.FrameTimeBadTotal=0;
-	LGL.FPSGraphTimer.Reset();
+	LGL_ResetFrameTimeGraph();
 	LGL.Font=NULL;
 
 	LGL.SecondsSinceLastFrame=0;
@@ -3911,6 +3894,7 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 		SDL_GL_SwapWindow(LGL.WindowID[LGL.DisplayNow]);
 		if(vsync)
 		{
+			LGL.FramesSinceExecution++;
 			lgl_get_vsync_semaphore().Lock("Main","Just finished vsync swap");
 			LGL.SecondsSinceLastFrame=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
 			//Quantize to n/60.0f
@@ -8726,14 +8710,7 @@ lgl_FrameBuffer()
 lgl_FrameBuffer::
 ~lgl_FrameBuffer()
 {
-	if(Buffer)
-	{
-		free(Buffer);
-		Buffer=NULL;
-	}
-	BufferBytes=0;
-
-	FrameNumber=-1;
+	NullifyBuffer();
 
 	SetPacket
 	(
@@ -8741,6 +8718,19 @@ lgl_FrameBuffer::
 		NULL,
 		-1
 	);
+}
+
+void
+lgl_FrameBuffer::
+NullifyBuffer()
+{
+	if(Buffer)
+	{
+		free(Buffer);
+		Buffer=NULL;
+	}
+	BufferBytes=0;
+	Invalidate();
 }
 
 void
@@ -8945,7 +8935,9 @@ bool
 lgl_debug_process_in_thread()
 {
 	//Returning true results in a better framerate for the main thread.
-	return(true);
+	//return(true);
+	//Returning false results in a better framerate for the videos we draw to the projection screen.
+	return(false);
 }
 
 int
@@ -9437,23 +9429,7 @@ GetImage()
 					frameBuffer=FrameBufferReady[a];
 					nearestDistance=(long)fabsf(frameNumber-FrameBufferReady[a]->GetFrameNumber());
 				}
-			}
-			
-			if(frameBuffer)
-			{
-				if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
-				{
-					FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
-					if(frameNumber==frameBuffer->GetFrameNumber())
-					{
-						FPSDisplayedHitCounter++;
-					}
-					else
-					{
-						FPSDisplayedMissCounter++;
-					}
-				}
-			}
+			}	
 		}
 
 		if(frameBuffer==NULL)
@@ -9545,6 +9521,19 @@ else
 }
 	Image->SetFrameNumber(frameBuffer->GetFrameNumber());
 	FrameNumberDisplayed=frameBuffer->GetFrameNumber();
+
+	if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
+	{
+		FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
+		if(frameNumber==Image->GetFrameNumber())
+		{
+			FPSDisplayedHitCounter++;
+		}
+		else
+		{
+			FPSDisplayedMissCounter++;
+		}
+	}
 
 	if(FPSDisplayedTimer.SecondsSinceLastReset()>=1.0f)
 	{
@@ -10092,7 +10081,10 @@ MaybeLoadImage()
 	}
 	*/
 	{
-		LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+		{
+			LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),150.0f/60.0f);
+		}
+		LGL_DelayMS(0);
 	}
 
 	MaybeRecycleBuffers(FrameBufferLoaded);
@@ -10217,6 +10209,12 @@ for(unsigned int z=0;z<FrameBufferLoaded.size();z++)
 		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
 		VideoOKUserCount--;
 	}
+	/*
+	if(frameRead)
+	{
+		printf("Loaded frame %li\n",frameNumberTarget);
+	}
+	*/
 	return(frameRead);
 }
 
@@ -10242,7 +10240,10 @@ MaybeProcessImage
 	*/
 	if(mainThread==false)
 	{
-		LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+		{
+			LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+		}
+		LGL_DelayMS(0);
 	}
 
 	if(mainThread==false)
@@ -10500,16 +10501,18 @@ MaybeProcessImage
 
 	//Free the packet that was allocated by lgl_av_read_frame
 	{
-		char tmp[2048];
-		sprintf(tmp,frameBuffer->GetVideoPath() ? frameBuffer->GetVideoPath() : "");
 		if(frameRead)
 		{
+			/*
+			char tmp[2048];
+			sprintf(tmp,frameBuffer->GetVideoPath() ? frameBuffer->GetVideoPath() : "");
 			frameBuffer->SetPacket
 			(
 				NULL,
 				tmp,
 				frameBuffer->GetFrameNumber()
 			);
+			*/
 		}
 		else
 		{
@@ -10592,7 +10595,10 @@ MaybeDecodeImage()
 		}
 		*/
 		{
-			LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+			{
+				LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+			}
+			LGL_DelayMS(0);
 		}
 		if(result>=0)
 		{
@@ -10792,20 +10798,55 @@ MaybeRecycleBuffers
 	long frameNumberPredict=frameNumberTarget;
 	frameNumberPredict = frameNumberPredict % frameNumberLength;
 
-	unsigned int totalBuffers=FrameBufferRecycled.size()+FrameBufferReady.size();
+	unsigned int totalBuffers=FrameBufferRecycled.size()+FrameBufferLoaded.size();
 
 	std::vector<lgl_FrameBuffer*>& list = bufferList;
+	int subtractRadius = FrameBufferSubtractRadius;
+	//int nullifyBufferRadius = (&list==&FrameBufferReady) ? 5 : FrameBufferSubtractRadius;
 	for(unsigned int a=0;a<list.size();a++)
 	{
+		/*
 		if
 		(
 			list[a]->GetFrameNumber()==-1 ||
 			strcmp(list[a]->GetVideoPath(),path)!=0 ||
 			(
-				fabsf(frameNumberNow-list[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
-				fabsf(frameNumberPredict-list[a]->GetFrameNumber())			> FrameBufferSubtractRadius &&
-				fabsf((frameNumberNow-frameNumberLength)-list[a]->GetFrameNumber())	> FrameBufferSubtractRadius &&
-				fabsf((frameNumberNow+frameNumberLength)-list[a]->GetFrameNumber())	> FrameBufferSubtractRadius &&
+				fabsf(frameNumberNow-list[a]->GetFrameNumber())				> nullifyBufferRadius &&
+				fabsf(frameNumberPredict-list[a]->GetFrameNumber())			> nullifyBufferRadius &&
+				fabsf((frameNumberNow-frameNumberLength)-list[a]->GetFrameNumber())	> nullifyBufferRadius &&
+				fabsf((frameNumberNow+frameNumberLength)-list[a]->GetFrameNumber())	> nullifyBufferRadius &&
+				GetNextFrameNumberToDecodePredictNext(false) != list[a]->GetFrameNumber()
+			)
+		)
+		{
+			list[a]->NullifyBuffer();
+			if(&list==&FrameBufferReady)
+			{
+				FrameBufferLoaded.push_back(list[a]);
+				std::sort
+				(
+					FrameBufferReady.begin(),
+					FrameBufferReady.end(),
+					lgl_FrameBufferSortPredicate
+				);
+				list.erase
+				(
+					(std::vector<lgl_FrameBuffer*>::iterator)
+					(&(list[a]))
+				);
+			}
+		}
+		*/
+
+		if
+		(
+			list[a]->GetFrameNumber()==-1 ||
+			strcmp(list[a]->GetVideoPath(),path)!=0 ||
+			(
+				fabsf(frameNumberNow-list[a]->GetFrameNumber())				> subtractRadius &&
+				fabsf(frameNumberPredict-list[a]->GetFrameNumber())			> subtractRadius &&
+				fabsf((frameNumberNow-frameNumberLength)-list[a]->GetFrameNumber())	> subtractRadius &&
+				fabsf((frameNumberNow+frameNumberLength)-list[a]->GetFrameNumber())	> subtractRadius &&
 				GetNextFrameNumberToDecodePredictNext(false) != list[a]->GetFrameNumber()
 			)
 		)
@@ -10817,6 +10858,7 @@ MaybeRecycleBuffers
 			}
 			else
 			{
+				list[a]->NullifyBuffer();
 				FrameBufferRecycled.push_back(list[a]);
 			}
 			list.erase
@@ -12815,7 +12857,10 @@ ThreadFunc()
 		}
 		*/
 		{
-			LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+			{
+				LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+			}
+			LGL_DelayMS(0);
 		}
 		if
 		(
@@ -28894,7 +28939,28 @@ LGL_DrawFrameTimeGraph
 	);
 }
 
-//FILE* mencoderFD=NULL;
+void
+LGL_ResetFrameTimeGraph()
+{
+	LGL.FPS=0;
+	LGL.FPSMax=60;
+	LGL.FPSTimer.Reset();
+	for(int a=0;a<60;a++)
+	{
+		LGL.FPSGraph[a]=0.0f;
+		LGL.FrameTimeGraph[a]=0.0f;
+	}
+	LGL.FrameTimeMin=0.0f;
+	LGL.FrameTimeAve=0.0f;
+	LGL.FrameTimeMax=0.0f;
+	LGL.FrameTimeGoodCount=0;
+	LGL.FrameTimeMediumCount=0;
+	LGL.FrameTimeBadCount=0;
+	LGL.FrameTimeGoodTotal=0;
+	LGL.FrameTimeMediumTotal=0;
+	LGL.FrameTimeBadTotal=0;
+	LGL.FPSGraphTimer.Reset();
+}
 
 void
 LGL_ScreenShot
@@ -30352,7 +30418,7 @@ const bool debugMainThreadWaits=true;
 		}
 		else
 		{
-			ret = (SDL_SemWaitTimeout(Sem,(Uint32)(timeoutSeconds/1000.0))==0);
+			ret = (SDL_SemWaitTimeout(Sem,(Uint32)(timeoutSeconds*1000.0))==0);
 		}
 	}
 
@@ -30474,10 +30540,7 @@ Init
 	}
 	if(LockObtained==false)
 	{
-		/*
-		printf("Lock not obtained!! (timeout = %.2f) (sem = %s)\n",timeoutSeconds,Semaphore ? "OK" : "NULL");
-		printf("\tLikely, you haven't yet called LGL_Init()...\n");
-		*/
+		//printf("Lock not obtained!! (timeout = %.2f) (sem = %s)\n",timeoutSeconds,Semaphore ? "OK" : "NULL");
 	}
 }
 
