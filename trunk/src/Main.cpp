@@ -854,6 +854,8 @@ int main(int argc, char** argv)
 		600			//Particles Per Second
 	);
 
+	LGL_Timer frameTimeGraphResetTimer;
+
 	for(;;)
 	{
 		DrawFrame(false);
@@ -910,6 +912,10 @@ int main(int argc, char** argv)
 				drawFPS ? 1 : drawFPSSpike
 			);
 			*/
+			if(frameTimeGraphResetTimer.SecondsSinceLastReset()<0.25f)
+			{
+				LGL_ResetFrameTimeGraph();
+			}
 			LGL_DrawFrameTimeGraph
 			(
 				0.85f,0.95f,

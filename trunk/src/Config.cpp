@@ -104,7 +104,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"audioSamplePeriod=512\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"drawTurntablePreviews=1\n");
-		fprintf(fd,"videoBufferFrames=20\n");
+		fprintf(fd,"videoBufferFrames=120\n");
 		fprintf(fd,"videoBufferFramesFreqSense=2\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#3.2 MBps is highest quality for 1920x480@30fps.\n");
@@ -779,7 +779,7 @@ GetConfigAlwaysUseAudioInForFreqSense()
 int
 GetVideoBufferFrames()
 {
-	int videoBufferFrames=dvjrcConfigFile->read<int>("videoBufferFrames",20);
+	int videoBufferFrames=dvjrcConfigFile->read<int>("videoBufferFrames",120);
 	if(videoBufferFrames<=2)
 	{
 		videoBufferFrames=2;
