@@ -999,6 +999,8 @@ Turntable_DrawWaveform
 	const char*	soundName,
 	float		videoSecondsBufferedLeft,
 	float		videoSecondsBufferedRight,
+	float		videoSecondsLoadedLeft,
+	float		videoSecondsLoadedRight,
 	bool		isMaster,
 	bool		rapidVolumeInvertSelf,
 	float		beginningOfCurrentMeasureSeconds,
@@ -1280,7 +1282,8 @@ Turntable_DrawWaveform
 		long samplesPerLoopPeriod = secondsPerLoopPeriod*44100.0;
 
 		//Experimental frequency-sensitive renderer
-#if 1
+if(1)//LGL_KeyDown(LGL_KEY_RALT)==false)
+{
 		for(int z=-pointResolution;z<pointResolution*2;z++)
 		{
 			int a=z+pointResolution;
@@ -1474,7 +1477,7 @@ Turntable_DrawWaveform
 			3.5f,
 			!lowRez
 		);
-#endif
+}
 
 		//Draw Center Needle Rectangle
 		LGL_DrawRectToScreen
@@ -1500,8 +1503,35 @@ Turntable_DrawWaveform
 			LGL_DrawLineToScreen
 			(
 				centerX,
-				pointBottom,
+				pointTop,
 				videoBufferedLeft,
+				pointTop,
+				warmR,warmG,warmB,1.0f
+			);
+			LGL_DrawLineToScreen
+			(
+				centerX,
+				pointTop,
+				videoBufferedRight,
+				pointTop,
+				warmR,warmG,warmB,1.0f
+			);
+		}
+		if
+		(
+			videoSecondsLoadedLeft != 0 ||
+			videoSecondsLoadedRight != 0
+		)
+		{
+			float secondsRadius = (soundPositionSamples - sampleLeft)/44100.0f;
+			//float secondsNow = soundPositionSamples/44100.0f;
+			float videoLoadedLeft = centerX+(pointLeft-centerX)*(videoSecondsLoadedLeft/secondsRadius);
+			float videoLoadedRight = centerX+(pointRight-centerX)*(videoSecondsLoadedRight/secondsRadius);
+			LGL_DrawLineToScreen
+			(
+				centerX,
+				pointBottom,
+				videoLoadedLeft,
 				pointBottom,
 				warmR,warmG,warmB,1.0f
 			);
@@ -1509,7 +1539,7 @@ Turntable_DrawWaveform
 			(
 				centerX,
 				pointBottom,
-				videoBufferedRight,
+				videoLoadedRight,
 				pointBottom,
 				warmR,warmG,warmB,1.0f
 			);

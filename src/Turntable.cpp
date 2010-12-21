@@ -3976,10 +3976,14 @@ DrawFrame
 
 			float videoSecondsBufferedLeft=0.0f;
 			float videoSecondsBufferedRight=0.0f;
+			float videoSecondsLoadedLeft=0.0f;
+			float videoSecondsLoadedRight=0.0f;
 			if(VideoFront)
 			{
-				videoSecondsBufferedLeft=VideoFront->GetSecondsBufferedLeft();
-				videoSecondsBufferedRight=VideoFront->GetSecondsBufferedRight();
+				videoSecondsBufferedLeft=VideoFront->GetSecondsBufferedLeft(false,true);
+				videoSecondsBufferedRight=VideoFront->GetSecondsBufferedRight(false,true);
+				videoSecondsLoadedLeft=VideoFront->GetSecondsBufferedLeft(true,true);
+				videoSecondsLoadedRight=VideoFront->GetSecondsBufferedRight(true,true);
 			}
 			if(GetVideoBrightnessPreview()==0.0f)
 			{
@@ -4189,6 +4193,8 @@ DrawFrame
 				SoundName,						//52
 				videoSecondsBufferedLeft,				//53
 				videoSecondsBufferedRight,				//54
+				videoSecondsLoadedLeft,					//53a
+				videoSecondsLoadedRight,				//54a
 				Which==Master,						//55
 				RhythmicVolumeInvert,					//56
 				GetBeginningOfCurrentMeasureSeconds(),			//57

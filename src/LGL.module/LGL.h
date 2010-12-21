@@ -1138,20 +1138,22 @@ public:
 	int			GetFPSDisplayed();
 	int			GetFPSMissed();
 	LGL_Image*		GetImage();
-	double			GetSecondsBufferedLeft();
-	double			GetSecondsBufferedRight();
+	double			GetSecondsBufferedLeft(bool loaded, bool ready);
+	double			GetSecondsBufferedRight(bool loaded, bool ready);
 	void			SetFrameBufferAddBackwards(bool addBackwards=true);
 	int			GetFrameBufferAddRadius() const;
 	void			SetFrameBufferAddRadius(int frames);
 	void			InvalidateAllFrameBuffers();
+	void			SetNextRequestedDecodeFrame(long frameNum=-1);
+	long			GetNextRequestedDecodeFrame();
 
 	//Thread Functions
 
 	void			MaybeLoadVideo();
 	bool			MaybeLoadImage();
-	bool			MaybeProcessImage();
+	bool			MaybeProcessImage(long desiredFrameNum=-1, bool mainThread=true);
 	bool			MaybeDecodeImage();
-	void			MaybeRecycleBuffers();
+	void			MaybeRecycleBuffers(std::vector<lgl_FrameBuffer*>& bufferList);
 	bool			GetThreadTerminate();
 
 private:
@@ -1174,6 +1176,7 @@ private:
 	double			TimeSecondsPrev;
 	long			FrameNumberNext;
 	long			FrameNumberDisplayed;
+	long			NextRequestedDecodeFrame;
 
 	std::vector<lgl_FrameBuffer*>
 				FrameBufferReady;

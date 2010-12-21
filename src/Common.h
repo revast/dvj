@@ -166,6 +166,8 @@ Turntable_DrawWaveform
 	const char*	soundName,
 	float		videoSecondsBufferedLeft,
 	float		videoSecondsBufferedRight,
+	float		videoSecondsLoadedLeft,
+	float		videoSecondsLoadedRight,
 	bool		isMaster,
 	bool		rapidVolumeInvertSelf,
 	float		beginningOfCurrentMeasureSeconds,
