@@ -9807,6 +9807,10 @@ InvalidateAllFrameBuffers()
 			FrameBufferLoaded[a]->Invalidate();
 		}
 	}
+	if(Image)
+	{
+		Image->SetFrameNumber(-1);
+	}
 }
 
 void

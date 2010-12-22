@@ -1277,6 +1277,15 @@ NextFrame
 						sprintf(update,"ALPHA: %s",SoundName);
 						TrackListFileUpdates.push_back(update);
 
+						if(VideoFront)
+						{
+							VideoFront->InvalidateAllFrameBuffers();
+						}
+						if(VideoBack)
+						{
+							VideoBack->InvalidateAllFrameBuffers();
+						}
+
 						WhiteFactor=1.0f;
 						NoiseFactor=1.0f;
 						NoiseFactorVideo=1.0f;
@@ -2503,12 +2512,12 @@ NextFrame
 			VideoEncoderUnsupportedCodecTime=0.0f;
 			if(VideoFront)
 			{
-				VideoFront->GetImage()->SetFrameNumber(-1);
+				VideoFront->InvalidateAllFrameBuffers();
 				VideoFront->SetVideo(NULL);
 			}
 			if(VideoBack)
 			{
-				VideoBack->GetImage()->SetFrameNumber(-1);
+				VideoBack->InvalidateAllFrameBuffers();
 				VideoBack->SetVideo(NULL);
 			}
 			Mode=0;
