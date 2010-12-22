@@ -56,6 +56,7 @@ DrawLoadScreen
 		{
 			logo = new LGL_Image(loadScreenPath);
 		}
+		logo->InvertY=1;	//WHY??
 		logo->DrawToScreen();
 	}
 	else
