@@ -96,7 +96,7 @@
 #ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.85f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(-0.5f)//0.8f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
 #define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
 #define	LGL_PRIORITY_OSC		(0.85f)
@@ -3913,13 +3913,15 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 				LGL.FPSGraph[a]=LGL.FPSGraph[a+1];
 			}
 			LGL.FPSGraph[59]=1.0/LGL.SecondsSinceLastFrame;
-			if(LGL.SecondsSinceLastFrame<=1.0f/60.0f)
+			if(LGL.SecondsSinceLastFrame<=1.5f/60.0f)
 			{
 				LGL.FrameTimeGoodCount++;
+				LGL.FrameTimeGraph[59]=LGL_Min(LGL.FrameTimeGraph[59],1.0f/60.0f);
 			}
-			else if(LGL.SecondsSinceLastFrame<=2.0f/60.0f)
+			else if(LGL.SecondsSinceLastFrame<=2.5f/60.0f)
 			{
 				LGL.FrameTimeMediumCount++;
+				LGL.FrameTimeGraph[59]=LGL_Min(LGL.FrameTimeGraph[59],2.0f/60.0f);
 			}
 			else
 			{
@@ -7076,8 +7078,8 @@ UpdateTexture
 	assert(bytesperpixel==3 || bytesperpixel==4);
 	if(data==NULL)
 	{
-LGL_Assertf(data!=NULL,("LGL_Image::UpdateTexture(): NULL data! WTF!\n"));
-//printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
+//LGL_Assertf(data!=NULL,("LGL_Image::UpdateTexture(): NULL data! WTF!\n"));
+printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
 		return;
 	}
 	LinearInterpolation=inLinearInterpolation;
@@ -8987,7 +8989,7 @@ lgl_video_decoder_load_thread
 		}
 		else
 		{
-			LGL_DelayMS(0);
+			//LGL_DelayMS(0);
 		}
 	}
 
@@ -10082,9 +10084,12 @@ MaybeLoadImage()
 	*/
 	{
 		{
-			LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),150.0f/60.0f);
+			if(GetSecondsBufferedRight(true,true)*FPS>FrameBufferAddRadius*0.5f)
+			{
+				LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+			}
 		}
-		LGL_DelayMS(0);
+		//LGL_DelayMS(0);
 	}
 
 	MaybeRecycleBuffers(FrameBufferLoaded);
@@ -28799,18 +28804,18 @@ LGL_DrawFrameTimeGraph
 	float r=0;
 	float g=0;
 	float b=0;
-	float yellowPct=1.0f/3.0f;
-	float redPct=2.0f/3.0f;
+	float yellowPct=2.0f/3.0f;
+	float redPct=1.0f/3.0f;
 	for(int a=0;a<60;a++)
 	{
-		float h=LGL_Min(3.0f/60.0f,LGL.FrameTimeGraph[a])/(3.0f/60.0f);
-		if(h<yellowPct)
+		float h=1.0f-LGL_Min(1.0f,LGL.FrameTimeGraph[a]/(3.0f/60.0f));
+		if(h<redPct-0.01f)
 		{
-			r=0;
-			g=.5*brightness;
+			r=.5*brightness;
+			g=0;
 			b=0;
 		}
-		else if(h<redPct)
+		else if(h<yellowPct-0.01f)
 		{
 			r=.5*brightness;
 			g=.5*brightness;
@@ -28818,8 +28823,8 @@ LGL_DrawFrameTimeGraph
 		}
 		else
 		{
-			r=.5*brightness;
-			g=0;
+			r=0;
+			g=.5*brightness;
 			b=0;
 		}
 
@@ -28850,7 +28855,8 @@ LGL_DrawFrameTimeGraph
 	);
 
 	float textHeight=.10f*height+.10f*width;
-	
+
+	/*
 	LGL_GetFont().DrawString
 	(
 		.5f*(left+right),
@@ -28881,16 +28887,17 @@ LGL_DrawFrameTimeGraph
 		"%.0f%%",
 		LGL.FrameTimeMin/(1.0f/60.0f)*100.0f
 	);
+	*/
 
 	LGL_GetFont().DrawString
 	(
 		right+0.05f*width,
 		bottom+height*66.7f/100.0f + textHeight*0.25f,
 		textHeight,
-		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha ,
+		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha,
 		false,.5f*alpha,
 		"%i",
-		LGL.FrameTimeBadTotal
+		LGL.FrameTimeGoodTotal
 	);
 	LGL_GetFont().DrawString
 	(
@@ -28907,10 +28914,10 @@ LGL_DrawFrameTimeGraph
 		right+0.05f*width,
 		bottom+height*0.0f/100.0f + textHeight*0.25f,
 		textHeight,
-		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha,
+		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha ,
 		false,.5f*alpha,
 		"%i",
-		LGL.FrameTimeGoodTotal
+		LGL.FrameTimeBadTotal
 	);
 
 	LGL_DrawLineToScreen
