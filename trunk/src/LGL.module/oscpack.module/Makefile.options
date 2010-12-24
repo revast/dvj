@@ -1,0 +1,8 @@
+DIRECTORY_NAME = oscpack.module
+
+ROOT_SRC_DIR = ../../
+
+CREATE_BINARY = 0
+
+PREFIX_BIN = oscpack
+
