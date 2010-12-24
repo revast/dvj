@@ -27,31 +27,46 @@
 	CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-#include "ip/NetworkingUtils.h"
+#ifndef INCLUDED_OSCPACKETLISTENER_H
+#define INCLUDED_OSCPACKETLISTENER_H
 
-#include <netdb.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
+#include "OscReceivedElements.h"
+#include "PacketListener.h"
 
 
+namespace osc{
 
-NetworkInitializer::NetworkInitializer() {}
+class OscPacketListener : public PacketListener{ 
+protected:
+    virtual void ProcessBundle( const osc::ReceivedBundle& b, 
+				const IpEndpointName& remoteEndpoint )
+    {
+        // ignore bundle time tag for now
 
-NetworkInitializer::~NetworkInitializer() {}
-
-
-unsigned long GetHostByName( const char *name )
-{
-    unsigned long result = 0;
-
-    struct hostent *h = gethostbyname( name );
-    if( h ){
-        struct in_addr a;
-        memcpy( &a, h->h_addr_list[0], h->h_length );
-        result = ntohl(a.s_addr);
+        for( ReceivedBundle::const_iterator i = b.ElementsBegin(); 
+				i != b.ElementsEnd(); ++i ){
+            if( i->IsBundle() )
+                ProcessBundle( ReceivedBundle(*i), remoteEndpoint );
+            else
+                ProcessMessage( ReceivedMessage(*i), remoteEndpoint );
+        }
     }
 
-    return result;
-}
+    virtual void ProcessMessage( const osc::ReceivedMessage& m, 
+				const IpEndpointName& remoteEndpoint ) = 0;
+    
+public:
+	virtual void ProcessPacket( const char *data, int size, 
+			const IpEndpointName& remoteEndpoint )
+    {
+        osc::ReceivedPacket p( data, size );
+        if( p.IsBundle() )
+            ProcessBundle( ReceivedBundle(p), remoteEndpoint );
+        else
+            ProcessMessage( ReceivedMessage(p), remoteEndpoint );
+    }
+};
+
+} // namespace osc
+
+#endif /* INCLUDED_OSCPACKETLISTENER_H */
