@@ -35,7 +35,6 @@ all:
 	cp -v $(LIB_LOCAL)/libjack.0.dylib $(LIB_DVJ)
 	cp -v $(LIB_LOCAL)/libjackserver.0.dylib $(LIB_DVJ)
 	cp -v $(LIB_LOCAL)/jack/jack_coreaudio.so $(LIB_DVJ)/jack
-	cp -v $(LIB_LOCAL)/liboscpack.so $(LIB_DVJ)
 	install_name_tool -change $(LIB_LOCAL)/libSDL_image-1.2.0.dylib @executable_path/lib/libSDL_image-1.2.0.dylib $(DST_DVJ)
 	install_name_tool -change $(LIB_LOCAL)/libjpeg.62.dylib @executable_path/lib/libjpeg.62.dylib $(DST_DVJ)
 	install_name_tool -change $(LIB_LOCAL)/libSDL_net-1.2.0.dylib @executable_path/lib/libSDL_net-1.2.0.dylib $(DST_DVJ)
@@ -48,7 +47,6 @@ all:
 	install_name_tool -change $(LIB_LOCAL)/libjpeg.62.dylib @executable_path/lib/libjpeg.62.dylib $(LIB_DVJ)/libSDL_image-1.2.0.dylib
 	install_name_tool -change $(LIB_LOCAL)/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(LIB_DVJ)/libSDL_image-1.2.0.dylib
 	install_name_tool -change $(LIB_LOCAL)/libSDL-1.3.0.dylib @executable_path/lib/libSDL-1.3.0.dylib $(LIB_DVJ)/libSDL_net-1.2.0.dylib
-	install_name_tool -change $(LIB_LOCAL)/liboscpack.so @executable_path/lib/liboscpack.so $(DST_DVJ)
 	cp -v $(DST_DVJ) $(DST_ZTRON)
 	cp -v $(DVJ_GLSL)/* $(ZTRON_GLSL)
 	cp -v $(MACOS_DVJ)/jackd $(MACOS_ZTRON)
