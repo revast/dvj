@@ -889,7 +889,7 @@ int main(int argc, char** argv)
 		);
 		*/
 		drawFPSSpike = LGL_Max(0.0f,drawFPSSpike-LGL_SecondsSinceLastFrame());
-		if(LGL_FPS()<50 || LGL_KeyDown(LGL_KEY_RALT))
+		if(LGL_FPS()<GetFPSMax()*0.9f || LGL_KeyDown(LGL_KEY_RALT))
 		{
 			drawFPSSpike=5.0f;
 		}

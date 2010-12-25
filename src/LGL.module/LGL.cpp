@@ -1241,7 +1241,7 @@ lgl_get_vsync_semaphore()
 LGL_Semaphore&
 lgl_get_av_semaphore()
 {
-	static LGL_Semaphore sem("av_semaphore",false);	//Promiscuous?!
+	static LGL_Semaphore sem("av_semaphore",true);	//Promiscuous?!
 	return(sem);
 }
 
@@ -1623,6 +1623,42 @@ lgl_sws_scale
 			srcSliceH,
 			dst,
 			dstStride
+		)
+	);
+}
+
+struct SwsContext*
+lgl_sws_getContext
+(
+	int			srcW,
+	int			srcH,
+	enum PixelFormat	srcFormat,
+	int			dstW,
+	int			dstH,
+	enum PixelFormat	dstFormat,
+	int			flags,
+	SwsFilter*		srcFilter,
+	SwsFilter*		dstFilter,
+	const double*		param
+)
+{
+	//static LGL_Semaphore localSem("lgl_sws_scale");
+	//LGL_ScopeLock localLock(localSem);
+
+	return
+	(
+		sws_getContext
+		(
+			srcW,
+			srcH,
+			srcFormat,
+			dstW,
+			dstH,
+			dstFormat,
+			flags,
+			srcFilter,
+			dstFilter,
+			param
 		)
 	);
 }
@@ -8942,6 +8978,7 @@ lgl_debug_process_in_thread()
 	return(false);
 }
 
+#if 0
 int
 lgl_video_decoder_decode_thread
 (
@@ -8965,6 +9002,7 @@ lgl_video_decoder_decode_thread
 
 	return(0);
 }
+#endif
 
 int
 lgl_video_decoder_load_thread
@@ -10029,7 +10067,7 @@ MaybeLoadVideo()
 		BufferWidth=CodecContext->width;
 		BufferHeight=CodecContext->height;
 
-		SwsConvertContextBGRA = sws_getContext
+		SwsConvertContextBGRA = lgl_sws_getContext
 		(
 			//src
 			BufferWidth,
@@ -10442,18 +10480,37 @@ MaybeProcessImage
 					BufferWidth,
 					BufferHeight
 				);
+				
+				if(SwsConvertContextBGRA==NULL)
 				{
-					lgl_sws_scale
-					(
-						SwsConvertContextBGRA,
-						FrameNative->data,
-						FrameNative->linesize,
-						0, 
-						BufferHeight,
-						FrameRGB->data,
-						FrameRGB->linesize
-					);
+					printf("NULL SwsConvertContextBGRA!\n");
 				}
+				if(FrameNative==NULL)
+				{
+					printf("NULL FrameNative!\n");
+				}
+				else if(FrameNative->data==NULL)
+				{
+					printf("NULL FrameNative->data!\n");
+				}
+				if(FrameRGB==NULL)
+				{
+					printf("NULL FrameRGB!\n");
+				}
+				else if(FrameRGB->data==NULL)
+				{
+					printf("NULL FrameRGB->data!\n");
+				}
+				lgl_sws_scale
+				(
+					SwsConvertContextBGRA,
+					FrameNative->data,
+					FrameNative->linesize,
+					0, 
+					BufferHeight,
+					FrameRGB->data,
+					FrameRGB->linesize
+				);
 			}
 		}
 		frameRead=true;
@@ -10537,6 +10594,7 @@ MaybeProcessImage
 	return(frameRead);
 }
 
+#if 0
 bool
 LGL_VideoDecoder::
 MaybeDecodeImage()
@@ -10772,6 +10830,7 @@ MaybeDecodeImage()
 
 	return(frameRead);
 }
+#endif
 
 void
 LGL_VideoDecoder::
@@ -11398,7 +11457,7 @@ IsYUV420P()
 {
 	return
 	(
-		false &&
+		LGL_KeyDown(LGL_KEY_F4) &&
 		CodecContext &&
 		CodecContext->pix_fmt==PIX_FMT_YUV420P
 	);
@@ -11724,7 +11783,7 @@ LGL_VideoEncoder
 			return;
 		}
 
-		SwsConvertContextYUV = sws_getContext
+		SwsConvertContextYUV = lgl_sws_getContext
 		(
 			//src
 			SrcBufferWidth,
@@ -11747,7 +11806,7 @@ LGL_VideoEncoder
 			return;
 		}
 
-		SwsConvertContextBGRA = sws_getContext
+		SwsConvertContextBGRA = lgl_sws_getContext
 		(
 			//src
 			DstCodecContext->width,
