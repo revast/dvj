@@ -876,8 +876,8 @@ NextFrame
 	const int pageSize=2048;
 	for(unsigned long a=SoundBufferCurrentPageIndex;a<SoundBufferLength;a+=pageSize)
 	{
-		Uint8 pageMeInFucker = SoundBuffer[a];
-		candidate+=pageMeInFucker*0;
+		Uint8 pageMeIn = SoundBuffer[a];
+		candidate+=pageMeIn*0;
 
 		SoundBufferCurrentPageIndex=a+pageSize;
 		loops++;
@@ -1842,21 +1842,6 @@ NextFrame
 								break;
 							}
 						}
-
-						/*
-						double beatStart=GetBPMFirstMeasureSeconds();
-						double measureLength=GetMeasureLengthSeconds();
-						double percent=GetPercentOfCurrentMeasure();
-						if(beatStart<candidateSeconds)
-						{
-							double measureNow=beatStart;
-							while(measureNow+measureLength<candidateSeconds)
-							{
-								measureNow+=measureLength;
-							}
-							candidateSeconds=measureNow+percent*measureLength;
-						}
-						*/
 					}
 					//Sound->SetPositionSeconds(Channel,candidateSeconds);
 
@@ -1962,6 +1947,10 @@ NextFrame
 		}
 
 		//Looping
+		const int exponentMin=-9;
+		const int exponentMax=6;
+		const int exponentAll=9999;
+
 		bool loopActiveLastFrame = LoopActive;
 		bool loopThenRecallActiveLastFrame = LoopThenRecallActive;
 
@@ -1969,11 +1958,21 @@ NextFrame
 		{
 			LoopActive=false;
 		}
+		bool loopToggle = GetInput().WaveformLoopToggle(target);
 		LoopActive = 
 		(
-			(GetInput().WaveformLoopToggle(target) ? !LoopActive : LoopActive) &&
+			(loopToggle ? !LoopActive : LoopActive) &&
 			RhythmicVolumeInvert==false
 		);
+		if
+		(
+			LoopActive==false &&
+			loopActiveLastFrame &&
+			QuantizePeriodMeasuresExponent==exponentAll
+		)
+		{
+			QuantizePeriodMeasuresExponent=QuantizePeriodMeasuresExponentRemembered;
+		}
 		LoopThenRecallActive =
 		(
 			GetInput().WaveformLoopThenRecallActive(target) &&
@@ -2004,9 +2003,6 @@ NextFrame
 		)
 		{
 			//Looping with BPM
-			const int exponentMin=-9;
-			const int exponentMax=6;
-			const int exponentAll=9999;
 
 			if
 			(
@@ -2014,6 +2010,10 @@ NextFrame
 				Sound->IsLoaded()
 			)
 			{
+				if(QuantizePeriodMeasuresExponent!=exponentAll)
+				{
+					QuantizePeriodMeasuresExponentRemembered=QuantizePeriodMeasuresExponent;
+				}
 				QuantizePeriodMeasuresExponent=exponentAll;
 				loopChanged=true;
 				LoopActive=true;
