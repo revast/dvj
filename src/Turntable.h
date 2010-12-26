@@ -255,6 +255,7 @@ private:
 	double				LoopAlphaSeconds;
 	double				LoopOmegaSeconds;
 	int				QuantizePeriodMeasuresExponent;
+	int				QuantizePeriodMeasuresExponentRemembered;
 	double				QuantizePeriodNoBPMSeconds;
 	bool				LoopActive;
 	bool				LoopThenRecallActive;
