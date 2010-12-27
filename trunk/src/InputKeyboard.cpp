@@ -726,7 +726,10 @@ WaveformSavePointUnsetPercent
 
 	if(target & TARGET_FOCUS)
 	{
-		percent=LGL_Clamp(0.0f,2.0f*WaveformSavePointUnsetTimer.SecondsSinceLastReset(),1.0f);
+		if(LGL_KeyDown(GetInputKeyboardWaveformSavePointSetKey()))
+		{
+			percent=LGL_Clamp(0.0f,2.0f*WaveformSavePointUnsetTimer.SecondsSinceLastReset(),1.0f);
+		}
 	}
 	else
 	{
