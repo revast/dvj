@@ -177,6 +177,7 @@ Turntable_DrawWaveform
 	float		freqSenseLEDBrightness,
 	float		freqSenseLEDColorScalarLow,
 	float		freqSenseLEDColorScalarHigh,
+	float		freqSenseLEDBrightnessWash,
 	float		freqSenseLEDGroupFloat,
 	int		freqSenseLEDGroupInt,
 	int		channel,
@@ -201,6 +202,7 @@ Turntable_DrawSliders
 	float		freqSenseLEDBrightness,
 	float		freqSenseLEDColorScalarLow,
 	float		freqSenseLEDColorScalarHigh,
+	float		freqSenseLEDBrightnessWash,
 	float		freqSenseLEDGroupFloat,
 	int		freqSenseLEDGroupInt
 );

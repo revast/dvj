@@ -77,6 +77,7 @@ public:
 	float				GetEjectVisualBrightnessScalar();
 	LGL_Color			GetFreqSenseLEDColorLow(int group);
 	LGL_Color			GetFreqSenseLEDColorHigh(int group);
+	float				GetFreqSenseLEDBrightnessWash(int group);
 	bool				GetAudioInputMode();
 
 	void				SetMixerVolumeFront(float scalar);
@@ -306,6 +307,7 @@ static	VisualizerObj*			Visualizer;
 	float				FreqSenseLEDBrightness[LED_GROUP_MAX];
 	float				FreqSenseLEDColorScalarLow[LED_GROUP_MAX];
 	float				FreqSenseLEDColorScalarHigh[LED_GROUP_MAX];
+	float				FreqSenseLEDBrightnessWash[LED_GROUP_MAX];
 	bool				AudioInputMode;
 	LGL_Timer			VideoFrontRadiusIncreaseDelayTimer;
 

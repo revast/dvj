@@ -671,6 +671,7 @@ TurntableObj
 		FreqSenseLEDBrightness[g]=0.0f;
 		FreqSenseLEDColorScalarLow[g]=4.0f/6.0f;
 		FreqSenseLEDColorScalarHigh[g]=5.0f/6.0f;
+		FreqSenseLEDBrightnessWash[g]=0.0f;
 	}
 
 	AudioInputMode=false;
@@ -2428,7 +2429,7 @@ NextFrame
 				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()]=newBright;
 			}
 
-			//Color Low
+			//Color Low/High
 			for(int f=0;f<2;f++)
 			{
 				float& targetColor =
@@ -2465,6 +2466,32 @@ NextFrame
 					);
 					targetColor=newColor;
 				}
+			}
+
+			//Brightness Wash
+			newBright=GetInput().WaveformFreqSenseLEDBrightnessWash(target);
+			if(newBright==-1.0f)
+			{
+				float delta = GetInput().WaveformFreqSenseLEDBrightnessWashDelta(target);
+				if(delta!=0.0f)
+				{
+					newBright=LGL_Clamp
+					(
+						0.0f,
+						FreqSenseLEDBrightnessWash[GetFreqSenseLEDGroupInt()]+delta,
+						1.0f
+					);
+				}
+			}
+			if(newBright!=-1.0f)
+			{
+				newBright=LGL_Clamp
+				(
+					0.0f,
+					newBright,
+					1.0f
+				);
+				FreqSenseLEDBrightnessWash[GetFreqSenseLEDGroupInt()]=newBright;
 			}
 		}
 
@@ -4284,6 +4311,7 @@ DrawFrame
 				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()],	//60
 				FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()],	//60
 				FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()],	//60
+				FreqSenseLEDBrightnessWash[GetFreqSenseLEDGroupInt()],	//60
 				FreqSenseLEDGroupFloat,					//60
 				GetFreqSenseLEDGroupInt(),				//60
 				Channel,						//61
@@ -4740,6 +4768,17 @@ GetFreqSenseLEDBrightnessFinal
 		GetVisualBrightnessFinal()*
 		FreqSenseLEDBrightness[group]
 	);
+}
+
+float
+TurntableObj::
+GetFreqSenseLEDBrightnessWash
+(
+	int	group
+)
+{
+	group=LGL_Clamp(0,group,LED_GROUP_MAX-1);
+	return(FreqSenseLEDBrightnessWash[group]);
 }
 
 void

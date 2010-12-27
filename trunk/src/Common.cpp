@@ -1011,6 +1011,7 @@ Turntable_DrawWaveform
 	float		freqSenseLEDBrightness,
 	float		freqSenseLEDColorScalarLow,
 	float		freqSenseLEDColorScalarHigh,
+	float		freqSenseLEDBrightnessWash,
 	float		freqSenseLEDGroupFloat,
 	int		freqSenseLEDGroupInt,
 	int		channel,
@@ -3077,6 +3078,7 @@ if(1)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		freqSenseLEDBrightness,
 		freqSenseLEDColorScalarLow,
 		freqSenseLEDColorScalarHigh,
+		freqSenseLEDBrightnessWash,
 		freqSenseLEDGroupFloat,
 		freqSenseLEDGroupInt
 	);
@@ -3100,6 +3102,7 @@ Turntable_DrawSliders
 	float		freqSenseLEDBrightness,
 	float		freqSenseLEDColorScalarLow,
 	float		freqSenseLEDColorScalarHigh,
+	float		freqSenseLEDBrightnessWash,
 	float		freqSenseLEDGroupFloat,
 	int		freqSenseLEDGroupInt
 )
@@ -3142,12 +3145,13 @@ Turntable_DrawSliders
 	letters[1]='M';
 	letters[2]='H';
 	letters[3]='G';
-	letters[5]='V';
-	letters[6]='O';
-	letters[7]='F';
-	letters[8]='L';
-	letters[9]='c';
-	letters[10]='C';
+	letters[4]='V';
+	letters[5]='O';
+	letters[6]='F';
+	letters[7]='L';
+	letters[8]='c';
+	letters[9]='C';
+	letters[10]='B';
 	letters[11]='0'+freqSenseLEDGroupInt;
 
 	LGL_Color letterColors[12];
@@ -3155,7 +3159,8 @@ Turntable_DrawSliders
 	{
 		letterColors[l].SetRGBA(1.0f,1.0f,1.0f,1.0f);
 	}
-	letterColors[9]=GetColorFromScalar(freqSenseLEDColorScalarLow);
+	letterColors[8]=GetColorFromScalar(freqSenseLEDColorScalarLow);
+	letterColors[9]=GetColorFromScalar(freqSenseLEDColorScalarHigh);
 	letterColors[10]=GetColorFromScalar(freqSenseLEDColorScalarHigh);
 
 	DVJ_GuiElement guiElements[12];
@@ -3167,12 +3172,13 @@ Turntable_DrawSliders
 	guiElements[1]=GUI_ELEMENT_EQ_MID;
 	guiElements[2]=GUI_ELEMENT_EQ_HIGH;
 	guiElements[3]=GUI_ELEMENT_EQ_GAIN;
-	guiElements[5]=GUI_ELEMENT_VIS_VIDEO;
-	guiElements[6]=GUI_ELEMENT_VIS_OSCILLOSCOPE;
-	guiElements[7]=GUI_ELEMENT_VIS_FREQSENSE;
-	guiElements[8]=GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS;
-	guiElements[9]=GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW;
-	guiElements[10]=GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH;
+	guiElements[4]=GUI_ELEMENT_VIS_VIDEO;
+	guiElements[5]=GUI_ELEMENT_VIS_OSCILLOSCOPE;
+	guiElements[6]=GUI_ELEMENT_VIS_FREQSENSE;
+	guiElements[7]=GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS;
+	guiElements[8]=GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW;
+	guiElements[9]=GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH;
+	guiElements[10]=GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS_WASH;
 	guiElements[11]=GUI_ELEMENT_VIS_FREQSENSE_LED_GROUP_FLOAT;
 
 	float levels[12];
@@ -3184,12 +3190,13 @@ Turntable_DrawSliders
 	levels[1]=eq[1];
 	levels[2]=eq[2];
 	levels[3]=LGL_Clamp(0.0f,gain*0.5f,1.0f);
-	levels[5]=videoBrightness;
-	levels[6]=oscilloscopeBrightness;
-	levels[7]=freqSenseBrightness;
-	levels[8]=freqSenseLEDBrightness;
-	levels[9]=freqSenseLEDColorScalarLow;
-	levels[10]=freqSenseLEDColorScalarHigh;
+	levels[4]=videoBrightness;
+	levels[5]=oscilloscopeBrightness;
+	levels[6]=freqSenseBrightness;
+	levels[7]=freqSenseLEDBrightness;
+	levels[8]=freqSenseLEDColorScalarLow;
+	levels[9]=freqSenseLEDColorScalarHigh;
+	levels[10]=freqSenseLEDBrightnessWash;
 	levels[11]=freqSenseLEDGroupFloat;
 
 	for(int f=0;f<12;f++)

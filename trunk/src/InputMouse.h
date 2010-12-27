@@ -122,6 +122,8 @@ virtual float	WaveformFreqSenseLEDColorScalarLow
 virtual float	WaveformFreqSenseLEDColorScalarHigh
 						(unsigned int target)	const;
 virtual	float	WaveformFreqSenseLEDBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
+virtual	float	WaveformFreqSenseLEDBrightnessWash
+						(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	bool	WaveformAudioInputToggle	(unsigned int target)	const;	//Set audio input mode
 virtual	bool	WaveformVideoAspectRatioNext	(unsigned int target)	const;	//Advance to next aspect ratio mode
 virtual	float	WaveformOscilloscopeBrightness	(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader

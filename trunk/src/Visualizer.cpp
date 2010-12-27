@@ -564,9 +564,10 @@ DrawVisuals
 				{
 					float ejectBrightnessScalar=tts[t]->GetEjectVisualBrightnessScalar();
 					float freqSenseLEDBright=tts[t]->GetFreqSenseLEDBrightnessFinal(g);
+					float freqSenseLEDBrightWash=tts[t]->GetFreqSenseLEDBrightnessWash(g);
 					freqSenseLEDBright*=ejectBrightnessScalar;
 					float brL=brLow[t]*freqSenseLEDBright;
-					float brH=brHigh[t]*freqSenseLEDBright;
+					float brH=LGL_Min(brHigh[t]+freqSenseLEDBrightWash,1.0f)*freqSenseLEDBright;
 					LGL_Color colorL = tts[t]->GetFreqSenseLEDColorLow(g);
 					LGL_Color colorH = tts[t]->GetFreqSenseLEDColorHigh(g);
 

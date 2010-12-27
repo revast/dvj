@@ -107,6 +107,8 @@ float	InputWaveformFreqSenseLEDColorScalarHigh(unsigned int target);
 float	InputWaveformFreqSenseLEDColorScalarHighDelta(unsigned int target);
 float	InputWaveformFreqSenseLEDBrightness(unsigned int target);
 float	InputWaveformFreqSenseLEDBrightnessDelta(unsigned int target);
+float	InputWaveformFreqSenseLEDBrightnessWash(unsigned int target);
+float	InputWaveformFreqSenseLEDBrightnessWashDelta(unsigned int target);
 float	InputWaveformAudioInputToggle(unsigned int target);
 float	InputWaveformVideoAspectRatioNext(unsigned int target);
 float	InputWaveformOscilloscopeBrightness(unsigned int target);
@@ -134,6 +136,7 @@ typedef enum
 	GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW,
 	GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH,
 	GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS,
+	GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS_WASH,
 	GUI_ELEMENT_SAVEPOINT_BPM_ALPHA,
 	GUI_ELEMENT_SAVEPOINT_BPM_OMEGA,
 	GUI_ELEMENT_SAVEPOINT_0,
@@ -260,6 +263,10 @@ virtual float	WaveformFreqSenseLEDColorScalarHighDelta
 						(unsigned int target)	const;
 virtual	float	WaveformFreqSenseLEDBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	float	WaveformFreqSenseLEDBrightnessDelta
+						(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
+virtual	float	WaveformFreqSenseLEDBrightnessWash
+						(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
+virtual	float	WaveformFreqSenseLEDBrightnessWashDelta
 						(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	bool	WaveformAudioInputToggle	(unsigned int target)	const;	//Set audio input mode
 virtual	bool	WaveformVideoAspectRatioNext	(unsigned int target)	const;	//Advance to next aspect ratio mode
