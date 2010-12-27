@@ -664,7 +664,15 @@ TurntableObj
 	VideoBrightness=1.0f;
 	OscilloscopeBrightness=0.0f;
 	FreqSenseBrightness=0.0f;
-	FreqSenseLEDBrightness=0.0f;
+
+	FreqSenseLEDGroupFloat=0.0f;
+	for(int g=0;g<LED_GROUP_MAX;g++)
+	{
+		FreqSenseLEDBrightness[g]=0.0f;
+		FreqSenseLEDColorScalarLow[g]=4.0f/6.0f;
+		FreqSenseLEDColorScalarHigh[g]=5.0f/6.0f;
+	}
+
 	AudioInputMode=false;
 
 	VideoEncoder=NULL;
@@ -828,6 +836,8 @@ NextFrame
 	float	secondsElapsed
 )
 {
+	//Debug
+
 	//Deal with low memory
 	{
 		if(LGL_AudioJackXrun())
@@ -839,7 +849,7 @@ NextFrame
 		{
 			if(VideoFront->GetFrameBufferAddRadius()>2)
 			{
-				VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()-1);
+				//VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()-1);
 			}
 		}
 		else if(LGL_RamFreeMB()>200)
@@ -1645,6 +1655,12 @@ NextFrame
 			)
 			{
 				//Unset Save Point
+				if(GetInputTester().GetEnable())
+				{
+					printf("BAD UNSET!! Input: %.2f\n",GetInput().WaveformSavePointUnsetPercent(target));
+					printf("BAD UNSET!! InputTester: %.2f\n",GetInputTester().WaveformSavePointUnsetPercent(target));
+					assert(GetInputTester().GetEnable()==false);
+				}
 				SavePointSeconds[SavePointIndex]=-1.0f;
 				SavePointUnsetFlashPercent[SavePointIndex]=1.0f;
 				SaveMetaData();
@@ -2359,23 +2375,97 @@ NextFrame
 		}
 
 		//LEDs
-		newBright=GetInput().WaveformFreqSenseLEDBrightness(target);
-		if(newBright==-1.0f)
 		{
-			float delta = GetInput().WaveformFreqSenseLEDBrightnessDelta(target);
-			if(delta!=0.0f)
+			//Group
+			float newGroup=GetInput().WaveformFreqSenseLEDGroupFloat(target);
+			if(newGroup==-1.0f)
+			{
+				float delta = GetInput().WaveformFreqSenseLEDGroupFloatDelta(target);
+				if(delta!=0.0f)
+				{
+					newGroup=LGL_Clamp
+					(
+						0.0f,
+						FreqSenseLEDGroupFloat+delta,
+						1.0f
+					);
+				}
+			}
+			if(newGroup!=-1.0f)
+			{
+				newGroup=LGL_Clamp
+				(
+					0.0f,
+					newGroup,
+					1.0f
+				);
+				FreqSenseLEDGroupFloat=newGroup;
+			}
+
+			//Brightness
+			newBright=GetInput().WaveformFreqSenseLEDBrightness(target);
+			if(newBright==-1.0f)
+			{
+				float delta = GetInput().WaveformFreqSenseLEDBrightnessDelta(target);
+				if(delta!=0.0f)
+				{
+					newBright=LGL_Clamp
+					(
+						0.0f,
+						FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()]+delta,
+						1.0f
+					);
+				}
+			}
+			if(newBright!=-1.0f)
 			{
 				newBright=LGL_Clamp
 				(
 					0.0f,
-					FreqSenseLEDBrightness+delta,
+					newBright,
 					1.0f
 				);
+				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()]=newBright;
 			}
-		}
-		if(newBright!=-1.0f)
-		{
-			FreqSenseLEDBrightness=newBright;
+
+			//Color Low
+			for(int f=0;f<2;f++)
+			{
+				float& targetColor =
+					(f==0) ?
+					FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()] :
+					FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()];
+				float newColor=
+					(f==0) ?
+					GetInput().WaveformFreqSenseLEDColorScalarLow(target) :
+					GetInput().WaveformFreqSenseLEDColorScalarHigh(target);
+				if(newColor==-1.0f)
+				{
+					float delta =
+						(f==0) ?
+						GetInput().WaveformFreqSenseLEDColorScalarLowDelta(target) :
+						GetInput().WaveformFreqSenseLEDColorScalarHighDelta(target);
+					if(delta!=0.0f)
+					{
+						newColor=LGL_Clamp
+						(
+							0.0f,
+							targetColor+delta,
+							1.0f
+						);
+					}
+				}
+				if(newColor!=-1.0f)
+				{
+					newColor=LGL_Clamp
+					(
+						0.0f,
+						newColor,
+						1.0f
+					);
+					targetColor=newColor;
+				}
+			}
 		}
 
 		float newRate=GetInput().WaveformVideoAdvanceRate(target);
@@ -3690,31 +3780,12 @@ DrawFrame
 					top,
 					true
 				);
-				if(FreqSenseLEDBrightness>0.0f)
+				if(GetFreqSenseLEDBrightnessPreview()>0.0f)
 				{
-					float volAve;
-					float volMax;
-					float freqFactor;
-					GetFreqMetaData(volAve,volMax,freqFactor);
-
-					if
-					(
-						GetFreqBrightness(false,freqFactor,2*volAve,(AudioInputMode ? GetEQLo() : 0.5f))==0.0f &&
-						GetFreqBrightness(true,freqFactor,2*volAve,(AudioInputMode ? GetEQHi() : 0.5f))==0.0f
-					)
-					{
-						freqFactor=0.0f;
-					}
-
-					float r=
-						(1.0f-freqFactor)*coolR+
-						(0.0f+freqFactor)*warmR;
-					float g=
-						(1.0f-freqFactor)*coolG+
-						(0.0f+freqFactor)*coolG;
-					float b=
-						(1.0f-freqFactor)*coolB+
-						(0.0f+freqFactor)*coolB;
+					LGL_Color color = GetVisualizer()->GetLEDColor(GetFreqSenseLEDGroupInt());
+					float r=color.GetR();
+					float g=color.GetG();
+					float b=color.GetB();
 
 					LGL_DrawLineToScreen
 					(
@@ -4210,7 +4281,11 @@ DrawFrame
 				VideoBrightness,					//58
 				OscilloscopeBrightness,					//59
 				FreqSenseBrightness,					//60
-				FreqSenseLEDBrightness,					//60
+				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()],	//60
+				FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()],	//60
+				FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()],	//60
+				FreqSenseLEDGroupFloat,					//60
+				GetFreqSenseLEDGroupInt(),				//60
 				Channel,						//61
 				recallPos						//62
 			);
@@ -4648,18 +4723,22 @@ GetFreqSenseLEDBrightnessPreview()
 	return
 	(
 		GetVisualBrightnessPreview()*
-		FreqSenseLEDBrightness
+		FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()]
 	);
 }
 
 float
 TurntableObj::
-GetFreqSenseLEDBrightnessFinal()
+GetFreqSenseLEDBrightnessFinal
+(
+	int	group
+)
 {
+	group=LGL_Clamp(0,group,LED_GROUP_MAX-1);
 	return
 	(
 		GetVisualBrightnessFinal()*
-		FreqSenseLEDBrightness
+		FreqSenseLEDBrightness[group]
 	);
 }
 
@@ -5582,6 +5661,26 @@ UpdateSoundFreqResponse()
 	}
 }
 
+int
+TurntableObj::
+GetFreqSenseLEDGroupInt()
+{
+	return
+	(
+		(int)
+		LGL_Clamp
+		(
+			0,
+			(int)floorf
+			(
+				FreqSenseLEDGroupFloat*
+				GetVisualizer()->GetLEDGroupCount()
+			),
+			GetVisualizer()->GetLEDGroupCount()-1
+		)
+	);
+}
+
 float
 TurntableObj::
 GetEjectVisualBrightnessScalar()
@@ -5591,6 +5690,28 @@ GetEjectVisualBrightnessScalar()
 		1.0f-
 		NoiseFactor
 	);
+}
+
+LGL_Color
+TurntableObj::
+GetFreqSenseLEDColorLow
+(
+	int	group
+)
+{
+	group=LGL_Clamp(0,group,LED_GROUP_MAX-1);
+	return(GetColorFromScalar(FreqSenseLEDColorScalarLow[group]));
+}
+
+LGL_Color
+TurntableObj::
+GetFreqSenseLEDColorHigh
+(
+	int	group
+)
+{
+	group=LGL_Clamp(0,group,LED_GROUP_MAX-1);
+	return(GetColorFromScalar(FreqSenseLEDColorScalarHigh[group]));
 }
 
 bool

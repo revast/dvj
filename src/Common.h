@@ -174,7 +174,11 @@ Turntable_DrawWaveform
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
-	float		freqSenseLEdBrightness,
+	float		freqSenseLEDBrightness,
+	float		freqSenseLEDColorScalarLow,
+	float		freqSenseLEDColorScalarHigh,
+	float		freqSenseLEDGroupFloat,
+	int		freqSenseLEDGroupInt,
 	int		channel,
 	float		recallPos
 );
@@ -194,7 +198,11 @@ Turntable_DrawSliders
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
-	float		freqSenseLEDBrightness
+	float		freqSenseLEDBrightness,
+	float		freqSenseLEDColorScalarLow,
+	float		freqSenseLEDColorScalarHigh,
+	float		freqSenseLEDGroupFloat,
+	int		freqSenseLEDGroupInt
 );
 
 void
@@ -212,6 +220,12 @@ GetFreqBrightness
 	float	freqFactor,
 	float	vol,
 	float	exagertionFactor=0.5f
+);
+
+LGL_Color
+GetColorFromScalar
+(
+	float	scalar
 );
 
 #endif	//_DVJ_COMMON_H_

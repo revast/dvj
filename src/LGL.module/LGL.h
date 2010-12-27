@@ -1116,6 +1116,7 @@ private:
 	int			BufferHeight;
 	long			FrameNumber;
 	AVPacket*		Packet;
+	LGL_Semaphore		PacketSemaphore;
 
 };
 
@@ -1152,7 +1153,7 @@ public:
 
 	void			MaybeLoadVideo();
 	bool			MaybeLoadImage();
-	bool			MaybeProcessImage(long desiredFrameNum=-1, bool mainThread=true);
+	bool			MaybeProcessImage(long desiredFrameNum=-1);
 	bool			MaybeDecodeImage();
 	void			MaybeRecycleBuffers(std::vector<lgl_FrameBuffer*>& bufferList);
 	bool			GetThreadTerminate();
@@ -1245,6 +1246,7 @@ private:
 	lgl_FrameBuffer*	GetRecycledFrameBuffer();
 
 	bool			IsYUV420P();
+	void			AssertFrameBufferListUniqueness();
 };
 
 class LGL_VideoEncoder
@@ -3268,13 +3270,13 @@ public:
 			LGL_Color
 			(
 				const
-				float&	r=1,
+				float&	r=0.0f,
 				const
-				float&	g=1,
+				float&	g=0.0f,
 				const
-				float&	b=1,
+				float&	b=0.0f,
 				const
-				float&	a=1
+				float&	a=0.0f
 			);
 			~LGL_Color();
 	
@@ -3329,15 +3331,17 @@ class LGL_LEDClient
 
 public:
 
-		LGL_LEDClient(const char* hostname, int port=6038);
+		LGL_LEDClient(const char* hostname, int port=6038, int group=0);
 		~LGL_LEDClient();
 
 	void	SetColor(float red, float green, float blue);
+	int	GetGroup();
 
 private:
 
 	char	Hostname[2048];
 	int	Port;
+	int	Group;
 
 	int	SocketInstance;
 };

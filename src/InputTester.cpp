@@ -23,6 +23,13 @@
 
 #include "InputTester.h"
 
+InputTesterObj&
+GetInputTester()
+{
+	static InputTesterObj input;
+	return(input);
+}
+
 InputTesterObj::
 InputTesterObj()
 {
@@ -47,7 +54,7 @@ NextFrame()
 	{
 		if(EnableTimer.SecondsSinceLastReset() > 5.0f)
 		{
-			Enable = true;
+			Enable=true;
 		}
 	}
 	else
@@ -946,5 +953,12 @@ GetCurrentAction
 )	const
 {
 	return((target & TARGET_BOTTOM) ? CurrentActionBottom : CurrentActionTop);
+}
+
+bool
+InputTesterObj::
+GetEnable()
+{
+	return(Enable);
 }
 

@@ -102,6 +102,9 @@ typedef enum
 	WAVEFORM_VIDEO_SELECT,
 	WAVEFORM_VIDEO_BRIGHTNESS,
 	WAVEFORM_FREQ_SENSE_BRIGHTNESS,
+	WAVEFORM_FREQ_SENSE_LED_GROUP_FLOAT,
+	WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_LOW,
+	WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_HIGH,
 	WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS,
 	WAVEFORM_OSCILLOSCOPE_BRIGHTNESS,
 	WAVEFORM_AUDIO_INPUT_TOGGLE,
@@ -277,9 +280,6 @@ GetOscServerPort();
 std::vector<IpEndpointName>
 GetOscClientList();
 
-std::vector<IpEndpointName>
-GetLEDClientList();
-
 std::vector<int>
 GetOscClientAutoPortList();
 
@@ -289,6 +289,18 @@ GetOscAddressPatternList
 	DVJ_Action	action,
 	int		target
 );
+
+class LEDClient
+{
+
+public:
+
+	IpEndpointName	Endpoint;
+	int		Group;
+};
+
+std::vector<LEDClient>
+GetLEDClientList();
 
 #endif	//_DVJ_CONFIG_H_
 

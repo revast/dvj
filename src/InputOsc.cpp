@@ -913,6 +913,63 @@ InputOscObj(int port) :
 				);
 			}
 		}
+		
+		//FreqSenseLEDGroupFloat
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformFreqSenseLEDGroupFloatOscElement[a],
+					WAVEFORM_FREQ_SENSE_LED_GROUP_FLOAT,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformFreqSenseLEDGroupFloat,
+					false
+				);
+			}
+		}
+
+		//FreqSenseLEDColorScalarLow
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformFreqSenseLEDColorScalarLowOscElement[a],
+					WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_LOW,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformFreqSenseLEDColorScalarLow,
+					false
+				);
+			}
+		}
+
+		//FreqSenseLEDColorScalarHigh
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformFreqSenseLEDColorScalarHighOscElement[a],
+					WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_HIGH,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformFreqSenseLEDColorScalarHigh,
+					false
+				);
+			}
+		}
 
 		//FreqSenseLEDBrightness
 		{
@@ -1855,6 +1912,42 @@ WaveformFreqSenseBrightness
 	float brightness=-1;
 	brightness = WaveformFreqSenseBrightnessOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(brightness);
+}
+
+float
+InputOscObj::
+WaveformFreqSenseLEDGroupFloat
+(
+	unsigned int	target
+)	const
+{
+	float group=-1;
+	group = WaveformFreqSenseLEDGroupFloatOscElement[GetIndexFromTarget(target)].GetFloat();
+	return(group);
+}
+
+float
+InputOscObj::
+WaveformFreqSenseLEDColorScalarLow
+(
+	unsigned int	target
+)	const
+{
+	float scalar=-1;
+	scalar = WaveformFreqSenseLEDColorScalarLowOscElement[GetIndexFromTarget(target)].GetFloat();
+	return(scalar);
+}
+
+float
+InputOscObj::
+WaveformFreqSenseLEDColorScalarHigh
+(
+	unsigned int	target
+)	const
+{
+	float scalar=-1;
+	scalar = WaveformFreqSenseLEDColorScalarHighOscElement[GetIndexFromTarget(target)].GetFloat();
+	return(scalar);
 }
 
 float

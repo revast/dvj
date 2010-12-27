@@ -118,6 +118,11 @@ virtual int	WaveformAutoDivergeRecall	(unsigned int target)	const;	//When done d
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
+virtual float	WaveformFreqSenseLEDGroupFloat	(unsigned int target)	const;
+virtual float	WaveformFreqSenseLEDColorScalarLow
+						(unsigned int target)	const;
+virtual float	WaveformFreqSenseLEDColorScalarHigh
+						(unsigned int target)	const;
 virtual	float	WaveformFreqSenseBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	float	WaveformFreqSenseLEDBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	bool	WaveformAudioInputToggle	(unsigned int target)	const;	//Set audio input mode
@@ -197,6 +202,9 @@ private:
 	OscElementObj		WaveformVideoBrightnessOscElement[2];
 	OscElementObj		WaveformOscilloscopeBrightnessOscElement[2];
 	OscElementObj		WaveformFreqSenseBrightnessOscElement[2];
+	OscElementObj		WaveformFreqSenseLEDGroupFloatOscElement[2];
+	OscElementObj		WaveformFreqSenseLEDColorScalarLowOscElement[2];
+	OscElementObj		WaveformFreqSenseLEDColorScalarHighOscElement[2];
 	OscElementObj		WaveformFreqSenseLEDBrightnessOscElement[2];
 	OscElementObj		WaveformAudioInputToggleOscElement[2];
 	OscElementObj		WaveformVideoAspectRatioNextOscElement[2];

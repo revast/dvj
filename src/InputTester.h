@@ -27,6 +27,10 @@
 #include "Input.h"
 #include "Config.h"
 
+class InputTesterObj;
+
+InputTesterObj& GetInputTester();
+
 class InputTesterObj : public InputObj
 {
 
@@ -127,6 +131,10 @@ private:
 	LGL_Timer	EnableTimer;
 
 	int		GetCurrentAction(unsigned int target) const;
+
+public:
+
+	bool		GetEnable();
 };
 
 #endif	//_INPUT_TESTER_H_

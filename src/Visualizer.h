@@ -36,7 +36,8 @@ class TurntableObj;
 
 using namespace std;
 
-#define	NOISE_IMAGE_COUNT_128_128 64
+const int NOISE_IMAGE_COUNT_128_128=64;
+const int LED_GROUP_MAX=255;
 
 class VisualizerObj
 {
@@ -111,6 +112,14 @@ public:
 					float&	b,
 					float&	t
 				);
+	
+	void			SetLEDColor
+				(
+					float	r,
+					float	g,
+					float	b,
+					int	group=0
+				);
 
 private:
 
@@ -183,9 +192,12 @@ static	LGL_Image*		NoiseImage[NOISE_IMAGE_COUNT_128_128];
 				LEDClientList;
 	LGL_Timer		LEDTimer;
 	float			LEDBrightnessMin;
-	float			LEDR;
-	float			LEDG;
-	float			LEDB;
+	LGL_Color		LEDColor[LED_GROUP_MAX];
+	int			LEDGroupCount;
+public:
+	int			GetLEDGroupCount();
+	LGL_Color		GetLEDColor(int group);
+private:
 
 				//0: LB
 				//1: LT
