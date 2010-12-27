@@ -1002,17 +1002,6 @@ WaveformFreqSenseLEDColorScalarHighDelta
 
 float
 InputMultiTouchObj::
-WaveformFreqSenseLEDBrightness
-(
-	unsigned int	target
-)	const
-{
-	float brightness=-1;
-	return(brightness);
-}
-
-float
-InputMultiTouchObj::
 WaveformFreqSenseLEDBrightnessDelta
 (
 	unsigned int	target
@@ -1022,6 +1011,24 @@ WaveformFreqSenseLEDBrightnessDelta
 	if(target & TARGET_FOCUS)
 	{
 		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS)
+		{
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
+		}
+	}
+	return(delta);
+}
+
+float
+InputMultiTouchObj::
+WaveformFreqSenseLEDBrightnessWashDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS_WASH)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}

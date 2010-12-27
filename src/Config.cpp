@@ -1346,6 +1346,8 @@ PrepareInputMap()
 		("waveformFreqSenseLEDColorScalarHigh",	true,	"LGL_KEY_NONE",		"freq_sense_led_color_scalar_high");
 	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS].Set
 		("waveformFreqSenseLEDBrightness",	true,	"LGL_KEY_NONE",		"freq_sense_led_brightness");
+	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS_WASH].Set
+		("waveformFreqSenseLEDBrightnessWash",	true,	"LGL_KEY_NONE",		"freq_sense_led_brightness_wash");
 	dvjInputMap[WAVEFORM_OSCILLOSCOPE_BRIGHTNESS].Set
 		("waveformOscilloscopeBrightness",	true,	"LGL_KEY_NONE",		"oscilloscope_brightness");
 	dvjInputMap[WAVEFORM_AUDIO_INPUT_TOGGLE].Set

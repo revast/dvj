@@ -1084,6 +1084,24 @@ WaveformFreqSenseLEDBrightness
 	return(-1.0f);
 }
 
+float
+InputMouseObj::
+WaveformFreqSenseLEDBrightnessWash
+(
+	unsigned int	target
+)	const
+{
+	if(target & DragTarget)
+	{
+		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS_WASH)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
+}
+
 bool
 InputMouseObj::
 WaveformAudioInputToggle

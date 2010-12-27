@@ -125,6 +125,8 @@ virtual float	WaveformFreqSenseLEDColorScalarHigh
 						(unsigned int target)	const;
 virtual	float	WaveformFreqSenseBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	float	WaveformFreqSenseLEDBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
+virtual	float	WaveformFreqSenseLEDBrightnessWash
+						(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	bool	WaveformAudioInputToggle	(unsigned int target)	const;	//Set audio input mode
 virtual	bool	WaveformVideoAspectRatioNext	(unsigned int target)	const;	//Advance to next aspect ratio mode
 virtual	float	WaveformOscilloscopeBrightness	(unsigned int target)	const;	//How bright the oscolloscope is, independent of the crossfader
@@ -206,6 +208,7 @@ private:
 	OscElementObj		WaveformFreqSenseLEDColorScalarLowOscElement[2];
 	OscElementObj		WaveformFreqSenseLEDColorScalarHighOscElement[2];
 	OscElementObj		WaveformFreqSenseLEDBrightnessOscElement[2];
+	OscElementObj		WaveformFreqSenseLEDBrightnessWashOscElement[2];
 	OscElementObj		WaveformAudioInputToggleOscElement[2];
 	OscElementObj		WaveformVideoAspectRatioNextOscElement[2];
 	OscElementObj		WaveformSyncOscElement[2];
