@@ -1009,6 +1009,10 @@ Turntable_DrawWaveform
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
 	float		freqSenseLEDBrightness,
+	float		freqSenseLEDColorScalarLow,
+	float		freqSenseLEDColorScalarHigh,
+	float		freqSenseLEDGroupFloat,
+	int		freqSenseLEDGroupInt,
 	int		channel,
 	float		recallPos
 )
@@ -3070,7 +3074,11 @@ if(1)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		videoBrightness,
 		oscilloscopeBrightness,
 		freqSenseBrightness,
-		freqSenseLEDBrightness
+		freqSenseLEDBrightness,
+		freqSenseLEDColorScalarLow,
+		freqSenseLEDColorScalarHigh,
+		freqSenseLEDGroupFloat,
+		freqSenseLEDGroupInt
 	);
 }
 
@@ -3089,7 +3097,11 @@ Turntable_DrawSliders
 	float		videoBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
-	float		freqSenseLEDBrightness
+	float		freqSenseLEDBrightness,
+	float		freqSenseLEDColorScalarLow,
+	float		freqSenseLEDColorScalarHigh,
+	float		freqSenseLEDGroupFloat,
+	int		freqSenseLEDGroupInt
 )
 {
 	float viewportWidth = viewportRight - viewportLeft;
@@ -3130,10 +3142,21 @@ Turntable_DrawSliders
 	letters[1]='M';
 	letters[2]='H';
 	letters[3]='G';
-	letters[8]='V';
-	letters[9]='O';
-	letters[10]='F';
-	letters[11]='L';
+	letters[5]='V';
+	letters[6]='O';
+	letters[7]='F';
+	letters[8]='L';
+	letters[9]='c';
+	letters[10]='C';
+	letters[11]='0'+freqSenseLEDGroupInt;
+
+	LGL_Color letterColors[12];
+	for(int l=0;l<12;l++)
+	{
+		letterColors[l].SetRGBA(1.0f,1.0f,1.0f,1.0f);
+	}
+	letterColors[9]=GetColorFromScalar(freqSenseLEDColorScalarLow);
+	letterColors[10]=GetColorFromScalar(freqSenseLEDColorScalarHigh);
 
 	DVJ_GuiElement guiElements[12];
 	for(int l=0;l<12;l++)
@@ -3144,10 +3167,13 @@ Turntable_DrawSliders
 	guiElements[1]=GUI_ELEMENT_EQ_MID;
 	guiElements[2]=GUI_ELEMENT_EQ_HIGH;
 	guiElements[3]=GUI_ELEMENT_EQ_GAIN;
-	guiElements[8]=GUI_ELEMENT_VIS_VIDEO;
-	guiElements[9]=GUI_ELEMENT_VIS_OSCILLOSCOPE;
-	guiElements[10]=GUI_ELEMENT_VIS_FREQSENSE;
-	guiElements[11]=GUI_ELEMENT_VIS_FREQSENSE_LED;
+	guiElements[5]=GUI_ELEMENT_VIS_VIDEO;
+	guiElements[6]=GUI_ELEMENT_VIS_OSCILLOSCOPE;
+	guiElements[7]=GUI_ELEMENT_VIS_FREQSENSE;
+	guiElements[8]=GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS;
+	guiElements[9]=GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW;
+	guiElements[10]=GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH;
+	guiElements[11]=GUI_ELEMENT_VIS_FREQSENSE_LED_GROUP_FLOAT;
 
 	float levels[12];
 	for(int l=0;l<12;l++)
@@ -3158,10 +3184,13 @@ Turntable_DrawSliders
 	levels[1]=eq[1];
 	levels[2]=eq[2];
 	levels[3]=LGL_Clamp(0.0f,gain*0.5f,1.0f);
-	levels[8]=videoBrightness;
-	levels[9]=oscilloscopeBrightness;
-	levels[10]=freqSenseBrightness;
-	levels[11]=freqSenseLEDBrightness;
+	levels[5]=videoBrightness;
+	levels[6]=oscilloscopeBrightness;
+	levels[7]=freqSenseBrightness;
+	levels[8]=freqSenseLEDBrightness;
+	levels[9]=freqSenseLEDColorScalarLow;
+	levels[10]=freqSenseLEDColorScalarHigh;
+	levels[11]=freqSenseLEDGroupFloat;
 
 	for(int f=0;f<12;f++)
 	{
@@ -3306,7 +3335,10 @@ Turntable_DrawSliders
 			sliderL+0.5f*spc,
 			textB,
 			0.05f*viewportHeight,
-			1,1,1,1,
+			letterColors[f].GetR(),
+			letterColors[f].GetG(),
+			letterColors[f].GetB(),
+			1.0f,
 			true,
 			0.75f,
 			"%c",
@@ -3506,6 +3538,59 @@ GetFreqBrightness
 	{
 		ret=2.0f;
 	}
+
+	return(ret);
+}
+
+LGL_Color
+GetColorFromScalar
+(
+	float	scalar
+)
+{
+	scalar=LGL_Clamp(0.0f,scalar,1.0f);
+
+	const float rad=1.0f/3.0f;
+
+	LGL_Color ret;
+	ret.SetR
+	(
+		LGL_Clamp
+		(
+			0.0f,
+			LGL_Clamp
+			(
+				0.0f,
+				2.0f*(rad-fabsf(scalar-0*rad))/rad,
+				1.0f
+			) +
+			LGL_Clamp
+			(
+				0.0f,
+				(rad-fabsf(scalar-3*rad))/rad,
+				1.0f
+			),
+			1.0f
+		)
+	);
+	ret.SetG
+	(
+		LGL_Clamp
+		(
+			0.0f,
+			2.0f*(rad-fabsf(scalar-1*rad))/rad,
+			1.0f
+		)
+	);
+	ret.SetB
+	(
+		LGL_Clamp
+		(
+			0.0f,
+			2.0f*(rad-fabsf(scalar-2*rad))/rad,
+			1.0f
+		)
+	);
 
 	return(ret);
 }

@@ -97,6 +97,12 @@ float	InputWaveformVideoBrightnessDelta(unsigned int target) { return(GetInput()
 float	InputWaveformVideoAdvanceRate(unsigned int target) { return(GetInput().WaveformVideoAdvanceRate(target)); }
 float	InputWaveformFreqSenseBrightness(unsigned int target) { return(GetInput().WaveformFreqSenseBrightness(target)); }
 float	InputWaveformFreqSenseBrightnessDelta(unsigned int target) { return(GetInput().WaveformFreqSenseBrightnessDelta(target)); }
+float	InputWaveformFreqSenseLEDGroupFloat(unsigned int target) { return(GetInput().WaveformFreqSenseLEDGroupFloat(target)); }
+float	InputWaveformFreqSenseLEDGroupFloatDelta(unsigned int target) { return(GetInput().WaveformFreqSenseLEDGroupFloatDelta(target)); }
+float	InputWaveformFreqSenseLEDColorScalarLow(unsigned int target) { return(GetInput().WaveformFreqSenseLEDColorScalarLow(target)); }
+float	InputWaveformFreqSenseLEDColorScalarLowDelta(unsigned int target) { return(GetInput().WaveformFreqSenseLEDColorScalarLowDelta(target)); }
+float	InputWaveformFreqSenseLEDColorScalarHigh(unsigned int target) { return(GetInput().WaveformFreqSenseLEDColorScalarHigh(target)); }
+float	InputWaveformFreqSenseLEDColorScalarHighDelta(unsigned int target) { return(GetInput().WaveformFreqSenseLEDColorScalarHighDelta(target)); }
 float	InputWaveformFreqSenseLEDBrightness(unsigned int target) { return(GetInput().WaveformFreqSenseLEDBrightness(target)); }
 float	InputWaveformFreqSenseLEDBrightnessDelta(unsigned int target) { return(GetInput().WaveformFreqSenseLEDBrightnessDelta(target)); }
 float	InputWaveformAudioInputToggle(unsigned int target) { return(GetInput().WaveformAudioInputToggle(target)); }
@@ -1348,6 +1354,120 @@ WaveformFreqSenseBrightnessDelta
 	for(unsigned int a=0;a<Children.size();a++)
 	{
 		delta+=Children[a]->WaveformFreqSenseBrightnessDelta(target);
+	}
+
+	return(delta);
+}
+
+float
+InputObj::
+WaveformFreqSenseLEDGroupFloat
+(
+	unsigned int	target
+)	const
+{
+	float group=-1.0f;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformFreqSenseLEDGroupFloat(target);
+		if(candidate!=-1.0f)
+		{
+			group=candidate;
+		}
+	}
+
+	return(group);
+}
+
+float
+InputObj::
+WaveformFreqSenseLEDGroupFloatDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		delta+=Children[a]->WaveformFreqSenseLEDGroupFloatDelta(target);
+	}
+
+	return(delta);
+}
+
+float
+InputObj::
+WaveformFreqSenseLEDColorScalarLow
+(
+	unsigned int	target
+)	const
+{
+	float colorScalar=-1.0f;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformFreqSenseLEDColorScalarLow(target);
+		if(candidate!=-1.0f)
+		{
+			colorScalar=candidate;
+		}
+	}
+
+	return(colorScalar);
+}
+
+float
+InputObj::
+WaveformFreqSenseLEDColorScalarLowDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		delta+=Children[a]->WaveformFreqSenseLEDColorScalarLowDelta(target);
+	}
+
+	return(delta);
+}
+
+float
+InputObj::
+WaveformFreqSenseLEDColorScalarHigh
+(
+	unsigned int	target
+)	const
+{
+	float colorScalar=-1.0f;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformFreqSenseLEDColorScalarHigh(target);
+		if(candidate!=-1.0f)
+		{
+			colorScalar=candidate;
+		}
+	}
+
+	return(colorScalar);
+}
+
+float
+InputObj::
+WaveformFreqSenseLEDColorScalarHighDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		delta+=Children[a]->WaveformFreqSenseLEDColorScalarHighDelta(target);
 	}
 
 	return(delta);

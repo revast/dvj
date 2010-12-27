@@ -1014,6 +1014,60 @@ WaveformFreqSenseBrightness
 
 float
 InputMouseObj::
+WaveformFreqSenseLEDGroupFloat
+(
+	unsigned int	target
+)	const
+{
+	if(target & DragTarget)
+	{
+		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_GROUP_FLOAT)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
+}
+
+float
+InputMouseObj::
+WaveformFreqSenseLEDColorScalarLow
+(
+	unsigned int	target
+)	const
+{
+	if(target & DragTarget)
+	{
+		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
+}
+
+float
+InputMouseObj::
+WaveformFreqSenseLEDColorScalarHigh
+(
+	unsigned int	target
+)	const
+{
+	if(target & DragTarget)
+	{
+		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
+}
+
+float
+InputMouseObj::
 WaveformFreqSenseLEDBrightness
 (
 	unsigned int	target
@@ -1021,7 +1075,7 @@ WaveformFreqSenseLEDBrightness
 {
 	if(target & DragTarget)
 	{
-		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED)
+		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS)
 		{
 			return(DragFloat);
 		}

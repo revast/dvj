@@ -172,24 +172,50 @@ VisualizerObj()
 		NOISE_IMAGE_INITIALIZED=true;
 	}
 
-	std::vector<IpEndpointName> inLEDClientList = GetLEDClientList();
+	std::vector<LEDClient> inLEDClientList = GetLEDClientList();
+	LEDGroupCount=0;
 	for(unsigned int a=0;a<inLEDClientList.size();a++)
 	{
 		char host[2048];
-		inLEDClientList[a].AddressAsString(host);
+		inLEDClientList[a].Endpoint.AddressAsString(host);	//FIXME: Causes a hang if no DNS server...
+		inLEDClientList[a].Group = LGL_Clamp(0,inLEDClientList[a].Group,LED_GROUP_MAX-1);
 		LEDClientList.push_back
 		(
 			new LGL_LEDClient
 			(
 				host,
-				inLEDClientList[a].port
+				inLEDClientList[a].Endpoint.port,
+				inLEDClientList[a].Group
 			)
 		);
+		LEDGroupCount=LGL_Max
+		(
+			LEDGroupCount,
+			inLEDClientList[a].Group+1
+		);
 	}
-	LEDBrightnessMin=0.0f;
-	LEDR=0.0f;
-	LEDG=0.0f;
-	LEDB=0.0f;
+
+	{
+		float coolR;
+		float coolG;
+		float coolB;
+		GetColorCool(coolR,coolG,coolB);
+
+		float warmR;
+		float warmG;
+		float warmB;
+		GetColorWarm(warmR,warmG,warmB);
+
+		for(int a=0;a<LED_GROUP_MAX;a++)
+		{
+			LEDColor[a].SetRGB
+			(
+				0.0f,
+				0.0f,
+				0.0f
+			);
+		}
+	}
 
 	for(int a=0;a<4;a++)
 	{
@@ -513,101 +539,90 @@ DrawVisuals
 		{
 			LEDTimer.Reset();
 
-			float ledR=0.0f;
-			float ledG=0.0f;
-			float ledB=0.0f;
-
+			//Cache some values
+			float brLow[2];
+			float brHigh[2];
+			float freqFactor[2];
 			for(int t=0;t<2;t++)
 			{
-				float ejectBrightnessScalar=tts[t]->GetEjectVisualBrightnessScalar();
-				float freqSenseLEDBright = tts[t]->GetFreqSenseLEDBrightnessFinal();
-				freqSenseLEDBright*=ejectBrightnessScalar;
-
 				float volAve;
 				float volMax;
-				float freqFactor;
-				tts[t]->GetFreqMetaData(volAve,volMax,freqFactor);
-				float brLow = GetFreqBrightness(false,freqFactor,volAve);
-				float brHigh = GetFreqBrightness(true,freqFactor,volAve);
-
-				float coolR;
-				float coolG;
-				float coolB;
-				GetColorCool(coolR,coolG,coolB);
-
-				float warmR;
-				float warmG;
-				float warmB;
-				GetColorWarm(warmR,warmG,warmB);
-
-				const float lowFactor=0.25f;
-
-				ledR+=LGL_Min
-				(
-					freqSenseLEDBright,
-					freqSenseLEDBright*
-					(
-						(1.0f-freqFactor)*coolR*brLow*lowFactor+
-						(0.0f+freqFactor)*warmR*brHigh
-					)
-				);
-				ledG+=LGL_Min
-				(
-					freqSenseLEDBright,
-					freqSenseLEDBright*
-					(
-						(1.0f-freqFactor)*coolG*brLow*lowFactor+
-						(0.0f+freqFactor)*warmG*brHigh
-					)
-				);
-				ledB+=LGL_Min
-				(
-					freqSenseLEDBright,
-					freqSenseLEDBright*
-					(
-						(1.0f-freqFactor)*coolB*brLow*lowFactor+
-						(0.0f+freqFactor)*warmB*brHigh
-					)
-				);
+				tts[t]->GetFreqMetaData(volAve,volMax,freqFactor[t]);
+				brLow[t] = GetFreqBrightness(false,freqFactor[t],volAve);
+				brHigh[t] = GetFreqBrightness(true,freqFactor[t],volAve);
 			}
 
-			float ledBrightnessMinPrev=LEDBrightnessMin;
-			LEDBrightnessMin=LGL_Max(0.0f,LEDBrightnessMin-LGL_SecondsSinceLastFrame()*30.0f);
-		
-			float ledBrightnessNow=ledR+ledG+ledB;
+			//Get LEDColor for each group.
+			for(int g=0;g<LEDGroupCount;g++)
+			{
+				float ledR=0.0f;
+				float ledG=0.0f;
+				float ledB=0.0f;
+				
+				//Each turntable adds to the led* vars
+				for(int t=0;t<2;t++)
+				{
+					float ejectBrightnessScalar=tts[t]->GetEjectVisualBrightnessScalar();
+					float freqSenseLEDBright=tts[t]->GetFreqSenseLEDBrightnessFinal(g);
+					freqSenseLEDBright*=ejectBrightnessScalar;
+					float brL=brLow[t]*freqSenseLEDBright;
+					float brH=brHigh[t]*freqSenseLEDBright;
+					LGL_Color colorL = tts[t]->GetFreqSenseLEDColorLow(g);
+					LGL_Color colorH = tts[t]->GetFreqSenseLEDColorHigh(g);
 
-			if
-			(
-				ledBrightnessMinPrev>0.0f &&
-				ledBrightnessNow<LEDBrightnessMin
-			)
-			{
-				float ledBrightnessScalar=LEDBrightnessMin/ledBrightnessMinPrev;
-				ledR=LGL_Min(1.0f,LEDR*ledBrightnessScalar);
-				ledG=LGL_Min(1.0f,LEDG*ledBrightnessScalar);
-				ledB=LGL_Min(1.0f,LEDB*ledBrightnessScalar);
-			}
-			else
-			{
-				LEDBrightnessMin=ledBrightnessNow;
-			}
+					ledR+=
+						brL*colorL.GetR()+
+						brH*colorH.GetR();
+					
+					ledG+=
+						brL*colorL.GetG()+
+						brH*colorH.GetG();
+					
+					ledB+=
+						brL*colorL.GetB()+
+						brH*colorH.GetB();
+				}
 
-			LEDR=ledR;
-			LEDG=ledG;
-			LEDB=ledB;
-			for(unsigned int a=0;a<LEDClientList.size();a++)
-			{
-				LEDClientList[a]->SetColor
+				//Set the final LEDColors.
+				float minR=LGL_Max
+					(
+						0.0f,
+						LEDColor[g].GetR()-0.25f
+					);
+				float minG=LGL_Max
+					(
+						0.0f,
+						LEDColor[g].GetG()-0.25f
+					);
+				float minB=LGL_Max
+					(
+						0.0f,
+						LEDColor[g].GetB()-0.25f
+					);
+
+				ledR=LGL_Clamp(minR,ledR,1.0f);
+				ledG=LGL_Clamp(minG,ledG,1.0f);
+				ledB=LGL_Clamp(minB,ledB,1.0f);
+
+				LEDColor[g].SetRGB
 				(
 					ledR,
 					ledG,
 					ledB
 				);
 			}
-		}
-		else
-		{
-			//Wait...
+
+			//Send out color for each client, as defined by its group
+			for(unsigned int c=0;c<LEDClientList.size();c++)
+			{
+				int group=LEDClientList[c]->GetGroup();
+				LEDClientList[c]->SetColor
+				(
+					LEDColor[group].GetR(),
+					LEDColor[group].GetG(),
+					LEDColor[group].GetB()
+				);
+			}
 		}
 	}
 
@@ -1968,5 +1983,28 @@ noiseFactorVideo=0.0f;
 		}
 		*/
 	}
+}
+
+int
+VisualizerObj::
+GetLEDGroupCount()
+{
+	return(LEDGroupCount);
+}
+
+LGL_Color
+VisualizerObj::
+GetLEDColor
+(
+	int	group
+)
+{
+	group=LGL_Clamp
+	(
+		0,
+		group,
+		LED_GROUP_MAX
+	);
+	return(LEDColor[group]);
 }
 

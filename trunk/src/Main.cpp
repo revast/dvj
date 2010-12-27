@@ -119,7 +119,7 @@ void InitializeGlobals()
 	GetInput().AddChild(&GetInputXponent());
 	GetInput().AddChild(new InputXsessionObj);
 	GetInput().AddChild(new InputWiimoteObj);
-	GetInput().AddChild(new InputTesterObj);
+	GetInput().AddChild(&GetInputTester());
 
 	QuadrentSplitX=.5f;
 	QuadrentSplitY=.5f;

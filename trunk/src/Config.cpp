@@ -128,15 +128,19 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_000_Host = localhost\n");
 		fprintf(fd,"ledClient_000_Port = 0\n");
+		fprintf(fd,"ledClient_000_Group = 0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_001_Host = localhost\n");
 		fprintf(fd,"ledClient_001_Port = 0\n");
+		fprintf(fd,"ledClient_001_Group = 0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_002_Host = localhost\n");
 		fprintf(fd,"ledClient_002_Port = 0\n");
+		fprintf(fd,"ledClient_002_Group = 0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_003_Host = localhost\n");
 		fprintf(fd,"ledClient_003_Port = 0\n");
+		fprintf(fd,"ledClient_003_Group = 0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"# You may add up to ledClient_0255, if you so desire.\n");
 		fprintf(fd,"\n");
@@ -1334,6 +1338,12 @@ PrepareInputMap()
 		("waveformVideoBrightness",		true,	"LGL_KEY_NONE",		"video_brightness");
 	dvjInputMap[WAVEFORM_FREQ_SENSE_BRIGHTNESS].Set
 		("waveformFreqSenseBrightness",		true,	"LGL_KEY_NONE",		"freq_sense_brightness");
+	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_GROUP_FLOAT].Set
+		("waveformFreqSenseLEDGroupFloat",	true,	"LGL_KEY_NONE",		"freq_sense_led_group_float");
+	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_LOW].Set
+		("waveformFreqSenseLEDColorScalarLow",	true,	"LGL_KEY_NONE",		"freq_sense_led_color_scalar_low");
+	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_HIGH].Set
+		("waveformFreqSenseLEDColorScalarHigh",	true,	"LGL_KEY_NONE",		"freq_sense_led_color_scalar_high");
 	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS].Set
 		("waveformFreqSenseLEDBrightness",	true,	"LGL_KEY_NONE",		"freq_sense_led_brightness");
 	dvjInputMap[WAVEFORM_OSCILLOSCOPE_BRIGHTNESS].Set
@@ -1682,36 +1692,42 @@ GetOscClientList()
 	return(ret);
 }
 
-std::vector<IpEndpointName>
+std::vector<LEDClient>
 GetLEDClientList()
 {
-	std::vector<IpEndpointName> ret;
+	std::vector<LEDClient> ret;
 
 	char keyHost[512];
 	char keyPort[512];
+	char keyGroup[512];
 
 	for(int a=0;a<256;a++)
 	{
 		sprintf(keyHost,"ledClient_%03i_Host",a);
 		sprintf(keyPort,"ledClient_%03i_Port",a);
+		sprintf(keyGroup,"ledClient_%03i_Group",a);
 		std::string hostStr = dvjrcConfigFile->read<std::string>(keyHost,"");
 		int port=dvjrcConfigFile->read<int>(keyPort,0);
+		int group=dvjrcConfigFile->read<int>(keyGroup,0);
 		if
 		(
+			hostStr.c_str()[0]!='\0' &&
 			port>=1024 &&
-			hostStr.c_str()[0]!='\0'
+			group>=0
 		)
 		{
-			ret.push_back
-			(
+			LEDClient client;
+			client.Endpoint=
 				IpEndpointName
 				(
 					hostStr.c_str(),
 					port
-				)
-			);
+				);
+			client.Group=group;
+			ret.push_back(client);
 		}
 	}
+
 	return(ret);
 }
 

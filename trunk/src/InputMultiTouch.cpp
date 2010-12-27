@@ -948,6 +948,60 @@ WaveformFreqSenseBrightnessDelta
 
 float
 InputMultiTouchObj::
+WaveformFreqSenseLEDGroupFloatDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_GROUP_FLOAT)
+		{
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
+		}
+	}
+	return(delta);
+}
+
+float
+InputMultiTouchObj::
+WaveformFreqSenseLEDColorScalarLowDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW)
+		{
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
+		}
+	}
+	return(delta);
+}
+
+float
+InputMultiTouchObj::
+WaveformFreqSenseLEDColorScalarHighDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH)
+		{
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
+		}
+	}
+	return(delta);
+}
+
+float
+InputMultiTouchObj::
 WaveformFreqSenseLEDBrightness
 (
 	unsigned int	target
@@ -967,7 +1021,7 @@ WaveformFreqSenseLEDBrightnessDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
