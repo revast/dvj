@@ -512,6 +512,125 @@ typedef struct
 
 LGL_State LGL;
 
+
+
+#if LGL_OBJECT
+
+LGL_Object::
+LGL_Object() :
+	RetainCount(0)
+{
+	RetainCountSemaphore=new LGL_Semaphore("RetainCountSemaphore");
+}
+
+LGL_Object::
+~LGL_Object()
+{
+	{
+		LGL_ScopeLock retainCountLock(RetainCountSemaphore);
+		if(int rc=GetRetainCount())
+		{
+			LGL_Assertf
+			(
+				rc==0,
+				("LGL_Object destroyed with RetainCount=%i!",rc)
+			);
+		}
+	}
+
+	delete RetainCountSemaphore;
+	RetainCountSemaphore=NULL;
+}
+
+int
+LGL_Object::
+GetRetainCount()
+{
+	return(RetainCount);
+}
+
+LGL_Semaphore*
+LGL_Object::
+GetRetainCountSemaphore()
+{
+	return(RetainCountSemaphore);
+}
+
+void
+LGL_Object::
+Retain()
+{
+	LGL_ScopeLock retainCountLock(RetainCountSemaphore);
+	RetainCount++;
+}
+
+void
+LGL_Object::
+Release()
+{
+	LGL_ScopeLock retainCountLock(RetainCountSemaphore);
+	RetainCount--;
+}
+
+
+template<class T>
+LGL_ObjectSP<T>::
+LGL_ObjectSP
+(
+	LGL_Object*	obj
+) :
+	Object(obj)
+{
+	RetainObject();
+}
+
+template<class T>
+LGL_ObjectSP<T>::
+~LGL_ObjectSP()
+{
+	ReleaseObject();
+}
+
+template<class T>
+T*
+LGL_ObjectSP<T>::
+cast()
+{
+	return(Object);
+}
+
+void
+LGL_ObjectSP<T>::
+RetainObject()
+{
+	if(Object)
+	{
+		Object->Retain();
+	}
+}
+
+void
+LGL_ObjectSP<T>::
+ReleaseObject()
+{
+	if(Object)
+	{
+		Object->Release();
+		{
+			LGL_ScopeLock retainCountLock(Object->GetRetainCountSemaphore());
+			if(Object->GetRetainCount()==0)
+			{
+				delete Object;
+			}
+		}
+		Object=NULL;
+	}
+}
+
+#endif
+
+
+
 #include <jack/jack.h>
 #include <jack/statistics.h>
 #include <jack/thread.h>
@@ -11604,6 +11723,10 @@ LGL_VideoEncoder
 		// Get a pointer to the codec context for the video stream
 		SrcCodecContext=fc->streams[SrcVideoStreamIndex]->codec;
 		strcpy(SrcCodecName,SrcCodecContext->codec_name);
+		if(strlen(SrcCodecName)==0)
+		{
+			strcpy(SrcCodecName,"Unknown Codec");
+		}
 		AVCodecContext* srcAudioCodecContext=NULL;
 		if(SrcAudioStreamIndex!=-1)
 		{
@@ -13734,6 +13857,11 @@ LGL_DebugPrintf
 	...
 )
 {
+	if(SDL_ThreadID()!=LGL.ThreadIDMain)
+	{
+		return;
+	}
+
 	//Process the formatted part of the string
 	char tmpstr[2048];
 	va_list args;
@@ -13741,7 +13869,7 @@ LGL_DebugPrintf
 	vsprintf(tmpstr,string,args);
 	va_end(args);
 
-	const float height=0.02f;
+	const float height=0.015f;
 	LGL.DebugPrintfY-=height*2.0f;
 
 	if(char* newline=strchr(tmpstr,'\n'))
@@ -15260,7 +15388,7 @@ SetWaveformFromLGLSound
 	
 	if(sound->GetChannelCount()!=2)
 	{
-		printf("LGL_AudioGrain::SetWaveformFromLGLSound(): FIXME: Only works with stereo sounds.\n");
+		//printf("LGL_AudioGrain::SetWaveformFromLGLSound(): FIXME: Only works with stereo sounds.\n");
 		return;
 	}
 
@@ -27396,7 +27524,7 @@ LGL_DirectoryListCreate
 
 			if(ret==-1)
 			{
-				printf("LGL_DirectoryListCreate(): Error! stat(%s) returns NULL or -1.\n",temp);
+				printf("LGL_DirectoryListCreate(): Error! lstat(%s) returns NULL or -1.\n",temp);
 				assert(false);
 			}
 			if
@@ -28369,6 +28497,41 @@ LGL_ResolveAlias
 	return(false);
 }
 
+bool
+LGL_PathIsSymlink
+(
+	const char*	path
+)
+{
+	const int outPathLength=2048;
+	char outPath[outPathLength];
+	int num = readlink(path,outPath,outPathLength);
+	return(num>=0);
+}
+
+bool
+LGL_ResolveSymlink
+(
+	char*		outPath,
+	int		outPathLength,
+	const char*	inPath
+)
+{
+	int num = readlink(inPath,outPath,outPathLength);
+	if(num==-1)
+	{
+		outPath[0]='\0';
+		return(false);
+	}
+
+	if(num<outPathLength)
+	{
+		outPath[num]='\0';
+	}
+
+	return(true);
+}
+
 lgl_WriteFileAsyncWorkItem::
 lgl_WriteFileAsyncWorkItem
 (
@@ -28487,8 +28650,11 @@ LGL_WriteFileAsync
 		data,
 		len
 	);
-	LGL_ScopeLock lock(LGL.WriteFileAsyncSemaphore);
-	LGL.WriteFileAsyncWorkItemList.push_back(wi);
+
+	{
+		LGL_ScopeLock lock(LGL.WriteFileAsyncSemaphore);
+		LGL.WriteFileAsyncWorkItemList.push_back(wi);
+	}
 }
 
 unsigned int
