@@ -259,6 +259,58 @@ bool		LGL_Init
 bool		LGL_Running();
 void		LGL_Exit();
 
+class LGL_Semaphore;
+
+
+
+#define	LGL_OBJECT (0)
+
+#if LGL_OBJECT
+
+class LGL_Object
+{
+
+public:
+
+			LGL_Object();
+			~LGL_Object();
+
+			//RefCounting
+	int		GetRetainCount();
+	LGL_Semaphore*	GetRetainCountSemaphore();
+	void		Retain();
+	void		Release();
+
+private:
+
+	int		RetainCount;
+	LGL_Semaphore*	RetainCountSemaphore;
+
+};
+
+template<class T>
+class LGL_ObjectSP
+{
+
+public:
+
+			LGL_ObjectSP(LGL_Object* obj);
+			~LGL_ObjectSP();
+	
+inline	T*		cast();
+const	LGL_ObjectSP	operator=(const LGL_ObjectSP<T>& sp);
+
+private:
+
+	void		ReleaseObject();
+
+	LGL_Object*	Object;
+
+};
+
+#endif
+
+
 
 class LGL_Vector
 {
@@ -3092,6 +3144,8 @@ const char*	LGL_GetUsername();
 const char*	LGL_GetHomeDir();
 bool		LGL_PathIsAlias(const char* path);
 bool		LGL_ResolveAlias(char* outPath, int outPathLength, const char* inPath);
+bool		LGL_PathIsSymlink(const char* path);
+bool		LGL_ResolveSymlink(char* outPath, int outPathLength, const char* inPath);
 void		LGL_WriteFileAsync(const char* path, const char* data, int len);
 unsigned int	LGL_WriteFileAsyncQueueCount();
 
