@@ -133,6 +133,9 @@ private:
 				);
 	
 	int			GetWhichProjMapCorner();
+	void			SaveProjMapPrevCorners();
+	void			LoadProjMapPrevCorners();
+	void			ApplyProjMapPrevCorners();
 
 	void			PopulateCharStarBufferWithScrollTextFile(std::vector<char*>& buffer, const char* path);
 
@@ -205,6 +208,9 @@ private:
 				//3: RB
 	float			ProjMapOffsetX[4];
 	float			ProjMapOffsetY[4];
+	float			ProjMapOffsetPrevX[4];
+	float			ProjMapOffsetPrevY[4];
+	char			ProjMapCornersPath[2048];
 };
 
 #endif	//_DVJ_VISUALIZER_H_

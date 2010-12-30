@@ -217,11 +217,15 @@ VisualizerObj()
 		}
 	}
 
+	sprintf(ProjMapCornersPath,"%s/.dvj/projMapCorners.txt",LGL_GetHomeDir());
 	for(int a=0;a<4;a++)
 	{
 		ProjMapOffsetX[a]=0.0f;
 		ProjMapOffsetY[a]=0.0f;
+		ProjMapOffsetPrevX[a]=0.0f;
+		ProjMapOffsetPrevY[a]=0.0f;
 	}
+	LoadProjMapPrevCorners();
 }
 
 VisualizerObj::
@@ -305,11 +309,6 @@ NextFrame
 		}
 	}
 
-	if(LGL_KeyDown(LGL_KEY_RALT))
-	{
-		//
-	}
-
 	/*
 	if
 	(
@@ -373,13 +372,55 @@ NextFrame
 	//Projection Map Offset
 	if(LGL_KeyDown(LGL_KEY_RALT))
 	{
-		int which=GetWhichProjMapCorner();
+		if(LGL_KeyStroke(LGL_KEY_Q))
+		{
+			ApplyProjMapPrevCorners();
+		}
 
+		int which=GetWhichProjMapCorner();
+		const float rate = 0.1f * (1.0f/60.0f);
+		if(LGL_KeyDown(LGL_KEY_A))
+		{
+			ProjMapOffsetX[which]-=rate;
+		}
+		if(LGL_KeyDown(LGL_KEY_D))
+		{
+			ProjMapOffsetX[which]+=rate;
+		}
+		if(LGL_KeyDown(LGL_KEY_S))
+		{
+			ProjMapOffsetY[which]-=rate;
+		}
+		if(LGL_KeyDown(LGL_KEY_W))
+		{
+			ProjMapOffsetY[which]+=rate;
+		}
+
+		/*
 		if(LGL_MultiTouchFingerCount()==3)
 		{
 			ProjMapOffsetX[which]+=LGL_MultiTouchDX()*0.1f;
 			ProjMapOffsetY[which]+=LGL_MultiTouchDY()*0.1f;
 		}
+		*/
+	}
+
+	if(LGL_KeyRelease(LGL_KEY_RALT))
+	{
+		printf("Saving!\n");
+		printf
+		(
+			"\tProjMapCorners|%f|%f|%f|%f|%f|%f|%f|%f\n",
+			ProjMapOffsetX[0],
+			ProjMapOffsetY[0],
+			ProjMapOffsetX[1],
+			ProjMapOffsetY[1],
+			ProjMapOffsetX[2],
+			ProjMapOffsetY[2],
+			ProjMapOffsetX[3],
+			ProjMapOffsetY[3]
+		);
+		SaveProjMapPrevCorners();
 	}
 
 	return;
@@ -566,8 +607,8 @@ DrawVisuals
 					float freqSenseLEDBright=tts[t]->GetFreqSenseLEDBrightnessFinal(g);
 					float freqSenseLEDBrightWash=tts[t]->GetFreqSenseLEDBrightnessWash(g);
 					freqSenseLEDBright*=ejectBrightnessScalar;
-					float brL=brLow[t]*freqSenseLEDBright;
-					float brH=LGL_Min(brHigh[t]+freqSenseLEDBrightWash,1.0f)*freqSenseLEDBright;
+					float brL=(1.0f-freqSenseLEDBrightWash)*brLow[t]*freqSenseLEDBright;
+					float brH=((1.0f-freqSenseLEDBrightWash)*brHigh[t]+freqSenseLEDBrightWash)*freqSenseLEDBright;
 					LGL_Color colorL = tts[t]->GetFreqSenseLEDColorLow(g);
 					LGL_Color colorH = tts[t]->GetFreqSenseLEDColorHigh(g);
 
@@ -1420,6 +1461,99 @@ GetWhichProjMapCorner()
 	}
 
 	return(which);
+}
+
+void
+VisualizerObj::
+SaveProjMapPrevCorners()
+{
+	char data[4096];
+	sprintf
+	(
+		data,
+		"ProjMapCorners|%f|%f|%f|%f|%f|%f|%f|%f\n",
+		ProjMapOffsetX[0],
+		ProjMapOffsetY[0],
+		ProjMapOffsetX[1],
+		ProjMapOffsetY[1],
+		ProjMapOffsetX[2],
+		ProjMapOffsetY[2],
+		ProjMapOffsetX[3],
+		ProjMapOffsetY[3]
+	);
+
+	LGL_WriteFileAsync(ProjMapCornersPath,data,strlen(data));
+
+	/*
+	for(int a=0;a<4;a++)
+	{
+		ProjMapOffsetPrevX[a]=ProjMapOffsetX[a];
+		ProjMapOffsetPrevY[a]=ProjMapOffsetY[a];
+	}
+	*/
+}
+
+void
+VisualizerObj::
+LoadProjMapPrevCorners()
+{
+	//Initialize to default values.
+	for(int a=0;a<4;a++)
+	{
+		ProjMapOffsetPrevX[a]=0.0f;
+		ProjMapOffsetPrevY[a]=0.0f;
+	}
+
+	//Read the data in...
+	const int dataLen=2048;
+	char data[dataLen];
+	if(FILE* fd=fopen(ProjMapCornersPath,"r"))
+	{
+		fgets(data,dataLen,fd);
+		fclose(fd);
+	}
+	else
+	{
+		return;
+	}
+
+	//Process the data
+	FileInterfaceObj fi;
+	fi.ReadLine(data);
+	if(fi.Size()==0)
+	{
+		return;
+	}
+	if(strcasecmp(fi[0],"ProjMapCorners")==0)
+	{
+		if(fi.Size()!=9)
+		{
+			printf("VisualizerObj::LoadProjMapCorners('%s'): Warning!\n",ProjMapCornersPath);
+			printf("\tStrange fi.size() of '%i' (Expecting 9)\n",fi.Size());
+		}
+		else
+		{
+			ProjMapOffsetPrevX[0]=atof(fi[1]);
+			ProjMapOffsetPrevY[0]=atof(fi[2]);
+			ProjMapOffsetPrevX[1]=atof(fi[3]);
+			ProjMapOffsetPrevY[1]=atof(fi[4]);
+			ProjMapOffsetPrevX[2]=atof(fi[5]);
+			ProjMapOffsetPrevY[2]=atof(fi[6]);
+			ProjMapOffsetPrevX[3]=atof(fi[7]);
+			ProjMapOffsetPrevY[3]=atof(fi[8]);
+		}
+	}
+}
+
+void
+VisualizerObj::
+ApplyProjMapPrevCorners()
+{
+	for(int a=0;a<4;a++)
+	{
+		ProjMapOffsetX[a]=ProjMapOffsetPrevX[a];
+		ProjMapOffsetY[a]=ProjMapOffsetPrevY[a];
+	}
 }
 
 void

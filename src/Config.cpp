@@ -125,6 +125,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"alwaysUseAudioInForFreqSense=0\n");
 		fprintf(fd,"wireMemory=1\n");
 		fprintf(fd,"escDuringScanExits=1\n");
+		fprintf(fd,"debugVideoCaching=0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_000_Host = localhost\n");
 		fprintf(fd,"ledClient_000_Port = 0\n");
@@ -1758,6 +1759,13 @@ GetOscAddressPatternList
 )
 {
 	return(dvjInputMap[action].GetOscAddressPatternList(target));
+}
+
+bool
+GetDebugVideoCaching()
+{
+	int debug=dvjrcConfigFile->read<int>("debugVideoCaching",0);
+	return(debug!=0);
 }
 
 //int GetInputKeyboardWaveformKey() { return(dvjInputMap[WAVEFORM_].KeyboardInt); }

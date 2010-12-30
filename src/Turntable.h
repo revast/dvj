@@ -325,6 +325,7 @@ public:
 	int				VideoEncoderEndSignal;
 	float				VideoEncoderUnsupportedCodecTime;
 	char				VideoEncoderUnsupportedCodecName[64];
+	char				VideoEncoderReason[2048];
 
 	int				GetVideoFrequencySensitiveMode();
 	float				GetEQLo();

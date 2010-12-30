@@ -114,7 +114,7 @@ void InitializeGlobals()
 	GetInput().AddChild(new InputNullObj);
 	GetInput().AddChild(new InputKeyboardObj);
 	GetInput().AddChild(&GetInputMouse());
-	GetInput().AddChild(&GetInputMultiTouch());
+	//GetInput().AddChild(&GetInputMultiTouch());
 	GetInput().AddChild(&GetInputOsc());
 	GetInput().AddChild(&GetInputXponent());
 	GetInput().AddChild(new InputXsessionObj);
