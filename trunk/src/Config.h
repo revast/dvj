@@ -303,5 +303,8 @@ public:
 std::vector<LEDClient>
 GetLEDClientList();
 
+bool
+GetDebugVideoCaching();
+
 #endif	//_DVJ_CONFIG_H_
 

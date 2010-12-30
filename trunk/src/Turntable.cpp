@@ -58,6 +58,10 @@ findCachedPath
 {
 	if(LGL_FileExtensionIsImage(srcPath))
 	{
+		if(GetDebugVideoCaching())
+		{
+			LGL_DebugPrintf("found: File is image!");
+		}
 		strcpy(foundPath,srcPath);
 		return;
 	}
@@ -74,6 +78,10 @@ findCachedPath
 	)
 	{
 		//hajnal.mov has .mjpeg.avi extension in it, indicating we look no further.
+		if(GetDebugVideoCaching())
+		{
+			LGL_DebugPrintf("found: srcPath has .mjpeg.avi extension");
+		}
 		return;
 	}
 
@@ -102,7 +110,18 @@ findCachedPath
 	if(LGL_FileExists(foundPath))
 	{
 		//Found /home/id/mp3/hajnal.mov.mjpeg.avi
+		if(GetDebugVideoCaching())
+		{
+			LGL_DebugPrintf("found: %s",foundPath);
+		}
 		return;
+	}
+	else
+	{
+		if(GetDebugVideoCaching())
+		{
+			LGL_DebugPrintf("no exist: %s",foundPath);
+		}
 	}
 
 	const char* dvjCacheDirName = GetDvjCacheDirName();
@@ -117,7 +136,18 @@ findCachedPath
 		}
 		else
 		{
+			if(GetDebugVideoCaching())
+			{
+				LGL_DebugPrintf("found: %s",foundPath);
+			}
 			return;
+		}
+	}
+	else
+	{
+		if(GetDebugVideoCaching())
+		{
+			LGL_DebugPrintf("no exist: %s",foundPath);
 		}
 	}
 
@@ -138,7 +168,18 @@ findCachedPath
 			}
 			else
 			{
+				if(GetDebugVideoCaching())
+				{
+					LGL_DebugPrintf("found: %s",foundPath);
+				}
 				return;
+			}
+		}
+		else
+		{
+			if(GetDebugVideoCaching())
+			{
+				LGL_DebugPrintf("no exist: %s",foundPath);
 			}
 		}
 	}
@@ -147,7 +188,18 @@ findCachedPath
 	if(LGL_FileExists(foundPath))
 	{
 		//Found /home/id/.dvj/video/tracks/hajnal.mov.mjpeg.avi
+		if(GetDebugVideoCaching())
+		{
+			LGL_DebugPrintf("found: %s",foundPath);
+		}
 		return;
+	}
+	else
+	{
+		if(GetDebugVideoCaching())
+		{
+			LGL_DebugPrintf("no exist: %s",foundPath);
+		}
 	}
 
 	if
@@ -161,19 +213,40 @@ findCachedPath
 		if(LGL_FileExists(foundPath))
 		{
 			//Found /home/id/mp3/dvj/hajnal.mov.mjpeg.avi
+			if(GetDebugVideoCaching())
+			{
+				LGL_DebugPrintf("found: %s",foundPath);
+			}
 			return;
+		}
+		else
+		{
+			if(GetDebugVideoCaching())
+			{
+				LGL_DebugPrintf("no exist: %s",foundPath);
+			}
 		}
 	}
 
 	strcpy(foundPath,srcPath);
-	if
-	(
-		strstr(extension,".mjpeg.avi") &&
-		LGL_FileExists(foundPath)
-	)
+	if(strstr(extension,".mjpeg.avi"))
 	{
-		//Found /home/id/mp3/hajnal.mov
-		return;
+		if(LGL_FileExists(foundPath))
+		{
+			//Found /home/id/mp3/hajnal.mov
+			if(GetDebugVideoCaching())
+			{
+				LGL_DebugPrintf("found: %s",foundPath);
+			}
+			return;
+		}
+		else
+		{
+			if(GetDebugVideoCaching())
+			{
+				LGL_DebugPrintf("no exist: %s",foundPath);
+			}
+		}
 	}
 
 	//Found nothing
@@ -190,10 +263,21 @@ findVideoPath
 	findCachedPath(foundPath,srcPath,"mjpeg.avi");
 	if(LGL_FileExists(foundPath))
 	{
+		if(GetDebugVideoCaching())
+		{
+			LGL_DebugPrintf("findCachedPath() success: %s",foundPath);
+		}
 		return;
 	}
 
-	if(LGL_VideoIsMJPEG(srcPath))
+	bool isMjpeg=LGL_VideoIsMJPEG(srcPath);
+
+	if(GetDebugVideoCaching())
+	{
+		LGL_DebugPrintf("MJPEG? %s",isMjpeg ? "YES": "NO");
+	}
+
+	if(isMjpeg)
 	{
 		static LGL_Semaphore lnSym("lnSym");
 		LGL_ScopeLock lock(lnSym);
@@ -219,8 +303,16 @@ findVideoPath
 		sprintf(foundPath,"%s/%s/%s.mjpeg.avi",soundSrcDir,GetDvjCacheDirName(),soundName);
 		if(LGL_FileExists(foundPath)==false)
 		{
+			if(GetDebugVideoCaching())
+			{
+				LGL_DebugPrintf("Attempting symlink at path: '%s'",foundPath);
+				LGL_DebugPrintf("Attempting symlink target: '%s'",srcPath);
+			}
 			LGL_FileDelete(foundPath);	//For stale symlinks...
 			char cmd[4096];
+			char dir[4096];
+			sprintf(dir,"%s/%s",soundSrcDir,GetDvjCacheDirName());
+			LGL_DirectoryCreate(dir);
 			sprintf
 			(
 				cmd,
@@ -229,6 +321,18 @@ findVideoPath
 				foundPath
 			);
 			system(cmd);
+		}
+		if(GetDebugVideoCaching())
+		{
+			LGL_DebugPrintf("srcPath: %s\n",srcPath);
+			LGL_DebugPrintf("Symlink exists? '%s'",LGL_FileExists(foundPath) ? "YES" : "NO");
+			LGL_DebugPrintf("Symlink is symlink? '%s'",LGL_PathIsSymlink(foundPath) ? "YES" : "NO");
+			if(LGL_PathIsSymlink(foundPath))
+			{
+				char symlinkTarget[2048];
+				bool ok=LGL_ResolveSymlink(symlinkTarget,2048,foundPath);
+				LGL_DebugPrintf("Symlink target: '%s' (%s)",symlinkTarget,ok ? "OK" : "FAIL");
+			}
 		}
 		return;
 	}
@@ -360,6 +464,14 @@ videoEncoderThread
 		//Video Encoding Loop
 		if(LGL_FileExists(encoderDst)==false || LGL_FileExists(encoderAudioDst)==false)
 		{
+if(LGL_FileExists(encoderDst)==false)
+{
+	sprintf(tt->VideoEncoderReason,"Video doesn't exist");
+}
+else if(LGL_FileExists(encoderAudioDst)==false)
+{
+	sprintf(tt->VideoEncoderReason,"Audio doesn't exist");
+}
 			{
 				LGL_ScopeLock lock(tt->VideoEncoderSemaphore);
 				tt->VideoEncoder = new LGL_VideoEncoder
@@ -678,6 +790,7 @@ TurntableObj
 
 	VideoEncoder=NULL;
 	VideoEncoderThread=NULL;
+	VideoEncoderReason[0]='\0';
 
 	ENTIRE_WAVE_ARRAY_COUNT=LGL_WindowResolutionX();
 
@@ -3726,6 +3839,40 @@ DrawFrame
 				VideoEncoderAudioOnly ? "Audio" : "Video"
 			);
 
+			if(VideoEncoderAudioOnly==false)
+			{
+				char str[2048];
+				sprintf
+				(
+					str,
+					"%s => mjpeg",
+					VideoEncoder->GetCodecName()
+				);
+				float fontHeight=0.015f;
+				float fontWidth=LGL_GetFont().GetWidthString(fontHeight,str);
+				float fontWidthMax=width*0.95f;
+				fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
+				LGL_GetFont().DrawString
+				(
+					centerX,bottom+0.75f*height,fontHeight,
+					1,1,1,1,
+					true,.5f,
+					str
+				);
+
+				if(GetDebugVideoCaching())
+				{
+					LGL_ClipRectDisable();
+					LGL_DebugPrintf(VideoEncoderReason);
+					char videoFileName[1024];
+					findVideoPath
+					(
+						videoFileName,
+						SoundSrcPath
+					);
+				}
+			}
+
 			int seconds=(int)VideoEncoderEtaSeconds;
 			if(seconds>=0)
 			{
@@ -5869,7 +6016,7 @@ SelectNewVideo
 	if(VideoEncoderThread==NULL)
 	{
 		//Change the normal videos
-		char videoFileName[1024];
+		char videoFileName[2048];
 		findVideoPath
 		(
 			videoFileName,
