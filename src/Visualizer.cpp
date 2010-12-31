@@ -407,19 +407,6 @@ NextFrame
 
 	if(LGL_KeyRelease(LGL_KEY_RALT))
 	{
-		printf("Saving!\n");
-		printf
-		(
-			"\tProjMapCorners|%f|%f|%f|%f|%f|%f|%f|%f\n",
-			ProjMapOffsetX[0],
-			ProjMapOffsetY[0],
-			ProjMapOffsetX[1],
-			ProjMapOffsetY[1],
-			ProjMapOffsetX[2],
-			ProjMapOffsetY[2],
-			ProjMapOffsetX[3],
-			ProjMapOffsetY[3]
-		);
 		SaveProjMapPrevCorners();
 	}
 
@@ -1723,10 +1710,56 @@ DrawVideos
 								ProjectorClear=false;
 							}
 						}
+						/*
 						image->DrawToScreen
 						(
 							myL,myR,myB,myT,
 							0,
+							1.0f,
+							1.0f,
+							1.0f,
+							alpha,
+							br
+						);
+						*/
+
+						float x[4];
+						float y[4];
+
+						if(LGL_GetActiveDisplay()==0)
+						{
+							//LB
+							x[0]=myL;
+							y[0]=myB;
+							//RB
+							x[1]=myR;
+							y[1]=myB;
+							//RT
+							x[2]=myR;
+							y[2]=myT;
+							//LT
+							x[3]=myL;
+							y[3]=myT;
+						}
+						else
+						{
+							//LB
+							x[0]=myL+ProjMapOffsetX[0];
+							y[0]=myB+ProjMapOffsetY[0];
+							//RB
+							x[1]=myR+ProjMapOffsetX[3];
+							y[1]=myB+ProjMapOffsetY[3];
+							//RT
+							x[2]=myR+ProjMapOffsetX[2];
+							y[2]=myT+ProjMapOffsetY[2];
+							//LT
+							x[3]=myL+ProjMapOffsetX[1];
+							y[3]=myT+ProjMapOffsetY[1];
+						}
+						image->DrawToScreen
+						(
+							x,
+							y,
 							1.0f,
 							1.0f,
 							1.0f,
