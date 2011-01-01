@@ -104,7 +104,7 @@ LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cfl
 #DEFINE OSX BUILD OPTIONS
 
 AR_OSX			= ar rcs
-CC_OSX			= g++-4.0
+CC_OSX			= g++
 MODEFLAGS_OSX		= -g
 DEFINES_OSX		= -DLGL_LINUX -DLGL_OSX -Dfopen64=fopen -D__MACOSX_CORE__
 CFLAGS_OSX		= -Wall -I$(OBJDIR_OSX) `sdl-config --cflags` $(MODEFLAGS_OSX) -I$(ROOT_SRC_DIR) $(DEFINES_OSX) -I/opt/local/include -L/opt/local/lib/ -L/usr/local/lib/ -I/usr/local/include/ -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers
