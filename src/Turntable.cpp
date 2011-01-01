@@ -3841,24 +3841,27 @@ DrawFrame
 
 			if(VideoEncoderAudioOnly==false)
 			{
-				char str[2048];
-				sprintf
-				(
-					str,
-					"%s => mjpeg",
-					VideoEncoder->GetCodecName()
-				);
-				float fontHeight=0.015f;
-				float fontWidth=LGL_GetFont().GetWidthString(fontHeight,str);
-				float fontWidthMax=width*0.95f;
-				fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
-				LGL_GetFont().DrawString
-				(
-					centerX,bottom+0.75f*height,fontHeight,
-					1,1,1,1,
-					true,.5f,
-					str
-				);
+				if(VideoEncoder)
+				{
+					char str[2048];
+					sprintf
+					(
+						str,
+						"%s => mjpeg",
+						VideoEncoder->GetCodecName() ? VideoEncoder->GetCodecName() : "Unknown"
+					);
+					float fontHeight=0.015f;
+					float fontWidth=LGL_GetFont().GetWidthString(fontHeight,str);
+					float fontWidthMax=width*0.95f;
+					fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
+					LGL_GetFont().DrawString
+					(
+						centerX,bottom+0.75f*height,fontHeight,
+						1,1,1,1,
+						true,.5f,
+						str
+					);
+				}
 
 				if(GetDebugVideoCaching())
 				{
