@@ -1,0 +1,4 @@
+mkdir -p obj/osx
+gcc -c lgl_syphon.mm -o obj/osx/lgl_syphon.o -I Syphon.framework/Headers
+cp obj/osx/lgl_syphon.o ../../obj/osx
+

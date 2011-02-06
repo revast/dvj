@@ -297,6 +297,8 @@ typedef struct
 
 	char			ErrorStringGL[128];
 
+	LGL_Image*		SyphonImage;
+
 	//Audio
 
 	bool			AudioAvailable;
@@ -1150,6 +1152,8 @@ LGL_JackInit()
 		strcpy(cmd,"killall -9 jackd");
 		system(cmd);
 	}
+
+	setenv("JACK_DRIVER_DIR","./lib/jack",1);
 
 	LGL.AudioSpec->silence=0;
 	jack_options_t jack_options = JackNullOption;
@@ -2352,6 +2356,8 @@ printf("CreateWindow(%i): %i x %i\n",
 	LGL.StatsRectsPerFrame=0;
 	LGL.StatsImagesPerFrame=0;
 	LGL.StatsPixelsPerFrame=0;
+
+	LGL.SyphonImage=NULL;
 
 	//GLSL Function Pointer Assignments
 
@@ -6234,6 +6240,7 @@ LGL_Image
 {
 	ReferenceCount=0;
 	TextureGL=0;
+	TextureGLRect=false;
 
 #ifdef	LGL_NO_GRAPHICS
 	return;
@@ -6281,6 +6288,7 @@ LGL_Image
 {
 	ReferenceCount=0;
 	TextureGL=0;
+	TextureGLRect=false;
 
 #ifdef	LGL_NO_GRAPHICS
 	return;
@@ -6374,6 +6382,7 @@ LGL_Image
 	TexH=LGL_NextPowerOfTwo(ImgH);
 
 	TextureGL=0;
+	TextureGLRect=false;
 	TextureGLMine=true;
 	FrameBufferImage=false;
 	InvertY=true;
@@ -6415,6 +6424,7 @@ LGL_Image
 {
 	ReferenceCount=0;
 	TextureGL=0;
+	TextureGLRect=false;
 
 #ifdef	LGL_NO_GRAPHICS
 	return;
@@ -6460,6 +6470,7 @@ LGL_Image
 	TexW=LGL_NextPowerOfTwo(LGL.WindowResolutionX[LGL.DisplayNow]);
 	TexH=LGL_NextPowerOfTwo(LGL.WindowResolutionY[LGL.DisplayNow]);
 	TextureGL=0;
+	TextureGLRect=false;
 	TextureGLMine=true;
 
 	glGenTextures(1,&(TextureGL));
@@ -6638,7 +6649,8 @@ DrawToScreen
 	float	leftsubimage,
 	float	rightsubimage,
 	float	bottomsubimage,
-	float	topsubimage
+	float	topsubimage,
+	float	rgbSpatializerScalar
 )
 {
 #ifdef	LGL_NO_GRAPHICS
@@ -6681,6 +6693,12 @@ DrawToScreen
 
 	float imgTexW=(float)imgW/(float)texW;
 	float imgTexH=(float)imgH/(float)texH;
+
+	if(TextureGLRect)
+	{
+		imgTexW=imgW;
+		imgTexH=imgH;
+	}
 
 	//0: CC
 	x2[0]=0.25f*(x[0]+x[1]+x[2]+x[3]);
@@ -6745,7 +6763,7 @@ DrawToScreen
 	GLuint textureGL=TextureGL;
 	bool alphaChannel=AlphaChannel;
 	LGL_Shader* shader=&ImageShader;
-	bool enableShader=brightnessScalar!=1.0f;
+	bool enableShader=true;//brightnessScalar!=1.0f;
 	if(YUV_Available())
 	{
 		textureGL=YUV_TextureGL[0];
@@ -6767,6 +6785,11 @@ DrawToScreen
 		(
 			"brightnessScalar",
 			brightnessScalar
+		);
+		shader->SetUniformAttributeFloat
+		(
+			"rgbSpatializerScalar",
+			rgbSpatializerScalar
 		);
 	}
 
@@ -6820,13 +6843,24 @@ DrawToScreen
 	}
 	else
 	{
-		gl2ActiveTexture(GL_TEXTURE0_ARB);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D,textureGL);
+		if(TextureGLRect)
+		{
+			//gl2ActiveTexture(GL_TEXTURE0_ARB);
+			glEnable(GL_TEXTURE_RECTANGLE_ARB);
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB,textureGL);
+			glDisable(GL_TEXTURE_2D);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		}
+		else
+		{
+			gl2ActiveTexture(GL_TEXTURE0_ARB);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D,textureGL);
+		}
 	}
 
 	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
-
 	glBegin(GL_TRIANGLE_FAN);
 	{
 		glNormal3f(0,0,-1);
@@ -6891,7 +6925,14 @@ DrawToScreen
 	}
 	else
 	{
-		glDisable(GL_TEXTURE_2D);
+		if(TextureGLRect)
+		{
+			glDisable(GL_TEXTURE_RECTANGLE_ARB);
+		}
+		else
+		{
+			glDisable(GL_TEXTURE_2D);
+		}
 	}
 
 	glDisable(GL_BLEND);
@@ -11317,7 +11358,7 @@ GetNextFrameNumberToLoadBackwards
 		}
 
 		bool found=false;
-		for(unsigned int b=frameNumList.size()-1;b>=0;b--)
+		for(int b=(int)frameNumList.size()-1;b>=0;b--)
 		{
 			long frameNumberNow=frameNumList[b];
 			if(frameNumberFind>frameNumberNow)
@@ -12200,7 +12241,7 @@ LGL_VideoEncoder::
 	if(DstBufferBGRA)
 	{
 		//Causes malloc_error_break() to be called... But why?!
-		lgl_av_freep(&DstBufferBGRA);
+		//lgl_av_freep(&DstBufferBGRA);
 	}
 	if(DstMp3Buffer)
 	{
@@ -23756,6 +23797,46 @@ GetAddress()
 	return(Address);
 }
 
+
+
+//Syphon
+#if 1
+int
+LGL_SyphonServerCount()
+{
+	return(lgl_SyphonServerCount());
+}
+
+LGL_Image*
+LGL_SyphonImage
+(
+	int	serverIndex
+)
+{
+	if(LGL.SyphonImage==NULL)
+	{
+		LGL.SyphonImage = new LGL_Image("data/image/logo.png");
+	}
+
+	GLuint id;
+	int w;
+	int h;
+	bool ok=lgl_SyphonImageInfo(serverIndex,id,w,h);
+	if(ok==false)
+	{
+		return(NULL);
+	}
+
+	LGL.SyphonImage->TextureGLRect=true;
+	LGL.SyphonImage->TexW=w;
+	LGL.SyphonImage->TexH=h;
+	LGL.SyphonImage->ImgW=w;
+	LGL.SyphonImage->ImgH=h;
+	LGL.SyphonImage->TextureGL=id;
+
+	return(LGL.SyphonImage);
+}
+#endif
 
 
 //VidCam
