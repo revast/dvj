@@ -73,6 +73,9 @@
 #include "oscpack/osc/OscOutboundPacketStream.h"
 #include "oscpack/ip/UdpSocket.h"
 
+//Syphon
+#include "syphon.moduloid/lgl_syphon.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -873,7 +876,8 @@ public:
 				float r=1, float g=1, float b=1, float a=1,
 				float brightnessScalar=1.0f,
 				float leftsubimage=0.0f, float rightsubimage=1.0f,
-				float bottomsubimage=0.0f, float topsubimage=1.0f
+				float bottomsubimage=0.0f, float topsubimage=1.0f,
+				float rgbSpatializerScalar=0.0f
 			);
 	void		DrawToScreenAsLine
 			(
@@ -972,6 +976,7 @@ const	char*		GetPathShort() const;
 	SDL_Surface*	SurfaceSDL;
 	GLuint		TextureGL;
 	bool		TextureGLMine;
+	bool		TextureGLRect;
 	GLuint		PixelBufferObjectFrontGL;
 	GLuint		PixelBufferObjectBackGL;
 	GLsizei		PixelBufferObjectSize;
@@ -2842,6 +2847,16 @@ private:
 	char		Address[2048];
 
 };
+
+
+
+//Syphon
+
+int
+LGL_SyphonServerCount();
+
+LGL_Image*
+LGL_SyphonImage(int server=0);
 
 
 
