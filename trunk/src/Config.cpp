@@ -332,11 +332,11 @@ CreateDotJackdrc()
 		if(aggregate)
 		{
 			//Don't be tempted to put ~:Aggregate:0 below in quotes. This will fail.
-			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p %i -d ~:Aggregate:0 -c 6 -i 2 -o 4\n",samplePeriod);
+			fprintf(fd,"./jackd -Z -R -t9999 -d coreaudio -p %i -d ~:Aggregate:0 -c 6 -i 2 -o 4\n",samplePeriod);
 		}
 		else
 		{
-			fprintf(fd,"./jackd -Z -R -t5000 -d coreaudio -p %i -i 2\n",samplePeriod);
+			fprintf(fd,"./jackd -Z -R -t9999 -d coreaudio -p %i -i 2\n",samplePeriod);
 		}
 		fclose(fd);
 	}
