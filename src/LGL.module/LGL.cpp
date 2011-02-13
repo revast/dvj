@@ -747,16 +747,16 @@ lgl_AudioOutCallbackJack
 		jack_default_audio_sample_t* in_r = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_input_port_r,nframes);
 		assert(in_l);
 		assert(in_r);
-		jack_default_audio_sample_t* out_fl = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_output_port_fl,nframes);
-		jack_default_audio_sample_t* out_fr = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_output_port_fr,nframes);
-		assert(out_fl);
-		assert(out_fr);
 		for(unsigned int a=0;a<nframes;a++)
 		{
 			jack_input_buffer16[a*2+0] = (Sint16)(in_l[a]*((1<<16)-1));
 			jack_input_buffer16[a*2+1] = (Sint16)(in_r[a]*((1<<16)-1));
 			if(LGL.AudioInPassThru)
 			{
+				jack_default_audio_sample_t* out_fl = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_output_port_fl,nframes);
+				jack_default_audio_sample_t* out_fr = (jack_default_audio_sample_t*)jack_port_get_buffer(jack_output_port_fr,nframes);
+				assert(out_fl);
+				assert(out_fr);
 				out_fl[a]+=in_l[a];
 				out_fr[a]+=in_r[a];
 				if(LGL.AudioSpec->channels==4)
@@ -3562,7 +3562,7 @@ lgl_EndFrame()
 			LGL.AudioOutDisconnected=true;
 			if(LGL.AudioUsingJack)
 			{
-				if(0 && LGL.AudioOutReconnectTimer.SecondsSinceLastReset()>1.0f)
+				if(LGL.AudioOutReconnectTimer.SecondsSinceLastReset()>1.0f)
 				{
 					printf("Trying to revive JACK! (Alpha)\n");
 					//jack_client_close(jack_client);
