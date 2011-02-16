@@ -280,7 +280,7 @@ findVideoPath
 	if(isMjpeg)
 	{
 		static LGL_Semaphore lnSym("lnSym");
-		LGL_ScopeLock lock(lnSym);
+		LGL_ScopeLock lock(__FILE__,__LINE__,lnSym);
 		char soundSrcDir[2048];
 		strcpy(soundSrcDir,srcPath);
 		if(char* lastSlash = strrchr(soundSrcDir,'/'))
@@ -473,7 +473,7 @@ else if(LGL_FileExists(encoderAudioDst)==false)
 	sprintf(tt->VideoEncoderReason,"Audio doesn't exist");
 }
 			{
-				LGL_ScopeLock lock(tt->VideoEncoderSemaphore);
+				LGL_ScopeLock lock(__FILE__,__LINE__,tt->VideoEncoderSemaphore);
 				tt->VideoEncoder = new LGL_VideoEncoder
 				(
 					encoderSrc,
@@ -1110,7 +1110,7 @@ NextFrame
 		VideoEncoderThread=NULL;
 		VideoEncoderTerminateSignal=0;
 		{
-			LGL_ScopeLock lock(VideoEncoderSemaphore);
+			LGL_ScopeLock lock(__FILE__,__LINE__,VideoEncoderSemaphore);
 			delete VideoEncoder;
 			VideoEncoder=NULL;
 		}
@@ -1589,12 +1589,6 @@ NextFrame
 			RecordSpeedAsZeroUntilZero=true;
 		}
 		RecordHoldLastFrame=recordHold;
-		if(0 && AudioInputMode)
-		{
-			rewindFFFactor=0.0f;
-			recordSpeed=0.0f;
-			recordHold=false;
-		}
 
 		if
 		(
@@ -1996,7 +1990,6 @@ NextFrame
 		}
 
 		//Pitch
-		if(AudioInputMode==false)
 		{
 			Nudge=GetInput().WaveformNudge(target);
 
@@ -2032,11 +2025,7 @@ NextFrame
 		}
 
 		//Glitch
-		if
-		(
-			//AudioInputMode==false &&
-			GetInput().WaveformStutter(target)
-		)
+		if(GetInput().WaveformStutter(target))
 		{
 			bool glitchDuoPrev=GlitchDuo;
 			GlitchDuo=true;
@@ -2126,11 +2115,7 @@ NextFrame
 			SetRecallOrigin();
 		}
 
-		if
-		(
-			BPMAvailable() &&
-			1 //AudioInputMode==false
-		)
+		if(BPMAvailable())
 		{
 			//Looping with BPM
 
@@ -2256,11 +2241,7 @@ NextFrame
 				}
 			}
 		}
-		else if
-		(
-			BPMAvailable()==false &&
-			1 //AudioInputMode==false
-		)
+		else if(BPMAvailable()==false)
 		{
 			//Looping without BPM
 			if(loopChanged)
@@ -2649,11 +2630,7 @@ NextFrame
 		);
 			
 		//Pause
-		if
-		(
-			//AudioInputMode==false &&
-			GetInput().WaveformPauseToggle(target)
-		)
+		if(GetInput().WaveformPauseToggle(target))
 		{
 			//Toggle PauseMultiplier
 			PauseMultiplier=(PauseMultiplier+1)%2;
@@ -3615,10 +3592,6 @@ LGL_DrawLineToScreen
 		{
 			vol *= (1.0f-NoiseFactor);
 		}
-		if(AudioInputMode)
-		{
-			vol = 0.0f;
-		}
 
 		float volFront = VolumeInvertBinary ?
 			(MixerVolumeFront==0.0f ? 1.0f : 0.0f) :
@@ -3731,18 +3704,17 @@ DrawFrame
 				VideoEncoderUnsupportedCodecName
 			);
 		}
-		LGL_VideoDecoder* vid = GetVideo();
-		LGL_Image* image = vid ? vid->GetImage() : NULL;
-		if
-		(
-			vid!=NULL &&
-			image!=NULL &&
-			image->GetFrameNumber()!=-1
-		)
+		
+		if(LGL_VideoDecoder* vid = GetVideo())
 		{
-			VideoEncoderBeginSignal=1;
+			if(LGL_Image* image = vid->GetImage())
+			{
+				if(image->GetFrameNumber()!=-1)
+				{
+					VideoEncoderBeginSignal=1;
+				}
+			}
 		}
-//VideoEncoderBeginSignal=1;
 
 		if(Sound->IsLoaded()==false)
 		{
@@ -3809,7 +3781,7 @@ DrawFrame
 		{
 			if(VideoEncoderAudioOnly==false)
 			{
-				LGL_ScopeLock lock(VideoEncoderSemaphore);
+				LGL_ScopeLock lock(__FILE__,__LINE__,VideoEncoderSemaphore);
 				if(VideoEncoder)
 				{
 					if(LGL_Image* img = VideoEncoder->GetImage())

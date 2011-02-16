@@ -529,7 +529,7 @@ LGL_Object::
 ~LGL_Object()
 {
 	{
-		LGL_ScopeLock retainCountLock(RetainCountSemaphore);
+		LGL_ScopeLock retainCountLock(__FILE__,__LINE__,RetainCountSemaphore);
 		if(int rc=GetRetainCount())
 		{
 			LGL_Assertf
@@ -562,7 +562,7 @@ void
 LGL_Object::
 Retain()
 {
-	LGL_ScopeLock retainCountLock(RetainCountSemaphore);
+	LGL_ScopeLock retainCountLock(__FILE__,__LINE__,RetainCountSemaphore);
 	RetainCount++;
 }
 
@@ -570,7 +570,7 @@ void
 LGL_Object::
 Release()
 {
-	LGL_ScopeLock retainCountLock(RetainCountSemaphore);
+	LGL_ScopeLock retainCountLock(__FILE__,__LINE__,RetainCountSemaphore);
 	RetainCount--;
 }
 
@@ -619,7 +619,7 @@ ReleaseObject()
 	{
 		Object->Release();
 		{
-			LGL_ScopeLock retainCountLock(Object->GetRetainCountSemaphore());
+			LGL_ScopeLock retainCountLock(__FILE__,__LINE__,Object->GetRetainCountSemaphore());
 			if(Object->GetRetainCount()==0)
 			{
 				delete Object;
@@ -1370,28 +1370,28 @@ lgl_get_av_semaphore()
 void
 lgl_av_register_all()
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	av_register_all();
 }
 
 void
 lgl_avcodec_init()
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	avcodec_init();
 }
 
 void
 lgl_avcodec_register_all()
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	avcodec_register_all();
 }
 
 void
 lgl_av_log_set_level(int level)
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	av_log_set_level(level);
 }
 
@@ -1405,8 +1405,8 @@ lgl_av_open_input_file
 	AVFormatParameters*	ap
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
-	//LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
+	//LGL_ScopeLock avOpenCloseLock(__FILE__,__LINE__,LGL.AVOpenCloseSemaphore);
 	return
 	(
 		av_open_input_file
@@ -1423,8 +1423,8 @@ lgl_av_open_input_file
 void
 lgl_av_close_input_file(AVFormatContext* fc)
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
-	//LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
+	//LGL_ScopeLock avOpenCloseLock(__FILE__,__LINE__,LGL.AVOpenCloseSemaphore);
 	av_close_input_file(fc);
 }
 
@@ -1434,8 +1434,8 @@ lgl_av_find_stream_info
 	AVFormatContext*	fc
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
-	LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
+	LGL_ScopeLock avOpenCloseLock(__FILE__,__LINE__,LGL.AVOpenCloseSemaphore);
 	return(av_find_stream_info(fc));
 }
 
@@ -1445,7 +1445,7 @@ lgl_avcodec_find_decoder
 	enum CodecID	id
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(avcodec_find_decoder(id));
 }
 
@@ -1456,8 +1456,8 @@ lgl_avcodec_open
 	AVCodec*	c
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
-	LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
+	LGL_ScopeLock avOpenCloseLock(__FILE__,__LINE__,LGL.AVOpenCloseSemaphore);
 	return(avcodec_open(cc,c));
 }
 
@@ -1467,8 +1467,8 @@ lgl_avcodec_close
 	AVCodecContext*	cc
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
-	LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
+	LGL_ScopeLock avOpenCloseLock(__FILE__,__LINE__,LGL.AVOpenCloseSemaphore);
 	return(avcodec_close(cc));
 }
 
@@ -1481,8 +1481,8 @@ lgl_url_fopen
 	int		flags
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
-	LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
+	LGL_ScopeLock avOpenCloseLock(__FILE__,__LINE__,LGL.AVOpenCloseSemaphore);
 	return
 	(
 		url_fopen
@@ -1500,8 +1500,8 @@ lgl_url_fclose
 	ByteIOContext*	s
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
-	LGL_ScopeLock avOpenCloseLock(LGL.AVOpenCloseSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
+	LGL_ScopeLock avOpenCloseLock(__FILE__,__LINE__,LGL.AVOpenCloseSemaphore);
 	return
 	(
 		url_fclose(s)
@@ -1511,7 +1511,7 @@ lgl_url_fclose
 AVFrame*
 lgl_avcodec_alloc_frame()
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(avcodec_alloc_frame());
 }
 
@@ -1524,9 +1524,9 @@ lgl_av_seek_frame
 	int			flags
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	static LGL_Semaphore localSem("lgl_av_seek_frame");
-	LGL_ScopeLock localLock(localSem);
+	LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
 	return
 	(
 		av_seek_frame
@@ -1545,7 +1545,7 @@ lgl_av_init_packet
 	AVPacket*	pkt
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	av_init_packet(pkt);
 }
 
@@ -1556,7 +1556,7 @@ lgl_av_read_frame
 	AVPacket*		pkt
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(av_read_frame(fc,pkt));
 }
 
@@ -1569,9 +1569,9 @@ lgl_avcodec_decode_video2
 	AVPacket*	avpkt
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	static LGL_Semaphore localSem("lgl_av_decode_video2");
-	LGL_ScopeLock localLock(localSem);
+	LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
 	return
 	(
 		avcodec_decode_video2
@@ -1590,7 +1590,7 @@ lgl_avcodec_find_encoder
 	enum CodecID	id
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	AVCodec* codec = avcodec_find_encoder(id);
 	return(codec);
 }
@@ -1601,7 +1601,7 @@ lgl_avcodec_find_encoder_by_name
 	const char*	name
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(avcodec_find_encoder_by_name(name));
 }
 
@@ -1611,7 +1611,7 @@ lgl_av_free_packet
 	AVPacket*	pkt
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	av_free_packet(pkt);
 }
 
@@ -1621,7 +1621,7 @@ lgl_av_mallocz
 	unsigned int size
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(av_mallocz(size));
 }
 
@@ -1632,7 +1632,7 @@ lgl_av_new_stream
 	int			id
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(av_new_stream(fc,id));
 }
 
@@ -1642,7 +1642,7 @@ lgl_avcodec_get_context_defaults
 	AVCodecContext*	cc
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	avcodec_get_context_defaults(cc);
 }
 
@@ -1652,14 +1652,14 @@ lgl_av_write_header
 	AVFormatContext*	fc
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(av_write_header(fc));
 }
 
 AVFormatContext*
 lgl_avformat_alloc_context()
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(avformat_alloc_context());
 }
 
@@ -1669,7 +1669,7 @@ lgl_av_freep
 	void*	ptr
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	av_freep(ptr);
 }
 
@@ -1682,7 +1682,7 @@ lgl_avcodec_encode_video
 const	AVFrame*	pict
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return
 	(
 		avcodec_encode_video
@@ -1702,7 +1702,7 @@ lgl_av_write_frame
 	AVPacket*		pkt
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(av_write_frame(s,pkt));
 }
 
@@ -1715,7 +1715,7 @@ lgl_avcodec_decode_audio3
 	AVPacket*	avpkt
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return
 	(
 		avcodec_decode_audio3
@@ -1734,7 +1734,7 @@ lgl_av_write_trailer
 	AVFormatContext*	s
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return(av_write_trailer(s));
 }
 
@@ -1747,7 +1747,7 @@ lgl_avcodec_encode_audio
 	const short*	samples
 )
 {
-	LGL_ScopeLock lock(lgl_get_av_semaphore());
+	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
 	return
 	(
 		avcodec_encode_audio
@@ -1773,7 +1773,7 @@ lgl_sws_scale
 )
 {
 	static LGL_Semaphore localSem("lgl_sws_scale");
-	LGL_ScopeLock localLock(localSem);
+	LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
 
 	return
 	(
@@ -1806,7 +1806,7 @@ lgl_sws_getContext
 )
 {
 	//static LGL_Semaphore localSem("lgl_sws_scale");
-	//LGL_ScopeLock localLock(localSem);
+	//LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
 
 	return
 	(
@@ -3674,12 +3674,11 @@ lgl_EndFrame()
 	{
 		if(LGL.AudioStreamList.size()>0)
 		{
-			LGL.AudioStreamListSemaphore->Lock("Main","Calling Update() on list");
+			LGL_ScopeLock AudioStreamListSemaphoreLock(__FILE__,__LINE__,LGL.AudioStreamListSemaphore);
 			for(unsigned int a=0;a<LGL.AudioStreamList.size();a++)
 			{
 				LGL.AudioStreamList[a]->Update();
 			}
-			LGL.AudioStreamListSemaphore->Unlock();
 		}
 	}
 
@@ -3692,12 +3691,11 @@ lgl_EndFrame()
 		LGL.AudioInGrainListFront.clear();
 
 		//FIXME: We're blocking our audio thread!! (ever so briefly...)
-		LGL.AudioInSemaphore->Lock("Main","Moving back grains to front");
 		{
+			LGL_ScopeLock AudioInSemaphoreLock(__FILE__,__LINE__,LGL.AudioInSemaphore);
 			LGL.AudioInGrainListFront=LGL.AudioInGrainListBack;
 			LGL.AudioInGrainListBack.clear();
 		}
-		LGL.AudioInSemaphore->Unlock();
 
 		for(unsigned int a=0;a<LGL.AudioInGrainListFront.size();a++)
 		{
@@ -4095,7 +4093,7 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 		if(vsync)
 		{
 			LGL.FramesSinceExecution++;
-			lgl_get_vsync_semaphore().Lock("Main","Just finished vsync swap");
+			lgl_get_vsync_semaphore().Lock(__FILE__,__LINE__,"Main");
 			LGL.SecondsSinceLastFrame=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
 			//Quantize to n/60.0f
 			for(int a=0;a<10;a++)
@@ -8513,12 +8511,11 @@ GetImage
 	int indexmax=0;
 	LGL_Image* ret=NULL;
 
-	AnimationSem.Lock("Main","Accessing Animation array");
 	{
+		LGL_ScopeLock AnimationSemLock(__FILE__,__LINE__,AnimationSem);
 		indexmax=Animation.size()-1;
 		ret=Animation[(int)LGL_Clamp(0,index,indexmax)];
 	}
-	AnimationSem.Unlock();
 
 	return(ret);
 }
@@ -8569,11 +8566,10 @@ Size()
 {
 	int ret=0;
 	
-	AnimationSem.Lock("Main","Calling Animation.size()");
 	{
+		LGL_ScopeLock AnimationSemLock(__FILE__,__LINE__,AnimationSem);
 		ret=Animation.size();
 	}
-	AnimationSem.Unlock();
 	
 	return(ret);
 }
@@ -8616,11 +8612,10 @@ LoadImages()
 	{
 		sprintf(target,"%s/%s",Path,DirList[a]);
 		LGL_Image* newbie=new LGL_Image(target);
-		AnimationSem.Lock("Main or Animation Loader","Calling Animation.push_back()");
 		{
+			LGL_ScopeLock AnimationSemLock(__FILE__,__LINE__,AnimationSem);
 			Animation.push_back(newbie);
 		}
-		AnimationSem.Unlock();
 		delete DirList[a];
 		LGL_DelayMS(1);
 	}
@@ -8964,7 +8959,7 @@ NullifyBuffer()
 {
 	if(Buffer)
 	{
-		free(Buffer);
+		delete Buffer;
 		Buffer=NULL;
 	}
 	BufferBytes=0;
@@ -9149,10 +9144,11 @@ SetPacket
 	long		frameNumber
 )
 {
-	LGL_ScopeLock packetLock(PacketSemaphore);
+	LGL_ScopeLock packetLock(__FILE__,__LINE__,PacketSemaphore);
 	if(Packet)
 	{
 		lgl_av_free_packet(Packet);
+		delete Packet;
 	}
 	Packet=packet;
 
@@ -9262,7 +9258,7 @@ lgl_video_decoder_process_thread
 		if(imageProcessed==false)
 		{
 			LGL_DelayMS(1);
-			LGL_ScopeLock(lgl_get_vsync_semaphore());
+			LGL_ScopeLock(__FILE__,__LINE__,lgl_get_vsync_semaphore());
 		}
 		else
 		{
@@ -9310,7 +9306,7 @@ LGL_VideoDecoder::
 	UnloadVideo();
 
 	{
-		LGL_ScopeLock omniLock(FrameBufferOmniSemaphore);
+		LGL_ScopeLock omniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 		for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
 		{
 			delete FrameBufferLoaded[a];
@@ -9328,7 +9324,7 @@ LGL_VideoDecoder::
 		}
 	}
 
-	//TODO: Doesn't this leak BufferRGB / BufferYUV...?
+	//TODO: Doesn't this leak BufferRGB / BufferYUV...? YES, but only upon quitting dvj.
 }
 
 void
@@ -9468,7 +9464,7 @@ SetVideo
 	const char*	path
 )
 {
-	LGL_ScopeLock pathLock(PathSemaphore);
+	LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 	if(path==NULL) path="NULL";
 	if(strcmp(Path,path)!=0)
 	{
@@ -9604,7 +9600,7 @@ GetImage()
 	}
 
 	/*
-	LGL_ScopeLock videoOKLock(VideoOKSemaphore,0.0f);
+	LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
 	if(videoOKLock.GetLockObtained()==false)
 	{
 		return(Image);
@@ -9613,7 +9609,7 @@ GetImage()
 
 	char path[2048];
 	{
-		LGL_ScopeLock pathLock(PathSemaphore);
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 		strcpy(path,Path);
 	}
 	if(strcmp(Image->GetVideoPath(),path)!=0)
@@ -9633,7 +9629,7 @@ GetImage()
 	lgl_FrameBuffer* frameBuffer=NULL;
 
 	{
-		LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"Main Thread","GetImage()");
+		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 
 		//Early out if nothing decoded...
 		if(FrameBufferReady.size()==0)
@@ -9799,7 +9795,7 @@ GetSecondsBufferedLeft
 	ready|=loaded;
 	std::vector<long> frameNumList;
 	{
-		LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"Unknown","GetSecondsBufferedLeft()");
+		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 		if(loaded)
 		{
 			for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
@@ -9907,7 +9903,7 @@ GetSecondsBufferedRight
 	ready|=loaded;
 	std::vector<long> frameNumList;
 	{
-		LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"Unknown","GetSecondsBufferedRight()");
+		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 		if(loaded)
 		{
 			for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
@@ -10036,7 +10032,7 @@ LGL_VideoDecoder::
 InvalidateAllFrameBuffers()
 {
 	{
-		LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"load thread","MaybeLoadVideo()'s InvalidateAllFrameBuffers()");
+		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 		for(unsigned int a=0;a<FrameBufferReady.size();a++)
 		{
 			FrameBufferReady[a]->Invalidate();
@@ -10094,7 +10090,7 @@ MaybeLoadVideo()
 
 	//PathNext => Path
 	{
-		LGL_ScopeLock pathLock(PathSemaphore);
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 
 		if(LGL_FileExists(PathNext)==false)
 		{
@@ -10121,7 +10117,7 @@ MaybeLoadVideo()
 	for(;;)
 	{
 		if(delayCount>0) LGL_DelayMS(1);
-		LGL_ScopeLock videoOkLock(VideoOKSemaphore,0.0f);
+		LGL_ScopeLock videoOkLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
 		if(videoOkLock.GetLockObtained()==false)
 		{
 			continue;
@@ -10330,7 +10326,7 @@ MaybeLoadImage()
 		{
 			if(GetSecondsBufferedRight(true,true)*FPS>FrameBufferAddRadius*0.5f)
 			{
-				LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+				LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
 			}
 		}
 		//LGL_DelayMS(0);
@@ -10340,7 +10336,7 @@ MaybeLoadImage()
 
 	//Return early if we have enough frames loaded
 	{
-		LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"MaybeLoadImage()","Return Early (maybe)");
+		LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 		if((int)FrameBufferLoaded.size()>=FrameBufferAddRadius*(FrameBufferAddBackwards ? 2 : 1))
 		{
 			return(false);
@@ -10361,7 +10357,7 @@ MaybeLoadImage()
 
 	//Lock the video
 	{
-		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
+		LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
 		VideoOKUserCount++;
 	}
 
@@ -10394,6 +10390,11 @@ MaybeLoadImage()
 			if(packet->stream_index==VideoStreamIndex)
 			{
 				frameRead=true;
+				break;
+			}
+			else
+			{
+				lgl_av_free_packet(packet);
 			}
 		}
 		else
@@ -10401,17 +10402,12 @@ MaybeLoadImage()
 			LengthSeconds=LGL_Max(0,FrameNumberToSeconds(frameNumberTarget));
 			break;
 		}
-
-		if(frameRead)
-		{
-			break;
-		}
 	}
 
 	//If we read a frame, put it into an lgl_FrameBuffer
 	if(frameRead)
 	{
-		LGL_ScopeLock pathLock(PathSemaphore);
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 		//Prepare a framebuffer, and swap its buffer with BufferRGB
 		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
 
@@ -10424,7 +10420,7 @@ MaybeLoadImage()
 
 		//Add framebuffer to FrameBufferLoaded, and sort.
 		{
-			LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"MaybeLoadImage()","Add to frameBuffer to FrameBufferLoaded");
+			LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 			FrameBufferLoaded.push_back(frameBuffer);
 			/*
 			printf("FBL: Adding %li\n",frameBuffer->GetFrameNumber());
@@ -10448,12 +10444,13 @@ MaybeLoadImage()
 		//Free the packet that was allocated by lgl_av_read_frame
 		//(Is this right?)
 		lgl_av_free_packet(packet);
+		delete packet;
 		packet=NULL;
 	}
 
 	//Unlock the video
 	{
-		LGL_ScopeLock videoOKLock(VideoOKSemaphore);
+		LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
 		VideoOKUserCount--;
 	}
 	/*
@@ -10486,7 +10483,7 @@ MaybeProcessImage
 	*/
 
 	//Lock the video
-	LGL_ScopeLock videoOKLock(VideoOKSemaphore,0.0f);
+	LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
 	if(videoOKLock.GetLockObtained()==false)
 	{
 		return(false);
@@ -10508,7 +10505,7 @@ MaybeProcessImage
 	//Find the next lgl_FrameBuffer
 	lgl_FrameBuffer* frameBuffer=NULL;
 	{
-		LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"ProcessImage()","Wait 3");
+		LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 
 		if(desiredFrameNum!=-1)
 		{
@@ -10579,7 +10576,7 @@ MaybeProcessImage
 	if(packet==NULL)
 	{
 		{
-			LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"ProcessImage()","Wait 5");
+			LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 			frameBuffer->Invalidate();
 		}
 		return(false);
@@ -10689,7 +10686,7 @@ MaybeProcessImage
 	//If we read a frame, put it into our lgl_FrameBuffer
 	if(frameRead)
 	{
-		LGL_ScopeLock pathLock(PathSemaphore);
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 
 		lgl_FrameBuffer* neoFrameBuffer = GetRecycledFrameBuffer();
 		if(IsYUV420P()==false)
@@ -10719,7 +10716,7 @@ MaybeProcessImage
 
 		//Add framebuffer to FrameBufferReady, and sort.
 		{
-			LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"ProcessImage()","Wait 10");
+			LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 			frameBuffer->Invalidate();
 			FrameBufferReady.push_back(neoFrameBuffer);
 			std::sort
@@ -10826,7 +10823,7 @@ MaybeDecodeImage()
 		*/
 		{
 			{
-				LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+				LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
 			}
 			LGL_DelayMS(0);
 		}
@@ -10945,7 +10942,7 @@ MaybeDecodeImage()
 	//If we read a frame, put it into an lgl_FrameBuffer
 	if(frameRead)
 	{
-		LGL_ScopeLock pathLock(PathSemaphore);
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 		//Prepare a framebuffer, and swap its buffer with BufferRGB
 		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
 
@@ -10976,7 +10973,7 @@ MaybeDecodeImage()
 
 		//Add framebuffer to FrameBufferReady, and sort.
 		{
-			LGL_ScopeLock lock(FrameBufferOmniSemaphore);
+			LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 			FrameBufferReady.push_back(frameBuffer);
 			std::sort
 			(
@@ -11007,11 +11004,11 @@ MaybeRecycleBuffers
 
 	char path[2048];
 	{
-		LGL_ScopeLock pathLock(PathSemaphore);
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 		strcpy(path,Path);
 	}
 
-	LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"load thread","MaybeRecycleBuffers()");
+	LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
@@ -11165,7 +11162,7 @@ GetNextFrameNumberToLoad()
 {
 	std::vector<long> frameNumList;
 	{
-		LGL_ScopeLock lock(FrameBufferOmniSemaphore,-1,"load thread","GetNextFrameNumberToLoad()");
+		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 		for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
 		{
 			if(FrameBufferLoaded[a]->GetFrameNumber()!=-1)
@@ -11389,7 +11386,7 @@ long
 LGL_VideoDecoder::
 GetNextFrameNumberToDecode()
 {
-	LGL_ScopeLock lock(FrameBufferOmniSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 
 	long ret=-1;
 
@@ -11599,7 +11596,7 @@ lgl_FrameBuffer*
 LGL_VideoDecoder::
 GetRecycledFrameBuffer()
 {
-	LGL_ScopeLock frameBufferOmniLock(FrameBufferOmniSemaphore,-1,"GetRecycledFrameBuffer()");
+	LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 	if(FrameBufferRecycled.size()>0)
 	{
 		lgl_FrameBuffer* frameBuffer = FrameBufferRecycled[FrameBufferRecycled.size()-1];
@@ -11630,7 +11627,7 @@ LGL_VideoDecoder::
 AssertFrameBufferListUniqueness()
 {
 #if 0
-	LGL_ScopeLock omniLock(FrameBufferOmniSemaphore);
+	LGL_ScopeLock omniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 	for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
 	{
 		for(unsigned int b=0;b<FrameBufferReady.size();b++)
@@ -12373,7 +12370,7 @@ Encode
 				{
 					//Is this sws_scale line actually necessary...?
 					{
-						LGL_ScopeLock dstFrameYUVLock(DstFrameYUVSemaphore);
+						LGL_ScopeLock dstFrameYUVLock(__FILE__,__LINE__,DstFrameYUVSemaphore);
 						lgl_sws_scale
 						(
 							SwsConvertContextYUV,
@@ -12759,7 +12756,7 @@ GetImage()
 	}
 
 	{
-		LGL_ScopeLock lock(DstFrameYUVSemaphore);
+		LGL_ScopeLock lock(__FILE__,__LINE__,DstFrameYUVSemaphore);
 		if(DstFrameYUV->quality==1)
 		{
 			lgl_sws_scale
@@ -12981,7 +12978,7 @@ Encode
 	long		bytes
 )
 {
-	LGL_ScopeLock lock(LGL.AudioEncoderSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,LGL.AudioEncoderSemaphore);
 
 	if
 	(
@@ -13089,7 +13086,7 @@ ThreadFunc()
 		*/
 		{
 			{
-				LGL_ScopeLock waitOnVsync(lgl_get_vsync_semaphore(),15.0f/60.0f);
+				LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
 			}
 			LGL_DelayMS(0);
 		}
@@ -13111,7 +13108,7 @@ FlushBuffer
 	bool	force
 )
 {
-	LGL_ScopeLock(LGL.AudioEncoderSemaphore);
+	LGL_ScopeLock(__FILE__,__LINE__,LGL.AudioEncoderSemaphore);
 
 	//Circular buffer to fixed buffer
 	long circularBufferHead=CircularBufferHead;
@@ -14403,11 +14400,10 @@ LGL_AddAudioStream
 )
 {
 	assert(false);
-	LGL.AudioStreamListSemaphore->Lock("AddAudioStream","Calling AudioStreamList.push_back()");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.AudioStreamListSemaphore);
 		LGL.AudioStreamList.push_back(stream);
 	}
-	LGL.AudioStreamListSemaphore->Unlock();
 }
 
 LGL_AudioDSP::
@@ -14639,13 +14635,12 @@ SetFreqResponse
 		1
 	);
 
-	FreqResponseNextSemaphore.Lock("Main","AudioDSP::SetFreqResponse()");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,FreqResponseNextSemaphore);
 		memcpy(FreqResponseNextReal,freqResponseActualReal,1024*sizeof(float));
 		memcpy(FreqResponseNextImaginary,freqResponseActualImaginary,1024*sizeof(float));
 		FreqResponseNextAvailable=true;
 	}
-	FreqResponseNextSemaphore.Unlock();
 }
 
 void
@@ -14784,13 +14779,12 @@ ProcessChannelStereo
 {
 	if(FreqResponseNextAvailable)
 	{
-		FreqResponseNextSemaphore.Lock("AudioOut","ProcessChannelStereo() updating FreqResponse",false);
 		{
+			LGL_ScopeLock lock(__FILE__,__LINE__,FreqResponseNextSemaphore);
 			memcpy(FreqResponseReal,FreqResponseNextReal,1024*sizeof(float));
 			memcpy(FreqResponseImaginary,FreqResponseNextImaginary,1024*sizeof(float));
 			FreqResponseNextAvailable=false;
 		}
-		FreqResponseNextSemaphore.Unlock();
 	}
 
 	const unsigned int samplesMaxFFT = LGL_EQ_SAMPLES_FFT;
@@ -16594,8 +16588,8 @@ MixIntoStream
 
 	int samplesMixed=0;
 
-	GrainListsSemaphore.Lock("AudioOut","Mixing grains");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,GrainListsSemaphore);
 		for(unsigned int a=0;a<AudioGrainsQueued.size();a++)
 		{
 			bool stereo=true;	//FIXME: AudioGrains must be stereo, for now.
@@ -16649,7 +16643,6 @@ MixIntoStream
 			}
 		}
 	}
-	GrainListsSemaphore.Unlock();
 
 	return(samplesMixed);
 }
@@ -16662,8 +16655,8 @@ AddNextGrain
 	long offsetDelaySamples
 )
 {
-	GrainListsSemaphore.Lock("AudioOut","AddNextGrain()");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,GrainListsSemaphore);
 		if(offsetDelaySamples>=0)
 		{
 			if(AudioGrainsQueued.empty()==false)
@@ -16681,7 +16674,6 @@ AddNextGrain
 		}
 		AudioGrainsQueued.push_back(grain);
 	}
-	GrainListsSemaphore.Unlock();
 }
 
 void
@@ -16691,15 +16683,14 @@ AddNextGrains
 	std::vector<LGL_AudioGrain*>&	grains
 )
 {
-	GrainListsSemaphore.Lock("AudioOut","AddNextGrains()");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,GrainListsSemaphore);
 		for(unsigned int a=0;a<grains.size();a++)
 		{
 			LGL_AudioGrain* grain=grains[a];
 			AudioGrainsQueued.push_back(grain);
 		}
 	}
-	GrainListsSemaphore.Unlock();
 }
 
 long
@@ -16791,7 +16782,7 @@ LGL_Sound
 
 	if(LoadInNewThread)
 	{
-		DeleteSemaphore.Lock("SoundDecoderThread","Decoding sound in new thread");
+		DeleteSemaphore.Lock(__FILE__,__LINE__);
 		DecoderThread=LGL_ThreadCreate(lgl_sound_decoder_thread,this);
 		if(DecoderThread==NULL)
 		{
@@ -16963,7 +16954,7 @@ PrepareForDeleteThreadFunc()
 	}
 
 	{
-		LGL_ScopeLock deleteLock(DeleteSemaphore);
+		LGL_ScopeLock deleteLock(__FILE__,__LINE__,DeleteSemaphore);
 		if(DecoderThread!=NULL)
 		{
 			LGL_ThreadWait(DecoderThread);
@@ -16974,7 +16965,7 @@ PrepareForDeleteThreadFunc()
 		{
 			if(BufferAllocatedFromElsewhere==false)
 			{
-				LGL_ScopeLock bufferLock(BufferSemaphore);
+				LGL_ScopeLock bufferLock(__FILE__,__LINE__,BufferSemaphore);
 				free(Buffer);
 				Buffer=NULL;
 			}
@@ -16985,7 +16976,7 @@ PrepareForDeleteThreadFunc()
 		}
 		if(BufferBack!=NULL)
 		{
-			LGL_ScopeLock bufferLock(BufferSemaphore);
+			LGL_ScopeLock bufferLock(__FILE__,__LINE__,BufferSemaphore);
 			free(BufferBack);
 			BufferBack=NULL;
 		}
@@ -18057,7 +18048,7 @@ void
 LGL_Sound::
 LockBuffer()
 {
-	BufferSemaphore.Lock("AudioOut or Main?","LGL_Sound::LockBuffer()");
+	BufferSemaphore.Lock(__FILE__,__LINE__);
 }
 
 void
@@ -18071,10 +18062,10 @@ void
 LGL_Sound::
 LockBufferForReading(int id)
 {
-	BufferReaderCountSemaphore.Lock("Main","LockBufferForReading()");
+	BufferReaderCountSemaphore.Lock(__FILE__,__LINE__);
 	if(BufferReaderCount==0)
 	{
-		BufferSemaphore.Lock("Main","LockBufferForReading()");
+		BufferSemaphore.Lock(__FILE__,__LINE__);
 	}
 	assert(BufferReaderCount>=0);
 	BufferReaderCount++;
@@ -18085,7 +18076,7 @@ void
 LGL_Sound::
 UnlockBufferForReading(int id)
 {
-	BufferReaderCountSemaphore.Lock("Main","UnlockBufferForReading()");
+	BufferReaderCountSemaphore.Lock(__FILE__,__LINE__);
 	BufferReaderCount--;
 	if(BufferReaderCount==0)
 	{
@@ -19200,23 +19191,24 @@ LGL_ProcessInput()
 {
 	//Handle Wiimotes
 	bool listenerFound=false;
-	LGL.WiimoteSemaphore->Lock("Main","LGL_ProcessInput()");
-	for(int a=0;a<2;a++)	//Limit Wiimotes to two, for now.
 	{
-		if(LGL.Wiimote[a].Connected())
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WiimoteSemaphore);
+		for(int a=0;a<2;a++)	//Limit Wiimotes to two, for now.
 		{
-			LGL.Wiimote[a].INTERNAL_ProcessInput();
-		}
-		else if(listenerFound==false)
-		{
-			if(LGL.Wiimote[a].IsListeningForConnection()==false)
+			if(LGL.Wiimote[a].Connected())
 			{
-				LGL.Wiimote[a].ListenForConnection();
+				LGL.Wiimote[a].INTERNAL_ProcessInput();
 			}
-			listenerFound=true;
+			else if(listenerFound==false)
+			{
+				if(LGL.Wiimote[a].IsListeningForConnection()==false)
+				{
+					LGL.Wiimote[a].ListenForConnection();
+				}
+				listenerFound=true;
+			}
 		}
 	}
-	LGL.WiimoteSemaphore->Unlock();
 
 	//Record a few things for later VidCam processing
 
@@ -21904,12 +21896,11 @@ Disconnect()
 	}
 
 #ifdef	LGL_LINUX_WIIMOTE
-	WiimoteSemaphore.Lock("?","Calling cwiid_close()");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,WiimoteSemaphore);
 		cwiid_close(Wiimote);
 		Wiimote=NULL;
 	}
-	WiimoteSemaphore.Unlock();
 #endif	//LGL_LINUX_WIIMOTE
 
 }
@@ -21922,12 +21913,13 @@ lgl_Wiimote_SetRumble
 {
 #ifdef	LGL_LINUX_WIIMOTE
 	LGL_Wiimote* wiimote = (LGL_Wiimote*)wiimotePtr;
-	LGL_Semaphore* semaphore = wiimote->INTERNAL_GetWiimoteSemaphore();
-	semaphore->Lock("?","Calling cwiid_command() from lgl_Wiimote_SetRumble()");
+	if(LGL_Semaphore* semaphore = wiimote->INTERNAL_GetWiimoteSemaphore())
 	{
-		cwiid_command(wiimote->INTERNAL_GetWiimote(), CWIID_CMD_RUMBLE, wiimote->GetRumble());
+		LGL_ScopeLock lock(__FILE__,__LINE__,semaphore);
+		{
+			cwiid_command(wiimote->INTERNAL_GetWiimote(), CWIID_CMD_RUMBLE, wiimote->GetRumble());
+		}
 	}
-	semaphore->Unlock();
 #endif	//LGL_LINUX_WIIMOTE
 
 	return(0);
@@ -21946,11 +21938,10 @@ SetRumble
 	if(Wiimote)
 	{
 #ifdef	LGL_LINUX_WIIMOTE
-		WiimoteSemaphore.Lock("Main","Calling cwiid_command() from LGL_Wiimote::SetRumble()");
 		{
+			LGL_ScopeLock lock(__FILE__,__LINE__,WiimoteSemaphore);
 			cwiid_command(Wiimote, CWIID_CMD_RUMBLE, Rumble);
 		}
-		WiimoteSemaphore.Unlock();
 #endif	//LGL_LINUX_WIIMOTE
 	}
 }
@@ -21974,11 +21965,10 @@ SetLED
 		if(LEDState[2]) ledState |= CWIID_LED3_ON;
 		if(LEDState[3]) ledState |= CWIID_LED4_ON;
 
-		WiimoteSemaphore.Lock("Main","Calling cwiid_command() from LGL_Wiimote::SetLED()");
 		{
+			LGL_ScopeLock lock(__FILE__,__LINE__,WiimoteSemaphore);
 			cwiid_command(Wiimote, CWIID_CMD_LED, ledState);
 		}
-		WiimoteSemaphore.Unlock();
 	}
 #endif	//LGL_LINUX_WIIMOTE
 }
@@ -22266,8 +22256,8 @@ INTERNAL_Callback
 	{
 		struct cwiid_btn_mesg btn_mesg = mesg->btn_mesg;
 		unsigned short buttons = btn_mesg.buttons;
-		ButtonArraySemaphore.Lock("Wiimote Callback","INTERNAL_Callback() calling INTERNAL_UpdateButton()");
 		{
+			LGL_ScopeLock lock(__FILE__,__LINE__,ButtonArraySemaphore);
 			INTERNAL_UpdateButton(LGL_WIIMOTE_LEFT,(buttons & CWIID_BTN_LEFT));
 			INTERNAL_UpdateButton(LGL_WIIMOTE_RIGHT,(buttons & CWIID_BTN_RIGHT));
 			INTERNAL_UpdateButton(LGL_WIIMOTE_DOWN,(buttons & CWIID_BTN_DOWN));
@@ -22280,7 +22270,6 @@ INTERNAL_Callback
 			INTERNAL_UpdateButton(LGL_WIIMOTE_1,(buttons & CWIID_BTN_1));
 			INTERNAL_UpdateButton(LGL_WIIMOTE_2,(buttons & CWIID_BTN_2));
 		}
-		ButtonArraySemaphore.Unlock();
 	}
 	else if(mesg->type==CWIID_MESG_ACC)
 	{
@@ -22359,11 +22348,10 @@ INTERNAL_Callback
 				validSources
 			);
 			
-			PointerMotionSemaphore.Lock("INTERNAL_Callback()","PointerMotionThisFrameBack.push_back()");
 			{
+				LGL_ScopeLock lock(__FILE__,__LINE__,PointerMotionSemaphore);
 				PointerMotionThisFrameBack.push_back(PointerBack);
 			}
-			PointerMotionSemaphore.Unlock();
 			
 			PointerGreatestIRSourceDistance=nextPointerGreatestIRSourceDistance;
 		}
@@ -22411,13 +22399,12 @@ INTERNAL_ProcessInput()
 
 	PointerFront=PointerBack;
 
-	PointerMotionSemaphore.Lock("INTERNAL_ProcessInput()","Moving PointerMotionThisFrameBack to PointerMotionThisFrameFront");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,PointerMotionSemaphore);
 		PointerMotionThisFrameFront.clear();
 		PointerMotionThisFrameFront=PointerMotionThisFrameBack;
 		PointerMotionThisFrameBack.clear();
 	}
-	PointerMotionSemaphore.Unlock();
 
 	AccelFront=AccelBack;
 	AccelPast.push_back(AccelBack);
@@ -22459,18 +22446,20 @@ LGL_Wiimote::Reset()
 		LEDState[a]=false;
 	}
 
-	if(LGL.WiimoteSemaphore) LGL.WiimoteSemaphore->Lock("?","Reset()");
-	for(int a=0;a<11;a++)
+	if(LGL.WiimoteSemaphore)
 	{
-		ButtonDownArrayFront[a]=false;
-		ButtonStrokeArrayFront[a]=false;
-		ButtonReleaseArrayFront[a]=false;
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WiimoteSemaphore);
+		for(int a=0;a<11;a++)
+		{
+			ButtonDownArrayFront[a]=false;
+			ButtonStrokeArrayFront[a]=false;
+			ButtonReleaseArrayFront[a]=false;
 
-		ButtonDownArrayBack[a]=false;
-		ButtonStrokeArrayBack[a]=false;
-		ButtonReleaseArrayBack[a]=false;
+			ButtonDownArrayBack[a]=false;
+			ButtonStrokeArrayBack[a]=false;
+			ButtonReleaseArrayBack[a]=false;
+		}
 	}
-	if(LGL.WiimoteSemaphore) LGL.WiimoteSemaphore->Unlock();
 
 #ifdef	LGL_LINUX_WIIMOTE
 	if(Wiimote)
@@ -22711,48 +22700,44 @@ int lgl_MidiUpdate()
 					unsigned char knobWhich=message[1];
 					unsigned char knobValue=message[2];
 
-					device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (1)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 						device->KnobTweakBack[knobWhich]=true;
 						device->KnobStatusBack[knobWhich]=knobValue;
 					}
-					device->BackBufferSemaphore.Unlock();
 				}
 				else if(message[0]==177)
 				{
 					//Right Knob
 					int knobWhich=message[1]+100;
 					unsigned char knobValue=message[2];
-					device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (2)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 						device->KnobTweakBack[knobWhich]=true;
 						device->KnobStatusBack[knobWhich]=knobValue;
 					}
-					device->BackBufferSemaphore.Unlock();
 				}
 				else if(message[0]==224)
 				{
 					//Left Pitchbend
 					unsigned char knobWhich=30;	//o_0
 					unsigned char knobValue=message[2];
-					device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (3)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 						device->KnobTweakBack[knobWhich]=true;
 						device->KnobStatusBack[knobWhich]=knobValue;
 					}
-					device->BackBufferSemaphore.Unlock();
 				}
 				else if(message[0]==225)
 				{
 					//Right Pitchbend
 					int knobWhich=30+100;	//o_0
 					unsigned char knobValue=message[2];
-					device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (4)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 						device->KnobTweakBack[knobWhich]=true;
 						device->KnobStatusBack[knobWhich]=knobValue;
 					}
-					device->BackBufferSemaphore.Unlock();
 				}
 				else if(message[0]==178)
 				{
@@ -22762,100 +22747,92 @@ int lgl_MidiUpdate()
 						//Xfader
 						unsigned char knobWhich=91;
 						unsigned char knobValue=message[2];
-						device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (5)");
 						{
+							LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 							device->KnobTweakBack[knobWhich]=true;
 							device->KnobStatusBack[knobWhich]=knobValue;
 						}
-						device->BackBufferSemaphore.Unlock();
 					}
 					else if(message[1]==8)
 					{
 						//Touchpad X
 						unsigned char knobWhich=92;
 						unsigned char knobValue=message[2];
-						device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (6)");
 						{
+							LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 							device->KnobTweakBack[knobWhich]=true;
 							device->KnobStatusBack[knobWhich]=knobValue;
 						}
-						device->BackBufferSemaphore.Unlock();
 					}
 					else if(message[1]==9)
 					{
 						//Touchpad Y
 						unsigned char knobWhich=93;
 						unsigned char knobValue=message[2];
-						device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (7)");
 						{
+							LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 							device->KnobTweakBack[knobWhich]=true;
 							device->KnobStatusBack[knobWhich]=knobValue;
 						}
-						device->BackBufferSemaphore.Unlock();
 					}
 					else if(message[1]==13)
 					{
 						unsigned char knobWhich=90;
 						unsigned char knobValue=message[2];
-						device->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (8)");
 						{
+							LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 							device->KnobTweakBack[knobWhich]=true;
 							device->KnobStatusBack[knobWhich]=knobValue;
 						}
-						device->BackBufferSemaphore.Unlock();
 					}
 				}
 				else if(message[0]==144)
 				{
 					//Left Button Stroke
 					int button = message[1];
-					device->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (1)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 						device->ButtonStrokeBack[button]=true;
 						device->ButtonForceBack[button]=1.0f;
 						device->ButtonDownBack[button]=true;
 						device->ButtonReleaseBack[button]=false;
 					}
-					device->BackBufferSemaphore.Unlock();
 				}
 				else if(message[0]==128)
 				{
 					//Left Button Release
 					int button = message[1];
-					device->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (2)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 						device->ButtonStrokeBack[button]=false;
 						device->ButtonForceBack[button]=0.0f;
 						device->ButtonDownBack[button]=false;
 						device->ButtonReleaseBack[button]=true;
 					}
-					device->BackBufferSemaphore.Unlock();
 				}
 				else if(message[0]==145)
 				{
 					//Right Button Stroke
 					int button = message[1] + 100;
-					device->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (3)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 						device->ButtonStrokeBack[button]=true;
 						device->ButtonForceBack[button]=1.0f;
 						device->ButtonDownBack[button]=true;
 						device->ButtonReleaseBack[button]=false;
 					}
-					device->BackBufferSemaphore.Unlock();
 				}
 				else if(message[0]==129)
 				{
 					//Right Button Release
 					int button = message[1] + 100;
-					device->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (4)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,device->BackBufferSemaphore);
 						device->ButtonStrokeBack[button]=false;
 						device->ButtonForceBack[button]=0.0f;
 						device->ButtonDownBack[button]=false;
 						device->ButtonReleaseBack[button]=true;
 					}
-					device->BackBufferSemaphore.Unlock();
 				}
 			}
 
@@ -22867,20 +22844,19 @@ int lgl_MidiUpdate()
 					//Knob
 					unsigned char knobWhich=message[1];
 					unsigned char knobValue=message[2];
-					LGL_GetXsession()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (9)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,LGL_GetXsession()->BackBufferSemaphore);
 						LGL_GetXsession()->KnobTweakBack[knobWhich]=true;
 						LGL_GetXsession()->KnobStatusBack[knobWhich]=knobValue;
 					}
-					LGL_GetXsession()->BackBufferSemaphore.Unlock();
 				}
 				else if(message[0]==144)
 				{
 					//Button
 					int button = message[1];
 					bool down = (message[2]==127);
-					LGL_GetXsession()->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (5)");
 					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,LGL_GetXsession()->BackBufferSemaphore);
 						bool wasDown=device->ButtonDownBack[button];
 						if
 						(
@@ -22911,7 +22887,6 @@ int lgl_MidiUpdate()
 							printf("Strange button stroke...\n");
 						}
 					}
-					LGL_GetXsession()->BackBufferSemaphore.Unlock();
 				}
 			}
 		}
@@ -22921,469 +22896,6 @@ int lgl_MidiUpdate()
 
 	return(0);
 }
-
-#if 0
-int lgl_MidiUpdate()
-{
-#ifndef	LGL_OSX
-	unsigned char readPacket[4];
-	int knobNow=-1;
-	int knobValue=-1;
-#endif	//LGL_OSX
-
-#ifndef	LGL_OSX
-	for(;;)
-	{
-		int result = read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-		if(result==-1)
-		{
-			return(0);
-		}
-		else if
-		(
-			readPacket[0] == 2 ||	//Begin message-group
-			readPacket[0] == 5	//Begin message
-		)
-		{
-			if(readPacket[0] == 2)
-			{
-				read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-			}
-			unsigned int device=readPacket[2];
-			//printf("Dev: %s (%i)\n",LGL_MidiDeviceName(device),readPacket[1]);
-			if
-			(
-				device < LGL_MidiDeviceCount() &&
-				strcmp(LGL_MidiDeviceName(device),"Xponent MIDI 1")==0
-			)
-			{
-				//Xponent!
-				if(readPacket[1]==176)
-				{
-					//Left Knob
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					knobNow=readPacket[1];
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					assert(knobNow>=0 && readPacket[0] == SEQ_MIDIPUTC);
-					if(readPacket[1]!=knobValue)
-					{
-						//printf("L Knob %i = %i\n",knobNow,readPacket[1]);
-						knobValue=readPacket[1];
-
-						LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (1)");
-						{
-							LGL_GetXponent()->KnobTweakBack[knobNow]=true;
-							LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
-						}
-						LGL_GetXponent()->BackBufferSemaphore.Unlock();
-					}
-				}
-				else if(readPacket[1]==177)
-				{
-					//Right Knob
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					knobNow=readPacket[1]+100;
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					assert(knobNow>=0 && readPacket[0] == SEQ_MIDIPUTC);
-					if(readPacket[1]!=knobValue)
-					{
-						//printf("R Knob %i = %i\n",knobNow,readPacket[1]);
-						knobValue=readPacket[1];
-						LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (2)");
-						{
-							LGL_GetXponent()->KnobTweakBack[knobNow]=true;
-							LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
-						}
-						LGL_GetXponent()->BackBufferSemaphore.Unlock();
-					}
-				}
-				else if(readPacket[1]==224)
-				{
-					//Left Pitchbend
-					knobNow=30;
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));	//Junk?
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					assert(knobNow>=0 && readPacket[0] == SEQ_MIDIPUTC);
-					if(readPacket[1]!=knobValue)
-					{
-						//printf("L Pitchbend %i = %i\n",knobNow,readPacket[1]);
-						knobValue=readPacket[1];
-						LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (3)");
-						{
-							LGL_GetXponent()->KnobTweakBack[knobNow]=true;
-							LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
-						}
-						LGL_GetXponent()->BackBufferSemaphore.Unlock();
-					}
-				}
-				else if(readPacket[1]==225)
-				{
-					//Right Pitchbend
-					knobNow=30+100;
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));	//Junk?
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					assert(knobNow>=0 && readPacket[0] == SEQ_MIDIPUTC);
-					if(readPacket[1]!=knobValue)
-					{
-						//printf("R Pitchbend %i = %i\n",knobNow,readPacket[1]);
-						knobValue=readPacket[1];
-						LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (4)");
-						{
-							LGL_GetXponent()->KnobTweakBack[knobNow]=true;
-							LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
-						}
-						LGL_GetXponent()->BackBufferSemaphore.Unlock();
-					}
-				}
-				else if(readPacket[1]==178)
-				{
-					//Xfader or touchpad or Cue
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					knobNow=readPacket[1];
-					if(readPacket[1]==7)
-					{
-						//Xfader
-						knobNow=91;
-						read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-						if(readPacket[1]!=knobValue)
-						{
-							//printf("Xfade %i\n",readPacket[1]);
-							knobValue=readPacket[1];
-							LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (5)");
-							{
-								LGL_GetXponent()->KnobTweakBack[knobNow]=true;
-								LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
-							}
-							LGL_GetXponent()->BackBufferSemaphore.Unlock();
-						}
-					}
-					else if(readPacket[1]==8)
-					{
-						//Touchpad X
-						read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-						knobNow=92;
-						knobValue=readPacket[1];
-						LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (6)");
-						{
-							LGL_GetXponent()->KnobTweakBack[knobNow]=true;
-							LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
-						}
-						LGL_GetXponent()->BackBufferSemaphore.Unlock();
-
-						//Touchpad Y
-						read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-						if(readPacket[1]!=178)
-						{
-							printf("readPacket[1]: %i\n",readPacket[1]);
-							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-							//assert(readPacket[1]==178);
-						}
-						else
-						{
-							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-							assert(readPacket[1]==9);
-							read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-							knobNow=93;
-							knobValue=readPacket[1];
-							LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (7)");
-							{
-								LGL_GetXponent()->KnobTweakBack[knobNow]=true;
-								LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
-							}
-							LGL_GetXponent()->BackBufferSemaphore.Unlock();
-						}
-					}
-					else if(readPacket[1]==13)
-					{
-						knobNow=90;
-						read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-						if(readPacket[1]!=knobValue)
-						{
-							//printf("Cue %i\n",readPacket[1]);
-							knobValue=readPacket[1];
-							LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (8)");
-							{
-								LGL_GetXponent()->KnobTweakBack[knobNow]=true;
-								LGL_GetXponent()->KnobStatusBack[knobNow]=knobValue;
-							}
-							LGL_GetXponent()->BackBufferSemaphore.Unlock();
-						}
-					}
-				}
-				else if(readPacket[1]==144)
-				{
-					//Left Button Stroke
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					//printf("L Button Stroke: %i\n",readPacket[1]);
-					int button = readPacket[1];
-					LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (1)");
-					{
-						LGL_GetXponent()->ButtonStrokeBack[button]=true;
-						LGL_GetXponent()->ButtonForceBack[button]=1.0f;
-						LGL_GetXponent()->ButtonDownBack[button]=true;
-						LGL_GetXponent()->ButtonReleaseBack[button]=false;
-					}
-					LGL_GetXponent()->BackBufferSemaphore.Unlock();
-				}
-				else if(readPacket[1]==128)
-				{
-					//Left Button Release
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					//printf("L Button Release: %i\n",readPacket[1]);
-					int button = readPacket[1];
-					LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (2)");
-					{
-						LGL_GetXponent()->ButtonStrokeBack[button]=false;
-						LGL_GetXponent()->ButtonForceBack[button]=0.0f;
-						LGL_GetXponent()->ButtonDownBack[button]=false;
-						LGL_GetXponent()->ButtonReleaseBack[button]=true;
-					}
-					LGL_GetXponent()->BackBufferSemaphore.Unlock();
-				}
-				else if(readPacket[1]==145)
-				{
-					//Right Button Stroke
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					//printf("R Button Stroke: %i\n",readPacket[1]);
-					int button = readPacket[1] + 100;
-					LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (3)");
-					{
-						LGL_GetXponent()->ButtonStrokeBack[button]=true;
-						LGL_GetXponent()->ButtonForceBack[button]=1.0f;
-						LGL_GetXponent()->ButtonDownBack[button]=true;
-						LGL_GetXponent()->ButtonReleaseBack[button]=false;
-					}
-					LGL_GetXponent()->BackBufferSemaphore.Unlock();
-				}
-				else if(readPacket[1]==129)
-				{
-					//Right Button Release
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					//printf("R Button Release: %i\n",readPacket[1]);
-					int button = readPacket[1] + 100;
-					LGL_GetXponent()->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (4)");
-					{
-						LGL_GetXponent()->ButtonStrokeBack[button]=false;
-						LGL_GetXponent()->ButtonForceBack[button]=0.0f;
-						LGL_GetXponent()->ButtonDownBack[button]=false;
-						LGL_GetXponent()->ButtonReleaseBack[button]=true;
-					}
-					LGL_GetXponent()->BackBufferSemaphore.Unlock();
-				}
-				else
-				{
-					//printf("Unexpected value: %i\n",readPacket[1]);
-				}
-			}
-			else if
-			(
-				device < LGL_MidiDeviceCount() &&
-				strcmp(LGL_MidiDeviceName(device),"USB X-Session MIDI 1")==0
-			)
-			{
-				//Xsession!
-
-				if(readPacket[1]==176)
-				{
-					//Knob
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					knobNow=readPacket[1];
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					assert(knobNow>=0 && readPacket[0] == SEQ_MIDIPUTC);
-					if(readPacket[1]!=knobValue)
-					{
-						//printf("Knob %i = %i\n",knobNow,readPacket[1]);
-						knobValue=readPacket[1];
-
-						LGL_GetXsession()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (9)");
-						{
-							LGL_GetXsession()->KnobTweakBack[knobNow]=true;
-							LGL_GetXsession()->KnobStatusBack[knobNow]=knobValue;
-						}
-						LGL_GetXsession()->BackBufferSemaphore.Unlock();
-					}
-				}
-				else if(readPacket[1]==144)
-				{
-					//Button
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					//printf("Button %i\n",readPacket[1]);
-					int button = readPacket[1];
-
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					//printf("State %i\n",readPacket[1]);
-					bool down = (readPacket[1]==127);
-					LGL_GetXsession()->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (5)");
-					{
-						bool wasDown=LGL_GetXsession()->ButtonDownBack[button];
-						if
-						(
-							wasDown==false &&
-							down
-						)
-						{
-							//Stroke!
-							LGL_GetXsession()->ButtonStrokeBack[button]=true;
-							LGL_GetXsession()->ButtonForceBack[button]=1.0f;
-							LGL_GetXsession()->ButtonDownBack[button]=true;
-							LGL_GetXsession()->ButtonReleaseBack[button]=false;
-						}
-						else if
-						(
-							wasDown==true &&
-							down==false
-						)
-						{
-							//Release
-							LGL_GetXsession()->ButtonStrokeBack[button]=false;
-							LGL_GetXsession()->ButtonForceBack[button]=0.0f;
-							LGL_GetXsession()->ButtonDownBack[button]=false;
-							LGL_GetXsession()->ButtonReleaseBack[button]=true;
-						}
-						else
-						{
-							printf("Strange button stroke...\n");
-						}
-					}
-					LGL_GetXsession()->BackBufferSemaphore.Unlock();
-				}
-			}
-			else if
-			(
-				device < LGL_MidiDeviceCount() &&
-				strcmp(LGL_MidiDeviceName(device),"USB Trigger Finger MIDI 1")==0
-			)
-			{
-				/*
-				printf("TF[0]:\t%i\t%i\t%i\t%i\n",
-					readPacket[0],
-					readPacket[1],
-					readPacket[2],
-					readPacket[3]
-				);
-				for(int a=0;a<2;a++)
-				{
-					printf("TF[%i]:\t%i\t%i\t%i\t%i\n",
-						a+1,
-						readPacket[0],
-						readPacket[1],
-						readPacket[2],
-						readPacket[3]
-					);
-				}
-				*/
-
-				//TriggerFinger!
-printf("readPacket[1]: %i\n",readPacket[1]);
-				if(readPacket[1]==153)
-				{
-					//Button
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					int button = readPacket[1];
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					int force = readPacket[1];
-printf("button %i @ %i\n",button,force);
-/*
-					LGL_GetTriggerFinger()->BackBufferSemaphore.Lock();
-					{
-						LGL_GetTriggerFinger()->ButtonStrokeBack[button]=(force>0);
-						LGL_GetTriggerFinger()->ButtonForceBack[button]=force;
-						LGL_GetTriggerFinger()->ButtonDownBack[button]=(force>0);
-						LGL_GetTriggerFinger()->ButtonReleaseBack[button]=(force==0);
-					}
-					LGL_GetTriggerFinger()->BackBufferSemaphore.Unlock();
-*/
-				}
-				else if(readPacket[1]==185)
-				{
-					//Knob / Slider
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					int knob = readPacket[1];
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					int value = readPacket[1];
-printf("knob %i @ %i\n",knob,value);
-					LGL_GetTriggerFinger()->BackBufferSemaphore.Lock("Main","ProcessInput() and tweaking knobs (10)");
-					{
-						LGL_GetTriggerFinger()->KnobTweakBack[knob]=true;
-						LGL_GetTriggerFinger()->KnobStatusBack[knob]=value;
-					}
-					LGL_GetTriggerFinger()->BackBufferSemaphore.Unlock();
-				}
-				else
-				{
-					//
-				}
-			}
-			else if
-			(
-				device < LGL_MidiDeviceCount() &&
-				strcmp(LGL_MidiDeviceName(device),"USB Uno MIDI Interface MIDI 1")==0
-			)
-			{
-				//JP8k!
-				if(readPacket[1]==254)
-				{
-					//Tick: Useless
-				}
-				else if(readPacket[1]==144)
-				{
-					//Key Stroke!
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					int button = readPacket[1];
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					int force = readPacket[1];
-
-					LGL_GetJP8k()->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (6)");
-					{
-						LGL_GetJP8k()->ButtonStrokeBack[button]=true;
-						LGL_GetJP8k()->ButtonForceBack[button]=(force+1.0f)/128.0f;
-						LGL_GetJP8k()->ButtonDownBack[button]=true;
-						LGL_GetJP8k()->ButtonReleaseBack[button]=false;
-					}
-					LGL_GetJP8k()->BackBufferSemaphore.Unlock();
-				}
-				else if(readPacket[1]==144)
-				{
-					//Key Stroke echo
-				}
-				else if(readPacket[1]==128)
-				{
-					//Key Release!
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					int button = readPacket[1];
-					read(LGL.MidiFD, &readPacket, sizeof(readPacket));
-					int force = readPacket[1];
-
-					LGL_GetJP8k()->BackBufferSemaphore.Lock("Main","ProcessInput() and buttons (7)");
-					{
-						LGL_GetJP8k()->ButtonStrokeBack[button]=false;
-						LGL_GetJP8k()->ButtonForceBack[button]=(force+1.0f)/128.0f;
-						LGL_GetJP8k()->ButtonDownBack[button]=false;
-						LGL_GetJP8k()->ButtonReleaseBack[button]=true;
-					}
-					LGL_GetJP8k()->BackBufferSemaphore.Unlock();
-				}
-				else if(readPacket[1]==129)
-				{
-					//Key Release echo
-				}
-				else
-				{
-					printf("JP8k!\t\t%i\t%i\t%i\t%i\n",readPacket[0],readPacket[1],readPacket[2],readPacket[3]);
-				}
-			}
-			else
-			{
-				printf("What. (Strange MIDI sequence)\n");
-			}
-		}
-	}
-#endif	//LGL_OSX
-
-	return(0);
-}
-#endif
 
 unsigned int
 LGL_MidiDeviceCount()
@@ -23414,8 +22926,8 @@ LGL_MidiDevice() : BackBufferSemaphore("MidiDevice BackBuffer")
 {
 	DeviceID=-1;
 
-	BackBufferSemaphore.Lock("Main","Iinitializing Buttons, knobs");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,BackBufferSemaphore);
 		for(int a=0;a<LGL_MIDI_CONTROL_MAX;a++)
 		{
 			ButtonStrokeFront[a]=false;
@@ -23433,7 +22945,6 @@ LGL_MidiDevice() : BackBufferSemaphore("MidiDevice BackBuffer")
 			KnobStatusBack[a]=-127.0f;
 		}
 	}
-	BackBufferSemaphore.Unlock();
 }
 
 LGL_MidiDevice::
@@ -23509,8 +23020,8 @@ void
 LGL_MidiDevice::
 LGL_INTERNAL_SwapBuffers()
 {
-	BackBufferSemaphore.Lock("Main","LGL_INTERNAL_SwapBuffers()");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,BackBufferSemaphore);
 		for(int a=0;a<LGL_MIDI_CONTROL_MAX;a++)
 		{
 			if
@@ -23533,7 +23044,6 @@ LGL_INTERNAL_SwapBuffers()
 			KnobStatusFront[a]=KnobStatusBack[a];
 		}
 	}
-	BackBufferSemaphore.Unlock();
 }
 
 LGL_MidiDeviceXponent::
@@ -23804,7 +23314,8 @@ GetAddress()
 int
 LGL_SyphonServerCount()
 {
-	return(lgl_SyphonServerCount());
+	return(0);
+	//return(lgl_SyphonServerCount());
 }
 
 LGL_Image*
@@ -23821,7 +23332,7 @@ LGL_SyphonImage
 	GLuint id;
 	int w;
 	int h;
-	bool ok=lgl_SyphonImageInfo(serverIndex,id,w,h);
+	bool ok=false;//lgl_SyphonImageInfo(serverIndex,id,w,h);
 	if(ok==false)
 	{
 		return(NULL);
@@ -28675,7 +28186,7 @@ lgl_WriteFileAsyncThread
 		lgl_WriteFileAsyncWorkItem* wi = NULL;
 		
 		{
-			LGL_ScopeLock lock(LGL.WriteFileAsyncSemaphore);
+			LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WriteFileAsyncSemaphore);
 			workItemSize = LGL.WriteFileAsyncWorkItemList.size();
 			wi=NULL;
 			if(workItemSize>0)
@@ -28733,7 +28244,7 @@ LGL_WriteFileAsync
 	);
 
 	{
-		LGL_ScopeLock lock(LGL.WriteFileAsyncSemaphore);
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WriteFileAsyncSemaphore);
 		LGL.WriteFileAsyncWorkItemList.push_back(wi);
 	}
 }
@@ -28741,7 +28252,7 @@ LGL_WriteFileAsync
 unsigned int
 LGL_WriteFileAsyncQueueCount()
 {
-	LGL_ScopeLock lock(LGL.WriteFileAsyncSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WriteFileAsyncSemaphore);
 	return(LGL.WriteFileAsyncWorkItemList.size());
 }
 
@@ -30662,8 +30173,8 @@ bool
 LGL_Semaphore::
 Lock
 (
-	const char*	threadName,
-	const char*	note,
+	const char*	file,
+	int		line,
 	bool		blockUntilTimeout,
 	float		timeoutSeconds
 )
@@ -30684,8 +30195,8 @@ const bool debugMainThreadWaits=true;
 			{
 				printf("Main Thread Wait:\n");
 				printf("\tSem = %s\n",Name);
-				printf("\tLocking thread = %s\n",LockOwner);
-				printf("\tNote = %s\n",Note);
+				printf("\tLocking file = %s\n",LockOwnerFile);
+				printf("\tLocking line = %i\n",LockOwnerLine);
 				printf("\n");
 			}
 		}
@@ -30701,8 +30212,8 @@ const bool debugMainThreadWaits=true;
 			{
 				printf("Watch Thread Wait:\n");
 				printf("\tSem = %s\n",Name);
-				printf("\tLocking thread = %s\n",LockOwner);
-				printf("\tNote = %s\n",Note);
+				printf("\tLocking file = %s\n",LockOwnerFile);
+				printf("\tLocking line = %i\n",LockOwnerLine);
 				printf("\n");
 			}
 		}
@@ -30727,8 +30238,8 @@ const bool debugMainThreadWaits=true;
 
 	if(ret)
 	{
-		strcpy(LockOwner,threadName);
-		strcpy(Note,note);
+		strcpy(LockOwnerFile,file);
+		LockOwnerLine=line;
 		TimeOfLock = LGL_SecondsSinceExecution();
 	}
 	return(ret);
@@ -30741,6 +30252,8 @@ Unlock()
 	if(Promiscuous) return(true);
 
 	LGL_Assertf(Value()==0,("Value = %i",Value()));
+	LockOwnerFile[0]='\0';
+	LockOwnerLine=-1;
 	bool ret=SDL_SemPost(Sem);
 	return(ret);
 }
@@ -30767,9 +30280,30 @@ LGL_Semaphore::
 PrintLockInfo()
 {
 	printf("\tSem = %s\n",Name);
-	printf("\tLocking thread = %s\n",LockOwner);
-	printf("\tNote = %s\n",Note);
+	printf("\tLocking file = %s\n",LockOwnerFile);
+	printf("\tLocking line = %i\n",LockOwnerLine);
 	printf("\n");
+}
+
+const char*
+LGL_Semaphore::
+GetName()
+{
+	return(Name);
+}
+
+const char*
+LGL_Semaphore::
+GetLockOwnerFile()
+{
+	return(LockOwnerFile);
+}
+
+int
+LGL_Semaphore::
+GetLockOwnerLine()
+{
+	return(LockOwnerLine);
 }
 
 int
@@ -30786,36 +30320,36 @@ Value()
 LGL_ScopeLock::
 LGL_ScopeLock
 (
+	const char*	file,
+	int		line,
 	LGL_Semaphore&	semaphore,
-	float		timeoutSeconds,
-	const char*	thread,
-	const char*	note
+	float		timeoutSeconds
 )
 {
 	Init
 	(
+		file,
+		line,
 		&semaphore,
-		timeoutSeconds,
-		thread,
-		note
+		timeoutSeconds
 	);
 }
 
 LGL_ScopeLock::
 LGL_ScopeLock
 (
+	const char*	file,
+	int		line,
 	LGL_Semaphore*	semaphore,
-	float		timeoutSeconds,
-	const char*	thread,
-	const char*	note
+	float		timeoutSeconds
 )
 {
 	Init
 	(
+		file,
+		line,
 		semaphore,
-		timeoutSeconds,
-		thread,
-		note
+		timeoutSeconds
 	);
 }
 
@@ -30823,23 +30357,44 @@ void
 LGL_ScopeLock::
 Init
 (
+	const char*	file,
+	int		line,
 	LGL_Semaphore*	semaphore,
-	float		timeoutSeconds,
-	const char*	thread,
-	const char*	note
+	float		timeoutSeconds
 )
 {
 	Semaphore=semaphore;
 	LockObtained=false;
 	if(Semaphore)
 	{
+		LGL_Timer timer;
+		char name[1024];
+		strcpy(name,Semaphore->GetName());
+		char lockOwnerFile[1024];
+		strcpy(lockOwnerFile,Semaphore->GetLockOwnerFile());
+		int lockOwnerLine;
+		lockOwnerLine=Semaphore->GetLockOwnerLine();
 		LockObtained=Semaphore->Lock
 		(
-			thread,
-			note,
+			file,
+			line,
 			timeoutSeconds!=0,
 			timeoutSeconds
 		);
+		if(timer.SecondsSinceLastReset()>1.0f)
+		{
+			printf("Long lock!\n");
+			printf("\tName: %s\n",name);
+			printf("\tTime: %.2f\n",timer.SecondsSinceLastReset());
+			printf("\tLock Owner File: %s\n",lockOwnerFile);
+			printf("\tLock Owner Line: %i\n",lockOwnerLine);
+			printf("\tLock Waiter File: %s\n",file);
+			printf("\tLock Waiter Line: %i\n",line);
+			printf("\tLock Waiter Thread: %i (%i)\n",
+	SDL_ThreadID(),
+	LGL.ThreadIDMain);
+			printf("\n");
+		}
 	}
 	if(LockObtained==false)
 	{
@@ -32380,11 +31935,10 @@ void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8)
 		streamStereo8,
 		len16		//LengthSamples
 	);
-	LGL.AudioInSemaphore->Lock("AudioIn","AudioInGrainListBack.push_back()");
 	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.AudioInSemaphore);
 		LGL.AudioInGrainListBack.push_back(grain);
 	}
-	LGL.AudioInSemaphore->Unlock();
 }
 
 void
@@ -32414,7 +31968,7 @@ LGL_ShutDown()
 //printf("LockAudio() 5\n");
 
 	{
-		LGL_ScopeLock(LGL.AudioEncoderSemaphore);
+		LGL_ScopeLock(__FILE__,__LINE__,LGL.AudioEncoderSemaphore);
 		if(LGL.AudioUsingJack==false)
 		{
 			SDL_LockAudio();

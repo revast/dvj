@@ -769,7 +769,7 @@ GetMostRecentFileScanned
 	char*	dst
 )
 {
-	LGL_ScopeLock lock(Semaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,Semaphore);
 	strcpy(dst,MostRecentFileScanned);
 }
 
@@ -786,7 +786,7 @@ SetMostRecentFileScanned
 		MostRecentFileScanned[0]=='\0'
 	)
 	{
-		LGL_ScopeLock lock(Semaphore);
+		LGL_ScopeLock lock(__FILE__,__LINE__,Semaphore);
 		strcpy(MostRecentFileScanned,src?src:"");
 		MostRecentFileScannedTimer.Reset();
 	}

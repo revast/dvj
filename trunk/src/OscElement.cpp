@@ -365,7 +365,7 @@ ProcessMessage
 						floatIndexNow--;
 						if(floatIndexNow<0)
 						{
-							LGL_ScopeLock lock(BackFrontSemaphore);
+							LGL_ScopeLock lock(__FILE__,__LINE__,BackFrontSemaphore);
 							if(Sticky)
 							{
 								StickyNow=true;
@@ -418,7 +418,7 @@ void
 OscElementObj::
 SwapBackFront()
 {
-	LGL_ScopeLock lock(BackFrontSemaphore);
+	LGL_ScopeLock lock(__FILE__,__LINE__,BackFrontSemaphore);
 
 	TweakFront=TweakBack;
 	TweakBack=false;

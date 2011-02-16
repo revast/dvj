@@ -467,8 +467,8 @@ public:
 
 	bool		Lock
 			(
-				const char*	threadName,
-				const char*	note,
+				const char*	file,
+				int		line,
 				bool		blockUntilTimeout=true,
 				float		timeoutSeconds=-1		//-1=inf, never timeout
 			);
@@ -476,6 +476,9 @@ public:
 	bool		IsLocked();
 	float		SecondsLocked();
 	void		PrintLockInfo();
+	const char*	GetName();
+	const char*	GetLockOwnerFile();
+	int		GetLockOwnerLine();
 	
 	int		Value();
 
@@ -483,8 +486,8 @@ public:
 private:
 
 	char		Name[1024];
-	char		LockOwner[1024];
-	char		Note[1024];
+	char		LockOwnerFile[1024];
+	int		LockOwnerLine;
 	SDL_sem*	Sem;
 	float		TimeOfLock;
 
@@ -498,17 +501,17 @@ public:
 
 			LGL_ScopeLock
 			(
+				const char*	file,
+				int		line,
 				LGL_Semaphore&	semaphore,
-				float		timeoutSeconds=-1,
-				const char*	thread = "Nameless ScopeLock",
-				const char*	note = "Noteless ScopeLock (meh)"
+				float		timeoutSeconds=-1
 			);
 			LGL_ScopeLock
 			(
+				const char*	file,
+				int		line,
 				LGL_Semaphore*	semaphore,
-				float		timeoutSeconds=-1,
-				const char*	thread = "Nameless ScopeLock",
-				const char*	note = "Noteless ScopeLock (meh)"
+				float		timeoutSeconds=-1
 			);
 			~LGL_ScopeLock();
 
@@ -518,17 +521,15 @@ private:
 
 	void		Init
 			(
+				const char*	file,
+				int		line,
 				LGL_Semaphore*	semaphore,
-				float		timeoutSeconds=-1,
-				const char*	thread = "Nameless ScopeLock",
-				const char*	note = "Noteless ScopeLock (meh)"
+				float		timeoutSeconds=-1
 			);
 
 	LGL_Semaphore*	Semaphore;
 	bool		LockObtained;
 };
-
-
 
 //Video
 
