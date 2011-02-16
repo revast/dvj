@@ -296,12 +296,35 @@ NextFrame
 
 						vid->SetTime(LGL_RandFloat(min,max));
 					}
+					/*
+					else if
+					(
+						oldFreqBrightness==0.0f &&
+						neoFreqBrightness>0.0f
+					)
+					{
+						float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+						if(min<0.0f) min=0.0f;
+						float max=vid->GetLengthSeconds()-10.0f;
+						if(max<0.0f) max=vid->GetLengthSeconds();
+
+						vid->SetTime(max*neoFreqBrightness);
+					}
+					*/
 					else
 					{
 						float speedFactor=
-							(tts[t]->GetAudioInputMode() ? 1.0f : tts[t]->GetFinalSpeed()) *
-							((vid==vidL) ? 1.0f : 4.0f);
+							(vid==vidL) ? 1.0f : 4.0f;
 						vid->SetTime(vid->GetTime()+speedFactor*(1.0f/60.0f));
+						
+						/*
+						float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+						if(min<0.0f) min=0.0f;
+						float max=vid->GetLengthSeconds()-10.0f;
+						if(max<0.0f) max=vid->GetLengthSeconds();
+
+						vid->SetTime(max*neoFreqBrightness);
+						*/
 					}
 					vid->StoredBrightness=neoFreqBrightness;
 				}

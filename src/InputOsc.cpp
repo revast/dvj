@@ -1166,7 +1166,7 @@ NextFrame()
 	//Display unknown received OSC messages
 	if(OscMessageUnknownBrightness>0.0f)
 	{
-		LGL_ScopeLock lock(OscMessageUnknownSemaphore);
+		LGL_ScopeLock lock(__FILE__,__LINE__,OscMessageUnknownSemaphore);
 		OscMessageUnknownBrightness-=1.0f/60.0f;
 		if(OscMessageUnknownBrightness<0.0f)
 		{
@@ -2107,7 +2107,7 @@ ProcessMessage
 		{
 			if(strlen(m.AddressPattern())<1024)
 			{
-				LGL_ScopeLock lock(OscMessageUnknownSemaphore);
+				LGL_ScopeLock lock(__FILE__,__LINE__,OscMessageUnknownSemaphore);
 				osc::ReceivedMessage::const_iterator arg = m.ArgumentsBegin();
 				if(arg!=m.ArgumentsEnd())
 				{
