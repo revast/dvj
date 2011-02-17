@@ -3432,6 +3432,11 @@ LGL_DrawLineToScreen
 			}
 		}
 
+if(LGL_SecondsSinceLastFrame()>=1.5f/60.0f)
+{
+	SmoothWaveformScrollingSample = Sound->GetPositionSamples(Channel);
+}
+
 		if
 		(
 			GlitchDuo ||
