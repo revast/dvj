@@ -3338,6 +3338,7 @@ lgl_fftw_init()
 	fft_array_callback_forward =	(fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * fft_elementCount);
 	fft_array_callback_backward =	(fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * fft_elementCount);
 
+//wisdomLoaded=false;
 	if(wisdomLoaded==false)
 	{
 		LGL_Image* fft_img=NULL;
@@ -3385,6 +3386,7 @@ lgl_fftw_init()
 			delete fft_img;
 			fft_img=NULL;
 		}
+//exit(0);
 	}
 	else
 	{
@@ -9209,22 +9211,27 @@ lgl_video_decoder_load_thread
 	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_DECODE,"LGL_VideoDecoder");
 	LGL_VideoDecoder* dec = (LGL_VideoDecoder*)ptr;
 
+	static LGL_Semaphore sem("video_load",false);
+
 	for(;;)
 	{
+		{
+			LGL_ScopeLock lock(__FILE__,__LINE__,sem);
+			for(int a=0;a<30;a++)
+			{
+				if(dec->GetThreadTerminate())
+				{
+					break;
+				}
+				dec->MaybeLoadVideo();
+				dec->MaybeLoadImage();
+			}
+		}
 		if(dec->GetThreadTerminate())
 		{
 			break;
 		}
-		dec->MaybeLoadVideo();
-		bool imageLoaded=dec->MaybeLoadImage();
-		if(imageLoaded==false)
-		{
-			LGL_DelayMS(1);
-		}
-		else
-		{
-			//LGL_DelayMS(0);
-		}
+		LGL_DelayMS(1);
 	}
 
 	return(0);
