@@ -254,6 +254,8 @@ CreateDotJackdrc()
 	return;
 #endif	//LGL_OSX
 
+	setenv("JACK_DRIVER_DIR","./lib/jack",1);
+
 	//Kill any pre-existing JACK processes
 	char cmd[2048];
 	strcpy(cmd,"killall jackd > /dev/null 2>&1");
