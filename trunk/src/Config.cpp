@@ -82,6 +82,8 @@ CreateDefaultDVJRC
 	const char*	path
 )
 {
+	CreateDotDVJTree();
+
 	if(FILE* fd=fopen(path,"w"))
 	{
 		fprintf(fd,"#\n");
@@ -111,7 +113,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"#Generated files may be larger.\n");
 		fprintf(fd,"cachedVideoAveBitrateMBps=3.2\n");
 		fprintf(fd,"\n");
-		fprintf(fd,"visualBrightnessAtCenter=0.5\n");
+		fprintf(fd,"visualBrightnessAtCenter=1.0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"colorCoolR=0.0\n");
 		fprintf(fd,"colorCoolG=0.0\n");
@@ -352,14 +354,6 @@ CreateDotDVJTree()
 	if(LGL_DirectoryExists(dotDvj)==false)
 	{
 		LGL_DirectoryCreate(dotDvj);
-	}
-
-	char dvjrc[2048];
-	sprintf(dvjrc,"%s/config.txt",dotDvj);
-
-	if(LGL_FileExists(dvjrc)==false)
-	{
-		CreateDefaultDVJRC(dvjrc);
 	}
 
 	char dvjCache[2048];
