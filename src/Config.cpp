@@ -340,7 +340,7 @@ CreateDotJackdrc()
 		}
 		else
 		{
-			fprintf(fd,"./jackd -Z -R -t9999 -d coreaudio -p %i -i 2\n",samplePeriod);
+			fprintf(fd,"./jackd -Z -R -t9999 -d coreaudio -p %i -o 2\n",samplePeriod);
 		}
 		fclose(fd);
 	}
