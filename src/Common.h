@@ -62,6 +62,10 @@ Mixer_DrawGlowLinesTurntables
 	float	time,
 	float	crossFadeSliderLeft,
 	float	crossFadeSliderRight,
+	bool	beatThisFrameBottom,
+	bool	beatThisFrameTop,
+	float	percentOfCurrentBeatBottom,
+	float	percentOfCurrentBeatTop,
 	float	brightness,
 	bool	visualizerQuadrent,
 	float	visualizerZoomOutPercent
@@ -79,14 +83,14 @@ Mixer_DrawGlowLinesStatus
 void
 Mixer_DrawLevels
 (
-	float viewPortBottom,
-	float viewPortTop,
-	float leftBottomLevel,
-	float leftTopLevel,
-	float rightBottomLevel,
-	float rightTopLevel,
-	bool  visualizerQuadrent,
-	float visualizerZoomOutPercent
+	float	viewPortBottom,
+	float	viewPortTop,
+	float	leftBottomLevel,
+	float	leftTopLevel,
+	float	rightBottomLevel,
+	float	rightTopLevel,
+	bool	visualizerQuadrent,
+	float	visualizerZoomOutPercent
 );
 
 void

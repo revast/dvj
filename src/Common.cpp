@@ -279,6 +279,10 @@ Mixer_DrawGlowLinesTurntables
 	float	time,
 	float	crossFadeSliderLeft,
 	float	crossFadeSliderRight,
+	bool	beatThisFrameBottom,
+	bool	beatThisFrameTop,
+	float	percentOfCurrentBeatBottom,
+	float	percentOfCurrentBeatTop,
 	float	brightness,
 	bool	visualizerQuadrent,
 	float	visualizerZoomOutPercent
@@ -293,6 +297,20 @@ Mixer_DrawGlowLinesTurntables
 	float warmG;
 	float warmB;
 	GetColorWarm(warmR,warmG,warmB);
+
+	float beatR=coolR*2.0f;
+	float beatG=coolG*2.0f;
+	float beatB=coolB*2.0f;
+
+	float beatOffset = percentOfCurrentBeatTop-percentOfCurrentBeatBottom;
+	if(beatOffset>0.5f)
+	{
+		beatOffset-=1.0f;
+	}
+	if(beatOffset<-0.5f)
+	{
+		beatOffset+=1.0f;
+	}
 
 	float glow = GetGlowFromTime(time) * brightness;
 	float viewportLeft = 0.0f;
@@ -310,6 +328,35 @@ Mixer_DrawGlowLinesTurntables
 		const float cfRight = (a==0) ? crossFadeSliderWidth : 1.0f;
 		const float cfBottom=viewportBottom;
 		const float cfTop=viewportTop;
+		const float cfMiddleY=0.5f*(cfBottom+cfTop);
+		if(beatThisFrameBottom)
+		{
+			LGL_DrawRectToScreen
+			(
+				cfLeft,
+				cfRight,
+				cfBottom,
+				cfMiddleY,
+				beatR,
+				beatG,
+				beatB,
+				1.0f
+			);
+		}
+		if(beatThisFrameTop)
+		{
+			LGL_DrawRectToScreen
+			(
+				cfLeft,
+				cfRight,
+				cfMiddleY,
+				cfTop,
+				beatR,
+				beatG,
+				beatB,
+				1.0f
+			);
+		}
 		bool justSet=false;
 		if
 		(
@@ -420,6 +467,44 @@ Mixer_DrawGlowLinesTurntables
 			false
 		);
 		if(visualizerQuadrent==true) LGL_ClipRectDisable();
+	}
+
+	if
+	(
+		percentOfCurrentBeatBottom>=0 &&
+		percentOfCurrentBeatTop>=0
+	)
+	{
+		for(int a=0;a<2;a++)
+		{
+			const float cfLeft = (a==0) ? 0 : (1.0f-crossFadeSliderWidth);
+			const float cfRight = (a==0) ? crossFadeSliderWidth : 1.0f;
+			const float cfBottom=viewportBottom;
+			const float cfTop=viewportTop;
+			const float cfMiddleX=0.5f*(cfLeft+cfRight);
+			const float cfMiddleY=0.5f*(cfBottom+cfTop);
+			const float cfWidth=cfRight-cfLeft;
+			const float cfHeight=cfTop-cfBottom;
+			LGL_ClipRectEnable
+			(
+				cfLeft,
+				cfRight,
+				cfBottom,
+				cfTop
+			);
+			LGL_DrawRectToScreen
+			(
+				cfMiddleX-0.25f*cfWidth,
+				cfMiddleX+0.25f*cfWidth,
+				(cfMiddleY-beatOffset*5.0f)-(cfHeight*0.01f),
+				(cfMiddleY-beatOffset*5.0f)+(cfHeight*0.01f),
+				1.0f,
+				1.0f,
+				1.0f,
+				1.0f
+			);
+			LGL_ClipRectDisable();
+		}
 	}
 }
 
@@ -543,14 +628,14 @@ Mixer_DrawGlowLinesStatus
 void
 Mixer_DrawLevels
 (
-	float viewportBottom,
-	float viewportTop,
-	float leftBottomLevel,
-	float leftTopLevel,
-	float rightBottomLevel,
-	float rightTopLevel,
-	bool  visualizerQuadrent,
-	float visualizerZoomOutPercent
+	float	viewportBottom,
+	float	viewportTop,
+	float	leftBottomLevel,
+	float	leftTopLevel,
+	float	rightBottomLevel,
+	float	rightTopLevel,
+	bool	visualizerQuadrent,
+	float	visualizerZoomOutPercent
 )
 {
 	if(visualizerQuadrent)
@@ -1050,12 +1135,14 @@ Turntable_DrawWaveform
 
 	//Draw Waveform
 
+	const float needleDelta = 0.005f;
+
 	float needleDeltaL=
 		(0.0f+grainStreamCrossfader) * -(0.0f/4.0f)*grainStreamLength +
-		(1.0f-grainStreamCrossfader) * -0.005f;
+		(1.0f-grainStreamCrossfader) * -1.0f*needleDelta;
 	float needleDeltaR=
 		(0.0f+grainStreamCrossfader) * (3.0f/4.0f)*grainStreamLength +
-		(1.0f-grainStreamCrossfader) * 0.005f;
+		(1.0f-grainStreamCrossfader) * 1.0f*needleDelta;
 
 	float sampleRadiusMultiplier=SAMPLE_RADIUS_MULTIPLIER;
 	

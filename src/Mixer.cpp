@@ -290,8 +290,8 @@ NextFrame
 		{
 			//Nudge toward sync
 			float bpmScalar = Turntable[target]->GetBPMAdjusted()/Turntable[syncTT]->GetBPMAdjusted();
-			float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f/bpmScalar);
-			float percentOfMeasureTarget = Turntable[target]->GetPercentOfCurrentMeasure();
+			float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f/bpmScalar,true);
+			float percentOfMeasureTarget = Turntable[target]->GetPercentOfCurrentMeasure(1.0f,true);
 			if
 			(
 				percentOfMeasureSelf >= 0 &&
@@ -811,6 +811,10 @@ DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent)
 			LGL_SecondsSinceExecution(),
 			CrossfadeSliderLeft,
 			CrossfadeSliderRight,
+			Turntable[1]->GetBeatThisFrame(),
+			Turntable[0]->GetBeatThisFrame(),
+			Turntable[1]->GetPaused() ? -1.0f : Turntable[1]->GetPercentOfCurrentMeasure(0.25f,true),
+			Turntable[0]->GetPaused() ? -1.0f : Turntable[0]->GetPercentOfCurrentMeasure(0.25f,true),
 			1.0f,
 			visualizerQuadrent,
 			visualizerZoomOutPercent
