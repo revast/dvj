@@ -142,6 +142,7 @@ typedef struct
 	double			PositionSamplesStart;
 	double			PositionSamplesPrev;
 	double			PositionSamplesNow;
+	double			PositionSamplesNowOutwards;
 	double			FuturePositionSamplesPrev;
 	double			FuturePositionSamplesNow;
 	double			PositionSamplesNowLastReported;
@@ -810,6 +811,7 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].PositionSamplesStart=0;
 	LGL.SoundChannel[a].PositionSamplesPrev=0;
 	LGL.SoundChannel[a].PositionSamplesNow=0;
+	LGL.SoundChannel[a].PositionSamplesNowOutwards=0;
 	LGL.SoundChannel[a].FuturePositionSamplesPrev=-1;
 	LGL.SoundChannel[a].FuturePositionSamplesNow=-1;
 	LGL.SoundChannel[a].PositionSamplesNowLastReported=0;
@@ -17039,6 +17041,7 @@ Play
 		LGL.SoundChannel[available].PositionSamplesStart=startSeconds*Hz;
 		LGL.SoundChannel[available].PositionSamplesPrev=startSeconds*Hz;
 		LGL.SoundChannel[available].PositionSamplesNow=startSeconds*Hz;
+		LGL.SoundChannel[available].PositionSamplesNowOutwards=LGL.SoundChannel[available].PositionSamplesNow;
 		LGL.SoundChannel[available].FuturePositionSamplesPrev=-1;
 		LGL.SoundChannel[available].FuturePositionSamplesNow=-1;
 		LGL.SoundChannel[available].PositionSamplesNowLastReported=0;
@@ -17656,7 +17659,7 @@ if(channel<0)
 }
 	//if(LGL.AudioAvailable==false) return(0);
 
-	signed long ret=(signed long)((LGL.SoundChannel[channel].PositionSamplesNow));
+	signed long ret=(signed long)((LGL.SoundChannel[channel].PositionSamplesNowOutwards));
 	if(LGL.SoundChannel[channel].FuturePositionSamplesNow>=0.0f)
 	{
 		ret = (signed long)LGL.SoundChannel[channel].FuturePositionSamplesNow;
@@ -31904,6 +31907,13 @@ lgl_AudioOutCallbackGenerator
 			//sc->LGLSound->UnlockBufferForReading(101);
 		}
 	}
+
+	for(int b=0;b<LGL_SOUND_CHANNEL_NUMBER;b++)
+	{
+		LGL_SoundChannel* sc=&LGL.SoundChannel[b];
+		sc->PositionSamplesNowOutwards=sc->PositionSamplesNow;
+	}
+
 	if(LGL.AudioEncoder)
 	{
 		LGL.AudioEncoder->Encode((const char*)(LGL.RecordBuffer),(encodeChannels/2)*len8/(renderChannels/2));

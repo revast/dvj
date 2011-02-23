@@ -105,7 +105,7 @@ public:
 	LGL_VideoDecoder*		GetVideoHi();
 	float				GetVideoTimeSeconds();
 	bool				GetVideoSolo();
-	float				GetTimeSeconds();
+	float				GetTimeSeconds(bool forceNonSmooth=false);
 	float				GetTimeSecondsPrev();
 	bool				GetFreqMetaData
 					(
@@ -394,8 +394,8 @@ static	bool				GetSurroundMode();
 	void				SetBPMAdjusted(float bpmAdjusted);
 	void				SetBPMMaster(float bpmMaster);
 	bool				GetBeatThisFrame(float fractionOfBeat=1.0f);
-	double				GetPercentOfCurrentMeasure(float measureMultiplier=1.0f);
-	double				GetBeginningOfCurrentMeasureSeconds(float measureMultiplier=1.0f);
+	double				GetPercentOfCurrentMeasure(float measureMultiplier=1.0f, bool recalculateSecondsNow=false);
+	double				GetBeginningOfCurrentMeasureSeconds(float measureMultiplier=1.0f, bool recalculateSecondsNow=false);
 	double				GetBeginningOfArbitraryMeasureSeconds(float seconds, float measureMultiplier=1.0f);
 	bool				GetSolo();
 	bool				GetRhythmicSoloInvert();

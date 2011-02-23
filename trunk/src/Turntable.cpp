@@ -5182,7 +5182,10 @@ GetVideoSolo()
 
 float
 TurntableObj::
-GetTimeSeconds()
+GetTimeSeconds
+(
+	bool	forceNonSmooth
+)
 {
 	if(Sound==NULL || Mode!=2)
 	{
@@ -5196,7 +5199,7 @@ GetTimeSeconds()
 		}
 		else
 		{
-			if(LGL_FPS()>50)
+			if(forceNonSmooth==false && LGL_FPS()>50)
 			{
 				return(SmoothWaveformScrollingSample/Sound->GetHz());
 			}
@@ -6271,7 +6274,8 @@ double
 TurntableObj::
 GetPercentOfCurrentMeasure
 (
-	float	measureMultiplier
+	float	measureMultiplier,
+	bool	recalculateSecondsNow
 )
 {
 	if
@@ -6283,20 +6287,23 @@ GetPercentOfCurrentMeasure
 		return(-1.0);
 	}
 
-	double startMeasure = GetBeginningOfCurrentMeasureSeconds(measureMultiplier);
+	double startMeasure = GetBeginningOfCurrentMeasureSeconds(measureMultiplier,recalculateSecondsNow);
 	double deltaMeasure = measureMultiplier*GetMeasureLengthSeconds();
 
-	return((SecondsNow-startMeasure)/deltaMeasure);
+	float secondsNow = recalculateSecondsNow ? GetTimeSeconds(true) : SecondsNow;
+	return((secondsNow-startMeasure)/deltaMeasure);
 }
 
 double
 TurntableObj::
 GetBeginningOfCurrentMeasureSeconds
 (
-	float	measureMultiplier
+	float	measureMultiplier,
+	bool	recalculateSecondsNow
 )
 {
-	return(GetBeginningOfArbitraryMeasureSeconds(SecondsNow,measureMultiplier));
+	float secondsNow = recalculateSecondsNow ? GetTimeSeconds(true) : SecondsNow;
+	return(GetBeginningOfArbitraryMeasureSeconds(secondsNow,measureMultiplier));
 }
 
 double
