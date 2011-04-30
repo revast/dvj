@@ -267,7 +267,6 @@ private:
 	double				SavePointSeconds[18];
 	char*				MetaDataSavedThisFrame;
 	double				RecallOrigin;
-	unsigned long			RecallSampleCounter;
 	double				SmoothWaveformScrollingSample;
 	double				SmoothWaveformScrollingSampleRate;
 	float				SavePointUnsetNoisePercent[18];

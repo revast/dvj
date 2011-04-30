@@ -471,6 +471,11 @@ typedef struct
 
 	bool			NetAvailable;
 
+	//LEDs
+
+	std::vector<lgl_LEDHost*>
+				ledHostList;
+
 	//Misc
 
 	bool			Running;
@@ -3345,7 +3350,7 @@ lgl_fftw_init()
 	{
 		LGL_Image* fft_img=NULL;
 		const char* fftwWisdomImagePath="data/image/fftw_wisdom.png";
-		if(LGL_FileExists(fftwWisdomImagePath))
+		if(0 && LGL_FileExists(fftwWisdomImagePath))
 		{
 			fft_img = new LGL_Image(fftwWisdomImagePath);
 		}
@@ -4051,6 +4056,14 @@ bool firstSwap=true;
 void
 LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 {
+	if(endFrame)
+	{
+		for(unsigned int a=0;a<LGL.ledHostList.size();a++)
+		{
+			LGL.ledHostList[a]->Send();
+		}
+	}
+
 #ifdef	LGL_NO_GRAPHICS
 	LGL_DelaySeconds(1.0f/60.0f-LGL_SecondsSinceThisFrame());
 #else
@@ -13905,6 +13918,11 @@ LGL_DebugPrintf
 )
 {
 	if(SDL_ThreadID()!=LGL.ThreadIDMain)
+	{
+		return;
+	}
+
+	if(LGL.DisplayNow!=0)
 	{
 		return;
 	}
@@ -30401,8 +30419,8 @@ Init
 			printf("\tLock Waiter File: %s\n",file);
 			printf("\tLock Waiter Line: %i\n",line);
 			printf("\tLock Waiter Thread: %i (%i)\n",
-	SDL_ThreadID(),
-	LGL.ThreadIDMain);
+				(int)SDL_ThreadID(),
+				(int)LGL.ThreadIDMain);
 			printf("\n");
 		}
 	}
@@ -30435,6 +30453,125 @@ GetLockObtained()
 
 //LEDs
 
+void lgl_set_leds
+(
+	const char*	host,
+	int		port,
+	int		numLights,
+	int&		socketInstance,
+	char		red[],
+	char		green[],
+	char		blue[]
+)
+{
+
+#if 0
+printf("lgl_set_leds(): '%s' %i\n",host,port);
+for(int a=0;a<numLights;a++)
+{
+	printf("\t[%i]:\t%i\t%i\t%i\n",
+		a,
+		red[a],
+		green[a],
+		blue[a]
+	);
+}
+printf("\n");
+#endif
+
+	int idx, call;
+	struct sockaddr_in sock;
+	struct hostent *hp;
+
+	char* red_ptr = red;
+	char* green_ptr = green;
+	char* blue_ptr = blue; 
+
+	if
+	(
+		 host==NULL ||
+		 host[0]=='\0' ||
+		 port==0
+	)
+	{
+		return;
+	}
+
+	bzero(&sock,sizeof(sock));
+
+	const int packet_size = 536;
+	const int header_size = 21;
+	const unsigned char header[] = {4,1,220,74,1,0,1,1,0,0,0,0,0,0,0,0,255,255,255,255,0};
+	static unsigned char buffer[packet_size + 1];
+
+
+	if(socketInstance==-1)
+	{
+		//Initialize...
+		socketInstance = socket(AF_INET, SOCK_DGRAM, 0);
+		memcpy(buffer,header,header_size);
+	}
+
+	if (socketInstance < 0)
+	{
+		fprintf(stderr, "lgl_set_leds(): Error creating socket\n");
+		return;
+	}
+
+	hp = gethostbyname(host);
+	if (hp==0)
+	{
+		fprintf(stderr, "lgl_set_leds(): Unknown host\n");
+		return;
+	}
+
+	sock.sin_family = hp->h_addrtype;
+	sock.sin_port = htons(port);
+
+	memcpy((char *)&sock.sin_addr, (char *)hp->h_addr, hp->h_length);
+
+	for (idx = header_size; idx < header_size + (numLights * 3); idx++)
+	{
+
+		switch(idx % 3)
+		{
+			case 0:
+				buffer[idx] = *red_ptr;
+				red_ptr++;
+				break;
+			case 1:
+				buffer[idx] = *green_ptr;
+				green_ptr++;
+				break;
+			case 2:
+				buffer[idx] = *blue_ptr;
+				blue_ptr++;
+				break;
+		}
+	}
+
+	call=sendto
+	(
+		socketInstance,
+		buffer,
+		packet_size,
+		0,
+		(struct sockaddr*) &sock,
+		sizeof(struct sockaddr_in)
+	);
+	
+	//close(socketInstance);
+	/*
+	if (call < 0)
+	{
+		fprintf(stderr, "lgl_set_leds(): Failed to send (%i) (%i) (%i)\n",packet_size,hp->h_length,call);
+	}
+	*/
+}
+
+
+//Old
+/*
 void
 lgl_set_leds
 (
@@ -30519,6 +30656,7 @@ LGL_SetLEDs
 (
 	const char*	hostname,
 	int		port,
+	int		channel,
 	int&		socketInstance,
 	float		r,
 	float		g,
@@ -30535,6 +30673,130 @@ LGL_SetLEDs
 		(char)(LGL_Clamp(0.0f,b,1.0f)*255)
 	);
 }
+*/
+
+lgl_LEDHost*
+lgl_GetLEDHost
+(
+	const char*	hostname,
+	int		port=6038
+)
+{
+	if
+	(
+		hostname==NULL ||
+		port==0
+	)
+	{
+		return(NULL);
+	}
+
+	lgl_LEDHost* ret=NULL;
+
+	for(unsigned int a=0;a<LGL.ledHostList.size();a++)
+	{
+		lgl_LEDHost* now = LGL.ledHostList[a];
+		if(now->Matches(hostname,port))
+		{
+			ret=now;
+			break;
+		}
+	}
+
+	if(ret==NULL)
+	{
+		ret = new lgl_LEDHost
+		(
+			hostname,
+			port
+		);
+		LGL.ledHostList.push_back(ret);
+	}
+
+	return(ret);
+}
+
+lgl_LEDHost::
+lgl_LEDHost
+(
+	const char*	hostname,
+	int		port
+)
+{
+	strcpy(Hostname,hostname);
+	Port=port;
+	SocketInstance=-1;
+
+	for(int a=0;a<128;a++)
+	{
+		Red[a]=0;
+		Green[a]=0;
+		Blue[a]=0;
+	}
+	ChannelCount=0;
+}
+
+bool
+lgl_LEDHost::
+Matches
+(
+	const char*	hostname,
+	int		port
+)
+{
+	return
+	(
+		port==Port &&
+		hostname != NULL &&
+		strcmp(hostname,Hostname)==0
+	);
+}
+
+void
+lgl_LEDHost::
+SetColor
+(
+	float	red,
+	float	green,
+	float	blue,
+	int	channel
+)
+{
+	if(channel<0 || channel >= 128)
+	{
+		return;
+	}
+
+	if(channel>=ChannelCount)
+	{
+		ChannelCount=channel+1;
+	}
+
+	Red[channel] = (char)(LGL_Clamp(0.0f,red,1.0f)*255);
+	Green[channel] = (char)(LGL_Clamp(0.0f,green,1.0f)*255);
+	Blue[channel] = (char)(LGL_Clamp(0.0f,blue,1.0f)*255);
+}
+
+void
+lgl_LEDHost::
+Send()
+{
+	if(ChannelCount==0)
+	{
+		return;
+	}
+
+	lgl_set_leds
+	(
+		Hostname,
+		Port,
+		ChannelCount,
+		SocketInstance,
+		Red,
+		Green,
+		Blue
+	);
+}
 
 
 
@@ -30543,14 +30805,16 @@ LGL_LEDClient
 (
 	const char*	hostname,
 	int		port,
+	int		channel,
 	int		group
 )
 {
 	strcpy(Hostname,hostname);
 	Port=port;
+	Channel=channel;
 	Group=group;
 
-	SocketInstance=-1;
+	LEDHost=NULL;
 }
 
 LGL_LEDClient::
@@ -30568,16 +30832,24 @@ SetColor
 	float	blue
 )
 {
-	if(Port!=0)
+	if(Port==0)
 	{
-		LGL_SetLEDs
+		return;
+	}
+
+	if(LEDHost==NULL)
+	{
+		LEDHost = lgl_GetLEDHost(Hostname,Port);
+	}
+
+	if(LEDHost!=NULL)
+	{
+		LEDHost->SetColor
 		(
-			Hostname,
-			Port,
-			SocketInstance,
 			red,
 			green,
-			blue
+			blue,
+			Channel
 		);
 	}
 }

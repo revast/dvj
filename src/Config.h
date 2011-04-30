@@ -24,6 +24,8 @@
 #ifndef	_DVJ_CONFIG_H_
 #define	_DVJ_CONFIG_H_
 
+#include <vector>
+
 typedef enum
 {
 	NOOP = 0,
@@ -187,6 +189,9 @@ GetFPSMax();
 int
 GetAudioSamplePeriod();
 
+int
+GetAudioMaxLengthMinutes();
+
 bool
 GetDrawTurntablePreviews();
 
@@ -297,6 +302,7 @@ class LEDClient
 public:
 
 	IpEndpointName	Endpoint;
+	int		Channel;
 	int		Group;
 };
 
@@ -305,6 +311,12 @@ GetLEDClientList();
 
 bool
 GetDebugVideoCaching();
+
+bool
+GetDebugRecordHold();
+
+bool
+GetTestFreqSenseTime();
 
 #endif	//_DVJ_CONFIG_H_
 

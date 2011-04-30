@@ -47,7 +47,7 @@
 #define	strcasecmp	strcmpi
 #endif	//WIN32
 
-#include <SDL_opengl.h>
+#include "SDL_opengl.h"
 #ifndef	LGL_OSX
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -3396,12 +3396,57 @@ private:
 
 //LEDs
 
+class lgl_LEDHost
+{
+
+public:
+
+		lgl_LEDHost
+		(
+			const char*	hostname,
+			int		port=6038
+		);
+
+	bool	Matches
+		(
+			const char*	hostname,
+			int		port
+		);
+
+	void	SetColor
+		(
+			float	red,
+			float	green,
+			float	blue,
+			int	channel
+		);
+
+	void	Send();
+
+private:
+
+	char	Hostname[2048];
+	int	Port;
+	int	SocketInstance;
+
+	char	Red[128];
+	char	Green[128];
+	char	Blue[128];
+	int	ChannelCount;
+};
+
 class LGL_LEDClient
 {
 
 public:
 
-		LGL_LEDClient(const char* hostname, int port=6038, int group=0);
+		LGL_LEDClient
+		(
+			const char*	hostname,
+			int		port=6038,
+			int		channel=0,
+			int		group=0
+		);
 		~LGL_LEDClient();
 
 	void	SetColor(float red, float green, float blue);
@@ -3411,21 +3456,12 @@ private:
 
 	char	Hostname[2048];
 	int	Port;
+	int	Channel;
 	int	Group;
 
-	int	SocketInstance;
+	lgl_LEDHost*
+		LEDHost;
 };
-
-void		LGL_SetLEDs
-		(
-			const char*	hostname,
-			int		port,
-			int&		socketInstance,
-			float		r,
-			float		g,
-			float		b
-		);
-
 
 
 
