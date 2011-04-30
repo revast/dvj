@@ -3568,7 +3568,7 @@ GetFreqBrightness
 		freqMag/=2.0f;
 		freqMag*=volMagNormalized;
 	}
-	
+
 	float brightFactor=1.0f;
 	//EQ Affects Analysis
 	if(exagerationFactor!=-1.0f)

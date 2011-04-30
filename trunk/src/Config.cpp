@@ -104,6 +104,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"fpsMax=60\n");
 		fprintf(fd,"audioSamplePeriod=512\n");
+		fprintf(fd,"audioMaxLengthMinutes=20\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"drawTurntablePreviews=1\n");
 		fprintf(fd,"videoBufferFrames=120\n");
@@ -131,19 +132,13 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_000_Host = localhost\n");
 		fprintf(fd,"ledClient_000_Port = 0\n");
+		fprintf(fd,"ledClient_000_Channel = 0\n");
 		fprintf(fd,"ledClient_000_Group = 0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_001_Host = localhost\n");
 		fprintf(fd,"ledClient_001_Port = 0\n");
+		fprintf(fd,"ledClient_001_Channel = 0\n");
 		fprintf(fd,"ledClient_001_Group = 0\n");
-		fprintf(fd,"\n");
-		fprintf(fd,"ledClient_002_Host = localhost\n");
-		fprintf(fd,"ledClient_002_Port = 0\n");
-		fprintf(fd,"ledClient_002_Group = 0\n");
-		fprintf(fd,"\n");
-		fprintf(fd,"ledClient_003_Host = localhost\n");
-		fprintf(fd,"ledClient_003_Port = 0\n");
-		fprintf(fd,"ledClient_003_Group = 0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"# You may add up to ledClient_0255, if you so desire.\n");
 		fprintf(fd,"\n");
@@ -740,6 +735,13 @@ GetAudioSamplePeriod()
 {
 	int period=LGL_Clamp(32,dvjrcConfigFile->read<int>("audioSamplePeriod",512),2048);
 	return(period);
+}
+
+int
+GetAudioMaxLengthMinutes()
+{
+	int minutes=LGL_Clamp(1,dvjrcConfigFile->read<int>("audioMaxLengthMinutes",20),1000);
+	return(minutes);
 }
 
 bool
@@ -1698,15 +1700,18 @@ GetLEDClientList()
 
 	char keyHost[512];
 	char keyPort[512];
+	char keyChannel[512];
 	char keyGroup[512];
 
 	for(int a=0;a<256;a++)
 	{
 		sprintf(keyHost,"ledClient_%03i_Host",a);
 		sprintf(keyPort,"ledClient_%03i_Port",a);
+		sprintf(keyChannel,"ledClient_%03i_Channel",a);
 		sprintf(keyGroup,"ledClient_%03i_Group",a);
 		std::string hostStr = dvjrcConfigFile->read<std::string>(keyHost,"");
 		int port=dvjrcConfigFile->read<int>(keyPort,0);
+		int channel=dvjrcConfigFile->read<int>(keyChannel,0);
 		int group=dvjrcConfigFile->read<int>(keyGroup,0);
 		if
 		(
@@ -1722,6 +1727,7 @@ GetLEDClientList()
 					hostStr.c_str(),
 					port
 				);
+			client.Channel=channel;
 			client.Group=group;
 			ret.push_back(client);
 		}
@@ -1761,6 +1767,20 @@ bool
 GetDebugVideoCaching()
 {
 	int debug=dvjrcConfigFile->read<int>("debugVideoCaching",0);
+	return(debug!=0);
+}
+
+bool
+GetDebugRecordHold()
+{
+	int debug=dvjrcConfigFile->read<int>("debugRecordHold",0);
+	return(debug!=0);
+}
+
+bool
+GetTestFreqSenseTime()
+{
+	int debug=dvjrcConfigFile->read<int>("testFreqSenseTime",0);
 	return(debug!=0);
 }
 

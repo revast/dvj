@@ -185,6 +185,7 @@ VisualizerObj()
 			(
 				host,
 				inLEDClientList[a].Endpoint.port,
+				inLEDClientList[a].Channel,
 				inLEDClientList[a].Group
 			)
 		);
@@ -275,6 +276,7 @@ NextFrame
 					float neoFreqBrightness = GetFreqBrightness((vid==vidH),neoFreqFactor,neoVol);
 					if
 					(
+						GetTestFreqSenseTime()==false &&
 						oldFreqBrightness>0.0f &&
 						neoFreqBrightness==0.0f
 					)
@@ -296,9 +298,9 @@ NextFrame
 
 						vid->SetTime(LGL_RandFloat(min,max));
 					}
-					/*
 					else if
 					(
+						GetTestFreqSenseTime() &&
 						oldFreqBrightness==0.0f &&
 						neoFreqBrightness>0.0f
 					)
@@ -310,7 +312,6 @@ NextFrame
 
 						vid->SetTime(max*neoFreqBrightness);
 					}
-					*/
 					else
 					{
 						float speedFactor=
@@ -1687,6 +1688,7 @@ DrawVideos
 				float multFreq = (vid==vidL) ? tt->GetEQLo() : tt->GetEQHi();
 				float myFreqFactor=freqFactor;
 				float br = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
+				if(vid==vidL) br*=4;	//FIXME: Ben / Zebbler hack... Shouldn't be this way!!
 				br*=vid->StoredBrightness*freqSenseBright;
 
 				LGL_Image* image = vid->GetImage();//EIGHT_WAY ? !preview : preview);
@@ -1733,18 +1735,6 @@ DrawVideos
 								ProjectorClear=false;
 							}
 						}
-						/*
-						image->DrawToScreen
-						(
-							myL,myR,myB,myT,
-							0,
-							1.0f,
-							1.0f,
-							1.0f,
-							alpha,
-							br
-						);
-						*/
 
 						float x[4];
 						float y[4];
@@ -1789,6 +1779,7 @@ DrawVideos
 							alpha,
 							br
 						);
+//LGL_DebugPrintf("br: %.2f\n",br);
 					}
 				}
 			}

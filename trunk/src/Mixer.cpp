@@ -850,6 +850,17 @@ DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent)
 	RecordingFailedTimer=LGL_Max(0.0f,RecordingFailedTimer-LGL_SecondsSinceLastFrame());
 
 	DrawStatus(glow,visualizerQuadrent,visualizerZoomOutPercent);
+
+	if(GetDebugRecordHold())
+	{
+		if(LGL_GetXponent())
+		{
+			LGL_DebugPrintf("Left Record: %s\n",
+				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_RECORD) ? "Down" : "Up");
+			LGL_DebugPrintf("Right Record: %s\n",
+				LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_RECORD) ? "Down" : "Up");
+		}
+	}
 }
 
 void

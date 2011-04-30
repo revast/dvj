@@ -681,6 +681,11 @@ TurntableObj
 	Sound=NULL;
 	sprintf(SoundName,"No Track Selected");
 	SoundBufferLength=4*44100*60*20;
+	if(int minutes=GetAudioMaxLengthMinutes())
+	{
+		SoundBufferLength=4*44100*60*minutes;
+	}
+
 	SoundBufferCurrentPageIndex=0;
 	//SoundBufferLength=(unsigned long)(1024*1024*200*(1.0/0.987875));	//20 minutes
 	SoundBuffer=(Uint8*)malloc(SoundBufferLength);
@@ -2761,7 +2766,8 @@ NextFrame
 				!(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_MINUS)) &&
 				!(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_PLUS))
 			);
-			GlitchPureDuo=true;//(LGL_GetWiimote(1).ButtonDown(LGL_WIIMOTE_B)==false);
+			GlitchPureDuo=true;
+
 			if(GlitchPure)
 			{
 				GlitchPureSpeed=Pitchbend*LGL_Clamp(0,1.0f-LGL_GetWiimote(1).GetAccelRaw().GetY(),4.0f);
@@ -2819,33 +2825,6 @@ NextFrame
 
 			if
 			(
-				LuminScratch==false &&
-				RecordScratch==false &&
-				RecallIsSet() &&
-				(
-					LGL_GetWiimote(0).ButtonRelease(LGL_WIIMOTE_MINUS) ||
-					LGL_GetWiimote(0).ButtonRelease(LGL_WIIMOTE_PLUS)
-				)
-			)
-			{
-				//Just finished Scratching... Recall?
-				/*
-				if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B)==false)
-				{
-					Recall();
-				}
-				else
-				{
-					if(wasScratching)
-					{
-						ClearRecallOrigin();
-					}
-				}
-				*/
-			}
-
-			if
-			(
 				false &&
 				Sound->IsLoaded()
 			)
@@ -2861,7 +2840,6 @@ NextFrame
 				else
 				{
 					GrainStreamActiveSeconds+=secondsElapsed;
-					//GrainStreamSourcePoint+=2.0f*secondsElapsed*LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS);
 					if(1)
 					{
 						while(GrainStreamSourcePoint<0.0f)
@@ -2894,43 +2872,6 @@ NextFrame
 
 			bool savePointJump=false;
 			bool savePointRecall=false;
-
-			/*
-			if(LGL_GetWiimote(0).ButtonRelease(LGL_WIIMOTE_B))
-			{
-				ClearRecallOrigin();
-			}
-			*/
-
-			/*
-			if
-			(
-				(
-					LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B) &&
-					LGL_GetWiimote(0).GetFlickXPositive()
-				)
-				||
-				LGL_GetWiimote(0).ButtonStroke(LGL_WIIMOTE_HOME)
-			)
-			{
-				savePointJump=true;
-			}
-
-			if
-			(
-				(
-					LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B) &&
-					LGL_GetWiimote(1).GetFlickXPositive()
-				) ||
-				(
-					LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B)==false &&
-					LGL_GetWiimote(0).ButtonRelease(LGL_WIIMOTE_HOME)
-				)
-			)
-			{
-				savePointRecall=true;
-			}
-			*/
 
 			if
 			(
@@ -3030,29 +2971,6 @@ NextFrame
 					}
 				}
 			}
-
-			/*
-			//Must continue to hold down WIIMOTE_B, to warp
-			if
-			(
-				LGL_GetWiimote(0).Connected() &&
-				LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_B)==false
-			)
-			{
-				Sound->SetWarpPoint(Channel);
-			}
-
-			if
-			(
-				RecallIsSet() &&
-				wasScratching &&
-				LGL_GetWiimote(0).ButtonStroke(LGL_WIIMOTE_B)
-			)
-			{
-				//Clear Recall
-				ClearRecallOrigin();
-			}
-			*/
 		}
 
 		if
