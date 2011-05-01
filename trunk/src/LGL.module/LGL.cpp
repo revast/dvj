@@ -200,9 +200,11 @@ typedef struct
 	LGL_Sound*		LGLSound;
 	LGL_AudioDSP*		LGLAudioDSP[2];
 
+	int			DivergeCount;
 	double			DivergeSamples;
-	int			DivergeState;
 	float			DivergeSpeed;
+	bool			DivergeRecallNow;
+	double			DivergeRecallSamples;
 	double			WarpPointSecondsAlpha;
 	double			WarpPointSecondsOmega;
 	bool			WarpPointLoop;
@@ -822,13 +824,29 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].PositionSamplesNowLastReported=0;
 	LGL.SoundChannel[a].PositionSamplesEnd=-1;
 	LGL.SoundChannel[a].PositionSamplesDeltaLastTime.Reset();
+	LGL.SoundChannel[a].DivergeCount=0;
 	LGL.SoundChannel[a].DivergeSamples=0;
-	LGL.SoundChannel[a].DivergeState=0;
 	LGL.SoundChannel[a].DivergeSpeed=1.0f;
+	LGL.SoundChannel[a].DivergeRecallNow=false;
+	LGL.SoundChannel[a].DivergeRecallSamples=0.0f;
 	LGL.SoundChannel[a].WarpPointSecondsAlpha=-1.0f;
 	LGL.SoundChannel[a].WarpPointSecondsOmega=-1.0f;
 	LGL.SoundChannel[a].WarpPointLoop=false;
 	LGL.SoundChannel[a].WarpPointLock=false;
+	LGL.SoundChannel[a].SampleRateConverterBufferStartSamples=0;
+	for(int b=0;b<4;b++)
+	{
+		if(LGL.SoundChannel[a].SampleRateConverter[b])
+		{
+			src_reset(LGL.SoundChannel[a].SampleRateConverter[b]);
+		}
+		else
+		{
+			int error=0;
+			LGL.SoundChannel[a].SampleRateConverter[b] = src_new(SRC_SINC_FASTEST,1,&error);
+			assert(LGL.SoundChannel[a].SampleRateConverter[b]);
+		}
+	}
 	LGL.SoundChannel[a].VolumeFrontLeftDesired=1.0f;
 	LGL.SoundChannel[a].VolumeFrontRightDesired=1.0f;
 	LGL.SoundChannel[a].VolumeBackLeftDesired=1.0f;
@@ -17055,40 +17073,14 @@ Play
 	}
 	if(available!=-1)
 	{
+		lgl_ClearAudioChannelNow(available);
 		LGL.SoundChannel[available].Paused=false;
 		LGL.SoundChannel[available].PositionSamplesStart=startSeconds*Hz;
 		LGL.SoundChannel[available].PositionSamplesPrev=startSeconds*Hz;
 		LGL.SoundChannel[available].PositionSamplesNow=startSeconds*Hz;
 		LGL.SoundChannel[available].PositionSamplesNowOutwards=LGL.SoundChannel[available].PositionSamplesNow;
-		LGL.SoundChannel[available].FuturePositionSamplesPrev=-1;
-		LGL.SoundChannel[available].FuturePositionSamplesNow=-1;
-		LGL.SoundChannel[available].PositionSamplesNowLastReported=0;
 		LGL.SoundChannel[available].PositionSamplesEnd=startSeconds*Hz+
 			lengthSeconds*Hz;
-		LGL.SoundChannel[available].PositionSamplesDeltaLastTime.Reset();
-		LGL.SoundChannel[available].DivergeSamples=0;
-		LGL.SoundChannel[available].DivergeState=0;
-		LGL.SoundChannel[available].DivergeSpeed=1.0f;
-		LGL.SoundChannel[available].WarpPointSecondsAlpha=-1.0f;
-		LGL.SoundChannel[available].WarpPointSecondsOmega=-1.0f;
-		LGL.SoundChannel[available].WarpPointLoop=false;
-		LGL.SoundChannel[available].WarpPointLock=false;
-		LGL.SoundChannel[available].SampleRateConverterBufferValidSamples=0;
-		LGL.SoundChannel[available].SampleRateConverterBufferCurrentSamplesIndex=0;
-		LGL.SoundChannel[available].SampleRateConverterBufferStartSamples=0;
-		for(int a=0;a<4;a++)
-		{
-			if(LGL.SoundChannel[available].SampleRateConverter[a])
-			{
-				src_reset(LGL.SoundChannel[available].SampleRateConverter[a]);
-			}
-			else
-			{
-				int error=0;
-				LGL.SoundChannel[available].SampleRateConverter[a] = src_new(SRC_SINC_FASTEST,1,&error);
-				assert(LGL.SoundChannel[available].SampleRateConverter[a]);
-			}
-		}
 		LGL.SoundChannel[available].VolumeFrontLeftDesired=volume;
 		LGL.SoundChannel[available].VolumeFrontRightDesired=volume;
 		LGL.SoundChannel[available].VolumeBackLeftDesired=volume;
@@ -17099,46 +17091,13 @@ Play
 		LGL.SoundChannel[available].VolumeBackRight=volume;
 		LGL.SoundChannel[available].Channels=Channels;
 		LGL.SoundChannel[available].Hz=Hz;
-		LGL.SoundChannel[available].ToMono=false;
 		LGL.SoundChannel[available].SpeedNow=speed;
 		LGL.SoundChannel[available].SpeedDesired=speed;
-		LGL.SoundChannel[available].SpeedInterpolationFactor=1;
-		LGL.SoundChannel[available].SpeedVolumeFactor=1;
-		LGL.SoundChannel[available].Glitch=false;
-		LGL.SoundChannel[available].FutureGlitchSettingsAvailable=false;
-		LGL.SoundChannel[available].GlitchVolume=0;
-		LGL.SoundChannel[available].GlitchSpeedNow=1;
-		LGL.SoundChannel[available].GlitchSpeedDesired=1;
-		LGL.SoundChannel[available].GlitchSpeedInterpolationFactor=1;
-		LGL.SoundChannel[available].GlitchDuo=0;
-		LGL.SoundChannel[available].GlitchLuminScratch=false;
-		LGL.SoundChannel[available].GlitchLuminScratchPositionDesired=-10000;
-		LGL.SoundChannel[available].FutureGlitchSamplesNow=-10000;
-		LGL.SoundChannel[available].RhythmicInvertAlphaSamples=0;
-		LGL.SoundChannel[available].RhythmicInvertDeltaSamples=0;
-		LGL.SoundChannel[available].RhythmicVolumeInvert=false;
-		LGL.SoundChannel[available].RespondToRhythmicSoloInvertChannel=-1;
-		LGL.SoundChannel[available].RespondToRhythmicSoloInvertCurrentValue=1;
-		LGL.SoundChannel[available].GlitchSamplesNow=0;
-		LGL.SoundChannel[available].GlitchLast=0;
-		LGL.SoundChannel[available].GlitchBegin=0;
-		LGL.SoundChannel[available].GlitchLength=0;
-		LGL.SoundChannel[available].Loop=looping;
-		LGL.SoundChannel[available].StickyEndpoints=false;
 		LGL.SoundChannel[available].LengthSamples=lengthSeconds*Hz;
 		LGL.SoundChannel[available].BufferLength=BufferLength;
 		LGL.SoundChannel[available].Buffer=Buffer;
 		LGL.SoundChannel[available].BufferSemaphore=&BufferSemaphore;
 		LGL.SoundChannel[available].LGLSound=this;
-		for(int a=0;a<2;a++)
-		{
-			if(LGL.SoundChannel[available].LGLAudioDSP[a]!=NULL)
-			{
-				delete LGL.SoundChannel[available].LGLAudioDSP[a];
-				LGL.SoundChannel[available].LGLAudioDSP[a]=NULL;
-			}
-		}
-		LGL.SoundChannel[available].ClearMe=false;
 		LGL.SoundChannel[available].Occupied=true;
 	}
 	else
@@ -17670,11 +17629,11 @@ GetPositionSamples
 	int	channel
 )
 {
-if(channel<0)
-{
-	printf("LGL_Sound::GetPositionSamples(): WARNING! channel < 0\n");
-	return(0);
-}
+	if(channel<0)
+	{
+		printf("LGL_Sound::GetPositionSamples(): WARNING! channel < 0\n");
+		return(0);
+	}
 	//if(LGL.AudioAvailable==false) return(0);
 
 	signed long ret=(signed long)((LGL.SoundChannel[channel].PositionSamplesNowOutwards));
@@ -17682,14 +17641,10 @@ if(channel<0)
 	{
 		ret = (signed long)LGL.SoundChannel[channel].FuturePositionSamplesNow;
 	}
-	if(LGL.SoundChannel[channel].DivergeState==-1)
+	if(LGL.SoundChannel[channel].DivergeRecallNow)
 	{
 		//Recall!
-		signed long early=(signed long)LGL.SoundChannel[channel].DivergeSamples;
-		if(LGL.SoundChannel[channel].DivergeState==-1)
-		{
-			ret=early;
-		}
+		ret=(signed long)LGL.SoundChannel[channel].DivergeRecallSamples;
 	}
 
 	if(ret<0)
@@ -17723,6 +17678,7 @@ if(channel<0)
 	return((unsigned long)(LGL.SoundChannel[channel].GlitchSamplesNow));	//FIXME: This isn't right.
 }
 
+/*
 bool
 LGL_Sound::
 SetDivergeRecallOff
@@ -17781,6 +17737,76 @@ SetDivergeRecallEnd
 
 	return(true);
 }
+*/
+
+bool
+LGL_Sound::
+DivergeRecallPush
+(
+	int	channel,
+	float	speed
+)
+{
+	if(channel<0)
+	{
+		printf("LGL_Sound::DivergeRecallPush(): WARNING! channel < 0\n");
+		return(false);
+	}
+
+	if(LGL.SoundChannel[channel].DivergeCount==0)
+	{
+		LGL.SoundChannel[channel].DivergeSpeed=(speed==-1.0f) ? LGL.SoundChannel[channel].SpeedDesired : speed;
+		LGL.SoundChannel[channel].DivergeSamples=LGL.SoundChannel[channel].PositionSamplesNow;
+	}
+	LGL.SoundChannel[channel].DivergeCount++;
+
+	return(true);
+}
+
+bool
+LGL_Sound::
+DivergeRecallPop
+(
+	int	channel
+)
+{
+	if(channel<0)
+	{
+		printf("LGL_Sound::DivergeRecallPop(): WARNING! channel < 0\n");
+		return(false);
+	}
+
+	if(LGL.SoundChannel[channel].DivergeCount==0)
+	{
+		printf("LGL_Sound::DivergeRecallPop(): WARNING! Attempting to pop more than you pushed!\n");
+		return(false);
+	}
+
+	LGL.SoundChannel[channel].DivergeCount--;
+
+	if(LGL.SoundChannel[channel].DivergeCount==0)
+	{
+		LGL.SoundChannel[channel].DivergeRecallSamples=LGL.SoundChannel[channel].DivergeSamples;
+		LGL.SoundChannel[channel].DivergeRecallNow=true;
+	}
+
+	return(true);
+}
+
+int
+LGL_Sound::
+GetDivergeRecallCount
+(
+	int	channel
+)
+{
+	if(channel<0)
+	{
+		printf("LGL_Sound::GetDivergeRecallCount(): WARNING! channel < 0\n");
+		return(false);
+	}
+	return(LGL.SoundChannel[channel].DivergeCount);
+}
 
 bool
 LGL_Sound::
@@ -17789,11 +17815,11 @@ GetWarpPointIsSet
 	int	channel
 )
 {
-if(channel<0)
-{
-	printf("LGL_Sound::GetWarpPointIsSet(): WARNING! channel < 0\n");
-	return(false);
-}
+	if(channel<0)
+	{
+		printf("LGL_Sound::GetWarpPointIsSet(): WARNING! channel < 0\n");
+		return(false);
+	}
 	return(LGL.SoundChannel[channel].WarpPointSecondsAlpha>=0);
 }
 
@@ -31243,20 +31269,22 @@ lgl_AudioOutCallbackGenerator
 			blRecord=LGL.AudioSpec->silence;
 			brRecord=LGL.AudioSpec->silence;
 
-			if(sc->DivergeState==0)
+			if(sc->DivergeCount==0)
 			{
 				//Track with sound
 				sc->DivergeSamples=sc->PositionSamplesNow;
 			}
-			else if(sc->DivergeState==-1)
+
+			if(sc->DivergeRecallNow)
 			{
 				//Recall!
-				sc->PositionSamplesNow=sc->DivergeSamples;
-				sc->SampleRateConverterBufferStartSamples=sc->DivergeSamples;
+				sc->PositionSamplesNow=sc->DivergeRecallSamples;
+				sc->SampleRateConverterBufferStartSamples=sc->DivergeRecallSamples;
 				sc->SampleRateConverterBufferValidSamples=0;
-				sc->DivergeState=0;
+				sc->DivergeRecallNow=false;
 			}
-			else if(sc->DivergeState==1)
+
+			if(sc->DivergeCount>=1)
 			{
 				//Diverge!
 				sc->DivergeSamples+=

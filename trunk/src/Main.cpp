@@ -32,6 +32,7 @@
 #include "InputNull.h"
 #include "InputKeyboard.h"
 #include "InputMouse.h"
+#include "InputMultiTouch.h"
 #include "InputOsc.h"
 #include "InputXponent.h"
 #include "InputXsession.h"
@@ -114,7 +115,7 @@ void InitializeGlobals()
 	GetInput().AddChild(new InputNullObj);
 	GetInput().AddChild(new InputKeyboardObj);
 	GetInput().AddChild(&GetInputMouse());
-	//GetInput().AddChild(&GetInputMultiTouch());
+	if(LGL_DisplayCount()==1) GetInput().AddChild(&GetInputMultiTouch());
 	GetInput().AddChild(&GetInputOsc());
 	GetInput().AddChild(&GetInputXponent());
 	GetInput().AddChild(new InputXsessionObj);

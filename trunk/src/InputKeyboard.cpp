@@ -992,6 +992,23 @@ WaveformLoopThenRecallActive
 	}
 }
 
+bool
+InputKeyboardObj::
+WaveformReverse
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyDown(GetInputKeyboardWaveformReverseKey()));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
 int
 InputKeyboardObj::
 WaveformAutoDivergeRecall
