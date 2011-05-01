@@ -90,6 +90,7 @@ float	InputWaveformLoopSecondsMore(unsigned int target) { return(GetInput().Wave
 float	InputWaveformLoopAll(unsigned int target) { return(GetInput().WaveformLoopAll(target)); }
 float	InputWaveformLoopToggle(unsigned int target) { return(GetInput().WaveformLoopToggle(target)); }
 float	InputWaveformLoopThenRecallActive(unsigned int target) { return(GetInput().WaveformLoopThenRecallActive(target)); }
+float	InputWaveformReverse(unsigned int target) { return(GetInput().WaveformReverse(target)); }
 float	InputWaveformAutoDivergeRecall(unsigned int target) { return(GetInput().WaveformAutoDivergeRecall(target)); }
 float	InputWaveformVideoSelect(unsigned int target) { return(GetInput().WaveformVideoSelect(target)); }
 float	InputWaveformVideoBrightness(unsigned int target) { return(GetInput().WaveformVideoBrightness(target)); }
@@ -1224,6 +1225,23 @@ WaveformLoopThenRecallActive
 	}
 
 	return(active);
+}
+
+bool
+InputObj::
+WaveformReverse
+(
+	unsigned int	target
+)	const
+{
+	bool reverse=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		reverse|=Children[a]->WaveformReverse(target);
+	}
+
+	return(reverse);
 }
 
 int

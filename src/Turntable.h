@@ -222,6 +222,7 @@ private:
 	float				Nudge;
 	float				MixerNudge;
 	bool				MixerVideoMute;
+	float				ReverseMultiplier;
 	float				FinalSpeed;
 	float				FinalSpeedLastFrame;
 	bool				RewindFF;

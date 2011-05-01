@@ -92,6 +92,7 @@ float	InputWaveformLoopSecondsMore(unsigned int target);
 float	InputWaveformLoopAll(unsigned int target);
 float	InputWaveformLoopToggle(unsigned int target);
 float	InputWaveformLoopThenRecallActive(unsigned int target);
+float	InputWaveformReverse(unsigned int target);
 float	InputWaveformAutoDivergeRecall(unsigned int target);
 float	InputWaveformVideoSelect(unsigned int target);
 float	InputWaveformVideoBrightness(unsigned int target);
@@ -243,6 +244,7 @@ virtual	bool	WaveformLoopSecondsMore		(unsigned int target)	const;	//Loop more s
 virtual bool	WaveformLoopAll			(unsigned int target)	const;	//Loop all measures (to savepoint [9], or last measure), or all seconds
 virtual	bool	WaveformLoopToggle		(unsigned int target)	const;	//Enter/Exit loop mode
 virtual	bool	WaveformLoopThenRecallActive	(unsigned int target)	const;	//Loops, but when done, jump to where we would have otherwise been, preserving flow
+virtual	bool	WaveformReverse			(unsigned int target)	const;	//Reverse, but when done, jump to where we would have otherwise been, preserving flow
 virtual int	WaveformAutoDivergeRecall	(unsigned int target)	const;	//When done diverging, jump to where we would have otherwise been, had we not diverged
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader

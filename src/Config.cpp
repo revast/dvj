@@ -264,17 +264,25 @@ CreateDotJackdrc()
 	const char* jackOutputPath = "/tmp/jack.output";
 	bool jackdInCurrentDir = LGL_FileExists("jackd");
 	sprintf(cmd,"%s -d coreaudio -l -p 0 > '%s' 2>&1",jackdInCurrentDir ? "./jackd" : "jackd",jackOutputPath);
+	if(LGL_FileExists(jackOutputPath))
+	{
+		LGL_FileDelete(jackOutputPath);
+	}
 	printf("CreateDotJackdrc(): %s\n",cmd);
 	int result = system(cmd);
 	if(result!=0)
 	{
-		printf("CreateDotJackdrc(): cmd failed: %s\n",cmd);
-		return;
+		if(LGL_FileExists(jackOutputPath)==false)
+		{
+			printf("CreateDotJackdrc(): cmd failed: %s\n",cmd);
+			return;
+		}
 	}
 
 	//Scan jack.output for string "Aggregate".
 	bool aggregate=false;
 	bool xponent=false;
+	bool numarkdjio=false;
 	if(FILE* fd = fopen(jackOutputPath,"r"))
 	{
 		const int bufLen=2048;
@@ -290,6 +298,11 @@ CreateDotJackdrc()
 			{
 				printf("JACK: Aggregate device detected!\n");
 				aggregate=true;
+			}
+			if(strstr(buf,"Numark"))
+			{
+				printf("JACK: Numark DJ IO device detected!\n");
+				numarkdjio=true;
 			}
 			if(strstr(buf,"Xponent"))
 			{
@@ -332,6 +345,10 @@ CreateDotJackdrc()
 		{
 			//Don't be tempted to put ~:Aggregate:0 below in quotes. This will fail.
 			fprintf(fd,"./jackd -Z -R -t9999 -d coreaudio -p %i -d ~:Aggregate:0 -c 6 -i 2 -o 4\n",samplePeriod);
+		}
+		else if(numarkdjio)
+		{
+			fprintf(fd,"./jackd -Z -R -t9999 -d coreaudio -p %i -o 4\n",samplePeriod);
 		}
 		else
 		{
@@ -1329,6 +1346,8 @@ PrepareInputMap()
 		("waveformLoopToggle",			true,	"LGL_KEY_L",		"loop/toggle");
 	dvjInputMap[WAVEFORM_LOOP_THEN_RECALL].Set
 		("waveformLoopThenRecall",		true,	"LGL_KEY_O",		"loop_then_recall");
+	dvjInputMap[WAVEFORM_REVERSE].Set
+		("waveformReverse",			true,	"LGL_KEY_P",		"reverse");
 	dvjInputMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].Set
 		("waveformAutoDivergeThenRecall",	true,	"LGL_KEY_NONE",		"");
 	dvjInputMap[WAVEFORM_VIDEO_SELECT].Set
@@ -1635,6 +1654,8 @@ int GetInputKeyboardWaveformLoopToggleKey()
 	{ return(dvjInputMap[WAVEFORM_LOOP_TOGGLE].KeyboardInt); }
 int GetInputKeyboardWaveformLoopThenRecallKey()
 	{ return(dvjInputMap[WAVEFORM_LOOP_THEN_RECALL].KeyboardInt); }
+int GetInputKeyboardWaveformReverseKey()
+	{ return(dvjInputMap[WAVEFORM_REVERSE].KeyboardInt); }
 int GetInputKeyboardWaveformAutoDivergeRecallKey()
 	{ return(dvjInputMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].KeyboardInt); }
 int GetInputKeyboardWaveformVideoSelectKey()

@@ -838,6 +838,25 @@ InputOscObj(int port) :
 			}
 		}
 
+		//Reverse
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformReverseOscElement[a],
+					WAVEFORM_REVERSE,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformReverse,
+					true
+				);
+			}
+		}
+
 		//VideoSelect
 		{
 			for(int a=0;a<2;a++)
@@ -1874,6 +1893,17 @@ WaveformLoopThenRecallActive
 {
 	bool active = WaveformLoopThenRecallOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(active);
+}
+
+bool
+InputOscObj::
+WaveformReverse
+(
+	unsigned int	target
+)	const
+{
+	bool reverse = WaveformReverseOscElement[GetIndexFromTarget(target)].GetFloat();
+	return(reverse);
 }
 
 int

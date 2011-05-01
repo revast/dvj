@@ -721,6 +721,8 @@ TurntableObj
 	PauseMultiplier=0;
 	Nudge=0;
 	MixerNudge=0;
+	MixerVideoMute=false;
+	ReverseMultiplier=1.0f;
 	FinalSpeed=0.0f;
 	FinalSpeedLastFrame=0.0f;
 	RewindFF=false;
@@ -1590,7 +1592,7 @@ NextFrame
 			recordHold==false
 		)
 		{
-			Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier,true);
+			Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier*ReverseMultiplier,true);
 			RecordSpeedAsZeroUntilZero=true;
 		}
 		RecordHoldLastFrame=recordHold;
@@ -1650,7 +1652,7 @@ NextFrame
 			{
 				//Exit RW/FF
 				//Change our speed instantly.
-				Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier,true);
+				Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier*ReverseMultiplier,true);
 			}
 
 			RewindFF=(rewindFFFactor!=0.0f);
@@ -1678,7 +1680,7 @@ NextFrame
 
 				float driveSpeed = 
 					(1.0f-driveFactor) * recordSpeed +
-					(0.0f+driveFactor) * (Pitchbend*PauseMultiplier) * (RewindFF ? 0.0f : 1.0f);
+					(0.0f+driveFactor) * (Pitchbend*PauseMultiplier*ReverseMultiplier) * (RewindFF ? 0.0f : 1.0f);
 
 				FinalSpeed=
 					driveSpeed+
@@ -1929,7 +1931,7 @@ NextFrame
 						}
 
 						Sound->SetWarpPoint(Channel,timeToWarp,savePointSecondsQuantized);
-						Sound->SetDivergeRecallBegin(Channel,Pitchbend);
+						Sound->DivergeRecallPush(Channel,Pitchbend);
 					}
 				}
 			}
@@ -2624,7 +2626,7 @@ NextFrame
 				PauseMultiplier=0;
 			}
 
-			FinalSpeed=PauseMultiplier*(Pitchbend+MixerNudge)+Nudge;
+			FinalSpeed=PauseMultiplier*ReverseMultiplier*(Pitchbend+MixerNudge)+Nudge;
 		}
 
 		Sound->SetStickyEndpoints(Channel,endpointsSticky);
@@ -2650,7 +2652,32 @@ NextFrame
 			if(PauseMultiplier==1)
 			{
 				//Change our speed instantly.
-				Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier,true);
+				Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier*ReverseMultiplier,true);
+			}
+		}
+
+		//Reverse
+		{
+			float reverseMultiplierPrev=ReverseMultiplier;
+	 		ReverseMultiplier=GetInput().WaveformReverse(target) ? -1.0f : 1.0f;
+			if(MixerNudge!=0.0f)
+			{
+				ReverseMultiplier=1.0f;
+			}
+
+			if(ReverseMultiplier!=reverseMultiplierPrev)
+			{
+				//Change our speed instantly.
+				Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier*ReverseMultiplier,true);
+
+				if(reverseMultiplierPrev==1.0f)
+				{
+					Sound->DivergeRecallPush(Channel,Pitchbend);
+				}
+				else
+				{
+					Sound->DivergeRecallPop(Channel);
+				}
 			}
 		}
 
@@ -2967,7 +2994,7 @@ NextFrame
 							timeToWarp+=measureLength;
 						}
 						Sound->SetWarpPoint(Channel,timeToWarp,savePointSecondsQuantized);
-						Sound->SetDivergeRecallBegin(Channel,Pitchbend);
+						Sound->DivergeRecallPush(Channel,Pitchbend);
 					}
 				}
 			}
@@ -3079,6 +3106,7 @@ NextFrame
 			PitchbendLastSetByXponentSlider=false;
 			Nudge=0;
 			MixerNudge=0;
+			ReverseMultiplier=1.0f;
 			GlitchPure=false;
 			GlitchPureDuo=false;
 			GlitchDuo=false;
@@ -3572,6 +3600,11 @@ DrawFrame
 	float	visualizerZoomOutPercent
 )
 {
+	if(Sound && Channel >= 0)
+	{
+		LGL_DebugPrintf("DRC: %i\n",Sound->GetDivergeRecallCount(Channel));
+	}
+
 	float coolR;
 	float coolG;
 	float coolB;
@@ -5667,15 +5700,16 @@ SetRecallOrigin()
 	}
 
 	RecallOrigin=Sound->GetPositionSeconds(Channel);
-	Sound->SetDivergeRecallBegin(Channel,Pitchbend);
+	Sound->DivergeRecallPush(Channel,Pitchbend*PauseMultiplier);
 }
 
 void
 TurntableObj::
 ClearRecallOrigin()
 {
-	if(Channel>=0 && Sound!=NULL) Sound->SetDivergeRecallOff(Channel);
+	//if(Channel>=0 && Sound!=NULL) Sound->DivergeRecallPop(Channel);
 	RecallOrigin=-1.0f;
+	Sound->DivergeRecallPop(Channel);
 }
 
 bool
@@ -5696,7 +5730,7 @@ Recall()
 
 	//Change our speed instantly.
 	Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier,true);
-	Sound->SetDivergeRecallEnd(Channel);
+	Sound->DivergeRecallPop(Channel);
 
 	SmoothWaveformScrollingSample=Sound->GetPositionSamples(Channel);
 	

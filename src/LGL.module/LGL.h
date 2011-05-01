@@ -2104,9 +2104,12 @@ public:
 	unsigned long	GetPositionSamples(int channel);
 	unsigned long	GetPositionGlitchBeginSamples(int channel);
 	unsigned long	GetSamplesPlayedBack(int channel);
-	bool		SetDivergeRecallOff(int channel);
-	bool		SetDivergeRecallBegin(int channel, float speed);
-	bool		SetDivergeRecallEnd(int channel);
+	//bool		SetDivergeRecallOff(int channel);
+	//bool		SetDivergeRecallBegin(int channel, float speed);
+	//bool		SetDivergeRecallEnd(int channel);
+	bool		DivergeRecallPush(int channel, float speed=-1.0f);
+	bool		DivergeRecallPop(int channel);
+	int		GetDivergeRecallCount(int channel);
 	bool		GetWarpPointIsSet(int channel);
 	bool		GetWarpPointIsLoop(int channel);
 	bool		GetWarpPointIsLocked(int channel);
