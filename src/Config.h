@@ -320,5 +320,8 @@ GetDebugRecordHold();
 bool
 GetTestFreqSenseTime();
 
+bool
+GetDebugUseMultiTouchWithOneDisplay();
+
 #endif	//_DVJ_CONFIG_H_
 
