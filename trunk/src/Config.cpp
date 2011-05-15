@@ -1805,5 +1805,12 @@ GetTestFreqSenseTime()
 	return(debug!=0);
 }
 
+bool
+GetDebugUseMultiTouchWithOneDisplay()
+{
+	int debug=dvjrcConfigFile->read<int>("debugUseMultiTouchWithOneDisplay",0);
+	return(debug!=0);
+}
+
 //int GetInputKeyboardWaveformKey() { return(dvjInputMap[WAVEFORM_].KeyboardInt); }
 

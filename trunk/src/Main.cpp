@@ -115,7 +115,14 @@ void InitializeGlobals()
 	GetInput().AddChild(new InputNullObj);
 	GetInput().AddChild(new InputKeyboardObj);
 	GetInput().AddChild(&GetInputMouse());
-	if(LGL_DisplayCount()==1) GetInput().AddChild(&GetInputMultiTouch());
+	if
+	(
+		LGL_DisplayCount()==1 &&
+		GetDebugUseMultiTouchWithOneDisplay()
+	)
+	{
+		GetInput().AddChild(&GetInputMultiTouch());
+	}
 	GetInput().AddChild(&GetInputOsc());
 	GetInput().AddChild(&GetInputXponent());
 	GetInput().AddChild(new InputXsessionObj);
