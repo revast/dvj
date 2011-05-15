@@ -2844,13 +2844,20 @@ LGL_Running()
 }
 
 void
-LGL_Exit()
+LGL_ExitAlpha()
 {
+	LGL.Running=false;
+}
+
+void
+LGL_ExitOmega()
+{
+	LGL_ExitAlpha();
+
 	if(lgl_get_vsync_semaphore().IsLocked())
 	{
 		lgl_get_vsync_semaphore().Unlock();
 	}
-	LGL.Running=false;
 	if(LGL.WriteFileAsyncThread)
 	{
 		LGL_ThreadWait(LGL.WriteFileAsyncThread);
@@ -2863,6 +2870,12 @@ LGL_Exit()
 		LGL.AudioEncoder=NULL;
 	}
 	exit(0);
+}
+
+void
+LGL_Exit()
+{
+	LGL_ExitOmega();
 }
 
 //Time
@@ -11155,7 +11168,11 @@ bool
 LGL_VideoDecoder::
 GetThreadTerminate()
 {
-	return(ThreadTerminate);
+	return
+	(
+		ThreadTerminate ||
+		(LGL.Running==false)
+	);
 }
 
 double
