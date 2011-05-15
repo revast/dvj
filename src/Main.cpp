@@ -340,9 +340,10 @@ void NextFrame()
 	{
 		if(LGL_KeyStroke(LGL_KEY_Y))
 		{
+			LGL_ExitAlpha();
 			delete Visualizer;
 			GetMixer().Cleanup();
-			LGL_Exit();
+			LGL_ExitOmega();
 		}
 		if
 		(

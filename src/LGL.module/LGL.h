@@ -261,6 +261,8 @@ bool		LGL_Init
 
 bool		LGL_Running();
 void		LGL_Exit();
+void		LGL_ExitAlpha();
+void		LGL_ExitOmega();
 
 class LGL_Semaphore;
 
