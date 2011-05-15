@@ -501,7 +501,9 @@ typedef struct
 	std::vector<long>	DrawLogDataLength;
 	float			DrawLogTimeOfNextDrawnFrame;
 
+	std::vector<char*>	DebugPrintfBuffer;
 	float			DebugPrintfY;
+	LGL_Semaphore*		DebugPrintfSemaphore;
 
 	float			LastImageDrawAsLineLeftX;
 	float			LastImageDrawAsLineLeftY;
@@ -1950,6 +1952,7 @@ LGL_Init
 	LGL.DrawLogTimeOfNextDrawnFrame=0.0f;
 
 	LGL.DebugPrintfY=1.0f;
+	LGL.DebugPrintfSemaphore=new LGL_Semaphore("Debug Printf");
 
 	LGL.AudioSpec=(SDL_AudioSpec*)malloc(sizeof(SDL_AudioSpec));
 
@@ -4074,6 +4077,18 @@ bool firstSwap=true;
 void
 LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 {
+	if(LGL.DisplayNow==0)
+	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.DebugPrintfSemaphore);
+		for(unsigned int a=0;a<LGL.DebugPrintfBuffer.size();a++)
+		{
+			lgl_DebugPrintfInternal(LGL.DebugPrintfBuffer[a]);
+			delete LGL.DebugPrintfBuffer[a];
+			LGL.DebugPrintfBuffer[a]=NULL;
+		}
+		LGL.DebugPrintfBuffer.clear();
+	}
+
 	if(endFrame)
 	{
 		for(unsigned int a=0;a<LGL.ledHostList.size();a++)
@@ -11230,7 +11245,6 @@ GetNextFrameNumberToLoad()
 	ret = GetNextFrameNumberToLoadPredictNext(frameNumList);
 	if(ret!=-1)
 	{
-//printf("GNFNTL (A): %li\n",ret);
 		return(ret);
 	}
 
@@ -11239,13 +11253,11 @@ GetNextFrameNumberToLoad()
 		ret = GetNextFrameNumberToLoadForwards(frameNumList);
 		if(ret!=-1)
 		{
-//printf("GNFNTL (B): %li\n",ret);
 			return(ret);
 		}
 		ret = GetNextFrameNumberToLoadBackwards(frameNumList);
 		if(ret!=-1)
 		{
-//printf("GNFNTL (C): %li\n",ret);
 			return(ret);
 		}
 	}
@@ -11254,13 +11266,11 @@ GetNextFrameNumberToLoad()
 		ret = GetNextFrameNumberToLoadBackwards(frameNumList);
 		if(ret!=-1)
 		{
-//printf("GNFNTL (D): %li\n",ret);
 			return(ret);
 		}
 		ret = GetNextFrameNumberToLoadForwards(frameNumList);
 		if(ret!=-1)
 		{
-//printf("GNFNTL (E): %li\n",ret);
 			return(ret);
 		}
 	}
@@ -11384,14 +11394,18 @@ GetNextFrameNumberToLoadBackwards
 		return(0);
 	}
 
-	long frameNumberFinal = frameNumberNow+FrameBufferAddRadius;
-	for(long a=frameNumberNow;a<frameNumberFinal;a++)
+	long frameNumberFinal = frameNumberNow-FrameBufferAddRadius;
+	for(long a=frameNumberNow;a>frameNumberFinal;a--)
 	{
 		//Handle wrap-around
 		long frameNumberFind=a;
 		while(frameNumberFind>=frameNumberLength)
 		{
 			frameNumberFind-=frameNumberLength;
+		}
+		while(frameNumberFind<0)
+		{
+			frameNumberFind+=frameNumberLength;
 		}
 
 		bool found=false;
@@ -13935,14 +13949,12 @@ LGL_DebugPrintf
 	...
 )
 {
-	if(SDL_ThreadID()!=LGL.ThreadIDMain)
 	{
-		return;
-	}
-
-	if(LGL.DisplayNow!=0)
-	{
-		return;
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.DebugPrintfSemaphore);
+		if(LGL.DebugPrintfBuffer.size()>32)
+		{
+			return;
+		}
 	}
 
 	//Process the formatted part of the string
@@ -13951,14 +13963,28 @@ LGL_DebugPrintf
 	va_start(args,string);
 	vsprintf(tmpstr,string,args);
 	va_end(args);
-
-	const float height=0.015f;
-	LGL.DebugPrintfY-=height*2.0f;
-
+	
 	if(char* newline=strchr(tmpstr,'\n'))
 	{
 		newline[0]='\0';
 	}
+
+	char* target = new char[strlen(tmpstr)+2];
+	strcpy(target,tmpstr);
+	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.DebugPrintfSemaphore);
+		LGL.DebugPrintfBuffer.push_back(target);
+	}
+}
+
+void
+lgl_DebugPrintfInternal
+(
+	const char*	string
+)
+{
+	const float height=0.015f;
+	LGL.DebugPrintfY-=height*2.0f;
 
 	LGL_GetFont().DrawString
 	(
@@ -13968,7 +13994,7 @@ LGL_DebugPrintf
 		1.0f,1.0f,1.0f,1.0f,
 		false,
 		1.0f,
-		tmpstr
+		string
 	);
 }
 
