@@ -3600,10 +3600,12 @@ DrawFrame
 	float	visualizerZoomOutPercent
 )
 {
+	/*
 	if(Sound && Channel >= 0)
 	{
 		LGL_DebugPrintf("DRC: %i\n",Sound->GetDivergeRecallCount(Channel));
 	}
+	*/
 
 	float coolR;
 	float coolG;
