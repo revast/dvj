@@ -1528,8 +1528,14 @@ LGL_GetFont();
 void
 LGL_DebugPrintf
 (
-	const char* string,
+	const char*	string,
 	...
+);
+
+void
+lgl_DebugPrintfInternal
+(
+	const char*	string
 );
 
 class LGL_InputBuffer
