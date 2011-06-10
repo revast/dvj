@@ -6672,13 +6672,13 @@ DrawToScreen
 	}
 //#endif	//LGL_LINUX
 	x[0]=left+d;
-	y[0]=(InvertY==false) ? top : bottom;
+	y[0]=top;
 	x[1]=right+d;
-	y[1]=(InvertY==false) ? top : bottom;
+	y[1]=top;
 	x[2]=right;
-	y[2]=(InvertY==false) ? bottom : top;
+	y[2]=bottom;
 	x[3]=left;
-	y[3]=(InvertY==false) ? bottom : top;
+	y[3]=bottom;
 
 	DrawToScreen
 	(
@@ -6717,6 +6717,13 @@ DrawToScreen
 #ifdef	LGL_NO_GRAPHICS
 	return;
 #endif	//LGL_NO_GRAPHICS
+
+	if(InvertY)
+	{
+		float tmp=bottomsubimage;
+		bottomsubimage=topsubimage;
+		topsubimage=tmp;
+	}
 
 	//xy[4]
 	//0: LT
@@ -6838,6 +6845,11 @@ DrawToScreen
 	}
 
 	//Prepare RGB vs YUV (Omega)
+
+if(TextureGLRect)
+{
+	enableShader=false;
+}
 
 	if(enableShader)
 	{
@@ -23407,12 +23419,10 @@ GetAddress()
 
 
 //Syphon
-#if 1
 int
 LGL_SyphonServerCount()
 {
-	return(0);
-	//return(lgl_SyphonServerCount());
+	return(lgl_SyphonServerCount());
 }
 
 LGL_Image*
@@ -23429,9 +23439,10 @@ LGL_SyphonImage
 	GLuint id;
 	int w;
 	int h;
-	bool ok=false;//lgl_SyphonImageInfo(serverIndex,id,w,h);
+	bool ok=lgl_SyphonImageInfo(serverIndex,id,w,h);
 	if(ok==false)
 	{
+		LGL_DebugPrintf("NULL Syphon Image\n");
 		return(NULL);
 	}
 
@@ -23441,10 +23452,12 @@ LGL_SyphonImage
 	LGL.SyphonImage->ImgW=w;
 	LGL.SyphonImage->ImgH=h;
 	LGL.SyphonImage->TextureGL=id;
+	LGL.SyphonImage->InvertY=true;
+	LGL_DebugPrintf("Syphon Image: %i x %i (%i)\n",w,h,id);
 
 	return(LGL.SyphonImage);
 }
-#endif
+
 
 
 //VidCam
