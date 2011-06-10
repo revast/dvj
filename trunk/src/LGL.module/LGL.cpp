@@ -23442,7 +23442,6 @@ LGL_SyphonImage
 	bool ok=lgl_SyphonImageInfo(serverIndex,id,w,h);
 	if(ok==false)
 	{
-		LGL_DebugPrintf("NULL Syphon Image\n");
 		return(NULL);
 	}
 
@@ -23453,7 +23452,6 @@ LGL_SyphonImage
 	LGL.SyphonImage->ImgH=h;
 	LGL.SyphonImage->TextureGL=id;
 	LGL.SyphonImage->InvertY=true;
-	LGL_DebugPrintf("Syphon Image: %i x %i (%i)\n",w,h,id);
 
 	return(LGL.SyphonImage);
 }
