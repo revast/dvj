@@ -68,10 +68,10 @@
 
 //OSC
 #include <iostream>
-#include "oscpack/osc/OscReceivedElements.h"
-#include "oscpack/osc/OscPacketListener.h"
-#include "oscpack/osc/OscOutboundPacketStream.h"
-#include "oscpack/ip/UdpSocket.h"
+#include "oscpack.module/OscReceivedElements.h"
+#include "oscpack.module/OscPacketListener.h"
+#include "oscpack.module/OscOutboundPacketStream.h"
+#include "oscpack.module/UdpSocket.h"
 
 //Syphon
 #include "syphon.moduloid/lgl_syphon.h"
