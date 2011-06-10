@@ -76,6 +76,9 @@ lgl_SyphonImageInfo
 
 	if([syClient isValid]==false)
 	{
+		[syClient stop];
+		[syClient release];
+		syClient = nil;
 		return(false);
 	}
 
