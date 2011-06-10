@@ -5329,7 +5329,7 @@ LGL_ShaderAvailableFrag()
 LGL_Shader::
 LGL_Shader
 (
-	char* inDescription
+	const char*	inDescription
 )
 {
 	SetDescription(inDescription);
@@ -5344,7 +5344,7 @@ LGL_Shader::
 	OmniDelete();
 }
 
-char*
+const char*
 LGL_Shader::
 GetDescription()
 {
@@ -5355,17 +5355,17 @@ void
 LGL_Shader::
 SetDescription
 (
-	char*	inDescription
+	const char*	inDescription
 )
 {
-	sprintf(Description,"%s",inDescription);
+	strcpy(Description,inDescription);
 }
 
 bool
 LGL_Shader::
 VertCompile
 (
-	char*	inFileVert
+	const char*	inFileVert
 )
 {
 	if(LGL_ShaderAvailableVert()==false)
@@ -5445,7 +5445,7 @@ bool
 LGL_Shader::
 FragCompile
 (
-	char*	inFileFrag
+	const char*	inFileFrag
 )
 {
 	if(LGL_ShaderAvailableFrag()==false)
@@ -5681,8 +5681,8 @@ bool
 LGL_Shader::
 SetVertAttributeInt
 (
-	char*	name,
-	int	value0
+	const char*	name,
+	int		value0
 )
 {
 	return
@@ -5698,8 +5698,8 @@ bool
 LGL_Shader::
 SetVertAttributeInt
 (
-	char*	name,
-	int	value0,	int	value1
+	const char*	name,
+	int		value0,	int	value1
 )
 {
 	return
@@ -5715,8 +5715,8 @@ bool
 LGL_Shader::
 SetVertAttributeInt
 (
-	char*	name,
-	int	value0,	int	value1,	int	value2
+	const char*	name,
+	int		value0,	int	value1,	int	value2
 )
 {
 	return
@@ -5732,8 +5732,8 @@ bool
 LGL_Shader::
 SetVertAttributeInt
 (
-	char*	name,
-	int	value0,	int	value1,	int	value2,	int	value3
+	const char*	name,
+	int		value0,	int	value1,	int	value2,	int	value3
 )
 {
 	return
@@ -5750,8 +5750,8 @@ bool
 LGL_Shader::
 SetVertAttributeFloat
 (
-	char*	name,
-	float	value0
+	const char*	name,
+	float		value0
 )
 {
 	return
@@ -5767,8 +5767,8 @@ bool
 LGL_Shader::
 SetVertAttributeFloat
 (
-	char*	name,
-	float	value0,	float	value1
+	const char*	name,
+	float		value0,	float	value1
 )
 {
 	return
@@ -5784,8 +5784,8 @@ bool
 LGL_Shader::
 SetVertAttributeFloat
 (
-	char*	name,
-	float	value0,	float	value1,	float	value2
+	const char*	name,
+	float		value0,	float	value1,	float	value2
 )
 {
 	return
@@ -5801,8 +5801,8 @@ bool
 LGL_Shader::
 SetVertAttributeFloat
 (
-	char*	name,
-	float	value0,	float	value1,	float	value2,	float	value3
+	const char*	name,
+	float		value0,	float	value1,	float	value2,	float	value3
 )
 {
 	return
@@ -5819,8 +5819,8 @@ bool
 LGL_Shader::
 SetUniformAttributeInt
 (
-	char*	name,
-	int	value0
+	const char*	name,
+	int		value0
 )
 {
 	return
@@ -5836,8 +5836,8 @@ bool
 LGL_Shader::
 SetUniformAttributeInt
 (
-	char*	name,
-	int	value0,	int	value1
+	const char*	name,
+	int		value0,	int	value1
 )
 {
 	return
@@ -5853,8 +5853,8 @@ bool
 LGL_Shader::
 SetUniformAttributeInt
 (
-	char*	name,
-	int	value0,	int	value1,	int	value2
+	const char*	name,
+	int		value0,	int	value1,	int	value2
 )
 {
 	return
@@ -5870,8 +5870,8 @@ bool
 LGL_Shader::
 SetUniformAttributeInt
 (
-	char*	name,
-	int	value0,	int	value1,	int	value2,	int	value3
+	const char*	name,
+	int		value0,	int	value1,	int	value2,	int	value3
 )
 {
 	return
@@ -5888,8 +5888,8 @@ bool
 LGL_Shader::
 SetUniformAttributeFloat
 (
-	char*	name,
-	float	value0
+	const char*	name,
+	float		value0
 )
 {
 	return
@@ -5905,8 +5905,8 @@ bool
 LGL_Shader::
 SetUniformAttributeFloat
 (
-	char*	name,
-	float	value0,	float	value1
+	const char*	name,
+	float		value0,	float	value1
 )
 {
 	return
@@ -5922,8 +5922,8 @@ bool
 LGL_Shader::
 SetUniformAttributeFloat
 (
-	char*	name,
-	float	value0,	float	value1,	float	value2
+	const char*	name,
+	float		value0,	float	value1,	float	value2
 )
 {
 	return
@@ -5939,8 +5939,8 @@ bool
 LGL_Shader::
 SetUniformAttributeFloat
 (
-	char*	name,
-	float	value0,	float	value1,	float	value2,	float	value3
+	const char*	name,
+	float		value0,	float	value1,	float	value2,	float	value3
 )
 {
 	return
@@ -6070,9 +6070,9 @@ bool
 LGL_Shader::
 SetVertAttributeIntPrivate
 (
-	char*	name,	int	num,
-	int	value0,	int	value1,
-	int	value2,	int	value3
+	const char*	name,	int	num,
+	int		value0,	int	value1,
+	int		value2,	int	value3
 )
 {
 	if(IsEnabled()==false)
@@ -6120,9 +6120,9 @@ bool
 LGL_Shader::
 SetVertAttributeFloatPrivate
 (
-	char*	name,	int	num,
-	float	value0,	float	value1,
-	float	value2,	float	value3
+	const char*	name,	int	num,
+	float		value0,	float	value1,
+	float		value2,	float	value3
 )
 {
 	if(IsEnabled()==false)
@@ -6171,9 +6171,9 @@ bool
 LGL_Shader::
 SetUniformAttributeIntPrivate
 (
-	char*	name,		int	num,
-	int	value0,		int	value1,
-	int	value2,		int	value3
+	const char*	name,		int	num,
+	int		value0,		int	value1,
+	int		value2,		int	value3
 )
 {
 	if(IsEnabled()==false)
@@ -6230,9 +6230,9 @@ bool
 LGL_Shader::
 SetUniformAttributeFloatPrivate
 (
-	char*	name,		int	num,
-	float	value0,		float	value1,
-	float	value2,		float	value3
+	const char*	name,		int	num,
+	float		value0,		float	value1,
+	float		value2,		float	value3
 )
 {
 	if(IsEnabled()==false)

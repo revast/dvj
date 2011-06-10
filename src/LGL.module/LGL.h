@@ -664,14 +664,14 @@ class LGL_Shader
 
 public:
 
-			LGL_Shader(char* inDescription);
+			LGL_Shader(const char* inDescription);
 			~LGL_Shader();
 
-	char*		GetDescription();
-	void		SetDescription(char* inDescription);
+	const char*	GetDescription();
+	void		SetDescription(const char* inDescription);
 
-	bool		VertCompile(char* inFileVert);
-	bool		FragCompile(char* inFileFrag);
+	bool		VertCompile(const char* inFileVert);
+	bool		FragCompile(const char* inFileFrag);
 
 	bool		VertCompiled();
 	bool		FragCompiled();
@@ -686,86 +686,86 @@ public:
 
 	bool		SetVertAttributeInt
 			(
-				char*	name,
-				int	value0
+				const char*	name,
+				int		value0
 			);
 	bool		SetVertAttributeInt
 			(
-				char*	name,
-				int	value0,	int	value1
+				const char*	name,
+				int		value0,	int	value1
 			);
 	bool		SetVertAttributeInt
 			(
-				char*	name,
-				int	value0,	int	value1,	int	value2
+				const char*	name,
+				int		value0,	int	value1,	int	value2
 			);
 	bool		SetVertAttributeInt
 			(
-				char*	name,
-				int	value0,	int	value1,	int	value2,	int	value3
+				const char*	name,
+				int		value0,	int	value1,	int	value2,	int	value3
 			);
 	
 	bool		SetVertAttributeFloat
 			(
-				char*	name,
-				float	value0
+				const char*	name,
+				float		value0
 			);
 	bool		SetVertAttributeFloat
 			(
-				char*	name,
-				float	value0,	float	value1
+				const char*	name,
+				float		value0,	float	value1
 			);
 	bool		SetVertAttributeFloat
 			(
-				char*	name,
-				float	value0,	float	value1,	float	value2
+				const char*	name,
+				float		value0,	float	value1,	float	value2
 			);
 	bool		SetVertAttributeFloat
 			(
-				char*	name,
-				float	value0,	float	value1,	float	value2,	float	value3
+				const char*	name,
+				float		value0,	float	value1,	float	value2,	float	value3
 			);
 	
 	bool		SetUniformAttributeInt
 			(
-				char*	name,
-				int	value0
+				const char*	name,
+				int		value0
 			);
 	bool		SetUniformAttributeInt
 			(
-				char*	name,
-				int	value0,	int	value1
+				const char*	name,
+				int		value0,	int	value1
 			);
 	bool		SetUniformAttributeInt
 			(
-				char*	name,
-				int	value0,	int	value1,	int	value2
+				const char*	name,
+				int		value0,	int	value1,	int	value2
 			);
 	bool		SetUniformAttributeInt
 			(
-				char*	name,
-				int	value0,	int	value1,	int	value2,	int	value3
+				const char*	name,
+				int		value0,	int	value1,	int	value2,	int	value3
 			);
 	
 	bool		SetUniformAttributeFloat
 			(
-				char*	name,
-				float	value0
+				const char*	name,
+				float		value0
 			);
 	bool		SetUniformAttributeFloat
 			(
-				char*	name,
-				float	value0,	float	value1
+				const char*	name,
+				float		value0,	float	value1
 			);
 	bool		SetUniformAttributeFloat
 			(
-				char*	name,
-				float	value0,	float	value1,	float	value2
+				const char*	name,
+				float		value0,	float	value1,	float	value2
 			);
 	bool		SetUniformAttributeFloat
 			(
-				char*	name,
-				float	value0,	float	value1,	float	value2,	float	value3
+				const char*	name,
+				float		value0,	float	value1,	float	value2,	float	value3
 			);
 
 	void		VertDelete();		//Deletes Program as well
@@ -781,27 +781,27 @@ private:
 
 	bool		SetVertAttributeIntPrivate
 			(
-				char*	name,		int	num,
-				int	value0,		int	value1=0,
-				int	value2=0,	int	value3=1
+				const char*	name,		int	num,
+				int		value0,		int	value1=0,
+				int		value2=0,	int	value3=1
 			);
 	bool		SetVertAttributeFloatPrivate
 			(
-				char*	name,		int	num,
-				float	value0,		float	value1=0,
-				float	value2=0,	float	value3=1
+				const char*	name,		int	num,
+				float		value0,		float	value1=0,
+				float		value2=0,	float	value3=1
 			);
 	bool		SetUniformAttributeIntPrivate
 			(
-				char*	name,		int	num,
-				int	value0,		int	value1=0,
-				int	value2=0,	int	value3=1
+				const char*	name,		int	num,
+				int		value0,		int	value1=0,
+				int		value2=0,	int	value3=1
 			);
 	bool		SetUniformAttributeFloatPrivate
 			(
-				char*	name,		int	num,
-				float	value0,		float	value1=0,
-				float	value2=0,	float	value3=1
+				const char*	name,		int	num,
+				float		value0,		float	value1=0,
+				float		value2=0,	float	value3=1
 			);
 
 	char		Description[1024];
