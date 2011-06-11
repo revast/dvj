@@ -305,6 +305,7 @@ static	VisualizerObj*			Visualizer;
 	float				SyphonBrightness;
 	float				OscilloscopeBrightness;
 	float				FreqSenseBrightness;
+	float				FreqSensePathBrightness;
 	int				GetFreqSenseLEDGroupInt();
 	float				FreqSenseLEDGroupFloat;
 	float				FreqSenseLEDBrightness[LED_GROUP_MAX];
