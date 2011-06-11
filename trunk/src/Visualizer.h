@@ -148,7 +148,7 @@ private:
 
 	bool			FullScreen;
 
-	//LGL_Image*		AccumulationNow;
+	LGL_Image*		Accumulation;
 
 	LGL_Image*		BlueScreenOfDeath;
 

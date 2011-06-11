@@ -12,6 +12,7 @@
 #import <Syphon.h>
 
 SyphonClient*		syClient=NULL;
+SyphonServer*		syServer=NULL;
 SyphonImage*		syImage=NULL;
 NSAutoreleasePool*	pool=NULL;
 
@@ -66,6 +67,38 @@ lgl_SyphonImageInfo
 	}
 	serverIndex=0;	//For now, only support server 0 for simplicity.
 
+	for(int s=0;s<[serverList count];s++)
+	{
+		const char* name = [
+				[
+					[serverList objectAtIndex:s]
+					objectForKey:SyphonServerDescriptionAppNameKey
+				]
+				cStringUsingEncoding:NSMacOSRomanStringEncoding
+			];
+
+		if(strcmp(name,"dvj.osx"))
+		{
+			serverIndex=s;
+			break;
+		}
+	}
+
+	//Abort if dvj is the only server
+	{
+		const char* name = [
+				[
+					[serverList objectAtIndex:serverIndex]
+					objectForKey:SyphonServerDescriptionAppNameKey
+				]
+				cStringUsingEncoding:NSMacOSRomanStringEncoding
+			];
+		if(strcmp(name,"dvj.osx")==0)
+		{
+			return(false);
+		}
+	}
+
 	NSDictionary* server = [serverList objectAtIndex:serverIndex];
 
 	if(syClient==NULL)
@@ -108,15 +141,56 @@ lgl_SyphonImageInfo
 	width=(int)imageSize.width;
 	height=(int)imageSize.height;
 
-	/*
-	[syClient stop];
-	[syClient release];
-	syClient = nil;
-	*/
-
 	[syImage release];
 	syImage=NULL;
 
 	return(true);
+}
+
+void
+lgl_SyphonPushImage
+(
+	GLuint	glID,
+	int	imgW,
+	int	imgH,
+	int	texW,
+	int	texH
+)
+{	if(pool==NULL)
+	{
+		pool = [[NSAutoreleasePool alloc] init];
+	}
+	
+	if(syServer==NULL)
+	{
+		CGLContextObj ctx = CGLGetCurrentContext();
+		syServer = [[SyphonServer alloc] initWithName:@"dvj" context:ctx options:nil];
+	}
+
+	if(syServer)
+	{
+		[syServer publishFrameTexture:glID textureTarget:GL_TEXTURE_2D imageRegion:NSMakeRect(0, 0, imgW, imgH) textureDimensions:NSMakeSize(texW, texH) flipped:NO];
+	}
+}
+
+void
+lgl_SyphonExit()
+{
+	if(pool==NULL)
+	{
+		pool = [[NSAutoreleasePool alloc] init];
+	}
+
+	if(syServer)
+	{
+		[syServer stop];
+	}
+
+	if(syClient)
+	{
+		[syClient stop];
+		[syClient release];
+		syClient = nil;
+	}
 }
 
