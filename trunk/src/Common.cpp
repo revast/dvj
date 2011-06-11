@@ -1094,6 +1094,9 @@ Turntable_DrawWaveform
 	float		syphonBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
+	float		freqSensePathBrightness,
+	const char*	freqSenseLowPathShort,
+	const char*	freqSenseHighPathShort,
 	float		freqSenseLEDBrightness,
 	float		freqSenseLEDColorScalarLow,
 	float		freqSenseLEDColorScalarHigh,
@@ -2351,6 +2354,39 @@ if(1)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		true,.5f,
 		tmpStr
 	);
+
+	//Draw FreqSense video names
+	if(freqSensePathBrightness>0.0f)
+	{
+		float br = freqSensePathBrightness;
+		for(int v=0;v<2;v++)
+		{
+			const char* path = (v==0) ? freqSenseHighPathShort : freqSenseLowPathShort;
+			float h = (v==0) ? 0.3f : 0.2f;
+			float fontHeight2=fontHeight;
+			float fontWidth=LGL_GetFont().GetWidthString(fontHeight2,path);
+			float fontWidthMax=viewportWidth*0.55f;
+			fontHeight2=LGL_Min(fontHeight2,fontHeight2*fontWidthMax/fontWidth);
+			LGL_GetFont().DrawString
+			(
+				txtCenterX,
+				viewportBottom+h*viewportHeight-0.5f*fontHeight,
+				fontHeight2,
+				br,br,br,br,
+				true,.5f,
+				path
+			);
+			LGL_GetFont().DrawString
+			(
+				txtCenterX,
+				viewportBottom+h*viewportHeight-0.5f*fontHeight,
+				fontHeight2,
+				br,br,br,br,
+				true,.5f,
+				path
+			);
+		}
+	}
 
 	fontHeight=0.05f*viewportHeight;
 	fontWidth=LGL_GetFont().GetWidthString(fontHeight,tmpStr);

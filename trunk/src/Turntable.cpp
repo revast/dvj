@@ -781,9 +781,10 @@ TurntableObj
 	VideoHi->SetFrameBufferAddBackwards(false);
 	VideoAdvanceRate=1.0f;
 	VideoBrightness=1.0f;
-	SyphonBrightness=1.0f;
+	SyphonBrightness=0.0f;
 	OscilloscopeBrightness=0.0f;
 	FreqSenseBrightness=0.0f;
+	FreqSensePathBrightness=0.0f;
 
 	FreqSenseLEDGroupFloat=0.0f;
 	for(int g=0;g<LED_GROUP_MAX;g++)
@@ -2487,7 +2488,19 @@ NextFrame
 			{
 				SelectNewVideo();
 			}
+			FreqSensePathBrightness=5.0f;
 		}
+
+		if
+		(
+			Focus &&
+			GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIDEO_FREQSENSE
+		)
+		{
+			FreqSensePathBrightness=5.0f;
+		}
+
+		FreqSensePathBrightness=LGL_Max(0.0f,FreqSensePathBrightness-LGL_SecondsSinceLastFrame());
 
 		//LEDs
 		{
@@ -4409,6 +4422,9 @@ DrawFrame
 				SyphonBrightness,					//59
 				OscilloscopeBrightness,					//60
 				FreqSenseBrightness,					//61
+				LGL_Min(FreqSensePathBrightness,1.0f),			//61
+				VideoLo->GetPathShort(),
+				VideoHi->GetPathShort(),
 				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()],	//62
 				FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()],	//63
 				FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()],	//64
