@@ -1,7 +1,3 @@
-ln -s /usr/bin/gcc-4.0 /usr/local/bin/gcc
-ln -s /usr/bin/g++-4.0 /usr/local/bin/g++
-export PATH=/usr/local/bin:$PATH
-
 Install in this order:
 
 jpeg
@@ -16,4 +12,6 @@ libsamplerate
 yasm
 ffmpeg
 jack-audio-connection-kit
+
+sudo cp -R Syphon.framework /Library/Frameworks
 
