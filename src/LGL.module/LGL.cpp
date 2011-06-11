@@ -481,6 +481,7 @@ typedef struct
 	//Misc
 
 	bool			Running;
+	void			(*UserExit)(void);
 	
 	double			SecondsSinceLastFrame;
 	LGL_Timer		SecondsSinceLastFrameTimer;
@@ -2696,6 +2697,7 @@ printf("CreateWindow(%i): %i x %i\n",
 	//Misc
 
 	LGL.Running=true;
+	LGL.UserExit=NULL;
 	
 	//All done! Print Results
 	
@@ -2844,9 +2846,22 @@ LGL_Running()
 }
 
 void
+LGL_SetUserExit(void(*fn)(void))
+{
+	LGL.UserExit = fn;
+}
+
+void
 LGL_ExitAlpha()
 {
-	LGL.Running=false;
+	if(LGL.Running)
+	{
+		LGL.Running=false;
+		if(LGL.UserExit)
+		{
+			LGL.UserExit();
+		}
+	}
 }
 
 void
@@ -19429,6 +19444,14 @@ LGL_ProcessInput()
 		if(event.type==SDL_QUIT)
 		{
 			LGL_Exit();
+		}
+
+		if(event.type==SDL_WINDOWEVENT)
+		{
+			if(event.window.event == SDL_WINDOWEVENT_CLOSE)
+			{
+				LGL_Exit();
+			}
 		}
 		
 		//Keyboard
