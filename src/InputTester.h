@@ -113,6 +113,7 @@ virtual	bool	WaveformLoopThenRecallActive	(unsigned int target)	const;	//Loops, 
 virtual int	WaveformAutoDivergeRecall	(unsigned int target)	const;	//When done diverging, jump to where we would have otherwise been, had we not diverged
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
+virtual	float	WaveformSyphonBrightness	(unsigned int target)	const;	//How bright syphon is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual	float	WaveformFreqSenseBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	bool	WaveformAudioInputToggle	(unsigned int target)	const;	//Set audio input mode

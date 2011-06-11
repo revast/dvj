@@ -895,6 +895,44 @@ InputOscObj(int port) :
 			}
 		}
 
+		//VideoFreqSenseBrightness
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformVideoFreqSenseBrightnessOscElement[a],
+					WAVEFORM_VIDEO_FREQSENSE_BRIGHTNESS,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformFreqSenseBrightness,
+					false
+				);
+			}
+		}
+
+		//SyphonBrightness
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformSyphonBrightnessOscElement[a],
+					WAVEFORM_SYPHON_BRIGHTNESS,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					-1.0f,
+					InputWaveformSyphonBrightness,
+					false
+				);
+			}
+		}
+
 		//OscilloscopeBrightness
 		{
 			for(int a=0;a<2;a++)
@@ -913,34 +951,15 @@ InputOscObj(int port) :
 				);
 			}
 		}
-
-		//FreqSenseBrightness
+	
+		//LEDGroup
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformFreqSenseBrightnessOscElement[a],
-					WAVEFORM_FREQ_SENSE_BRIGHTNESS,
-					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
-					0,
-					0.0f,
-					1.0f,
-					-1.0f,
-					InputWaveformFreqSenseBrightness,
-					false
-				);
-			}
-		}
-		
-		//FreqSenseLEDGroupFloat
-		{
-			for(int a=0;a<2;a++)
-			{
-				InitializeOscElement
-				(
-					WaveformFreqSenseLEDGroupFloatOscElement[a],
-					WAVEFORM_FREQ_SENSE_LED_GROUP_FLOAT,
+					WaveformLEDGroupOscElement[a],
+					WAVEFORM_LED_GROUP,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
@@ -952,14 +971,14 @@ InputOscObj(int port) :
 			}
 		}
 
-		//FreqSenseLEDColorScalarLow
+		//LEDColorScalarLow
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformFreqSenseLEDColorScalarLowOscElement[a],
-					WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_LOW,
+					WaveformLEDColorLowOscElement[a],
+					WAVEFORM_LED_COLOR_LOW,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
@@ -971,14 +990,14 @@ InputOscObj(int port) :
 			}
 		}
 
-		//FreqSenseLEDColorScalarHigh
+		//LEDColorScalarHigh
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformFreqSenseLEDColorScalarHighOscElement[a],
-					WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_HIGH,
+					WaveformLEDColorHighOscElement[a],
+					WAVEFORM_LED_COLOR_HIGH,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
@@ -990,14 +1009,14 @@ InputOscObj(int port) :
 			}
 		}
 
-		//FreqSenseLEDBrightness
+		//LEDFreqSenseBrightness
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformFreqSenseLEDBrightnessOscElement[a],
-					WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS,
+					WaveformLEDFreqSenseBrightnessOscElement[a],
+					WAVEFORM_LED_FREQSENSE_BRIGHTNESS,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
@@ -1009,14 +1028,14 @@ InputOscObj(int port) :
 			}
 		}
 
-		//FreqSenseLEDBrightnessWash
+		//LEDColorHighWash
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformFreqSenseLEDBrightnessWashOscElement[a],
-					WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS_WASH,
+					WaveformLEDColorHighWashOscElement[a],
+					WAVEFORM_LED_COLOR_HIGH_WASH,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
@@ -1942,6 +1961,18 @@ WaveformVideoBrightness
 
 float
 InputOscObj::
+WaveformSyphonBrightness
+(
+	unsigned int	target
+)	const
+{
+	float bright=-1.0f;
+	bright = WaveformSyphonBrightnessOscElement[GetIndexFromTarget(target)].GetFloat();
+	return(bright);
+}
+
+float
+InputOscObj::
 WaveformVideoAdvanceRate
 (
 	unsigned int	target
@@ -1959,7 +1990,7 @@ WaveformFreqSenseBrightness
 )	const
 {
 	float brightness=-1;
-	brightness = WaveformFreqSenseBrightnessOscElement[GetIndexFromTarget(target)].GetFloat();
+	brightness = WaveformVideoFreqSenseBrightnessOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(brightness);
 }
 
@@ -1971,7 +2002,7 @@ WaveformFreqSenseLEDGroupFloat
 )	const
 {
 	float group=-1;
-	group = WaveformFreqSenseLEDGroupFloatOscElement[GetIndexFromTarget(target)].GetFloat();
+	group = WaveformLEDGroupOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(group);
 }
 
@@ -1983,7 +2014,7 @@ WaveformFreqSenseLEDColorScalarLow
 )	const
 {
 	float scalar=-1;
-	scalar = WaveformFreqSenseLEDColorScalarLowOscElement[GetIndexFromTarget(target)].GetFloat();
+	scalar = WaveformLEDColorLowOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(scalar);
 }
 
@@ -1995,7 +2026,7 @@ WaveformFreqSenseLEDColorScalarHigh
 )	const
 {
 	float scalar=-1;
-	scalar = WaveformFreqSenseLEDColorScalarHighOscElement[GetIndexFromTarget(target)].GetFloat();
+	scalar = WaveformLEDColorHighOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(scalar);
 }
 
@@ -2007,7 +2038,7 @@ WaveformFreqSenseLEDBrightness
 )	const
 {
 	float brightness=-1;
-	brightness = WaveformFreqSenseLEDBrightnessOscElement[GetIndexFromTarget(target)].GetFloat();
+	brightness = WaveformLEDFreqSenseBrightnessOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(brightness);
 }
 
@@ -2019,7 +2050,7 @@ WaveformFreqSenseLEDBrightnessWash
 )	const
 {
 	float brightness=-1;
-	brightness = WaveformFreqSenseLEDBrightnessWashOscElement[GetIndexFromTarget(target)].GetFloat();
+	brightness = WaveformLEDColorHighWashOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(brightness);
 }
 

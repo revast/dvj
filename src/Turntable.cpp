@@ -781,6 +781,7 @@ TurntableObj
 	VideoHi->SetFrameBufferAddBackwards(false);
 	VideoAdvanceRate=1.0f;
 	VideoBrightness=1.0f;
+	SyphonBrightness=1.0f;
 	OscilloscopeBrightness=0.0f;
 	FreqSenseBrightness=0.0f;
 
@@ -2430,6 +2431,18 @@ NextFrame
 		(
 			0.0f,
 			VideoBrightness+GetInput().WaveformVideoBrightnessDelta(target),
+			1.0f
+		);
+
+		newBright=GetInput().WaveformSyphonBrightness(target);
+		if(newBright!=-1.0f)
+		{
+			SyphonBrightness=newBright;
+		}
+		SyphonBrightness=LGL_Clamp
+		(
+			0.0f,
+			SyphonBrightness+GetInput().WaveformSyphonBrightnessDelta(target),
 			1.0f
 		);
 
@@ -4308,7 +4321,7 @@ DrawFrame
 				Sound->GetWarpPointSecondsAlpha(Channel),		//37
 				QuantizePeriodMeasuresExponent,				//38
 				QuantizePeriodNoBPMSeconds,				//39
-				GetInput().WaveformRecordHold(target) ? 'T' : 'F',		//40
+				GetInput().WaveformRecordHold(target) ? 'T' : 'F',	//40
 				SoundName,						//41
 				videoSecondsBufferedLeft,				//42
 				videoSecondsBufferedRight,				//43
@@ -4386,16 +4399,17 @@ DrawFrame
 				RhythmicVolumeInvert,					//56
 				GetBeginningOfCurrentMeasureSeconds(),			//57
 				VideoBrightness,					//58
-				OscilloscopeBrightness,					//59
-				FreqSenseBrightness,					//60
-				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()],	//60
-				FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()],	//60
-				FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()],	//60
-				FreqSenseLEDBrightnessWash[GetFreqSenseLEDGroupInt()],	//60
-				FreqSenseLEDGroupFloat,					//60
-				GetFreqSenseLEDGroupInt(),				//60
-				Channel,						//61
-				recallPos						//62
+				SyphonBrightness,					//59
+				OscilloscopeBrightness,					//60
+				FreqSenseBrightness,					//61
+				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()],	//62
+				FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()],	//63
+				FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()],	//64
+				FreqSenseLEDBrightnessWash[GetFreqSenseLEDGroupInt()],	//65
+				FreqSenseLEDGroupFloat,					//66
+				GetFreqSenseLEDGroupInt(),				//67
+				Channel,						//68
+				recallPos						//69
 			);
 			LGL_DrawLogPause(false);
 		
@@ -4777,6 +4791,28 @@ GetVideoBrightnessFinal()
 	(
 		GetVisualBrightnessFinal()*
 		VideoBrightness
+	);
+}
+
+float
+TurntableObj::
+GetSyphonBrightnessPreview()
+{
+	return
+	(
+		GetVisualBrightnessPreview()*
+		SyphonBrightness
+	);
+}
+
+float
+TurntableObj::
+GetSyphonBrightnessFinal()
+{
+	return
+	(
+		GetVisualBrightnessFinal()*
+		SyphonBrightness
 	);
 }
 

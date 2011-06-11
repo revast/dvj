@@ -97,6 +97,8 @@ float	InputWaveformAutoDivergeRecall(unsigned int target);
 float	InputWaveformVideoSelect(unsigned int target);
 float	InputWaveformVideoBrightness(unsigned int target);
 float	InputWaveformVideoBrightnessDelta(unsigned int target);
+float	InputWaveformSyphonBrightness(unsigned int target);
+float	InputWaveformSyphonBrightnessDelta(unsigned int target);
 float	InputWaveformVideoAdvanceRate(unsigned int target);
 float	InputWaveformFreqSenseBrightness(unsigned int target);
 float	InputWaveformFreqSenseBrightnessDelta(unsigned int target);
@@ -130,14 +132,15 @@ typedef enum
 	GUI_ELEMENT_EQ_MID,
 	GUI_ELEMENT_EQ_HIGH,
 	GUI_ELEMENT_EQ_GAIN,
-	GUI_ELEMENT_VIS_VIDEO,
-	GUI_ELEMENT_VIS_OSCILLOSCOPE,
-	GUI_ELEMENT_VIS_FREQSENSE,
-	GUI_ELEMENT_VIS_FREQSENSE_LED_GROUP_FLOAT,
-	GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW,
-	GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH,
-	GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS,
-	GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS_WASH,
+	GUI_ELEMENT_VIDEO,
+	GUI_ELEMENT_VIDEO_FREQSENSE,
+	GUI_ELEMENT_SYPHON,
+	GUI_ELEMENT_OSCILLOSCOPE,
+	GUI_ELEMENT_LED_FREQSENSE,
+	GUI_ELEMENT_LED_COLOR_LOW,
+	GUI_ELEMENT_LED_COLOR_HIGH,
+	GUI_ELEMENT_LED_COLOR_HIGH_WASH,
+	GUI_ELEMENT_LED_GROUP,
 	GUI_ELEMENT_SAVEPOINT_BPM_ALPHA,
 	GUI_ELEMENT_SAVEPOINT_BPM_OMEGA,
 	GUI_ELEMENT_SAVEPOINT_0,
@@ -249,6 +252,8 @@ virtual int	WaveformAutoDivergeRecall	(unsigned int target)	const;	//When done d
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformVideoBrightnessDelta	(unsigned int target)	const;	//How bright the video is, independent of the crossfader
+virtual	float	WaveformSyphonBrightness	(unsigned int target)	const;	//How bright syphon is, independent of the crossfader
+virtual	float	WaveformSyphonBrightnessDelta	(unsigned int target)	const;	//How bright syphon is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual	float	WaveformFreqSenseBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	float	WaveformFreqSenseBrightnessDelta(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness

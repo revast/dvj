@@ -879,17 +879,6 @@ WaveformVideoSelect
 
 float
 InputMultiTouchObj::
-WaveformVideoBrightness
-(
-	unsigned int	target
-)	const
-{
-	float bright=-1.0f;
-	return(bright);
-}
-
-float
-InputMultiTouchObj::
 WaveformVideoBrightnessDelta
 (
 	unsigned int	target
@@ -898,7 +887,25 @@ WaveformVideoBrightnessDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_VIDEO)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIDEO)
+		{
+			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
+		}
+	}
+	return(delta);
+}
+
+float
+InputMultiTouchObj::
+WaveformSyphonBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_SYPHON)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -938,7 +945,7 @@ WaveformFreqSenseBrightnessDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIDEO_FREQSENSE)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -956,7 +963,7 @@ WaveformFreqSenseLEDGroupFloatDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_GROUP_FLOAT)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_LED_GROUP)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -974,7 +981,7 @@ WaveformFreqSenseLEDColorScalarLowDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_LED_COLOR_LOW)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -992,7 +999,7 @@ WaveformFreqSenseLEDColorScalarHighDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_LED_COLOR_HIGH)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -1010,7 +1017,7 @@ WaveformFreqSenseLEDBrightnessDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_LED_FREQSENSE)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -1028,7 +1035,7 @@ WaveformFreqSenseLEDBrightnessWashDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS_WASH)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_LED_COLOR_HIGH_WASH)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}
@@ -1079,7 +1086,7 @@ WaveformOscilloscopeBrightnessDelta
 	float delta=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIS_OSCILLOSCOPE)
+		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_OSCILLOSCOPE)
 		{
 			delta=LGL_MultiTouchDY2()*KNOB_SCALAR;
 		}

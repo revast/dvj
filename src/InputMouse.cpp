@@ -974,7 +974,25 @@ WaveformVideoBrightness
 {
 	if(target & DragTarget)
 	{
-		if(DragElement==GUI_ELEMENT_VIS_VIDEO)
+		if(DragElement==GUI_ELEMENT_VIDEO)
+		{
+			return(DragFloat);
+		}
+	}
+
+	return(-1.0f);
+}
+
+float
+InputMouseObj::
+WaveformSyphonBrightness
+(
+	unsigned int	target
+)	const
+{
+	if(target & DragTarget)
+	{
+		if(DragElement==GUI_ELEMENT_SYPHON)
 		{
 			return(DragFloat);
 		}
@@ -1003,7 +1021,7 @@ WaveformFreqSenseBrightness
 {
 	if(target & DragTarget)
 	{
-		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE)
+		if(DragElement==GUI_ELEMENT_VIDEO_FREQSENSE)
 		{
 			return(DragFloat);
 		}
@@ -1021,7 +1039,7 @@ WaveformFreqSenseLEDGroupFloat
 {
 	if(target & DragTarget)
 	{
-		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_GROUP_FLOAT)
+		if(DragElement==GUI_ELEMENT_LED_GROUP)
 		{
 			return(DragFloat);
 		}
@@ -1039,7 +1057,7 @@ WaveformFreqSenseLEDColorScalarLow
 {
 	if(target & DragTarget)
 	{
-		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW)
+		if(DragElement==GUI_ELEMENT_LED_COLOR_LOW)
 		{
 			return(DragFloat);
 		}
@@ -1057,7 +1075,7 @@ WaveformFreqSenseLEDColorScalarHigh
 {
 	if(target & DragTarget)
 	{
-		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH)
+		if(DragElement==GUI_ELEMENT_LED_COLOR_HIGH)
 		{
 			return(DragFloat);
 		}
@@ -1075,7 +1093,7 @@ WaveformFreqSenseLEDBrightness
 {
 	if(target & DragTarget)
 	{
-		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS)
+		if(DragElement==GUI_ELEMENT_LED_FREQSENSE)
 		{
 			return(DragFloat);
 		}
@@ -1093,7 +1111,7 @@ WaveformFreqSenseLEDBrightnessWash
 {
 	if(target & DragTarget)
 	{
-		if(DragElement==GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS_WASH)
+		if(DragElement==GUI_ELEMENT_LED_COLOR_HIGH_WASH)
 		{
 			return(DragFloat);
 		}
@@ -1139,7 +1157,7 @@ WaveformOscilloscopeBrightness
 {
 	if(target & DragTarget)
 	{
-		if(DragElement==GUI_ELEMENT_VIS_OSCILLOSCOPE)
+		if(DragElement==GUI_ELEMENT_OSCILLOSCOPE)
 		{
 			return(DragFloat);
 		}

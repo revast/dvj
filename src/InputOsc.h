@@ -118,6 +118,7 @@ virtual	bool	WaveformReverse			(unsigned int target)	const;	//Reverse, but when 
 virtual int	WaveformAutoDivergeRecall	(unsigned int target)	const;	//When done diverging, jump to where we would have otherwise been, had we not diverged
 virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
+virtual	float	WaveformSyphonBrightness	(unsigned int target)	const;	//How bright syphon is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual float	WaveformFreqSenseLEDGroupFloat	(unsigned int target)	const;
 virtual float	WaveformFreqSenseLEDColorScalarLow
@@ -204,13 +205,14 @@ private:
 	OscElementObj		WaveformReverseOscElement[2];
 	OscElementObj		WaveformVideoSelectOscElement[2];
 	OscElementObj		WaveformVideoBrightnessOscElement[2];
+	OscElementObj		WaveformVideoFreqSenseBrightnessOscElement[2];
+	OscElementObj		WaveformSyphonBrightnessOscElement[2];
 	OscElementObj		WaveformOscilloscopeBrightnessOscElement[2];
-	OscElementObj		WaveformFreqSenseBrightnessOscElement[2];
-	OscElementObj		WaveformFreqSenseLEDGroupFloatOscElement[2];
-	OscElementObj		WaveformFreqSenseLEDColorScalarLowOscElement[2];
-	OscElementObj		WaveformFreqSenseLEDColorScalarHighOscElement[2];
-	OscElementObj		WaveformFreqSenseLEDBrightnessOscElement[2];
-	OscElementObj		WaveformFreqSenseLEDBrightnessWashOscElement[2];
+	OscElementObj		WaveformLEDFreqSenseBrightnessOscElement[2];
+	OscElementObj		WaveformLEDColorLowOscElement[2];
+	OscElementObj		WaveformLEDColorHighOscElement[2];
+	OscElementObj		WaveformLEDColorHighWashOscElement[2];
+	OscElementObj		WaveformLEDGroupOscElement[2];
 	OscElementObj		WaveformAudioInputToggleOscElement[2];
 	OscElementObj		WaveformVideoAspectRatioNextOscElement[2];
 	OscElementObj		WaveformSyncOscElement[2];

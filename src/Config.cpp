@@ -130,6 +130,35 @@ CreateDefaultDVJRC
 		fprintf(fd,"escDuringScanExits=1\n");
 		fprintf(fd,"debugVideoCaching=0\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"#Fader Options (Fader00-Fader11 valid):\n");
+		fprintf(fd,"#NULL\n");
+		fprintf(fd,"#LowEQ\n");
+		fprintf(fd,"#MidEQ\n");
+		fprintf(fd,"#HighEQ\n");
+		fprintf(fd,"#Gain\n");
+		fprintf(fd,"#Video\n");
+		fprintf(fd,"#VideoFreqSense\n");
+		fprintf(fd,"#Syphon\n");
+		fprintf(fd,"#Oscilloscope\n");
+		fprintf(fd,"#LEDFreqSense\n");
+		fprintf(fd,"#LEDColorLow\n");
+		fprintf(fd,"#LEDColorHigh\n");
+		fprintf(fd,"#LEDColorHighWash\n");
+		fprintf(fd,"#LEDGroup\n");
+		fprintf(fd,"\n");
+		fprintf(fd,"Fader00=LowEQ\n");
+		fprintf(fd,"Fader01=MidEQ\n");
+		fprintf(fd,"Fader02=HighEQ\n");
+		fprintf(fd,"Fader03=Gain\n");
+		fprintf(fd,"Fader04=Video\n");
+		fprintf(fd,"Fader05=VideoFreqSense\n");
+		fprintf(fd,"Fader06=Syphon\n");
+		fprintf(fd,"Fader07=LEDFreqSense\n");
+		fprintf(fd,"Fader08=LEDColorLow\n");
+		fprintf(fd,"Fader09=LEDColorHigh\n");
+		fprintf(fd,"Fader10=LEDColorHighWash\n");
+		fprintf(fd,"Fader11=LEDGroup\n");
+		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_000_Host = localhost\n");
 		fprintf(fd,"ledClient_000_Port = 0\n");
 		fprintf(fd,"ledClient_000_Channel = 0\n");
@@ -1354,18 +1383,20 @@ PrepareInputMap()
 		("waveformVideoSelect",			true,	"LGL_KEY_PERIOD",	"video_select");
 	dvjInputMap[WAVEFORM_VIDEO_BRIGHTNESS].Set
 		("waveformVideoBrightness",		true,	"LGL_KEY_NONE",		"video_brightness");
-	dvjInputMap[WAVEFORM_FREQ_SENSE_BRIGHTNESS].Set
-		("waveformFreqSenseBrightness",		true,	"LGL_KEY_NONE",		"freq_sense_brightness");
-	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_GROUP_FLOAT].Set
-		("waveformFreqSenseLEDGroupFloat",	true,	"LGL_KEY_NONE",		"freq_sense_led_group_float");
-	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_LOW].Set
-		("waveformFreqSenseLEDColorScalarLow",	true,	"LGL_KEY_NONE",		"freq_sense_led_color_scalar_low");
-	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_COLOR_SCALAR_HIGH].Set
-		("waveformFreqSenseLEDColorScalarHigh",	true,	"LGL_KEY_NONE",		"freq_sense_led_color_scalar_high");
-	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS].Set
-		("waveformFreqSenseLEDBrightness",	true,	"LGL_KEY_NONE",		"freq_sense_led_brightness");
-	dvjInputMap[WAVEFORM_FREQ_SENSE_LED_BRIGHTNESS_WASH].Set
-		("waveformFreqSenseLEDBrightnessWash",	true,	"LGL_KEY_NONE",		"freq_sense_led_brightness_wash");
+	dvjInputMap[WAVEFORM_VIDEO_FREQSENSE_BRIGHTNESS].Set
+		("waveformVideoFreqSenseBrightness",	true,	"LGL_KEY_NONE",		"video_freqsense_brightness");
+	dvjInputMap[WAVEFORM_SYPHON_BRIGHTNESS].Set
+		("waveformSyphonBrightness",		true,	"LGL_KEY_NONE",		"syphon_brightness");
+	dvjInputMap[WAVEFORM_LED_FREQSENSE_BRIGHTNESS].Set
+		("waveformLEDFreqSenseBrightness",	true,	"LGL_KEY_NONE",		"led_freqsense_brightness");
+	dvjInputMap[WAVEFORM_LED_COLOR_LOW].Set
+		("waveformLEDColorLow",			true,	"LGL_KEY_NONE",		"led_color_low");
+	dvjInputMap[WAVEFORM_LED_COLOR_HIGH].Set
+		("waveformLEDColorHigh",		true,	"LGL_KEY_NONE",		"led_color_high");
+	dvjInputMap[WAVEFORM_LED_COLOR_HIGH_WASH].Set
+		("waveformLEDColorHighWash",		true,	"LGL_KEY_NONE",		"led_color_high_wash");
+	dvjInputMap[WAVEFORM_LED_GROUP].Set
+		("waveformLEDGroup",			true,	"LGL_KEY_NONE",		"led_group");
 	dvjInputMap[WAVEFORM_OSCILLOSCOPE_BRIGHTNESS].Set
 		("waveformOscilloscopeBrightness",	true,	"LGL_KEY_NONE",		"oscilloscope_brightness");
 	dvjInputMap[WAVEFORM_AUDIO_INPUT_TOGGLE].Set
@@ -1709,6 +1740,104 @@ GetOscClientList()
 				)
 			);
 		}
+	}
+
+	return(ret);
+}
+
+DVJ_GuiElement
+GetFader
+(
+	int	index
+)
+{
+	index=LGL_Clamp(0,index,FADER_MAX);
+
+	//Defaults
+	DVJ_GuiElement ret = GUI_ELEMENT_NULL;
+	if(index==0)
+	{
+		ret=GUI_ELEMENT_EQ_LOW;
+	}
+	else if(index==1)
+	{
+		ret=GUI_ELEMENT_EQ_MID;
+	}
+	else if(index==2)
+	{
+		ret=GUI_ELEMENT_EQ_HIGH;
+	}
+	else if(index==3)
+	{
+		ret=GUI_ELEMENT_EQ_GAIN;
+	}
+	else if(index==4)
+	{
+		ret=GUI_ELEMENT_VIDEO;
+	}
+
+	char key[512];
+	sprintf(key,"Fader%02i",index);
+
+	std::string valStr = dvjrcConfigFile->read<std::string>(key,"NULL");
+	const char* val=valStr.c_str();
+
+	//Key/Vals
+	if(strcasecmp(val,"NULL")==0)
+	{
+		ret=GUI_ELEMENT_NULL;
+	}
+	else if(strcasecmp(val,"LowEQ")==0)
+	{
+		ret=GUI_ELEMENT_EQ_LOW;
+	}
+	else if(strcasecmp(val,"MidEQ")==0)
+	{
+		ret=GUI_ELEMENT_EQ_MID;
+	}
+	else if(strcasecmp(val,"HighEQ")==0)
+	{
+		ret=GUI_ELEMENT_EQ_HIGH;
+	}
+	else if(strcasecmp(val,"Gain")==0)
+	{
+		ret=GUI_ELEMENT_EQ_GAIN;
+	}
+	else if(strcasecmp(val,"Video")==0)
+	{
+		ret=GUI_ELEMENT_VIDEO;
+	}
+	else if(strcasecmp(val,"VideoFreqSense")==0)
+	{
+		ret=GUI_ELEMENT_VIDEO_FREQSENSE;
+	}
+	else if(strcasecmp(val,"Syphon")==0)
+	{
+		ret=GUI_ELEMENT_SYPHON;
+	}
+	else if(strcasecmp(val,"Oscilloscope")==0)
+	{
+		ret=GUI_ELEMENT_OSCILLOSCOPE;
+	}
+	else if(strcasecmp(val,"LEDFreqSense")==0)
+	{
+		ret=GUI_ELEMENT_LED_FREQSENSE;
+	}
+	else if(strcasecmp(val,"LEDColorLow")==0)
+	{
+		ret=GUI_ELEMENT_LED_COLOR_LOW;
+	}
+	else if(strcasecmp(val,"LEDColorHigh")==0)
+	{
+		ret=GUI_ELEMENT_LED_COLOR_HIGH;
+	}
+	else if(strcasecmp(val,"LEDColorHighWash")==0)
+	{
+		ret=GUI_ELEMENT_LED_COLOR_HIGH_WASH;
+	}
+	else if(strcasecmp(val,"LEDGroup")==0)
+	{
+		ret=GUI_ELEMENT_LED_GROUP;
 	}
 
 	return(ret);

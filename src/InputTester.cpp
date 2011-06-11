@@ -827,6 +827,33 @@ WaveformVideoBrightness
 
 float
 InputTesterObj::
+WaveformSyphonBrightness
+(
+	unsigned int	target
+)	const
+{
+	int currentAction = GetCurrentAction(target);
+	if(currentAction == NOOP)
+	{
+		return(-1.0f);
+	}
+	else
+	{
+		float brightness = LGL_RandFloat(0.0f,1.0f);
+		if(LGL_RandFloat(0.0f,1.0f) < 0.1f)
+		{
+			brightness=0.0f;
+		}
+		else if(LGL_RandFloat(0.0f,1.0f) < 0.1f)
+		{
+			brightness=-1.0f;
+		}
+		return(brightness);
+	}
+}
+
+float
+InputTesterObj::
 WaveformVideoAdvanceRate
 (
 	unsigned int	target

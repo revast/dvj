@@ -68,6 +68,8 @@ public:
 	float				GetVisualBrightnessFinal();
 	float				GetVideoBrightnessPreview();
 	float				GetVideoBrightnessFinal();
+	float				GetSyphonBrightnessPreview();
+	float				GetSyphonBrightnessFinal();
 	float				GetOscilloscopeBrightnessPreview();
 	float				GetOscilloscopeBrightnessFinal();
 	float				GetFreqSenseBrightnessPreview();
@@ -300,6 +302,7 @@ static	VisualizerObj*			Visualizer;
 	float				VideoOffsetSeconds;
 	float				VideoAdvanceRate;
 	float				VideoBrightness;
+	float				SyphonBrightness;
 	float				OscilloscopeBrightness;
 	float				FreqSenseBrightness;
 	int				GetFreqSenseLEDGroupInt();
