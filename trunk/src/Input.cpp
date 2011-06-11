@@ -95,6 +95,8 @@ float	InputWaveformAutoDivergeRecall(unsigned int target) { return(GetInput().Wa
 float	InputWaveformVideoSelect(unsigned int target) { return(GetInput().WaveformVideoSelect(target)); }
 float	InputWaveformVideoBrightness(unsigned int target) { return(GetInput().WaveformVideoBrightness(target)); }
 float	InputWaveformVideoBrightnessDelta(unsigned int target) { return(GetInput().WaveformVideoBrightnessDelta(target)); }
+float	InputWaveformSyphonBrightness(unsigned int target) { return(GetInput().WaveformSyphonBrightness(target)); }
+float	InputWaveformSyphonBrightnessDelta(unsigned int target) { return(GetInput().WaveformSyphonBrightnessDelta(target)); }
 float	InputWaveformVideoAdvanceRate(unsigned int target) { return(GetInput().WaveformVideoAdvanceRate(target)); }
 float	InputWaveformFreqSenseBrightness(unsigned int target) { return(GetInput().WaveformFreqSenseBrightness(target)); }
 float	InputWaveformFreqSenseBrightnessDelta(unsigned int target) { return(GetInput().WaveformFreqSenseBrightnessDelta(target)); }
@@ -1315,6 +1317,44 @@ WaveformVideoBrightnessDelta
 	for(unsigned int a=0;a<Children.size();a++)
 	{
 		delta+=Children[a]->WaveformVideoBrightnessDelta(target);
+	}
+
+	return(delta);
+}
+
+float
+InputObj::
+WaveformSyphonBrightness
+(
+	unsigned int	target
+)	const
+{
+	float bright=-1.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float candidate=Children[a]->WaveformSyphonBrightness(target);
+		if(candidate!=-1.0f)
+		{
+			bright=candidate;
+		}
+	}
+
+	return(bright);
+}
+
+float
+InputObj::
+WaveformSyphonBrightnessDelta
+(
+	unsigned int	target
+)	const
+{
+	float delta=0.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		delta+=Children[a]->WaveformSyphonBrightnessDelta(target);
 	}
 
 	return(delta);

@@ -1091,6 +1091,7 @@ Turntable_DrawWaveform
 	bool		rapidVolumeInvertSelf,
 	float		beginningOfCurrentMeasureSeconds,
 	float		videoBrightness,
+	float		syphonBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
 	float		freqSenseLEDBrightness,
@@ -3160,6 +3161,7 @@ if(1)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		eq2,
 		volumeMultiplierNow,
 		videoBrightness,
+		syphonBrightness,
 		oscilloscopeBrightness,
 		freqSenseBrightness,
 		freqSenseLEDBrightness,
@@ -3184,6 +3186,7 @@ Turntable_DrawSliders
 	float		eq2,
 	float		gain,
 	float		videoBrightness,
+	float		syphonBrightness,
 	float		oscilloscopeBrightness,
 	float		freqSenseBrightness,
 	float		freqSenseLEDBrightness,
@@ -3223,7 +3226,106 @@ Turntable_DrawSliders
 	eq[1]=0.5f*eq1;
 	eq[2]=0.5f*eq2;
 
+	DVJ_GuiElement guiElements[12];
 	char letters[12];
+	LGL_Color letterColors[12];
+	float levels[12];
+
+	for(int l=0;l<12;l++)
+	{
+		guiElements[l]=GetFader(l);
+	}
+	/*
+	guiElements[0]=GUI_ELEMENT_EQ_LOW;
+	guiElements[1]=GUI_ELEMENT_EQ_MID;
+	guiElements[2]=GUI_ELEMENT_EQ_HIGH;
+	guiElements[3]=GUI_ELEMENT_EQ_GAIN;
+	guiElements[4]=GUI_ELEMENT_VIDEO;
+	guiElements[5]=GUI_ELEMENT_OSCILLOSCOPE;
+	guiElements[6]=GUI_ELEMENT_VIDEO_FREQSENSE;
+	guiElements[7]=GUI_ELEMENT_LED_FREQSENSE;
+	guiElements[8]=GUI_ELEMENT_LED_COLOR_LOW;
+	guiElements[9]=GUI_ELEMENT_LED_COLOR_HIGH;
+	guiElements[10]=GUI_ELEMENT_LED_COLOR_HIGH_WASH;
+	guiElements[11]=GUI_ELEMENT_LED_GROUP;
+	*/
+
+	for(int l=0;l<12;l++)
+	{
+		letters[l]='\0';
+		letterColors[l].SetRGBA(1.0f,1.0f,1.0f,1.0f);
+		levels[l]=0.0f;
+		if(guiElements[l]==GUI_ELEMENT_EQ_LOW)
+		{
+			letters[l]='L';
+			levels[l]=eq[0];
+		}
+		if(guiElements[l]==GUI_ELEMENT_EQ_MID)
+		{
+			letters[l]='M';
+			levels[l]=eq[1];
+		}
+		if(guiElements[l]==GUI_ELEMENT_EQ_HIGH)
+		{
+			letters[l]='H';
+			levels[l]=eq[2];
+		}
+		if(guiElements[l]==GUI_ELEMENT_EQ_GAIN)
+		{
+			letters[l]='G';
+			levels[l]=LGL_Clamp(0.0f,gain*0.5f,1.0f);
+		}
+		if(guiElements[l]==GUI_ELEMENT_VIDEO)
+		{
+			letters[l]='V';
+			levels[l]=videoBrightness;
+		}
+		if(guiElements[l]==GUI_ELEMENT_VIDEO_FREQSENSE)
+		{
+			letters[l]='F';
+			levels[l]=freqSenseBrightness;
+		}
+		if(guiElements[l]==GUI_ELEMENT_SYPHON)
+		{
+			letters[l]='S';
+			levels[l]=syphonBrightness;
+		}
+		if(guiElements[l]==GUI_ELEMENT_OSCILLOSCOPE)
+		{
+			letters[l]='O';
+			levels[l]=oscilloscopeBrightness;
+		}
+		if(guiElements[l]==GUI_ELEMENT_LED_FREQSENSE)
+		{
+			letters[l]='L';
+			levels[l]=freqSenseLEDBrightness;
+		}
+		if(guiElements[l]==GUI_ELEMENT_LED_COLOR_LOW)
+		{
+			letters[l]='c';
+			letterColors[l]=GetColorFromScalar(freqSenseLEDColorScalarLow);
+			levels[l]=freqSenseLEDColorScalarLow;
+		}
+		if(guiElements[l]==GUI_ELEMENT_LED_COLOR_HIGH)
+		{
+			letters[l]='C';
+			letterColors[l]=GetColorFromScalar(freqSenseLEDColorScalarHigh);
+			levels[l]=freqSenseLEDColorScalarHigh;
+		}
+		if(guiElements[l]==GUI_ELEMENT_LED_COLOR_HIGH_WASH)
+		{
+			letters[l]='W';
+			letterColors[l]=GetColorFromScalar(freqSenseLEDColorScalarHigh);
+			levels[l]=freqSenseLEDBrightnessWash;
+		}
+		if(guiElements[l]==GUI_ELEMENT_LED_GROUP)
+		{
+			letters[l]='0'+freqSenseLEDGroupInt;
+			levels[l]=freqSenseLEDGroupFloat;
+		}
+	}
+
+	/*
 	for(int l=0;l<12;l++)
 	{
 		letters[l]='\0';
@@ -3238,10 +3340,11 @@ Turntable_DrawSliders
 	letters[7]='L';
 	letters[8]='c';
 	letters[9]='C';
-	letters[10]='B';
+	letters[10]='W';
 	letters[11]='0'+freqSenseLEDGroupInt;
+	*/
 
-	LGL_Color letterColors[12];
+	/*
 	for(int l=0;l<12;l++)
 	{
 		letterColors[l].SetRGBA(1.0f,1.0f,1.0f,1.0f);
@@ -3249,26 +3352,9 @@ Turntable_DrawSliders
 	letterColors[8]=GetColorFromScalar(freqSenseLEDColorScalarLow);
 	letterColors[9]=GetColorFromScalar(freqSenseLEDColorScalarHigh);
 	letterColors[10]=GetColorFromScalar(freqSenseLEDColorScalarHigh);
+	*/
 
-	DVJ_GuiElement guiElements[12];
-	for(int l=0;l<12;l++)
-	{
-		guiElements[l]=GUI_ELEMENT_NULL;
-	}
-	guiElements[0]=GUI_ELEMENT_EQ_LOW;
-	guiElements[1]=GUI_ELEMENT_EQ_MID;
-	guiElements[2]=GUI_ELEMENT_EQ_HIGH;
-	guiElements[3]=GUI_ELEMENT_EQ_GAIN;
-	guiElements[4]=GUI_ELEMENT_VIS_VIDEO;
-	guiElements[5]=GUI_ELEMENT_VIS_OSCILLOSCOPE;
-	guiElements[6]=GUI_ELEMENT_VIS_FREQSENSE;
-	guiElements[7]=GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS;
-	guiElements[8]=GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_LOW;
-	guiElements[9]=GUI_ELEMENT_VIS_FREQSENSE_LED_COLOR_SCALAR_HIGH;
-	guiElements[10]=GUI_ELEMENT_VIS_FREQSENSE_LED_BRIGHTNESS_WASH;
-	guiElements[11]=GUI_ELEMENT_VIS_FREQSENSE_LED_GROUP_FLOAT;
-
-	float levels[12];
+	/*
 	for(int l=0;l<12;l++)
 	{
 		levels[l]=0.0f;
@@ -3285,6 +3371,7 @@ Turntable_DrawSliders
 	levels[9]=freqSenseLEDColorScalarHigh;
 	levels[10]=freqSenseLEDBrightnessWash;
 	levels[11]=freqSenseLEDGroupFloat;
+	*/
 
 	for(int f=0;f<12;f++)
 	{

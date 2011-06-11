@@ -117,8 +117,8 @@ virtual float	WaveformFreqSenseLEDColorScalarLowDelta
 						(unsigned int target)	const;
 virtual float	WaveformFreqSenseLEDColorScalarHighDelta
 						(unsigned int target)	const;
-virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformVideoBrightnessDelta	(unsigned int target)	const;	//How bright the video is, independent of the crossfader
+virtual	float	WaveformSyphonBrightnessDelta	(unsigned int target)	const;	//How bright syphon is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
 virtual	float	WaveformFreqSenseBrightness	(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
 virtual	float	WaveformFreqSenseBrightnessDelta(unsigned int target)	const;	//Set frequency-sensitive video mixer brightness
