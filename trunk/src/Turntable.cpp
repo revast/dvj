@@ -3171,7 +3171,14 @@ NextFrame
 			Channel=Sound->Play(1,false,0);
 			if(Sound->IsLoaded())
 			{
-				Sound->SetPositionSeconds(Channel,SmoothWaveformScrollingSample*Sound->GetHz());
+				if(SmoothWaveformScrollingSample/Sound->GetHz() > Sound->GetLengthSeconds()-1)
+				{
+					SmoothWaveformScrollingSample=0;
+				}
+				else
+				{
+					Sound->SetPositionSeconds(Channel,SmoothWaveformScrollingSample/Sound->GetHz());
+				}
 				FinalSpeed=0.0f;
 				Sound->SetSpeed
 				(
