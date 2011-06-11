@@ -160,6 +160,13 @@ void InitializeGlobals()
 }
 
 void
+userExit()
+{
+	delete Visualizer;
+	GetMixer().Cleanup();
+}
+
+void
 VerifyMusicDir()
 {
 	char musicDir[2048];
@@ -340,10 +347,7 @@ void NextFrame()
 	{
 		if(LGL_KeyStroke(LGL_KEY_Y))
 		{
-			LGL_ExitAlpha();
-			delete Visualizer;
-			GetMixer().Cleanup();
-			LGL_ExitOmega();
+			LGL_Exit();
 		}
 		if
 		(
@@ -837,6 +841,7 @@ int main(int argc, char** argv)
 	DrawLoadScreen(loadScreenPercent,NULL,"Scanning library");
 
 	InitializeGlobals();
+	LGL_SetUserExit(userExit);
 
 	LGL_SetAudioInPassThru(GetAudioInPassThru());
 

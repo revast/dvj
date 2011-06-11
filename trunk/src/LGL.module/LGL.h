@@ -260,6 +260,7 @@ bool		LGL_Init
 		);
 
 bool		LGL_Running();
+void		LGL_SetUserExit(void(*fn)(void));
 void		LGL_Exit();
 void		LGL_ExitAlpha();
 void		LGL_ExitOmega();
