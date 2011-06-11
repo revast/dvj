@@ -13,5 +13,5 @@ yasm
 ffmpeg
 jack-audio-connection-kit
 
-sudo cp -R Syphon.framework /Library/Frameworks
+Syphon.framework
 
