@@ -2871,7 +2871,8 @@ LGL_SyphonServerCount();
 LGL_Image*
 LGL_SyphonImage(int server=0);
 
-
+void
+LGL_SyphonPushImage(LGL_Image* img);
 
 //VidCam
 

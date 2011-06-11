@@ -49,7 +49,6 @@ VisualizerObj()
 {
 	BlueScreenOfDeath=new LGL_Image("data/image/bsod.png");
 
-	//AccumulationNow=new LGL_Image(0.0f,0.5f,0.5f,1.0f);
 	float resX=LGL_DisplayResolutionX(0);
 	float center = resX/2.0f;
 	float left=LGL_Max(0.0f,(center-0.5f*resX)/resX);
@@ -57,6 +56,7 @@ VisualizerObj()
 	//float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
 	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
 	float top=1.0f;
+	Accumulation=new LGL_Image(left,right,bottom,top);
 
 	if(LGL_DisplayCount()>1)
 	{
@@ -233,7 +233,7 @@ VisualizerObj::
 ~VisualizerObj()
 {
 	delete	BlueScreenOfDeath;
-	//delete	AccumulationNow;
+	delete	Accumulation;
 
 	for(unsigned int a=0;a<LEDClientList.size();a++)
 	{
@@ -554,9 +554,6 @@ DrawVisuals
 	}
 	
 	/*
-
-	//AccumulationNow->FrameBufferUpdate();
-
 	//Draw Scroll Text
 	if(ScrollTextBuffer.empty()==false)
 	{
@@ -763,6 +760,15 @@ DrawVisuals
 					(int)(ProjMapOffsetY[a]*resY)
 				);
 			}
+		}
+	}
+	
+	if(LGL_GetActiveDisplay()==0)
+	{
+		if(GetSyphonServerEnabled())
+		{
+			Accumulation->FrameBufferUpdate();
+			LGL_SyphonPushImage(Accumulation);
 		}
 	}
 }
@@ -1046,7 +1052,7 @@ SetViewportVisuals
 	ViewportVisualsWidth=right-left;
 	ViewportVisualsHeight=top-bottom;
 
-	//AccumulationNow->FrameBufferViewport(left,right,bottom,top);
+	//Accumulation->FrameBufferViewport(left,right,bottom,top);
 }
 
 float
@@ -1106,7 +1112,7 @@ ToggleFullScreen()
 	/*
 	if(FullScreen)
 	{
-		AccumulationNow->FrameBufferViewport
+		Accumulation->FrameBufferViewport
 		(
 			0,1,
 			0,1
@@ -1114,7 +1120,7 @@ ToggleFullScreen()
 	}
 	else
 	{
-		AccumulationNow->FrameBufferViewport
+		Accumulation->FrameBufferViewport
 		(
 			ViewportVisualsLeft,	ViewportVisualsRight,
 			ViewportVisualsBottom,	ViewportVisualsTop
@@ -1893,6 +1899,7 @@ DrawVideos
 				if(image)
 				{
 					image->SetFrameNumber(0);
+//if(preview==false) LGL_SyphonPushImage(image);
 				}
 			}
 			else

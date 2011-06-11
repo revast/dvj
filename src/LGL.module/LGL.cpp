@@ -2869,6 +2869,8 @@ LGL_ExitOmega()
 {
 	LGL_ExitAlpha();
 
+	lgl_SyphonExit();
+
 	if(lgl_get_vsync_semaphore().IsLocked())
 	{
 		lgl_get_vsync_semaphore().Unlock();
@@ -6461,7 +6463,7 @@ LGL_Image
 	TextureGLRect=false;
 	TextureGLMine=true;
 	FrameBufferImage=false;
-	InvertY=true;
+	InvertY=false;
 	if(data)
 	{
 		LoadSurfaceToTexture(LinearInterpolation);
@@ -7481,6 +7483,8 @@ printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
 	*/
 
 	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+
+	InvertY=false;
 }
 
 void
@@ -7646,14 +7650,14 @@ int
 LGL_Image::
 GetTexWidth()
 {
-	return(ImgW);
+	return(TexW);
 }
 
 int
 LGL_Image::
 GetTexHeight()
 {
-	return(ImgH);
+	return(TexH);
 }
 
 const
@@ -23477,6 +23481,19 @@ LGL_SyphonImage
 	LGL.SyphonImage->InvertY=true;
 
 	return(LGL.SyphonImage);
+}
+
+void
+LGL_SyphonPushImage(LGL_Image* img)
+{
+	lgl_SyphonPushImage
+	(
+		img->TextureGL,
+		img->GetWidth(),
+		img->GetHeight(),
+		img->GetTexWidth(),
+		img->GetTexHeight()
+	);
 }
 
 

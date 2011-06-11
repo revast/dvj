@@ -159,6 +159,8 @@ CreateDefaultDVJRC
 		fprintf(fd,"Fader10=LEDColorHighWash\n");
 		fprintf(fd,"Fader11=LEDGroup\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"syphonServerEnabled=0\n");
+		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_000_Host = localhost\n");
 		fprintf(fd,"ledClient_000_Port = 0\n");
 		fprintf(fd,"ledClient_000_Channel = 0\n");
@@ -1841,6 +1843,13 @@ GetFader
 	}
 
 	return(ret);
+}
+
+bool
+GetSyphonServerEnabled()
+{
+	int enabled=dvjrcConfigFile->read<int>("syphonServerEnabled",0);
+	return(enabled!=0);
 }
 
 std::vector<LEDClient>

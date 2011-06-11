@@ -309,6 +309,9 @@ GetFader
 	int	index
 );
 
+bool
+GetSyphonServerEnabled();
+
 class LEDClient
 {
 

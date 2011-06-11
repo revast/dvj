@@ -18,3 +18,16 @@ lgl_SyphonImageInfo
 	int&	height
 );
 
+void
+lgl_SyphonPushImage
+(
+	GLuint	glID,
+	int	imgW,
+	int	imgH,
+	int	texW,
+	int	texH
+);
+
+void
+lgl_SyphonExit();
+
