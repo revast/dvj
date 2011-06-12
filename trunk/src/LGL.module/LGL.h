@@ -1214,8 +1214,7 @@ public:
 
 	void			MaybeLoadVideo();
 	bool			MaybeLoadImage();
-	bool			MaybeProcessImage(long desiredFrameNum=-1);
-	bool			MaybeDecodeImage();
+	bool			MaybeDecodeImage(long desiredFrameNum=-1);
 	void			MaybeRecycleBuffers(std::vector<lgl_FrameBuffer*>& bufferList);
 	bool			GetThreadTerminate();
 
@@ -1254,7 +1253,6 @@ private:
 
 	bool			ThreadTerminate;
 	SDL_Thread*		ThreadLoad;
-	SDL_Thread*		ThreadProcess;
 	SDL_Thread*		ThreadDecode;
 	LGL_Semaphore		PathSemaphore;
 

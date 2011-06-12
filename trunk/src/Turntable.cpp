@@ -2488,7 +2488,6 @@ NextFrame
 			{
 				SelectNewVideo();
 			}
-			FreqSensePathBrightness=5.0f;
 		}
 
 		if
@@ -2497,7 +2496,7 @@ NextFrame
 			GetInputMouse().GetHoverElement()==GUI_ELEMENT_VIDEO_FREQSENSE
 		)
 		{
-			FreqSensePathBrightness=5.0f;
+			FreqSensePathBrightness=2.0f;
 		}
 
 		FreqSensePathBrightness=LGL_Max(0.0f,FreqSensePathBrightness-LGL_SecondsSinceLastFrame());
