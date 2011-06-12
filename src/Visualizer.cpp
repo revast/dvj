@@ -253,7 +253,11 @@ NextFrame
 	//Frequency-sensitive video SetTime()
 	for(int t=0;t<2;t++)
 	{
-		if(tts[t]->GetFreqSenseBrightnessPreview()>0.0f)
+		if
+		(
+			tts[t]->GetFinalSpeed()!=0.0f &&
+			tts[t]->GetFreqSenseBrightnessPreview()>0.0f
+		)
 		{
 			LGL_VideoDecoder* vidL=tts[t]->GetVideoLo();
 			LGL_VideoDecoder* vidH=tts[t]->GetVideoHi();
