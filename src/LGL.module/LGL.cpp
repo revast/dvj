@@ -9023,8 +9023,10 @@ bool lgl_LongSortPredicate(const long d1, const long d2)
 
 lgl_FrameBuffer::
 lgl_FrameBuffer() :
-	PacketSemaphore("Packet Semaphore")
+	PacketSemaphore("Packet Semaphore"),
+	BufferSemaphore("Buffer Semaphore")
 {
+	Ready=false;
 	Buffer=NULL;
 	BufferBytes=0;
 	BufferIsRGB=true;
@@ -9047,10 +9049,35 @@ lgl_FrameBuffer::
 	);
 }
 
+bool
+lgl_FrameBuffer::
+IsLoaded()
+{
+	return
+	(
+		FrameNumber!=-1 &&
+		Packet
+	);
+}
+
+bool
+lgl_FrameBuffer::
+IsReady()
+{
+	return
+	(
+		FrameNumber!=-1 &&
+		Packet &&
+		Buffer &&
+		Ready
+	);
+}
+
 void
 lgl_FrameBuffer::
 NullifyBuffer()
 {
+	LGL_ScopeLock bufferLock(__FILE__,__LINE__,BufferSemaphore);
 	if(Buffer)
 	{
 		delete Buffer;
@@ -9072,6 +9099,8 @@ SwapInNewBufferRGB
 	long		frameNumber
 )
 {
+	LGL_ScopeLock bufferLock(__FILE__,__LINE__,BufferSemaphore);
+
 	unsigned char* bufferOld=Buffer;
 	unsigned int bufferBytesOld=BufferBytes;
 
@@ -9082,6 +9111,7 @@ SwapInNewBufferRGB
 	FrameNumber=frameNumber;
 	strcpy(VideoPath,videoPath?videoPath:"");
 	BufferIsRGB=true;
+	Ready=true;
 
 	bufferRGB=bufferOld;
 	bufferRGBBytes=bufferBytesOld;
@@ -9099,6 +9129,8 @@ SwapInNewBufferYUV
 	long		frameNumber
 )
 {
+	LGL_ScopeLock bufferLock(__FILE__,__LINE__,BufferSemaphore);
+
 	unsigned char* bufferOld=Buffer;
 	unsigned int bufferBytesOld=BufferBytes;
 
@@ -9109,6 +9141,7 @@ SwapInNewBufferYUV
 	FrameNumber=frameNumber;
 	strcpy(VideoPath,videoPath?videoPath:"");
 	BufferIsRGB=false;
+	Ready=true;
 
 	bufferYUV=bufferOld;
 	bufferYUVBytes=bufferBytesOld;
@@ -9254,6 +9287,7 @@ void
 lgl_FrameBuffer::
 Invalidate()
 {
+	Ready=false;
 	FrameNumber=-1;
 }
 
@@ -9285,7 +9319,6 @@ lgl_video_decoder_decode_thread
 		}
 		//dec->MaybeLoadVideo();
 		bool imageDecoded=dec->MaybeDecodeImage();
-		//dec->MaybeRecycleBuffers();
 		LGL_DelayMS(imageDecoded ? 0 : 1);
 	}
 
@@ -9327,6 +9360,7 @@ lgl_video_decoder_load_thread
 	return(0);
 }
 
+#if 0
 int
 lgl_video_decoder_decoder_thread
 (
@@ -9364,13 +9398,13 @@ lgl_video_decoder_decoder_thread
 
 	return(0);
 }
+#endif
 
 LGL_VideoDecoder::
 LGL_VideoDecoder
 (
 	const char* path
 ) :
-	FrameBufferOmniSemaphore("FrameBufferLoaded Semaphore"),
 	PathSemaphore("Path Semaphore"),
 	VideoOKSemaphore("VideoOK Semaphore")
 {
@@ -9395,23 +9429,9 @@ LGL_VideoDecoder::
 
 	UnloadVideo();
 
+	for(unsigned int a=0;a<FrameBufferList.size();a++)
 	{
-		LGL_ScopeLock omniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-		for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
-		{
-			delete FrameBufferLoaded[a];
-			FrameBufferLoaded[a]=NULL;
-		}
-		for(unsigned int a=0;a<FrameBufferReady.size();a++)
-		{
-			delete FrameBufferReady[a];
-			FrameBufferReady[a]=NULL;
-		}
-		for(unsigned int a=0;a<FrameBufferRecycled.size();a++)
-		{
-			delete FrameBufferRecycled[a];
-			FrameBufferRecycled[a]=NULL;
-		}
+		delete FrameBufferList[a];
 	}
 
 	//TODO: Doesn't this leak BufferRGB / BufferYUV...? YES, but only upon quitting dvj.
@@ -9439,6 +9459,11 @@ Init()
 	FrameNumberDisplayed=-1;
 	NextRequestedDecodeFrame=-1;
 
+	for(int a=0;a<500;a++)
+	{
+		lgl_FrameBuffer* fb = new lgl_FrameBuffer;
+		FrameBufferList.push_back(fb);
+	}
 	SetFrameBufferAddBackwards(true);
 	SetFrameBufferAddRadius(2);
 
@@ -9491,7 +9516,6 @@ Init()
 				delete oldie;
 				oldie=NULL;
 			}
-			FrameBufferReady.push_back(frameBuffer);
 		}
 		catch(std::bad_alloc)
 		{
@@ -9504,12 +9528,6 @@ Init()
 			break;
 		}
 	}
-	std::sort
-	(
-		FrameBufferReady.begin(),
-		FrameBufferReady.end(),
-		lgl_FrameBufferSortPredicate
-	);
 #endif
 
 	ThreadTerminate=false;
@@ -9627,7 +9645,7 @@ LGL_Image*
 LGL_VideoDecoder::
 GetImage()
 {
-	MaybeRecycleBuffers(FrameBufferReady);
+	MaybeInvalidateBuffers();
 
 	if(IsImage)
 	{
@@ -9716,59 +9734,57 @@ GetImage()
 	}
 	lgl_FrameBuffer* frameBuffer=NULL;
 
+	std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(true);
+
+	//Early out if nothing decoded...
+	if(frameBufferReady.size()==0)
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
+		return(Image);
+	}
 
-		//Early out if nothing decoded...
-		if(FrameBufferReady.size()==0)
+	//Find the nearest framebuffer
+	if(frameNumber<frameBufferReady[0]->GetFrameNumber())
+	{
+		if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
 		{
-			return(Image);
+			FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
+			FPSDisplayedMissCounter++;
 		}
-
-		//Find the nearest framebuffer
-		if(frameNumber<FrameBufferReady[0]->GetFrameNumber())
+		frameBuffer=frameBufferReady[0];
+	}
+	else if(frameNumber>frameBufferReady[frameBufferReady.size()-1]->GetFrameNumber())
+	{
+		if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
 		{
-			if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
+			FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
+			FPSDisplayedMissCounter++;
+		}
+		frameBuffer=frameBufferReady[frameBufferReady.size()-1];
+	}
+	else
+	{
+		long nearestDistance=99999999;
+		for(unsigned int a=0;a<frameBufferReady.size();a++)
+		{
+			if((long)fabsf(frameNumber-frameBufferReady[a]->GetFrameNumber())<nearestDistance)
 			{
-				FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
-				FPSDisplayedMissCounter++;
+				frameBuffer=frameBufferReady[a];
+				nearestDistance=(long)fabsf(frameNumber-frameBufferReady[a]->GetFrameNumber());
 			}
-			frameBuffer=FrameBufferReady[0];
-		}
-		else if(frameNumber>FrameBufferReady[FrameBufferReady.size()-1]->GetFrameNumber())
-		{
-			if(FPSDisplayedHitMissFrameNumber!=LGL_FramesSinceExecution())
-			{
-				FPSDisplayedHitMissFrameNumber=LGL_FramesSinceExecution();
-				FPSDisplayedMissCounter++;
-			}
-			frameBuffer=FrameBufferReady[FrameBufferReady.size()-1];
-		}
-		else
-		{
-			long nearestDistance=99999999;
-			for(unsigned int a=0;a<FrameBufferReady.size();a++)
-			{
-				if((long)fabsf(frameNumber-FrameBufferReady[a]->GetFrameNumber())<nearestDistance)
-				{
-					frameBuffer=FrameBufferReady[a];
-					nearestDistance=(long)fabsf(frameNumber-FrameBufferReady[a]->GetFrameNumber());
-				}
-			}	
-		}
+		}	
+	}
 
-		if(frameBuffer==NULL)
-		{
-			//FIXME: If we just made the imade, it contains junk.
-			return(Image);
-		}
+	if(frameBuffer==NULL)
+	{
+		//FIXME: If we just made the imade, it contains junk.
+		return(Image);
+	}
 
-		//Is our image already up to date?
-		if(Image->GetFrameNumber()==frameBuffer->GetFrameNumber())
-		{
-			FrameNumberDisplayed=Image->GetFrameNumber();
-			return(Image);
-		}
+	//Is our image already up to date?
+	if(Image->GetFrameNumber()==frameBuffer->GetFrameNumber())
+	{
+		FrameNumberDisplayed=Image->GetFrameNumber();
+		return(Image);
 	}
 
 	//Update Image
@@ -9882,21 +9898,20 @@ GetSecondsBufferedLeft
 {
 	ready|=loaded;
 	std::vector<long> frameNumList;
+	if(loaded)
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-		if(loaded)
+		std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
+		for(unsigned int a=0;a<frameBufferLoaded.size();a++)
 		{
-			for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
-			{
-				frameNumList.push_back(FrameBufferLoaded[a]->GetFrameNumber());
-			}
+			frameNumList.push_back(frameBufferLoaded[a]->GetFrameNumber());
 		}
-		if(ready)
+	}
+	if(ready)
+	{
+		std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(false);
+		for(unsigned int a=0;a<frameBufferReady.size();a++)
 		{
-			for(unsigned int a=0;a<FrameBufferReady.size();a++)
-			{
-				frameNumList.push_back(FrameBufferReady[a]->GetFrameNumber());
-			}
+			frameNumList.push_back(frameBufferReady[a]->GetFrameNumber());
 		}
 	}
 
@@ -9990,21 +10005,20 @@ GetSecondsBufferedRight
 {
 	ready|=loaded;
 	std::vector<long> frameNumList;
+	if(loaded)
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-		if(loaded)
+		std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
+		for(unsigned int a=0;a<frameBufferLoaded.size();a++)
 		{
-			for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
-			{
-				frameNumList.push_back(FrameBufferLoaded[a]->GetFrameNumber());
-			}
+			frameNumList.push_back(frameBufferLoaded[a]->GetFrameNumber());
 		}
-		if(ready)
+	}
+	if(ready)
+	{
+		std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(false);
+		for(unsigned int a=0;a<frameBufferReady.size();a++)
 		{
-			for(unsigned int a=0;a<FrameBufferReady.size();a++)
-			{
-				frameNumList.push_back(FrameBufferReady[a]->GetFrameNumber());
-			}
+			frameNumList.push_back(frameBufferReady[a]->GetFrameNumber());
 		}
 	}
 
@@ -10119,20 +10133,13 @@ void
 LGL_VideoDecoder::
 InvalidateAllFrameBuffers()
 {
-	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-		for(unsigned int a=0;a<FrameBufferReady.size();a++)
-		{
-			FrameBufferReady[a]->Invalidate();
-		}
-		for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
-		{
-			FrameBufferLoaded[a]->Invalidate();
-		}
-	}
 	if(Image)
 	{
 		Image->SetFrameNumber(-1);
+	}
+	for(unsigned int a=0;a<FrameBufferList.size();a++)
+	{
+		FrameBufferList[a]->Invalidate();
 	}
 }
 
@@ -10150,13 +10157,14 @@ long
 LGL_VideoDecoder::
 GetNextRequestedDecodeFrame()
 {
+	//What is supposed to happen here??
+	/*
+	std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
+	for(unsigned int a=0;a<frameBufferLoaded.size();a++)
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-		for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
-		{
-			FrameBufferLoaded[0]->GetFrameNumber();
-		}
+		frameBufferLoaded[0]->GetFrameNumber();
 	}
+	*/
 	return(NextRequestedDecodeFrame);
 }
 
@@ -10164,8 +10172,6 @@ void
 LGL_VideoDecoder::
 MaybeLoadVideo()
 {
-	AssertFrameBufferListUniqueness();
-
 	if(PathNext[0]=='\0')
 	{
 		return;
@@ -10427,15 +10433,11 @@ MaybeLoadImage()
 		//LGL_DelayMS(0);
 	}
 
-	MaybeRecycleBuffers(FrameBufferLoaded);
-
 	//Return early if we have enough frames loaded
+	std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
+	if((int)frameBufferLoaded.size()>=FrameBufferAddRadius*(FrameBufferAddBackwards ? 2 : 1))
 	{
-		LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-		if((int)FrameBufferLoaded.size()>=FrameBufferAddRadius*(FrameBufferAddBackwards ? 2 : 1))
-		{
-			return(false);
-		}
+		return(false);
 	}
 
 	//Find frameNumber of image to add
@@ -10504,34 +10506,20 @@ MaybeLoadImage()
 	{
 		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 		//Prepare a framebuffer, and swap its buffer with BufferRGB
-		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
+		lgl_FrameBuffer* frameBuffer = GetInvalidFrameBuffer();
 
-		frameBuffer->SetPacket
-		(
-			packet,
-			Path,
-			frameNumberTarget
-		);
-
-		//Add framebuffer to FrameBufferLoaded, and sort.
+		if(frameBuffer)
 		{
-			LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-			FrameBufferLoaded.push_back(frameBuffer);
-			/*
-			printf("FBL: Adding %li\n",frameBuffer->GetFrameNumber());
-			for(unsigned int z=0;z<FrameBufferLoaded.size();z++)
-			{
-				printf("FBL[%i]: %li\n",z,FrameBufferLoaded[z]->GetFrameNumber());
-			}
-			*/
-			/*
-			std::sort
+			frameBuffer->SetPacket
 			(
-				FrameBufferLoaded.begin(),
-				FrameBufferLoaded.end(),
-				lgl_FrameBufferSortPredicate
+				packet,
+				Path,
+				frameNumberTarget
 			);
-			*/
+		}
+		else
+		{
+			printf("Couldn't obtain an invalid framebuffer (A)\n");
 		}
 	}
 	else
@@ -10599,48 +10587,37 @@ MaybeDecodeImage
 
 	//Find the next lgl_FrameBuffer
 	lgl_FrameBuffer* frameBuffer=NULL;
+	if(desiredFrameNum!=-1)
 	{
-		LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-
-		if(desiredFrameNum!=-1)
+		std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(false);
+		for(unsigned int a=0;a<frameBufferReady.size();a++)
 		{
-			for(unsigned int a=0;a<FrameBufferReady.size();a++)
+			if(frameBufferReady[a]->GetFrameNumber()==desiredFrameNum)
 			{
-				if(FrameBufferReady[a]->GetFrameNumber()==desiredFrameNum)
-				{
-					//Our desired frame is already ready!
-					return(false);
-				}
-			}
-			for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
-			{
-				if(FrameBufferLoaded[a]->GetFrameNumber()==desiredFrameNum)
-				{
-					frameBuffer=FrameBufferLoaded[a];
-				}
+				//Our desired frame is already ready!
+				return(false);
 			}
 		}
-
-		if(frameBuffer==NULL)
+		//std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
+		std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
+		for(unsigned int a=0;a<frameBufferLoaded.size();a++)
 		{
-			for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
+			if(frameBufferLoaded[a]->GetFrameNumber()==desiredFrameNum)
 			{
-				if
-				(
-					FrameBufferLoaded[a]->GetFrameNumber()!=-1 &&
-					FrameBufferLoaded[a]->GetPacket()!=NULL
-				)
-				{
-					frameBuffer=FrameBufferLoaded[a];
-					break;
-				}
-				else
-				{
-					FrameBufferLoaded[a]->Invalidate();
-				}
+				frameBuffer=frameBufferLoaded[a];
 			}
 		}
 	}
+
+	if(frameBuffer==NULL)
+	{
+		std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(true);
+		if(frameBufferLoaded.empty()==false)
+		{
+			frameBuffer=frameBufferLoaded[0];	//We can pick a better one to decode...
+		}
+	}
+
 	if(frameBuffer==NULL)
 	{
 		return(false);
@@ -10670,10 +10647,8 @@ MaybeDecodeImage
 	AVPacket* packet = frameBuffer->GetPacket();
 	if(packet==NULL)
 	{
-		{
-			LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-			frameBuffer->Invalidate();
-		}
+		printf("NULL packet??\n");
+		frameBuffer->Invalidate();
 		return(false);
 	}
 
@@ -10794,43 +10769,36 @@ MaybeDecodeImage
 		}
 		*/
 
-		lgl_FrameBuffer* neoFrameBuffer = GetRecycledFrameBuffer();
-		if(IsYUV420P()==false)
+		if(frameBuffer)
 		{
-			neoFrameBuffer->SwapInNewBufferRGB
-			(
-				Path,
-				BufferRGB,	//Changes...
-				BufferRGBBytes,	//Changes...
-				BufferWidth,
-				BufferHeight,
-				frameBuffer->GetFrameNumber()
-			);
+			if(IsYUV420P()==false)
+			{
+				frameBuffer->SwapInNewBufferRGB
+				(
+					Path,
+					BufferRGB,	//Changes...
+					BufferRGBBytes,	//Changes...
+					BufferWidth,
+					BufferHeight,
+					frameBuffer->GetFrameNumber()
+				);
+			}
+			else
+			{
+				frameBuffer->SwapInNewBufferYUV
+				(
+					Path,
+					BufferYUV,	//Changes...
+					BufferYUVBytes,	//Changes...
+					BufferWidth,
+					BufferHeight,
+					frameBuffer->GetFrameNumber()
+				);
+			}
 		}
 		else
 		{
-			neoFrameBuffer->SwapInNewBufferYUV
-			(
-				Path,
-				BufferYUV,	//Changes...
-				BufferYUVBytes,	//Changes...
-				BufferWidth,
-				BufferHeight,
-				frameBuffer->GetFrameNumber()
-			);
-		}
-
-		//Add framebuffer to FrameBufferReady, and sort.
-		{
-			LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-			frameBuffer->Invalidate();
-			FrameBufferReady.push_back(neoFrameBuffer);
-			std::sort
-			(
-				FrameBufferReady.begin(),
-				FrameBufferReady.end(),
-				lgl_FrameBufferSortPredicate
-			);
+			printf("Couldn't obtain an invalid framebuffer (B)\n");
 		}
 	}
 	else
@@ -10858,19 +10826,13 @@ MaybeDecodeImage
 			frameBuffer->Invalidate();
 		}
 	}
-
 	return(frameRead);
 }
 
 void
 LGL_VideoDecoder::
-MaybeRecycleBuffers
-(
-	std::vector<lgl_FrameBuffer*>&	bufferList
-)
+MaybeInvalidateBuffers()
 {
-	AssertFrameBufferListUniqueness();
-
 	if(VideoOK==false)
 	{
 		return;
@@ -10881,8 +10843,6 @@ MaybeRecycleBuffers
 		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 		strcpy(path,Path);
 	}
-
-	LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
 
 	long frameNumberNow = SecondsToFrameNumber(TimeSeconds);
 	long frameNumberLength = SecondsToFrameNumber(LengthSeconds);
@@ -10898,49 +10858,13 @@ MaybeRecycleBuffers
 	long frameNumberPredict=frameNumberTarget;
 	frameNumberPredict = frameNumberPredict % frameNumberLength;
 
-	unsigned int totalBuffers=FrameBufferRecycled.size()+FrameBufferLoaded.size();
-
-	std::vector<lgl_FrameBuffer*>& list = bufferList;
+	std::vector<lgl_FrameBuffer*>& list = FrameBufferList;
 	int subtractRadius = FrameBufferSubtractRadius;
-	//int nullifyBufferRadius = (&list==&FrameBufferReady) ? 5 : FrameBufferSubtractRadius;
 	for(unsigned int a=0;a<list.size();a++)
 	{
-		/*
 		if
 		(
-			list[a]->GetFrameNumber()==-1 ||
-			strcmp(list[a]->GetVideoPath(),path)!=0 ||
-			(
-				fabsf(frameNumberNow-list[a]->GetFrameNumber())				> nullifyBufferRadius &&
-				fabsf(frameNumberPredict-list[a]->GetFrameNumber())			> nullifyBufferRadius &&
-				fabsf((frameNumberNow-frameNumberLength)-list[a]->GetFrameNumber())	> nullifyBufferRadius &&
-				fabsf((frameNumberNow+frameNumberLength)-list[a]->GetFrameNumber())	> nullifyBufferRadius &&
-				GetNextFrameNumberToDecodePredictNext(false) != list[a]->GetFrameNumber()
-			)
-		)
-		{
-			list[a]->NullifyBuffer();
-			if(&list==&FrameBufferReady)
-			{
-				FrameBufferLoaded.push_back(list[a]);
-				std::sort
-				(
-					FrameBufferReady.begin(),
-					FrameBufferReady.end(),
-					lgl_FrameBufferSortPredicate
-				);
-				list.erase
-				(
-					(std::vector<lgl_FrameBuffer*>::iterator)
-					(&(list[a]))
-				);
-			}
-		}
-		*/
-
-		if
-		(
-			list[a]->GetFrameNumber()==-1 ||
+			//list[a]->GetFrameNumber()==-1 ||
 			strcmp(list[a]->GetVideoPath(),path)!=0 ||
 			(
 				fabsf(frameNumberNow-list[a]->GetFrameNumber())				> subtractRadius &&
@@ -10951,21 +10875,8 @@ MaybeRecycleBuffers
 			)
 		)
 		{
-			if((int)totalBuffers>FrameBufferAddRadius+FrameBufferSubtractRadius+4)
-			{
-				delete list[a];
-				totalBuffers--;
-			}
-			else
-			{
-				list[a]->NullifyBuffer();
-				FrameBufferRecycled.push_back(list[a]);
-			}
-			list.erase
-			(
-				(std::vector<lgl_FrameBuffer*>::iterator)
-				(&(list[a]))
-			);
+			list[a]->NullifyBuffer();
+			//list[a]->InvalidateBuffer();
 		}
 	}
 }
@@ -10979,6 +10890,68 @@ GetThreadTerminate()
 		ThreadTerminate ||
 		(LGL.Running==false)
 	);
+}
+
+std::vector<lgl_FrameBuffer*>
+LGL_VideoDecoder::
+GetFrameBufferReadyList
+(
+	bool	sorted
+)
+{
+	std::vector<lgl_FrameBuffer*> ret;
+	for(unsigned int a=0;a<FrameBufferList.size();a++)
+	{
+		if(FrameBufferList[a]->IsReady())
+		{
+			ret.push_back(FrameBufferList[a]);
+		}
+	}
+
+	if(sorted)
+	{
+		std::sort
+		(
+			ret.begin(),
+			ret.end(),
+			lgl_FrameBufferSortPredicate
+		);
+	}
+
+	return(ret);
+}
+
+std::vector<lgl_FrameBuffer*>
+LGL_VideoDecoder::
+GetFrameBufferLoadedList
+(
+	bool	sorted
+)
+{
+	std::vector<lgl_FrameBuffer*> ret;
+	for(unsigned int a=0;a<FrameBufferList.size();a++)
+	{
+		if
+		(
+			FrameBufferList[a]->IsReady()==false &&
+			FrameBufferList[a]->IsLoaded()
+		)
+		{
+			ret.push_back(FrameBufferList[a]);
+		}
+	}
+
+	if(sorted)
+	{
+		std::sort
+		(
+			ret.begin(),
+			ret.end(),
+			lgl_FrameBufferSortPredicate
+		);
+	}
+
+	return(ret);
 }
 
 double
@@ -11039,21 +11012,20 @@ LGL_VideoDecoder::
 GetNextFrameNumberToLoad()
 {
 	std::vector<long> frameNumList;
+	std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
+	for(unsigned int a=0;a<frameBufferLoaded.size();a++)
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-		for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
+		if(frameBufferLoaded[a]->GetFrameNumber()!=-1)
 		{
-			if(FrameBufferLoaded[a]->GetFrameNumber()!=-1)
-			{
-				frameNumList.push_back(FrameBufferLoaded[a]->GetFrameNumber());
-			}
+			frameNumList.push_back(frameBufferLoaded[a]->GetFrameNumber());
 		}
-		for(unsigned int a=0;a<FrameBufferReady.size();a++)
+	}
+	std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(false);
+	for(unsigned int a=0;a<frameBufferReady.size();a++)
+	{
+		if(frameBufferReady[a]->GetFrameNumber()!=-1)
 		{
-			if(FrameBufferReady[a]->GetFrameNumber()!=-1)
-			{
-				frameNumList.push_back(FrameBufferReady[a]->GetFrameNumber());
-			}
+			frameNumList.push_back(frameBufferReady[a]->GetFrameNumber());
 		}
 	}
 	std::sort
@@ -11263,8 +11235,6 @@ long
 LGL_VideoDecoder::
 GetNextFrameNumberToDecode()
 {
-	LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-
 	long ret=-1;
 
 	ret = GetNextFrameNumberToDecodePredictNext();
@@ -11325,9 +11295,10 @@ GetNextFrameNumberToDecodePredictNext(bool mustNotBeDecoded)
 	if(frameNumberFind>frameNumberLength) frameNumberFind=frameNumberLength;
 
 	bool found=false;
-	for(unsigned int b=0;b<FrameBufferReady.size();b++)
+	std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(true);
+	for(unsigned int b=0;b<frameBufferReady.size();b++)
 	{
-		long frameNumberImage=FrameBufferReady[b]->GetFrameNumber();
+		long frameNumberImage=frameBufferReady[b]->GetFrameNumber();
 		if(frameNumberFind<frameNumberImage)
 		{
 			return(frameNumberFind);
@@ -11379,10 +11350,11 @@ GetNextFrameNumberToDecodeForwards()
 		}
 
 		bool found=false;
-		for(unsigned int b=frameBufferIndex;b<FrameBufferReady.size();b++)
+		std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(true);
+		for(unsigned int b=frameBufferIndex;b<frameBufferReady.size();b++)
 		{
 			frameBufferIndex++;
-			long frameNumberImage=FrameBufferReady[b]->GetFrameNumber();
+			long frameNumberImage=frameBufferReady[b]->GetFrameNumber();
 			if(frameNumberFind<frameNumberImage)
 			{
 				return(frameNumberFind);
@@ -11424,7 +11396,8 @@ GetNextFrameNumberToDecodeBackwards()
 	}
 	if(frameNumberNow>frameNumberLength) frameNumberNow=frameNumberLength;
 	
-	int frameBufferIndex=FrameBufferReady.size()-1;
+	std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(true);
+	int frameBufferIndex=frameBufferReady.size()-1;
 	long frameNumberFinal = frameNumberNow-FrameBufferAddRadius;
 	for(long a=frameNumberNow-1;a>frameNumberFinal;a--)
 	{
@@ -11433,14 +11406,14 @@ GetNextFrameNumberToDecodeBackwards()
 		while(frameNumberFind<0)
 		{
 			frameNumberFind+=frameNumberLength;
-			frameBufferIndex=FrameBufferReady.size()-1;
+			frameBufferIndex=frameBufferReady.size()-1;
 		}
 
 		bool found=false;
 		for(int b=frameBufferIndex;b>=0;b--)
 		{
 			frameBufferIndex--;
-			long frameNumberImage=FrameBufferReady[b]->GetFrameNumber();
+			long frameNumberImage=frameBufferReady[b]->GetFrameNumber();
 			if
 			(
 				frameNumberFind>frameNumberImage &&
@@ -11471,20 +11444,23 @@ GetNextFrameNumberToDecodeBackwards()
 
 lgl_FrameBuffer*
 LGL_VideoDecoder::
-GetRecycledFrameBuffer()
+GetInvalidFrameBuffer()
 {
-	LGL_ScopeLock frameBufferOmniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-	if(FrameBufferRecycled.size()>0)
+	for(unsigned int a=0;a<FrameBufferList.size();a++)
 	{
-		lgl_FrameBuffer* frameBuffer = FrameBufferRecycled[FrameBufferRecycled.size()-1];
-		FrameBufferRecycled.pop_back();
-		return(frameBuffer);
+		if
+		(
+			FrameBufferList[a]->IsLoaded()==false &&
+			FrameBufferList[a]->IsReady()==false
+		)
+		{
+			return(FrameBufferList[a]);
+		}
 	}
-	else
-	{
-		lgl_FrameBuffer* frameBuffer = new lgl_FrameBuffer;
-		return(frameBuffer);
-	}
+
+	printf("Couldn't find invalid framebuffer!!\n");
+
+	return(NULL);
 }
 
 bool
@@ -11497,33 +11473,6 @@ IsYUV420P()
 		CodecContext &&
 		CodecContext->pix_fmt==PIX_FMT_YUV420P
 	);
-}
-
-void
-LGL_VideoDecoder::
-AssertFrameBufferListUniqueness()
-{
-#if 0
-	LGL_ScopeLock omniLock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-	for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
-	{
-		for(unsigned int b=0;b<FrameBufferReady.size();b++)
-		{
-			assert(FrameBufferLoaded[a]!=FrameBufferReady[b]);
-		}
-		for(unsigned int b=0;b<FrameBufferRecycled.size();b++)
-		{
-			assert(FrameBufferLoaded[a]!=FrameBufferRecycled[b]);
-		}
-	}
-	for(unsigned int a=0;a<FrameBufferReady.size();a++)
-	{
-		for(unsigned int b=0;b<FrameBufferRecycled.size();b++)
-		{
-			assert(FrameBufferReady[a]!=FrameBufferRecycled[b]);
-		}
-	}
-#endif
 }
 
 
@@ -30297,6 +30246,16 @@ Init
 		strcpy(lockOwnerFile,Semaphore->GetLockOwnerFile());
 		int lockOwnerLine;
 		lockOwnerLine=Semaphore->GetLockOwnerLine();
+		bool mainBlocked=false;
+		if
+		(
+			SDL_ThreadID() == LGL.ThreadIDMain &&
+			Semaphore->IsLocked()
+		)
+		{
+			mainBlocked=true;
+		}
+
 		LockObtained=Semaphore->Lock
 		(
 			file,
@@ -30304,11 +30263,25 @@ Init
 			timeoutSeconds!=0,
 			timeoutSeconds
 		);
+		if(0 && mainBlocked)
+		{
+			printf("Main thread blocks on semaphore!\n");
+			printf("\tName: %s\n",name);
+			printf("\tTime: %.4f\n",timer.SecondsSinceLastReset());
+			printf("\tLock Owner File: %s\n",lockOwnerFile);
+			printf("\tLock Owner Line: %i\n",lockOwnerLine);
+			printf("\tLock Waiter File: %s\n",file);
+			printf("\tLock Waiter Line: %i\n",line);
+			printf("\tLock Waiter Thread: %i (%i)\n",
+				(int)SDL_ThreadID(),
+				(int)LGL.ThreadIDMain);
+			printf("\n");
+		}
 		if(timer.SecondsSinceLastReset()>1.0f)
 		{
 			printf("Long lock!\n");
 			printf("\tName: %s\n",name);
-			printf("\tTime: %.2f\n",timer.SecondsSinceLastReset());
+			printf("\tTime: %.4f\n",timer.SecondsSinceLastReset());
 			printf("\tLock Owner File: %s\n",lockOwnerFile);
 			printf("\tLock Owner Line: %i\n",lockOwnerLine);
 			printf("\tLock Waiter File: %s\n",file);

@@ -1125,6 +1125,8 @@ public:
 				lgl_FrameBuffer();
 				~lgl_FrameBuffer();
 
+	bool			IsLoaded();
+	bool			IsReady();
 	void			NullifyBuffer();
 	void			SwapInNewBufferRGB
 				(
@@ -1170,6 +1172,7 @@ public:
 private:
 
 	char			VideoPath[2048];
+	bool			Ready;
 	unsigned char*		Buffer;
 	unsigned int		BufferBytes;
 	bool			BufferIsRGB;
@@ -1178,6 +1181,7 @@ private:
 	long			FrameNumber;
 	AVPacket*		Packet;
 	LGL_Semaphore		PacketSemaphore;
+	LGL_Semaphore		BufferSemaphore;
 
 };
 
@@ -1215,7 +1219,7 @@ public:
 	void			MaybeLoadVideo();
 	bool			MaybeLoadImage();
 	bool			MaybeDecodeImage(long desiredFrameNum=-1);
-	void			MaybeRecycleBuffers(std::vector<lgl_FrameBuffer*>& bufferList);
+	void			MaybeInvalidateBuffers();
 	bool			GetThreadTerminate();
 
 private:
@@ -1240,13 +1244,15 @@ private:
 	long			FrameNumberDisplayed;
 	long			NextRequestedDecodeFrame;
 
+public:
 	std::vector<lgl_FrameBuffer*>
-				FrameBufferReady;
+				GetFrameBufferReadyList(bool sorted);
 	std::vector<lgl_FrameBuffer*>
-				FrameBufferLoaded;
-	LGL_Semaphore		FrameBufferOmniSemaphore;
+				GetFrameBufferLoadedList(bool sorted);
+
+private:
 	std::vector<lgl_FrameBuffer*>
-				FrameBufferRecycled;
+				FrameBufferList;
 	bool			FrameBufferAddBackwards;
 	int			FrameBufferAddRadius;
 	int			FrameBufferSubtractRadius;
@@ -1302,10 +1308,9 @@ private:
 	long			GetNextFrameNumberToDecodePredictNext(bool mustNotBeDecoded=true);
 	long			GetNextFrameNumberToDecodeForwards();
 	long			GetNextFrameNumberToDecodeBackwards();
-	lgl_FrameBuffer*	GetRecycledFrameBuffer();
+	lgl_FrameBuffer*	GetInvalidFrameBuffer();
 
 	bool			IsYUV420P();
-	void			AssertFrameBufferListUniqueness();
 };
 
 class LGL_VideoEncoder
