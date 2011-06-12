@@ -2070,7 +2070,7 @@ printf("\n");
 	
 	//Time
 
-	LGL_ResetFrameTimeGraph();
+	LGL_ResetFPSGraph();
 	LGL.Font=NULL;
 
 	LGL.SecondsSinceLastFrame=0;
@@ -28356,133 +28356,6 @@ LGL_DrawFPSGraph
 	float r=0;
 	float g=0;
 	float b=0;
-	for(int a=0;a<60;a++)
-	{
-		if(LGL.FPSGraph[a]>=50)
-		{
-			r=0;
-			g=.5f*brightness;
-			b=0;
-		}
-		else if(LGL.FPSGraph[a]>=30)
-		{
-			r=.5f*brightness;
-			g=.5f*brightness;
-			b=0;
-		}
-		else
-		{
-			r=.5f*brightness;
-			g=0;
-			b=0;
-		}
-
-		LGL_DrawRectToScreen
-		(
-			left+width*(a+0)/60.0f,
-			left+width*(a+1)/60.0f,
-			bottom,
-			bottom+height*LGL_Min(100.0f,LGL.FPSGraph[a])/100.0f,
-			r,g,b,alpha
-		);
-	}
-	LGL_DrawLineToScreen
-	(
-		left,
-		bottom+height*60.0/100.0,
-		right,
-		bottom+height*60.0/100.0,
-		0,brightness,0,.5*alpha
-	);
-	LGL_DrawLineToScreen
-	(
-		left,
-		bottom+height*30.0/100.0,
-		right,
-		bottom+height*30.0/100.0,
-		brightness,brightness,0,.5*alpha
-	);
-	
-	char temp[1024];
-	sprintf(temp,"%i",LGL.FPS);
-
-	LGL_GetFont().DrawString
-	(
-		.5*(left+right),
-		.25*bottom+.75*top-.05*height-.05*width,
-		.10*height+.10*width,
-		.75*brightness,.75*brightness,.75*brightness,.75*alpha,
-		true,.5*alpha,
-		temp
-	);
-
-	/*
-	int lowest=999;
-	for(int a=0;a<60;a++)
-	{
-		lowest=(int)LGL_Min(lowest,LGL.FPSGraph[a]);
-	}
-	sprintf(temp,"%i",lowest);
-	LGL_GetFont().DrawString
-	(
-		.5*(left+right),
-		.75*bottom+.25*top-.05*height-.05*width,
-		.10*height+.10*width,
-		.75*brightness,.75*brightness,.75*brightness,.75*alpha,
-		true,.5*alpha,
-		temp
-	);
-	*/
-
-	LGL_DrawLineToScreen
-	(
-		left,bottom,
-		left,top,
-		brightness*.4,brightness*.2,brightness,.5*alpha
-	);
-	LGL_DrawLineToScreen
-	(
-		left,top,
-		right,top,
-		brightness*.4,brightness*.2,brightness,.5*alpha
-	);
-	LGL_DrawLineToScreen
-	(
-		right,top,
-		right,bottom,
-		brightness*.4,brightness*.2,brightness,.5*alpha
-	);
-	LGL_DrawLineToScreen
-	(
-		right,bottom,
-		left,bottom,
-		brightness*.4,brightness*.2,brightness,.5*alpha
-	);
-}
-
-void
-LGL_DrawFrameTimeGraph
-(
-	float	left,	float	right,
-	float	bottom,	float	top,
-	float	brightness,
-	float	alpha
-)
-{
-	const float width = right-left;
-	const float height = top-bottom;
-	brightness = LGL_Clamp(0.0f,brightness,1.0f);
-	alpha = LGL_Clamp(0.0f,alpha,1.0f);
-	LGL_DrawRectToScreen
-	(
-		left,right,
-		bottom,top,
-		0,0,.25*brightness,.5*alpha
-	);
-
-	float r=0;
-	float g=0;
-	float b=0;
 	float yellowPct=2.0f/3.0f;
 	float redPct=1.0f/3.0f;
 	for(int a=0;a<60;a++)
@@ -28599,6 +28472,19 @@ LGL_DrawFrameTimeGraph
 		LGL.FrameTimeBadTotal
 	);
 
+	LGL_GetFont().DrawString
+	(
+		left+0.375f*width,
+		bottom-height*33.3f/100.0f + textHeight*0.25f,
+		textHeight,
+		.75f*brightness,.75f*brightness,.75f*brightness,.75f*alpha ,
+		false,.5f*alpha,
+		"%i",
+		LGL.FrameTimeBadTotal +
+		LGL.FrameTimeMediumTotal +
+		LGL.FrameTimeGoodTotal
+	);
+
 	LGL_DrawLineToScreen
 	(
 		left,bottom,
@@ -28626,7 +28512,7 @@ LGL_DrawFrameTimeGraph
 }
 
 void
-LGL_ResetFrameTimeGraph()
+LGL_ResetFPSGraph()
 {
 	LGL.FPS=0;
 	LGL.FPSMax=60;

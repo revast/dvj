@@ -868,7 +868,7 @@ int main(int argc, char** argv)
 		600			//Particles Per Second
 	);
 
-	LGL_Timer frameTimeGraphResetTimer;
+	LGL_Timer fpsGraphResetTimer;
 
 	for(;;)
 	{
@@ -917,20 +917,11 @@ int main(int argc, char** argv)
 			)
 		)
 		{
-			/*
-			LGL_DrawFPSGraph
-			(
-				0.85f,0.95f,
-				0.875f,0.975f,
-				drawFPS ? 1 : drawFPSSpike,
-				drawFPS ? 1 : drawFPSSpike
-			);
-			*/
-			if(frameTimeGraphResetTimer.SecondsSinceLastReset()<0.25f)
+			if(fpsGraphResetTimer.SecondsSinceLastReset()<0.25f)
 			{
-				LGL_ResetFrameTimeGraph();
+				LGL_ResetFPSGraph();
 			}
-			LGL_DrawFrameTimeGraph
+			LGL_DrawFPSGraph
 			(
 				0.85f,0.95f,
 				0.875f,0.975f,

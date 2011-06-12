@@ -3209,14 +3209,7 @@ void		LGL_DrawFPSGraph
 			float brightness=1.0f,
 			float alpha=1.0f
 		);
-void		LGL_DrawFrameTimeGraph
-		(
-			float left=0.8f,	float right=0.9f,
-			float bottom=0.6f,	float top=0.7f,
-			float brightness=1.0f,
-			float alpha=1.0f
-		);
-void		LGL_ResetFrameTimeGraph();
+void		LGL_ResetFPSGraph();
 
 void		LGL_ScreenShot(const char* bmpFile="screenshot.bmp");
 
