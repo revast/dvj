@@ -10783,6 +10783,7 @@ MaybeDecodeImage
 	{
 		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 
+		/*
 		if(SDL_ThreadID()==LGL.ThreadIDMain)
 		{
 			LGL_DebugPrintf("MAIN\n");
@@ -10791,6 +10792,7 @@ MaybeDecodeImage
 		{
 			LGL_DebugPrintf("THREAD\n");
 		}
+		*/
 
 		lgl_FrameBuffer* neoFrameBuffer = GetRecycledFrameBuffer();
 		if(IsYUV420P()==false)
