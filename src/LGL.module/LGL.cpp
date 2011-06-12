@@ -9538,7 +9538,7 @@ Init()
 	ThreadLoad=NULL;
 	ThreadDecode=NULL;
 	ThreadLoad=LGL_ThreadCreate(lgl_video_decoder_load_thread,this);
-	if(LGL_CPUCount()>=8)
+	if(LGL_CPUCount()>=4)
 	{
 		ThreadDecode=LGL_ThreadCreate(lgl_video_decoder_decode_thread,this);
 	}
