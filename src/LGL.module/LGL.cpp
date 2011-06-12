@@ -1597,9 +1597,9 @@ lgl_avcodec_decode_video2
 	AVPacket*	avpkt
 )
 {
-	LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
-	static LGL_Semaphore localSem("lgl_av_decode_video2");
-	LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
+	//LGL_ScopeLock lock(__FILE__,__LINE__,lgl_get_av_semaphore());
+	//static LGL_Semaphore localSem("lgl_av_decode_video2");
+	//LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
 	return
 	(
 		avcodec_decode_video2
@@ -1800,8 +1800,8 @@ lgl_sws_scale
 	const int		dstStride[]
 )
 {
-	static LGL_Semaphore localSem("lgl_sws_scale");
-	LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
+	//static LGL_Semaphore localSem("lgl_sws_scale");
+	//LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
 
 	return
 	(
@@ -9268,7 +9268,6 @@ lgl_debug_process_in_thread()
 	return(false);
 }
 
-#if 0
 int
 lgl_video_decoder_decode_thread
 (
@@ -9284,7 +9283,7 @@ lgl_video_decoder_decode_thread
 		{
 			break;
 		}
-		dec->MaybeLoadVideo();
+		//dec->MaybeLoadVideo();
 		bool imageDecoded=dec->MaybeDecodeImage();
 		//dec->MaybeRecycleBuffers();
 		LGL_DelayMS(imageDecoded ? 0 : 1);
@@ -9292,7 +9291,6 @@ lgl_video_decoder_decode_thread
 
 	return(0);
 }
-#endif
 
 int
 lgl_video_decoder_load_thread
@@ -9329,9 +9327,8 @@ lgl_video_decoder_load_thread
 	return(0);
 }
 
-#if 0
 int
-lgl_video_decoder_process_thread
+lgl_video_decoder_decoder_thread
 (
 	void* ptr
 )
@@ -9352,7 +9349,7 @@ lgl_video_decoder_process_thread
 		if(nextFrame!=-1)
 		{
 			dec->SetNextRequestedDecodeFrame();
-			dec->MaybeProcessImage(nextFrame,false);
+			dec->MaybeDecodeImage(nextFrame);
 		}
 		if(imageProcessed==false)
 		{
@@ -9367,7 +9364,6 @@ lgl_video_decoder_process_thread
 
 	return(0);
 }
-#endif
 
 LGL_VideoDecoder::
 LGL_VideoDecoder
@@ -9390,11 +9386,6 @@ LGL_VideoDecoder::
 	{
 		LGL_ThreadWait(ThreadLoad);
 		ThreadLoad=NULL;
-	}
-	if(ThreadProcess)
-	{
-		LGL_ThreadWait(ThreadProcess);
-		ThreadProcess=NULL;
 	}
 	if(ThreadDecode)
 	{
@@ -9523,11 +9514,9 @@ Init()
 
 	ThreadTerminate=false;
 	ThreadLoad=NULL;
-	ThreadProcess=NULL;
 	ThreadDecode=NULL;
 	ThreadLoad=LGL_ThreadCreate(lgl_video_decoder_load_thread,this);
-	//ThreadProcess=LGL_ThreadCreate(lgl_video_decoder_process_thread,this);
-	//ThreadDecode=LGL_ThreadCreate(lgl_video_decoder_decode_thread,this);
+	ThreadDecode=LGL_ThreadCreate(lgl_video_decoder_decode_thread,this);
 }
 
 void
@@ -9723,7 +9712,7 @@ GetImage()
 	}
 	else
 	{
-		MaybeProcessImage(frameNumber);
+		MaybeDecodeImage(frameNumber);
 	}
 	lgl_FrameBuffer* frameBuffer=NULL;
 
@@ -10161,6 +10150,13 @@ long
 LGL_VideoDecoder::
 GetNextRequestedDecodeFrame()
 {
+	{
+		LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
+		for(unsigned int a=0;a<FrameBufferLoaded.size();a++)
+		{
+			FrameBufferLoaded[0]->GetFrameNumber();
+		}
+	}
 	return(NextRequestedDecodeFrame);
 }
 
@@ -10563,7 +10559,7 @@ MaybeLoadImage()
 
 bool
 LGL_VideoDecoder::
-MaybeProcessImage
+MaybeDecodeImage
 (
 	long	desiredFrameNum
 )
@@ -10787,6 +10783,15 @@ MaybeProcessImage
 	{
 		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 
+		if(SDL_ThreadID()==LGL.ThreadIDMain)
+		{
+			LGL_DebugPrintf("MAIN\n");
+		}
+		else
+		{
+			LGL_DebugPrintf("THREAD\n");
+		}
+
 		lgl_FrameBuffer* neoFrameBuffer = GetRecycledFrameBuffer();
 		if(IsYUV420P()==false)
 		{
@@ -10854,238 +10859,6 @@ MaybeProcessImage
 
 	return(frameRead);
 }
-
-#if 0
-bool
-LGL_VideoDecoder::
-MaybeDecodeImage()
-{
-	if
-	(
-		FormatContext==NULL ||
-		CodecContext==NULL ||
-		FrameNative==NULL ||
-		FrameRGB==NULL ||
-		strcmp(Path,"NULL")==0 ||
-		VideoOK==false
-	)
-	{
-		return(false);
-	}
-
-	//Find frameNumber of image to add
-	long frameNumberTarget=GetNextFrameNumberToDecode();
-	if(frameNumberTarget==-1)
-	{
-		return(false);
-	}
-
-	if(frameNumberTarget >= SecondsToFrameNumber(GetLengthSeconds())-1)
-	{
-		return(false);
-	}
-
-	//Seek to the appropriate frame...
-	if(FrameNumberNext!=frameNumberTarget)
-	{
-		long timestampTarget=FrameNumberToTimestamp(frameNumberTarget);
-		lgl_av_seek_frame
-		(
-			FormatContext,
-			VideoStreamIndex,
-			timestampTarget,
-			AVSEEK_FLAG_ANY
-		);
-		FrameNumberNext=frameNumberTarget+1;
-	}
-
-	AVPacket packet;
-	lgl_av_init_packet(&packet);
-	bool frameRead=false;
-	for(;;)
-	{
-		int result=0;
-		{
-			result = lgl_av_read_frame(FormatContext, &packet);
-		}
-		//Chill
-		/*
-		while
-		(
-			LGL.MainThreadVsyncWait==false &&
-			LGL.Running &&
-			ThreadTerminate==false
-		)
-		{
-			LGL_DelayMS(1);
-		}
-		*/
-		{
-			{
-				LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
-			}
-			LGL_DelayMS(0);
-		}
-		if(result>=0)
-		{
-			//Is this a packet from the video stream?
-			if(packet.stream_index==VideoStreamIndex)
-			{
-				//Setup YUV FrameNative
-				{
-					unsigned int bufferYUVBytesNow=avpicture_get_size
-					(
-						CodecContext->pix_fmt, 
-						BufferWidth,
-						BufferHeight
-					);
-					if
-					(
-						BufferYUV==NULL ||
-						BufferYUVBytes<bufferYUVBytesNow
-					)
-					{
-						BufferYUVBytes=bufferYUVBytesNow;
-						delete BufferYUV;
-						BufferYUV=new uint8_t[BufferYUVBytes];
-					}
-				}
-
-				//Decode video frame
-				int frameFinished=0;
-				{
-					lgl_avcodec_decode_video2
-					(
-						CodecContext,
-						FrameNative,
-						&frameFinished, 
-						&packet
-					);
-					unsigned char* bufYUVNow=BufferYUV;
-					for(int c=0;c<3;c++)
-					{
-						int width = (c==0) ? BufferWidth : (BufferWidth/2);
-						int height = (c==0) ? BufferHeight : (BufferHeight/2);
-						for(int h=0;h<height;h++)
-						{
-							memcpy(bufYUVNow,&(FrameNative->data[c][h*FrameNative->linesize[c]]),width);
-							bufYUVNow+=width;
-						}
-					}
-				}
-
-				// Did we get a video frame?
-				if(frameFinished)
-				{
-					{
-						if(IsYUV420P()==false)
-						{
-							unsigned int bufferBytesNow=avpicture_get_size
-							(
-								PIX_FMT_BGRA,
-								BufferWidth,
-								BufferHeight
-							);
-							if
-							(
-								BufferRGB==NULL ||
-								BufferRGBBytes<bufferBytesNow
-							)
-							{
-								BufferRGBBytes=bufferBytesNow;
-								delete BufferRGB;
-								BufferRGB=new uint8_t[BufferRGBBytes];
-							}
-							//Update FrameRGB to point to BufferRGB.
-							avpicture_fill
-							(
-								(AVPicture*)FrameRGB,
-								BufferRGB,
-								PIX_FMT_BGRA,
-								BufferWidth,
-								BufferHeight
-							);
-
-							lgl_sws_scale
-							(
-								SwsConvertContextBGRA,
-								FrameNative->data,
-								FrameNative->linesize,
-								0, 
-								BufferHeight,
-								FrameRGB->data,
-								FrameRGB->linesize
-							);
-						}
-					}
-					frameRead=true;
-				}
-			}
-			// Free the packet that was allocated by lgl_av_read_frame
-			{
-				lgl_av_free_packet(&packet);
-			}
-		}
-		else
-		{
-			LengthSeconds=LGL_Max(0,FrameNumberToSeconds(frameNumberTarget));
-			break;
-		}
-
-		if(frameRead)
-		{
-			break;
-		}
-	}
-
-	//If we read a frame, put it into an lgl_FrameBuffer
-	if(frameRead)
-	{
-		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
-		//Prepare a framebuffer, and swap its buffer with BufferRGB
-		lgl_FrameBuffer* frameBuffer = GetRecycledFrameBuffer();
-
-		if(IsYUV420P()==false)
-		{
-			frameBuffer->SwapInNewBufferRGB
-			(
-				Path,
-				BufferRGB,	//Changes...
-				BufferRGBBytes,	//Changes...
-				BufferWidth,
-				BufferHeight,
-				frameNumberTarget
-			);
-		}
-		else
-		{
-			frameBuffer->SwapInNewBufferYUV
-			(
-				Path,
-				BufferYUV,	//Changes...
-				BufferYUVBytes,	//Changes...
-				BufferWidth,
-				BufferHeight,
-				frameNumberTarget
-			);
-		}
-
-		//Add framebuffer to FrameBufferReady, and sort.
-		{
-			LGL_ScopeLock lock(__FILE__,__LINE__,FrameBufferOmniSemaphore);
-			FrameBufferReady.push_back(frameBuffer);
-			std::sort
-			(
-				FrameBufferReady.begin(),
-				FrameBufferReady.end(),
-				lgl_FrameBufferSortPredicate
-			);
-		}
-	}
-
-	return(frameRead);
-}
-#endif
 
 void
 LGL_VideoDecoder::
