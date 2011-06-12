@@ -53,6 +53,8 @@
 #include <errno.h>		//Error indentification
 #include <sys/mman.h>		//mmap()
 #include <sys/statvfs.h>	//Free disk space
+#include <sys/param.h>		//for cpu count
+#include <sys/sysctl.h>		//for cpu count
 
 #include <sched.h>
 
@@ -97,6 +99,7 @@
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.85f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
+#define	LGL_PRIORITY_VIDEO_LOAD		(0.8f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
 #define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
 #define	LGL_PRIORITY_OSC		(0.85f)
@@ -104,6 +107,7 @@
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
+#define	LGL_PRIORITY_VIDEO_LOAD		(0.8f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.8f)
 #define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
 #define	LGL_PRIORITY_OSC		(0.85f)
@@ -9331,7 +9335,7 @@ lgl_video_decoder_load_thread
 	void* ptr
 )
 {
-	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_DECODE,"LGL_VideoDecoder");
+	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_LOAD,"LGL_VideoLoad");
 	LGL_VideoDecoder* dec = (LGL_VideoDecoder*)ptr;
 
 	static LGL_Semaphore sem("video_load",false);
@@ -9534,7 +9538,10 @@ Init()
 	ThreadLoad=NULL;
 	ThreadDecode=NULL;
 	ThreadLoad=LGL_ThreadCreate(lgl_video_decoder_load_thread,this);
-	ThreadDecode=LGL_ThreadCreate(lgl_video_decoder_decode_thread,this);
+	if(LGL_CPUCount()>=8)
+	{
+		ThreadDecode=LGL_ThreadCreate(lgl_video_decoder_decode_thread,this);
+	}
 }
 
 void
@@ -29642,13 +29649,31 @@ lgl_read_proc_cpuinfo()
 unsigned int
 LGL_CPUCount()
 {
-#ifdef	LGL_LINUX
-	std::vector<int> cpuSpeeds = lgl_read_proc_cpuinfo();
-	return(cpuSpeeds.size());
-#else	//LGL_LINUX
-	printf("LGL_CPUCount(): Warning! This function not yet implemented outside of linux port!\n");
-	return(1);
-#endif	//LGL_LINUX
+	int mib[2];
+	size_t len;
+	int cpus = 1;
+
+	mib[0] = CTL_HW;
+	mib[1] = HW_NCPU;
+	len = sizeof(cpus);
+	if
+	(
+		sysctl
+		(
+			mib,
+			2,
+			&cpus,
+			&len,
+			NULL,
+			NULL
+		) == -1
+	)
+	{
+		printf("could not determine number of cpus available");
+		cpus=1;
+	}
+
+	return cpus;
 }
 
 unsigned int
