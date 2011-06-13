@@ -109,7 +109,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"drawTurntablePreviews=1\n");
 		fprintf(fd,"videoBufferFrames=120\n");
 		fprintf(fd,"videoBufferFramesFreqSense=2\n");
-		fprintf(fd,"preloadVideoMaxMB=1\n");
+		fprintf(fd,"preloadVideoMaxMB=0\n");
 		fprintf(fd,"preloadFreqSenseMaxMB=0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#3.2 MBps is highest quality for 1920x480@30fps.\n");
@@ -843,7 +843,7 @@ GetVideoBufferFrames()
 int
 GetPreloadVideoMaxMB()
 {
-	int maxMB=dvjrcConfigFile->read<int>("preloadVideoMaxMB",1000);
+	int maxMB=dvjrcConfigFile->read<int>("preloadVideoMaxMB",0);
 	return(maxMB);
 }
 
