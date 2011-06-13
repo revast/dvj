@@ -1198,6 +1198,7 @@ public:
 	void			SetVideo(const char* path);
 	const char*		GetPath();
 	const char*		GetPathShort();
+	int			GetPathNum();
 	void			SetTime(double seconds);
 	double			GetTime();
 	double			GetLengthSeconds();
@@ -1213,10 +1214,25 @@ public:
 	void			InvalidateAllFrameBuffers();
 	void			SetNextRequestedDecodeFrame(long frameNum=-1);
 	long			GetNextRequestedDecodeFrame();
+	long			GetPosBytes();
+	float			GetPreloadMaxMB();
+	void			SetPreloadMaxMB(float maxMB);
+	bool			GetPreloadEnabled();
+	void			SetPreloadEnabled(bool enabled=true);
+	void			ForcePreload();
+	bool			GetPreloadFromCurrentTime();
+	void			SetPreloadFromCurrentTime(bool fromCurrentTime=true);
+	float			GetPreloadPercent();
+	void			SetPreloadPercent(float pct);	//to be called from preload thread
+	int			GetReadAheadMB();
+	void			SetReadAheadMB(int MB);
+	int			GetReadAheadDelayMS();
+	void			SetReadAheadDelayMS(int ms);
 
 	//Thread Functions
 
 	void			MaybeLoadVideo();
+	bool			MaybeReadAhead();
 	bool			MaybeLoadImage();
 	bool			MaybeDecodeImage(long desiredFrameNum=-1);
 	void			MaybeInvalidateBuffers();
@@ -1227,6 +1243,7 @@ private:
 	char			Path[2048];
 	char			PathShort[2048];
 	char			PathNext[2048];
+	int			PathNum;
 	
 	double			FPS;
 	double			FPSTimestamp;
@@ -1243,6 +1260,7 @@ private:
 	long			FrameNumberNext;
 	long			FrameNumberDisplayed;
 	long			NextRequestedDecodeFrame;
+	double			PosBytes;
 
 public:
 	std::vector<lgl_FrameBuffer*>
@@ -1253,11 +1271,21 @@ public:
 private:
 	std::vector<lgl_FrameBuffer*>
 				FrameBufferList;
+
+private:
 	bool			FrameBufferAddBackwards;
 	int			FrameBufferAddRadius;
 	int			FrameBufferSubtractRadius;
+	float			PreloadMaxMB;
+	bool			PreloadEnabled;
+	bool			PreloadFromCurrentTime;
+	float			PreloadPercent;
+	int			ReadAheadMB;
+	int			ReadAheadDelayMS;
 
 	bool			ThreadTerminate;
+	SDL_Thread*		ThreadPreload;
+	SDL_Thread*		ThreadReadAhead;
 	SDL_Thread*		ThreadLoad;
 	SDL_Thread*		ThreadDecode;
 	LGL_Semaphore		PathSemaphore;
@@ -2120,7 +2148,7 @@ public:
 	//bool		SetDivergeRecallBegin(int channel, float speed);
 	//bool		SetDivergeRecallEnd(int channel);
 	bool		DivergeRecallPush(int channel, float speed=-1.0f);
-	bool		DivergeRecallPop(int channel);
+	bool		DivergeRecallPop(int channel, bool recall=true);
 	int		GetDivergeRecallCount(int channel);
 	bool		GetWarpPointIsSet(int channel);
 	bool		GetWarpPointIsLoop(int channel);

@@ -269,16 +269,14 @@ private:
 	int				SavePointIndex;
 	double				SavePointSeconds[18];
 	char*				MetaDataSavedThisFrame;
-	double				RecallOrigin;
 	double				SmoothWaveformScrollingSample;
 	double				SmoothWaveformScrollingSampleRate;
 	float				SavePointUnsetNoisePercent[18];
 	float				SavePointUnsetFlashPercent[18];
 
-	void				SetRecallOrigin();
-	void				ClearRecallOrigin();
-	bool				RecallIsSet();
+	void				Diverge();
 	void				Recall();
+	bool				RecallIsSet();
 	double				GetQuantizePeriodSeconds();
 	double				GetBeatLengthSeconds();
 	double				GetMeasureLengthSeconds();

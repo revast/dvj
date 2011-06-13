@@ -289,6 +289,13 @@ NextFrame
 						if(min<0.0f) min=0.0f;
 						float max=vid->GetLengthSeconds()-10.0f;
 						if(max<0.0f) max=vid->GetLengthSeconds();
+						
+						if(vid->GetPreloadEnabled())
+						{
+							float pct = vid->GetPreloadPercent();
+							max=vid->GetLengthSeconds()*pct;
+							if(max>60.0f) max-=10.0f;
+						}
 
 						/*
 						float cand = LGL_Clamp
@@ -314,14 +321,32 @@ NextFrame
 						float max=vid->GetLengthSeconds()-10.0f;
 						if(max<0.0f) max=vid->GetLengthSeconds();
 
+						if(vid->GetPreloadEnabled())
+						{
+							float pct = vid->GetPreloadPercent();
+							max=vid->GetLengthSeconds()*pct;
+							if(max>60.0f) max-=10.0f;
+						}
+
 						vid->SetTime(max*neoFreqBrightness);
 					}
 					else
 					{
 						float speedFactor=
 							(vid==vidL) ? 1.0f : 4.0f;
-						vid->SetTime(vid->GetTime()+speedFactor*(1.0f/60.0f));
-						
+						float timeNew=vid->GetTime()+speedFactor*(1.0f/60.0f);
+
+						if(vid->GetPreloadEnabled())
+						{
+							float pct = vid->GetPreloadPercent();
+							if(timeNew+1.0f >= vid->GetLengthSeconds()*pct)
+							{
+								timeNew*=LGL_RandFloat(0.1f,0.5f);
+							}
+						}
+
+						vid->SetTime(timeNew);
+
 						/*
 						float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
 						if(min<0.0f) min=0.0f;
@@ -763,6 +788,18 @@ DrawVisuals
 					"y: %i",
 					(int)(ProjMapOffsetY[a]*resY)
 				);
+			}
+		}
+
+		//ProjGrid
+		{
+			if(0 && LGL_GetActiveDisplay()==0)
+			{
+				ProjMapGrid.NextFrame();
+				if(LGL_KeyDown(LGL_KEY_LSHIFT))
+				{
+					ProjMapGrid.DrawSrcGrid();
+				}
 			}
 		}
 	}
@@ -1972,11 +2009,199 @@ DrawVideos
 				float myB = b;
 				float myT = t;
 
-				if(tt->GetAspectRatioMode()!=2)
+				if(0)
 				{
-					if(tt->GetAspectRatioMode()==0)
+					for(int i=0;i<ProjMapGrid.GridW-1;i++)
 					{
-						//Respect Image AR
+						for(int j=0;j<ProjMapGrid.GridH-1;j++)
+						{
+							float x[4];
+							float y[4];
+							//LB
+							x[0]=ProjMapGrid.GetProjMapGridValueX
+							(
+								ProjMapGrid.SrcPoints,
+								i,
+								j
+							);
+							y[0]=ProjMapGrid.GetProjMapGridValueY
+							(
+								ProjMapGrid.SrcPoints,
+								i,
+								j
+							);
+							//RB
+							x[1]=ProjMapGrid.GetProjMapGridValueX
+							(
+								ProjMapGrid.SrcPoints,
+								i+1,
+								j
+							);
+							y[1]=ProjMapGrid.GetProjMapGridValueY
+							(
+								ProjMapGrid.SrcPoints,
+								i+1,
+								j
+							);
+							//RT
+							x[2]=ProjMapGrid.GetProjMapGridValueX
+							(
+								ProjMapGrid.SrcPoints,
+								i+1,
+								j+1
+							);
+							y[2]=ProjMapGrid.GetProjMapGridValueY
+							(
+								ProjMapGrid.SrcPoints,
+								i+1,
+								j+1
+							);
+							//LT
+							x[3]=ProjMapGrid.GetProjMapGridValueX
+							(
+								ProjMapGrid.SrcPoints,
+								i,
+								j+1
+							);
+							y[3]=ProjMapGrid.GetProjMapGridValueY
+							(
+								ProjMapGrid.SrcPoints,
+								i,
+								j+1
+							);
+
+							image->DrawToScreen
+							(
+								x,
+								y,
+								videoBright,
+								videoBright,
+								videoBright,
+								alpha,
+								1.0f,	//brightnessScalar
+								(i+0.0f)/(ProjMapGrid.GridW-1.0f),
+								(i+1.0f)/(ProjMapGrid.GridW-1.0f),
+								(j+0.0f)/(ProjMapGrid.GridH-1.0f),
+								(j+1.0f)/(ProjMapGrid.GridH-1.0f)
+							);
+						}
+					}
+				}
+				else if(tt->GetAspectRatioMode()!=2)
+				{
+					if(tt->GetAspectRatioMode()!=2)
+					{
+						if(tt->GetAspectRatioMode()==0)
+						{
+							//Respect Image AR
+
+							GetProjectorARCoordsFromViewportCoords
+							(
+								myL,
+								myR,
+								myB,
+								myT
+							);
+
+							GetImageARCoordsFromViewportCoords
+							(
+								image,
+								myL,
+								myR,
+								myB,
+								myT
+							);
+						}
+						else if(tt->GetAspectRatioMode()==1)
+						{
+							//Fill (but respect projector AR)
+
+							GetProjectorARCoordsFromViewportCoords
+							(
+								myL,
+								myR,
+								myB,
+								myT
+							);
+						}
+
+						float x[4];
+						float y[4];
+
+						if(LGL_GetActiveDisplay()==0)
+						{
+							//LB
+							x[0]=myL;
+							y[0]=myB;
+							//RB
+							x[1]=myR;
+							y[1]=myB;
+							//RT
+							x[2]=myR;
+							y[2]=myT;
+							//LT
+							x[3]=myL;
+							y[3]=myT;
+						}
+						else
+						{
+							//LB
+							x[0]=myL+ProjMapOffsetX[0];
+							y[0]=myB+ProjMapOffsetY[0];
+							//RB
+							x[1]=myR+ProjMapOffsetX[3];
+							y[1]=myB+ProjMapOffsetY[3];
+							//RT
+							x[2]=myR+ProjMapOffsetX[2];
+							y[2]=myT+ProjMapOffsetY[2];
+							//LT
+							x[3]=myL+ProjMapOffsetX[1];
+							y[3]=myT+ProjMapOffsetY[1];
+						}
+
+						//float rgbSpatializerScalar=0.0f;
+						{
+							/*
+							float volAve;
+							float volMax;
+							float freqFactor;
+							tt->GetFreqMetaData(volAve,volMax,freqFactor);
+							volAve = LGL_Min(1.0f,volAve*2.0f);
+							LGL_DebugPrintf("volAve: %.2f\n",volAve);
+							LGL_DebugPrintf("volMax: %.2f\n",volMax);
+							LGL_DebugPrintf("freqFactor: %.2f\n",freqFactor);
+
+							float vol = LGL_Min(1,volAve*tt->GetGain());
+							float multFreq = 1.0f;//tt->GetEQLo();
+							float myFreqFactor=freqFactor;
+							float br = GetFreqBrightness(false,myFreqFactor,vol)*multFreq;
+							rgbSpatializerScalar=br*4.0f;
+							LGL_DebugPrintf("RGB Spatializer: %.2f\n",rgbSpatializerScalar,myFreqFactor,vol,freqFactor);
+							LGL_DebugPrintf("myFF: %.2f\n",myFreqFactor,vol);
+							LGL_DebugPrintf("vol: %.2f\n",vol);
+							LGL_DebugPrintf("FF: %.2f\n",freqFactor);
+							*/
+						}
+
+						image->DrawToScreen
+						(
+							x,
+							y,
+							vBright,
+							vBright,
+							vBright,
+							alpha,
+							1.0f,	//brightnessScalar
+							0.0f,
+							1.0f,
+							0.0f,
+							1.0f,
+							0.0f//rgbSpatializerScalar
+						);
+					}
+					else //tt->GetAspectRatioMode()==2
+					{
+						//Zebbler-tiling
 
 						GetProjectorARCoordsFromViewportCoords
 						(
@@ -1986,254 +2211,147 @@ DrawVideos
 							myT
 						);
 
-						GetImageARCoordsFromViewportCoords
+						float myL13rd = myL + (1.0f/3.0f)*(myR-myL);
+						float myL23rd = myL + (2.0f/3.0f)*(myR-myL);
+						myL=LGL_Max(l,myL);
+						myR=LGL_Min(r,myR);
+						myB=LGL_Max(b,myB);
+						myT=LGL_Min(t,myT);
+						image->DrawToScreen
 						(
-							image,
-							myL,
-							myR,
-							myB,
-							myT
+							myL13rd,myL,
+							myB,myT,
+							0,
+							vBright,
+							vBright,
+							vBright,
+							alpha
+						);
+						image->DrawToScreen
+						(
+							myL13rd,myL23rd,
+							myB,myT,
+							0,
+							vBright,
+							vBright,
+							vBright,
+							alpha
+						);
+						image->DrawToScreen
+						(
+							myR,myL23rd,
+							myB,myT,
+							0,
+							vBright,
+							vBright,
+							vBright,
+							alpha
 						);
 					}
-					else if(tt->GetAspectRatioMode()==1)
-					{
-						//Fill (but respect projector AR)
 
-						GetProjectorARCoordsFromViewportCoords
-						(
-							myL,
-							myR,
-							myB,
-							myT
-						);
-					}
-
-					float x[4];
-					float y[4];
-
-					if(LGL_GetActiveDisplay()==0)
+					if
+					(
+						preview &&
+						VideoFPSDisplay
+					)
 					{
-						//LB
-						x[0]=myL;
-						y[0]=myB;
-						//RB
-						x[1]=myR;
-						y[1]=myB;
-						//RT
-						x[2]=myR;
-						y[2]=myT;
-						//LT
-						x[3]=myL;
-						y[3]=myT;
-					}
-					else
-					{
-						//LB
-						x[0]=myL+ProjMapOffsetX[0];
-						y[0]=myB+ProjMapOffsetY[0];
-						//RB
-						x[1]=myR+ProjMapOffsetX[3];
-						y[1]=myB+ProjMapOffsetY[3];
-						//RT
-						x[2]=myR+ProjMapOffsetX[2];
-						y[2]=myT+ProjMapOffsetY[2];
-						//LT
-						x[3]=myL+ProjMapOffsetX[1];
-						y[3]=myT+ProjMapOffsetY[1];
-					}
+						if(vidFPS>=0)
+						{
+							LGL_GetFont().DrawString
+							(
+								lOrig+0.05f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
+								VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,
+								false,
+								0.75f,
+								"%i",
+								vidFPS
+							);
+						}
 
-					//float rgbSpatializerScalar=0.0f;
-					{
+						float br=VideoFPSDisplay;
+						if(vidFPSDisplayed>=0)
+						{
+							LGL_GetFont().DrawString
+							(
+								lOrig+0.05f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
+								br,br,br,br,
+								false,
+								0.75f,
+								"%i",
+								vidFPSDisplayed
+							);
+						}
+
 						/*
-						float volAve;
-						float volMax;
-						float freqFactor;
-						tt->GetFreqMetaData(volAve,volMax,freqFactor);
-						volAve = LGL_Min(1.0f,volAve*2.0f);
-						LGL_DebugPrintf("volAve: %.2f\n",volAve);
-						LGL_DebugPrintf("volMax: %.2f\n",volMax);
-						LGL_DebugPrintf("freqFactor: %.2f\n",freqFactor);
-
-						float vol = LGL_Min(1,volAve*tt->GetGain());
-						float multFreq = 1.0f;//tt->GetEQLo();
-						float myFreqFactor=freqFactor;
-						float br = GetFreqBrightness(false,myFreqFactor,vol)*multFreq;
-						rgbSpatializerScalar=br*4.0f;
-						LGL_DebugPrintf("RGB Spatializer: %.2f\n",rgbSpatializerScalar,myFreqFactor,vol,freqFactor);
-						LGL_DebugPrintf("myFF: %.2f\n",myFreqFactor,vol);
-						LGL_DebugPrintf("vol: %.2f\n",vol);
-						LGL_DebugPrintf("FF: %.2f\n",freqFactor);
-						*/
-					}
-
-					image->DrawToScreen
-					(
-						x,
-						y,
-						vBright,
-						vBright,
-						vBright,
-						alpha,
-						1.0f,	//brightnessScalar
-						0.0f,
-						1.0f,
-						0.0f,
-						1.0f,
-						0.0f//rgbSpatializerScalar
-					);
-				}
-				else //tt->GetAspectRatioMode()==2
-				{
-					//Zebbler-tiling
-
-					GetProjectorARCoordsFromViewportCoords
-					(
-						myL,
-						myR,
-						myB,
-						myT
-					);
-
-					float myL13rd = myL + (1.0f/3.0f)*(myR-myL);
-					float myL23rd = myL + (2.0f/3.0f)*(myR-myL);
-					myL=LGL_Max(l,myL);
-					myR=LGL_Min(r,myR);
-					myB=LGL_Max(b,myB);
-					myT=LGL_Min(t,myT);
-					image->DrawToScreen
-					(
-						myL13rd,myL,
-						myB,myT,
-						0,
-						vBright,
-						vBright,
-						vBright,
-						alpha
-					);
-					image->DrawToScreen
-					(
-						myL13rd,myL23rd,
-						myB,myT,
-						0,
-						vBright,
-						vBright,
-						vBright,
-						alpha
-					);
-					image->DrawToScreen
-					(
-						myR,myL23rd,
-						myB,myT,
-						0,
-						vBright,
-						vBright,
-						vBright,
-						alpha
-					);
-				}
-
-				if
-				(
-					preview &&
-					VideoFPSDisplay
-				)
-				{
-					if(vidFPS>=0)
-					{
 						LGL_GetFont().DrawString
 						(
-							lOrig+0.05f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
-							VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,VideoFPSDisplay,
-							false,
-							0.75f,
-							"%i",
-							vidFPS
-						);
-					}
-
-					float br=VideoFPSDisplay;
-					if(vidFPSDisplayed>=0)
-					{
-						LGL_GetFont().DrawString
-						(
-							lOrig+0.05f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
+							rOrig-0.3f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
 							br,br,br,br,
 							false,
 							0.75f,
-							"%i",
-							vidFPSDisplayed
-						);
-					}
-
-					/*
-					LGL_GetFont().DrawString
-					(
-						rOrig-0.3f*wOrig,tOrig-0.15f*hOrig,0.1f*hOrig,
-						br,br,br,br,
-						false,
-						0.75f,
-						"(%i)",
-						LGL_FPS()
-					);
-					*/
-
-					if(vidFPSMissed>0)
-					{
-						LGL_GetFont().DrawString
-						(
-							rOrig-0.3f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
-							br,0,0,br,
-							false,
-							0.75f,
 							"(%i)",
-							vidFPSMissed
+							LGL_FPS()
 						);
+						*/
+
+						if(vidFPSMissed>0)
+						{
+							LGL_GetFont().DrawString
+							(
+								rOrig-0.3f*wOrig,bOrig+0.05f*hOrig,0.1f*hOrig,
+								br,0,0,br,
+								false,
+								0.75f,
+								"(%i)",
+								vidFPSMissed
+							);
+						}
 					}
 				}
-			}
 
-			const bool videoReady = true;//vid->GetImageDecodedSinceVideoChange();
-			float noiseFactorVideo = tt->GetNoiseFactorVideo();
-			if(videoReady)
-			{
-				noiseFactorVideo=LGL_Max(0.0f,noiseFactorVideo-4.0f*LGL_SecondsSinceLastFrame());
-			}
-			else
-			{
-				noiseFactorVideo=1.0f;
-			}
-			tt->SetNoiseFactorVideo(noiseFactorVideo);
+				const bool videoReady = true;//vid->GetImageDecodedSinceVideoChange();
+				float noiseFactorVideo = tt->GetNoiseFactorVideo();
+				if(videoReady)
+				{
+					noiseFactorVideo=LGL_Max(0.0f,noiseFactorVideo-4.0f*LGL_SecondsSinceLastFrame());
+				}
+				else
+				{
+					noiseFactorVideo=1.0f;
+				}
+				tt->SetNoiseFactorVideo(noiseFactorVideo);
 
-	noiseFactorVideo=0.0f;
-			if(noiseFactorVideo>0.0f)
-			{
-				int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_128_128-1);
-				NoiseImage[which]->DrawToScreen
-				(
-					l,r,b,t,
-					0,
-					noiseFactorVideo*vBright,
-					noiseFactorVideo*vBright,
-					noiseFactorVideo*vBright,
-					noiseFactorVideo*vBright
-				);
-			}
+		noiseFactorVideo=0.0f;
+				if(noiseFactorVideo>0.0f)
+				{
+					int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_128_128-1);
+					NoiseImage[which]->DrawToScreen
+					(
+						l,r,b,t,
+						0,
+						noiseFactorVideo*vBright,
+						noiseFactorVideo*vBright,
+						noiseFactorVideo*vBright,
+						noiseFactorVideo*vBright
+					);
+				}
 
-			/*
-			float secondsSinceVideoChange = Videos[videoNow]->GetSecondsSinceVideoChange();
-			if(secondsSinceVideoChange<0.25f)
-			{
-				float whiteFactor=LGL_Max(0.0f,1.0f-4.0f*secondsSinceVideoChange);
-				LGL_DrawRectToScreen
-				(
-					l,r,b,t,
-					whiteFactor*bright,
-					whiteFactor*bright,
-					whiteFactor*bright,
-					0.0f
-				);
+				/*
+				float secondsSinceVideoChange = Videos[videoNow]->GetSecondsSinceVideoChange();
+				if(secondsSinceVideoChange<0.25f)
+				{
+					float whiteFactor=LGL_Max(0.0f,1.0f-4.0f*secondsSinceVideoChange);
+					LGL_DrawRectToScreen
+					(
+						l,r,b,t,
+						whiteFactor*bright,
+						whiteFactor*bright,
+						whiteFactor*bright,
+						0.0f
+					);
+				}
+				*/
 			}
-			*/
 		}
 	}
 }

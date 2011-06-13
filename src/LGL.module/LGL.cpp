@@ -98,6 +98,8 @@
 #ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.85f)
+#define	LGL_PRIORITY_VIDEO_PRELOAD	(0.6f)
+#define	LGL_PRIORITY_VIDEO_READAHEAD	(0.65f)
 #define	LGL_PRIORITY_VIDEO_DECODE	(0.8f)
 #define	LGL_PRIORITY_VIDEO_LOAD		(0.8f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.7f)
@@ -9330,6 +9332,151 @@ lgl_video_decoder_decode_thread
 }
 
 int
+lgl_video_decoder_preload_thread
+(
+	void* ptr
+)
+{
+	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_PRELOAD,"LGL_VideoPreloader");
+	LGL_VideoDecoder* dec = (LGL_VideoDecoder*)ptr;
+
+	static LGL_Semaphore sem("video_preload",false);
+
+	int pathNum=-1;
+
+	for(;;)
+	{
+		if
+		(
+			pathNum!=dec->GetPathNum() &&
+			dec->GetPath() &&
+			dec->GetPath()[0]!='\0' &&
+			strcmp(dec->GetPath(),"NULL")!=0
+		)
+		{
+			pathNum=dec->GetPathNum();
+			double bytesRead=0;
+			double bytesTotal=LGL_FileLengthBytes(dec->GetPath());
+			bool preload=
+				(
+					dec->GetPreloadMaxMB() >
+					(LGL_FileLengthBytes(dec->GetPath())/(1024.0f*1024.0f))
+				);
+printf("preload '%s'? %s: %.2f vs %.2f\n",
+	dec->GetPath(),
+	preload ? "YES" : "NO",
+	dec->GetPreloadMaxMB(),
+	LGL_FileLengthBytes(dec->GetPath())/(1024.0f*1024.0f));
+			dec->SetPreloadPercent(0.0f);
+			dec->SetPreloadEnabled(preload);
+			if(preload)
+			{
+				if(FILE* fd=fopen(dec->GetPath(),"rb"))
+				{
+					const int readSize=1024*1024*8;
+					char* readBuf=new char[readSize];
+
+					long posBytes=dec->GetPosBytes();
+					if(dec->GetPreloadFromCurrentTime()==false)
+					{
+						posBytes=0;
+					}
+
+					//Read from posBytes => EOF
+					fseek(fd,posBytes,SEEK_SET);
+					for(;;)
+					{
+						LGL_ScopeLock lock(__FILE__,__LINE__,sem);
+						if(dec->GetThreadTerminate())
+						{
+							break;
+						}
+						if(feof(fd))
+						{
+							break;
+						}
+						if(pathNum!=dec->GetPathNum())
+						{
+							break;
+						}
+						fread(readBuf,readSize,1,fd);
+						bytesRead+=readSize;
+						dec->SetPreloadPercent(LGL_Clamp(0.0f,bytesRead/bytesTotal,1.0f));
+						LGL_DelayMS(1);
+					}
+					
+					//Read from 0 => posBytes
+					if(posBytes!=0)
+					{
+						fseek(fd,0,SEEK_SET);
+						for(;;)
+						{
+							LGL_ScopeLock lock(__FILE__,__LINE__,sem);
+							if(dec->GetThreadTerminate())
+							{
+								break;
+							}
+							if(feof(fd))
+							{
+								break;
+							}
+							if(pathNum!=dec->GetPathNum())
+							{
+								break;
+							}
+							if(ftell(fd)>=posBytes)
+							{
+								break;
+							}
+							fread(readBuf,readSize,1,fd);
+							bytesRead+=readSize;
+							dec->SetPreloadPercent(LGL_Clamp(0.0f,bytesRead/bytesTotal,1.0f));
+						}
+					}
+
+					delete readBuf;
+
+					fclose(fd);
+				}
+			}
+		}
+		else
+		{
+			LGL_DelayMS(50);
+		}
+
+		if(dec->GetThreadTerminate())
+		{
+			break;
+		}
+	}
+
+	return(0);
+}
+
+int
+lgl_video_decoder_readahead_thread
+(
+	void* ptr
+)
+{
+	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_READAHEAD,"LGL_VideoDecoder");
+	LGL_VideoDecoder* dec = (LGL_VideoDecoder*)ptr;
+
+	for(;;)
+	{
+		dec->MaybeReadAhead();
+		if(dec->GetThreadTerminate())
+		{
+			break;
+		}
+		LGL_DelayMS(dec->GetReadAheadDelayMS());
+	}
+
+	return(0);
+}
+
+int
 lgl_video_decoder_load_thread
 (
 	void* ptr
@@ -9420,6 +9567,16 @@ LGL_VideoDecoder::
 ~LGL_VideoDecoder()
 {
 	ThreadTerminate=true;
+	if(ThreadPreload)
+	{
+		LGL_ThreadWait(ThreadPreload);
+		ThreadPreload=NULL;
+	}
+	if(ThreadReadAhead)
+	{
+		LGL_ThreadWait(ThreadReadAhead);
+		ThreadReadAhead=NULL;
+	}
 	if(ThreadLoad)
 	{
 		LGL_ThreadWait(ThreadLoad);
@@ -9448,6 +9605,7 @@ Init()
 	Path[0]='\0';
 	PathShort[0]='\0';
 	PathNext[0]='\0';
+	PathNum=0;
 
 	FPS=0.0f;
 	FPSTimestamp=0.0;
@@ -9462,6 +9620,7 @@ Init()
 	FrameNumberNext=-1;
 	FrameNumberDisplayed=-1;
 	NextRequestedDecodeFrame=-1;
+	PosBytes=0;
 
 	for(int a=0;a<500;a++)
 	{
@@ -9469,7 +9628,13 @@ Init()
 		FrameBufferList.push_back(fb);
 	}
 	SetFrameBufferAddBackwards(true);
-	SetFrameBufferAddRadius(2);
+	SetFrameBufferAddRadius(2);	//Also initializes FrameBufferSubtractRadius
+	PreloadMaxMB=0;
+	PreloadEnabled=false;
+	PreloadFromCurrentTime=true;
+	PreloadPercent=0.0f;
+	ReadAheadMB=16;
+	ReadAheadDelayMS=500;
 
 	FormatContext=NULL;
 	CodecContext=NULL;
@@ -9535,8 +9700,12 @@ Init()
 #endif
 
 	ThreadTerminate=false;
+	ThreadPreload=NULL;
+	ThreadReadAhead=NULL;
 	ThreadLoad=NULL;
 	ThreadDecode=NULL;
+	ThreadPreload=LGL_ThreadCreate(lgl_video_decoder_preload_thread,this);
+	ThreadReadAhead=LGL_ThreadCreate(lgl_video_decoder_readahead_thread,this);
 	ThreadLoad=LGL_ThreadCreate(lgl_video_decoder_load_thread,this);
 	if(LGL_CPUCount()>=4)
 	{
@@ -9601,6 +9770,13 @@ LGL_VideoDecoder::
 GetPathShort()
 {
 	return(PathShort);
+}
+
+int
+LGL_VideoDecoder::
+GetPathNum()
+{
+	return(PathNum);
 }
 
 void
@@ -10175,6 +10351,119 @@ GetNextRequestedDecodeFrame()
 	return(NextRequestedDecodeFrame);
 }
 
+long
+LGL_VideoDecoder::
+GetPosBytes()
+{
+	return((long)PosBytes);
+}
+
+float
+LGL_VideoDecoder::
+GetPreloadMaxMB()
+{
+	return(PreloadMaxMB);
+}
+
+void
+LGL_VideoDecoder::
+SetPreloadMaxMB(float maxMB)
+{
+	PreloadMaxMB=maxMB;
+}
+
+bool
+LGL_VideoDecoder::
+GetPreloadEnabled()
+{
+	return(PreloadEnabled);
+}
+
+void
+LGL_VideoDecoder::
+SetPreloadEnabled
+(
+	bool	enabled
+)
+{
+	PreloadEnabled=enabled;
+}
+
+void
+LGL_VideoDecoder::
+ForcePreload()
+{
+	PathNum++;
+}
+
+bool
+LGL_VideoDecoder::
+GetPreloadFromCurrentTime()
+{
+	return(PreloadFromCurrentTime);
+}
+
+void
+LGL_VideoDecoder::
+SetPreloadFromCurrentTime
+(
+	bool fromCurrentTime
+)
+{
+	PreloadFromCurrentTime=fromCurrentTime;
+}
+
+float
+LGL_VideoDecoder::
+GetPreloadPercent()
+{
+	return(PreloadPercent);
+}
+
+void
+LGL_VideoDecoder::
+SetPreloadPercent
+(
+	float	pct
+)
+{
+	PreloadPercent=pct;
+}
+
+int
+LGL_VideoDecoder::
+GetReadAheadMB()
+{
+	return(ReadAheadMB);
+}
+
+void
+LGL_VideoDecoder::
+SetReadAheadMB
+(
+	int	mb
+)
+{
+	ReadAheadMB=mb;
+}
+
+int
+LGL_VideoDecoder::
+GetReadAheadDelayMS()
+{
+	return(ReadAheadDelayMS);
+}
+
+void
+LGL_VideoDecoder::
+SetReadAheadDelayMS
+(
+	int	delayMS
+)
+{
+	ReadAheadDelayMS=delayMS;
+}
+
 void
 LGL_VideoDecoder::
 MaybeLoadVideo()
@@ -10217,6 +10506,8 @@ MaybeLoadVideo()
 		}
 
 		PathNext[0]='\0';
+
+		PathNum++;
 	}
 
 	//Go for it!!
@@ -10403,6 +10694,40 @@ MaybeLoadVideo()
 
 bool
 LGL_VideoDecoder::
+MaybeReadAhead()
+{
+	if
+	(
+		FormatContext==NULL ||
+		CodecContext==NULL ||
+		FrameNative==NULL ||
+		FrameRGB==NULL ||
+		strcmp(Path,"NULL")==0 ||
+		VideoOK==false ||
+		ReadAheadMB<=0
+	)
+	{
+		return(false);
+	}
+
+	static LGL_Semaphore sem("video_readahead",false);
+	LGL_ScopeLock lock(__FILE__,__LINE__,sem);
+
+	//Is it goofy not to keep this fd?
+	if(FILE* fd=fopen(Path,"rb"))
+	{
+		char* buf = new char[ReadAheadMB*1024*1024];
+		fseek(fd,PosBytes,SEEK_SET);
+		fread(buf,ReadAheadMB*1024l*1024l,1,fd);
+		fclose(fd);
+		delete buf;
+	}
+
+	return(true);
+}
+
+bool
+LGL_VideoDecoder::
 MaybeLoadImage()
 {
 	if
@@ -10420,14 +10745,11 @@ MaybeLoadImage()
 
 	//Chill, if we're not waiting on vsync
 	/*
-	while
-	(
-		LGL.MainThreadVsyncWait==(LGL_KeyDown(LGL_KEY_RALT)) &&
-		LGL.Running &&
-		ThreadTerminate==false
-	)
+	if(SDL_ThreadID()!=LGL.ThreadIDMain)
 	{
-		LGL_DelayMS(1);
+		{
+			LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
+		}
 	}
 	*/
 	{
@@ -10490,6 +10812,7 @@ MaybeLoadImage()
 		}
 		if(result>=0)
 		{
+			PosBytes=packet->pos;
 			//Is this a packet from the video stream?
 			if(packet->stream_index==VideoStreamIndex)
 			{
@@ -10561,14 +10884,11 @@ MaybeDecodeImage
 {
 	//Chill, if we're not waiting on vsync
 	/*
-	while
-	(
-		LGL.MainThreadVsyncWait==false &&
-		LGL.Running &&
-		ThreadTerminate==false
-	)
+	if(SDL_ThreadID()!=LGL.ThreadIDMain)
 	{
-		LGL_DelayMS(1);
+		{
+			LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
+		}
 	}
 	*/
 
@@ -10662,6 +10982,11 @@ MaybeDecodeImage
 	//Decode video frame
 	int frameFinished=0;
 	{
+		if(SDL_ThreadID()==LGL.ThreadIDMain)
+		{
+			LGL_DebugPrintf("Main Thread Decode\n");
+		}
+
 		lgl_avcodec_decode_video2
 		(
 			CodecContext,
@@ -11704,6 +12029,9 @@ LGL_VideoEncoder
         CODEC_ID_VCR1
         CODEC_ID_DNXHD
         CODEC_ID_JPEG2000	[NO]
+        CODEC_ID_H264		[NO]
+        CODEC_ID_FFH264		[NO]
+        CODEC_ID_MPEG4		[NO]
 */
 		DstCodec = lgl_avcodec_find_encoder(CODEC_ID_MJPEG);
 		if(DstCodec==NULL)
@@ -11754,6 +12082,7 @@ LGL_VideoEncoder
 		DstCodecContext->time_base.num=SrcFormatContext->streams[SrcVideoStreamIndex]->r_frame_rate.den;
 		//DstCodecContext->pix_fmt = PIX_FMT_RGB32;
 		DstCodecContext->pix_fmt = PIX_FMT_YUVJ422P;
+		//DstCodecContext->pix_fmt = PIX_FMT_YUV420P;
 
 		//These don't seem to help...
 		DstCodecContext->qmin = 1;
@@ -11761,6 +12090,7 @@ LGL_VideoEncoder
 		DstCodecContext->max_qdiff = 100;
 
 		DstCodecContext->strict_std_compliance=-1;
+DstCodecContext->keyint_min=1;
 		
 		//This doesn't work either
 		DstCodecContext->rc_override=&DstCodecContextRcOverride;
@@ -17572,7 +17902,8 @@ bool
 LGL_Sound::
 DivergeRecallPop
 (
-	int	channel
+	int	channel,
+	bool	recall
 )
 {
 	if(channel<0)
@@ -17589,7 +17920,11 @@ DivergeRecallPop
 
 	LGL.SoundChannel[channel].DivergeCount--;
 
-	if(LGL.SoundChannel[channel].DivergeCount==0)
+	if
+	(
+		recall &&
+		LGL.SoundChannel[channel].DivergeCount==0
+	)
 	{
 		LGL.SoundChannel[channel].DivergeRecallSamples=LGL.SoundChannel[channel].DivergeSamples;
 		LGL.SoundChannel[channel].DivergeRecallNow=true;
@@ -18182,6 +18517,36 @@ LoadToMemory()
 		printf("LGL_Sound::LoadToMemory(): Warning! File '%s' doesn't exist!\n",Path);
 		BadFile=true;
 		return;
+	}
+
+	if(LGL_FileLengthBytes(Path)<1024.0*1024.0*200)
+	{
+		//Preload!
+		if(FILE* fd=fopen(Path,"rb"))
+		{
+			const int readSize=1024*1024*8;
+			char* readBuf=new char[readSize];
+			for(;;)
+			{
+				if(DestructorHint)
+				{
+					break;
+				}
+				if(feof(fd))
+				{
+					break;
+				}
+				fread(readBuf,readSize,1,fd);
+			}
+
+			delete readBuf;
+
+			fclose(fd);
+		}
+		if(DestructorHint)
+		{
+			return;
+		}
 	}
 
 	int totalFileBytes=-1;
@@ -27152,7 +27517,7 @@ LGL_FileLengthBytes
 	struct stat64 stbuf;
 	if(stat64(file, &stbuf) < 0)
 	{
-		printf("Can't stat() %s\n",file);
+		printf("Can't stat() '%s'\n", file ? file : "(NULL)");
 		return(-1);
 	}
 	double ret = stbuf.st_size;
@@ -28152,11 +28517,17 @@ LGL_RamFreeB()
 	    KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, 
 					    (host_info_t)&vm_stats, &count))
 	{
-	    int64_t myFreeMemory = ((int64_t)vm_stats.free_count * (int64_t)page_size);
-	    return(myFreeMemory);
+		int64_t myFreeMemory =
+		(
+			(
+				(int64_t)vm_stats.free_count + 
+				(int64_t)vm_stats.inactive_count
+			) * (int64_t)page_size
+		);
+		return(myFreeMemory);
 
-/*
-	    used_memory = ((int64_t)vm_stats.active_count + 
+		/*
+		used_memory = ((int64_t)vm_stats.active_count + 
 			   (int64_t)vm_stats.inactive_count + 
 			   (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
 */
