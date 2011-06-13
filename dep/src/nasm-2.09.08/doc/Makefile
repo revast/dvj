@@ -4,7 +4,7 @@
 
 srcdir		= .
 
-prefix		= /usr/local
+prefix		= /usr
 exec_prefix	= ${prefix}
 bindir		= ${exec_prefix}/bin
 mandir		= ${datarootdir}/man
@@ -23,8 +23,8 @@ TEXI2IPF	= texi2ipf
 IPFC		= ipfc
 
 ACRODIST	= false		# Acrobat Distiller
-PSTOPDF		= false		# BSD/MacOS X utility
-PS2PDF          = ps2pdf		# Part of GhostScript
+PSTOPDF		= pstopdf		# BSD/MacOS X utility
+PS2PDF          = false		# Part of GhostScript
 
 SRCS		= nasmdoc.src inslist.src changes.src
 OUT		= info html nasmdoc.txt nasmdoc.ps nasmdoc.pdf
