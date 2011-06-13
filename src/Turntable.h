@@ -101,8 +101,6 @@ public:
 	std::vector<char*>		GetTrackListFileUpdates();
 
 	LGL_VideoDecoder*		GetVideo();
-	LGL_VideoDecoder*		GetVideoFront();
-	LGL_VideoDecoder*		GetVideoBack();
 	LGL_VideoDecoder*		GetVideoLo();
 	LGL_VideoDecoder*		GetVideoHi();
 	float				GetVideoTimeSeconds();
@@ -292,8 +290,7 @@ static	VisualizerObj*			Visualizer;
 
 	std::vector<char*>		TrackListFileUpdates;
 
-	LGL_VideoDecoder*		VideoFront;
-	LGL_VideoDecoder*		VideoBack;
+	LGL_VideoDecoder*		Video;
 static	LGL_VideoDecoder*		VideoLo;
 static	LGL_VideoDecoder*		VideoHi;
 	float				VideoSwitchInterval;
@@ -311,7 +308,7 @@ static	LGL_VideoDecoder*		VideoHi;
 	float				FreqSenseLEDColorScalarHigh[LED_GROUP_MAX];
 	float				FreqSenseLEDBrightnessWash[LED_GROUP_MAX];
 	bool				AudioInputMode;
-	LGL_Timer			VideoFrontRadiusIncreaseDelayTimer;
+	LGL_Timer			VideoRadiusIncreaseDelayTimer;
 
 public:
 
@@ -385,7 +382,6 @@ public:
 
 static	bool				GetSurroundMode();
 	int				GetAspectRatioMode();
-	void				SwapVideos();
 	void				SelectNewVideo(bool forceAmbient=false);
 	bool				BPMAvailable();
 	float				GetBPM();

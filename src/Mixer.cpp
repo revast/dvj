@@ -750,8 +750,8 @@ NextFrame
 			{
 				highlighted =
 				(
-					Turntable[0]->GetMixerVolumeFront() + ((Turntable[0]->GetVideoFront()==NULL) ? -10.0f : 0) > 
-					Turntable[1]->GetMixerVolumeFront() + ((Turntable[1]->GetVideoFront()==NULL) ? -10.0f : 0)
+					Turntable[0]->GetMixerVolumeFront() + ((Turntable[0]->GetVideo()==NULL) ? -10.0f : 0) > 
+					Turntable[1]->GetMixerVolumeFront() + ((Turntable[1]->GetVideo()==NULL) ? -10.0f : 0)
 				) ? 0 : 1;
 			}
 		}
@@ -765,9 +765,9 @@ NextFrame
 		/*
 		if(highlighted!=-1)
 		{
-			if(Turntable[highlighted]->GetVideoFront())
+			if(Turntable[highlighted]->GetVideo())
 			{
-				Turntable[highlighted]->GetVideoFront()->SetPrimaryDecoder();
+				Turntable[highlighted]->GetVideo()->SetPrimaryDecoder();
 			}
 		}
 		*/
