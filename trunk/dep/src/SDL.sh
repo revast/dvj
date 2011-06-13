@@ -7,7 +7,7 @@
 
 cd SDL
 ./autogen.sh
-./configure.dvj
+./configure
 make
 sudo make install
 cd ..

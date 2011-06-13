@@ -1,0 +1,1 @@
+./configure --host x86_64-apple-darwin --build x86_64-apple-darwin --with-jpeg8 --disable-shared

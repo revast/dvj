@@ -1,1 +1,2 @@
-./configure --disable-png-shared --disable-jpg-shared --build=i386-apple-darwin10.4.0 --host=x86_64-apple-darwin10.4.0
+./configure --disable-png-shared --disable-jpg-shared
+#./configure --disable-png-shared --disable-jpg-shared --build=i386-apple-darwin10.4.0 --host=x86_64-apple-darwin10.4.0
