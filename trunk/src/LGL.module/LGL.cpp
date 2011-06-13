@@ -2719,6 +2719,7 @@ printf("CreateWindow(%i): %i x %i\n",
 #ifdef	LGL_WIN32
 	printf("OS\t\t\tWin32\n");
 #endif	//LGL_WIN32
+	printf("CPUs\t\t\t%i\n",LGL_CPUCount());
 	printf
 	(
 		"SDL\t\t\t%i.%i.%i\n",
@@ -9016,15 +9017,14 @@ SetAnimation
 }
 
 
-
-bool lgl_FrameBufferSortPredicate(const lgl_FrameBuffer* d1, const lgl_FrameBuffer* d2)
+bool lgl_FrameBufferSortContainerSortPredicate(const lgl_FrameBufferSortContainer* d1, const lgl_FrameBufferSortContainer* d2)
 {
-	  return(d1->GetFrameNumber() < d2->GetFrameNumber());
+	return(d1->FrameNumber < d2->FrameNumber);
 }
 
 bool lgl_LongSortPredicate(const long d1, const long d2)
 {
-	  return(d1 < d2);
+	return(d1 < d2);
 }
 
 lgl_FrameBuffer::
@@ -9295,6 +9295,16 @@ Invalidate()
 {
 	Ready=false;
 	FrameNumber=-1;
+}
+
+lgl_FrameBufferSortContainer::
+lgl_FrameBufferSortContainer
+(
+	lgl_FrameBuffer*	inFrameBuffer
+)
+{
+	FrameBuffer=inFrameBuffer;
+	FrameNumber=FrameBuffer->GetFrameNumber();
 }
 
 
@@ -9617,7 +9627,10 @@ Init()
 	Image=NULL;
 	VideoOK=false;
 	VideoOKUserCount=0;
-	StoredBrightness=0.0f;
+	for(int a=0;a<2;a++)
+	{
+		StoredBrightness[a]=0.0f;
+	}
 
 	//Preallocate lgl_FrameBuffers
 #if 0
@@ -11424,7 +11437,11 @@ GetFrameBufferReadyList
 	std::vector<lgl_FrameBuffer*> ret;
 	for(unsigned int a=0;a<FrameBufferList.size();a++)
 	{
-		if(FrameBufferList[a]->IsReady())
+		if(FrameBufferList[a]==NULL)
+		{
+			printf("NULL entry in FrameBufferList... WTF??\n");
+		}
+		else if(FrameBufferList[a]->IsReady())
 		{
 			ret.push_back(FrameBufferList[a]);
 		}
@@ -11432,12 +11449,23 @@ GetFrameBufferReadyList
 
 	if(sorted)
 	{
+		std::vector<lgl_FrameBufferSortContainer*> sortContainerList;
+		for(unsigned int a=0;a<ret.size();a++)
+		{
+			sortContainerList.push_back(new lgl_FrameBufferSortContainer(ret[a]));
+		}
 		std::sort
 		(
-			ret.begin(),
-			ret.end(),
-			lgl_FrameBufferSortPredicate
+			sortContainerList.begin(),
+			sortContainerList.end(),
+			lgl_FrameBufferSortContainerSortPredicate
 		);
+		ret.clear();
+		for(unsigned int a=0;a<sortContainerList.size();a++)
+		{
+			ret.push_back(sortContainerList[a]->FrameBuffer);
+			delete sortContainerList[a];
+		}
 	}
 
 	return(ret);
@@ -11453,6 +11481,10 @@ GetFrameBufferLoadedList
 	std::vector<lgl_FrameBuffer*> ret;
 	for(unsigned int a=0;a<FrameBufferList.size();a++)
 	{
+		if(FrameBufferList[a]==NULL)
+		{
+			printf("NULL entry in FrameBufferList... WTF??\n");
+		}
 		if
 		(
 			FrameBufferList[a]->IsReady()==false &&
@@ -11465,12 +11497,23 @@ GetFrameBufferLoadedList
 
 	if(sorted)
 	{
+		std::vector<lgl_FrameBufferSortContainer*> sortContainerList;
+		for(unsigned int a=0;a<ret.size();a++)
+		{
+			sortContainerList.push_back(new lgl_FrameBufferSortContainer(ret[a]));
+		}
 		std::sort
 		(
-			ret.begin(),
-			ret.end(),
-			lgl_FrameBufferSortPredicate
+			sortContainerList.begin(),
+			sortContainerList.end(),
+			lgl_FrameBufferSortContainerSortPredicate
 		);
+		ret.clear();
+		for(unsigned int a=0;a<sortContainerList.size();a++)
+		{
+			ret.push_back(sortContainerList[a]->FrameBuffer);
+			delete sortContainerList[a];
+		}
 	}
 
 	return(ret);

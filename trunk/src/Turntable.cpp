@@ -40,6 +40,8 @@ int ENTIRE_WAVE_ARRAY_COUNT;
 
 int TurntableObj::Master=0;
 VisualizerObj* TurntableObj::Visualizer=NULL;
+LGL_VideoDecoder* TurntableObj::VideoLo=NULL;
+LGL_VideoDecoder* TurntableObj::VideoHi=NULL;
 LGL_Image* TurntableObj::NoiseImage[NOISE_IMAGE_COUNT_256_64];
 LGL_Image* TurntableObj::LoopImage=NULL;
 bool TurntableObj::FileEverOpened=false;
@@ -777,25 +779,31 @@ TurntableObj
 	VideoFront->SetReadAheadMB(16);
 	VideoFront->SetReadAheadDelayMS(200);
 	VideoBack=NULL;
-	VideoLo=new LGL_VideoDecoder(NULL);
-	VideoLo->SetFrameBufferAddRadius(GetVideoBufferFramesFreqSense());
-	VideoLo->SetFrameBufferAddBackwards(false);
-	VideoLo->SetPreloadMaxMB(GetPreloadFreqSenseMaxMB());
-	VideoLo->SetPreloadFromCurrentTime(false);
-	VideoLo->SetReadAheadMB(0);
-	VideoLo->SetReadAheadDelayMS(10000);
-	VideoHi=new LGL_VideoDecoder(NULL);
-	VideoHi->SetFrameBufferAddRadius(GetVideoBufferFramesFreqSense());
-	VideoHi->SetFrameBufferAddBackwards(false);
-	VideoHi->SetPreloadMaxMB(GetPreloadFreqSenseMaxMB());
-	VideoHi->SetPreloadFromCurrentTime(false);
-	VideoHi->SetReadAheadMB(0);
-	VideoHi->SetReadAheadDelayMS(10000);
+	if(VideoLo==NULL)
+	{
+		VideoLo=new LGL_VideoDecoder(NULL);
+		VideoLo->SetFrameBufferAddRadius(GetVideoBufferFramesFreqSense());
+		VideoLo->SetFrameBufferAddBackwards(false);
+		VideoLo->SetPreloadMaxMB(GetPreloadFreqSenseMaxMB());
+		VideoLo->SetPreloadFromCurrentTime(false);
+		VideoLo->SetReadAheadMB(0);
+		VideoLo->SetReadAheadDelayMS(10000);
+	}
+	if(VideoHi==NULL)
+	{
+		VideoHi=new LGL_VideoDecoder(NULL);
+		VideoHi->SetFrameBufferAddRadius(GetVideoBufferFramesFreqSense());
+		VideoHi->SetFrameBufferAddBackwards(false);
+		VideoHi->SetPreloadMaxMB(GetPreloadFreqSenseMaxMB());
+		VideoHi->SetPreloadFromCurrentTime(false);
+		VideoHi->SetReadAheadMB(0);
+		VideoHi->SetReadAheadDelayMS(10000);
+	}
 	VideoAdvanceRate=1.0f;
 	VideoBrightness=1.0f;
 	SyphonBrightness=0.0f;
 	OscilloscopeBrightness=0.0f;
-	FreqSenseBrightness=0.0f;
+	FreqSenseBrightness=1.0f;
 	FreqSensePathBrightness=0.0f;
 
 	FreqSenseLEDGroupFloat=0.0f;

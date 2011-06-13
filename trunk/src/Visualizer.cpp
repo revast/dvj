@@ -251,113 +251,116 @@ NextFrame
 )
 {
 	//Frequency-sensitive video SetTime()
-	for(int t=0;t<2;t++)
+	float volAve;
+	float volMax;
+	float freqFactor;
+
+	//See if we should time-jump in any of our vids
+	for(int a=0;a<2;a++)
 	{
-		if
-		(
-			tts[t]->GetFinalSpeed()!=0.0f &&
-			tts[t]->GetFreqSenseBrightnessPreview()>0.0f
-		)
+		LGL_VideoDecoder* vidL=tts[0]->GetVideoLo();
+		LGL_VideoDecoder* vidH=tts[0]->GetVideoHi();
+		LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
+		if(vid)
 		{
-			LGL_VideoDecoder* vidL=tts[t]->GetVideoLo();
-			LGL_VideoDecoder* vidH=tts[t]->GetVideoHi();
-
-			float volAve;
-			float volMax;
-			float freqFactor;
-			tts[t]->GetFreqMetaData(volAve,volMax,freqFactor);
-			float vol=LGL_Min(1.0f,volAve*2);
-
-			//See if we should time-jump in any of our vids
-			for(int a=0;a<2;a++)
+			float oldFreqBrightness = LGL_Max(vid->StoredBrightness[0],vid->StoredBrightness[1]);
+			float neoFreqBrightness = 0.0f;
+			bool vidPlaying=false;
+			for(int t=0;t<2;t++)
 			{
-				LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
-				if(vid)
+				if
+				(
+					tts[t]->GetFinalSpeed()!=0.0f &&
+					tts[t]->GetFreqSenseBrightnessPreview()>0.0f
+				)
 				{
-					float neoVol=vol;
-					float neoFreqFactor=freqFactor;
-					float oldFreqBrightness = vid->StoredBrightness;
-					float neoFreqBrightness = GetFreqBrightness((vid==vidH),neoFreqFactor,neoVol);
-					if
-					(
-						GetTestFreqSenseTime()==false &&
-						oldFreqBrightness>0.0f &&
-						neoFreqBrightness==0.0f
-					)
-					{
-						float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
-						if(min<0.0f) min=0.0f;
-						float max=vid->GetLengthSeconds()-10.0f;
-						if(max<0.0f) max=vid->GetLengthSeconds();
-						
-						if(vid->GetPreloadEnabled())
-						{
-							float pct = vid->GetPreloadPercent();
-							max=vid->GetLengthSeconds()*pct;
-							if(max>60.0f) max-=10.0f;
-						}
-
-						/*
-						float cand = LGL_Clamp
-						(
-							min,
-							LGL_RandFloat(-10.0f,10.0f)+tts[t]->GetSoundPositionPercent()*vid->GetLengthSeconds()-10.0f,
-							max
-						);
-						vid->SetTime(cand);
-						*/
-
-						vid->SetTime(LGL_RandFloat(min,max));
-					}
-					else if
-					(
-						GetTestFreqSenseTime() &&
-						oldFreqBrightness==0.0f &&
-						neoFreqBrightness>0.0f
-					)
-					{
-						float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
-						if(min<0.0f) min=0.0f;
-						float max=vid->GetLengthSeconds()-10.0f;
-						if(max<0.0f) max=vid->GetLengthSeconds();
-
-						if(vid->GetPreloadEnabled())
-						{
-							float pct = vid->GetPreloadPercent();
-							max=vid->GetLengthSeconds()*pct;
-							if(max>60.0f) max-=10.0f;
-						}
-
-						vid->SetTime(max*neoFreqBrightness);
-					}
-					else
-					{
-						float speedFactor=
-							(vid==vidL) ? 1.0f : 4.0f;
-						float timeNew=vid->GetTime()+speedFactor*(1.0f/60.0f);
-
-						if(vid->GetPreloadEnabled())
-						{
-							float pct = vid->GetPreloadPercent();
-							if(timeNew+1.0f >= vid->GetLengthSeconds()*pct)
-							{
-								timeNew*=LGL_RandFloat(0.1f,0.5f);
-							}
-						}
-
-						vid->SetTime(timeNew);
-
-						/*
-						float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
-						if(min<0.0f) min=0.0f;
-						float max=vid->GetLengthSeconds()-10.0f;
-						if(max<0.0f) max=vid->GetLengthSeconds();
-
-						vid->SetTime(max*neoFreqBrightness);
-						*/
-					}
-					vid->StoredBrightness=neoFreqBrightness;
+					tts[t]->GetFreqMetaData(volAve,volMax,freqFactor);
+					if(vid==vidH) volAve*=2;
+					
+					float curFreqBrightness=GetFreqBrightness((vid==vidH),freqFactor,volAve);
+					vid->StoredBrightness[t]=curFreqBrightness;
+					neoFreqBrightness=LGL_Max(neoFreqBrightness,curFreqBrightness);
+					vidPlaying=true;
 				}
+			}
+
+			if
+			(
+				GetTestFreqSenseTime()==false &&
+				vidPlaying &&
+				oldFreqBrightness>0.0f &&
+				neoFreqBrightness==0.0f
+			)
+			{
+				float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+				if(min<0.0f) min=0.0f;
+				float max=vid->GetLengthSeconds()-10.0f;
+				if(max<0.0f) max=vid->GetLengthSeconds();
+				
+				if(vid->GetPreloadEnabled())
+				{
+					float pct = vid->GetPreloadPercent();
+					max=vid->GetLengthSeconds()*pct;
+					if(max>60.0f) max-=10.0f;
+				}
+
+				/*
+				float cand = LGL_Clamp
+				(
+					min,
+					LGL_RandFloat(-10.0f,10.0f)+tts[t]->GetSoundPositionPercent()*vid->GetLengthSeconds()-10.0f,
+					max
+				);
+				vid->SetTime(cand);
+				*/
+
+				vid->SetTime(LGL_RandFloat(min,max));
+			}
+			else if
+			(
+				GetTestFreqSenseTime() &&
+				oldFreqBrightness==0.0f &&
+				neoFreqBrightness>0.0f
+			)
+			{
+				float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+				if(min<0.0f) min=0.0f;
+				float max=vid->GetLengthSeconds()-10.0f;
+				if(max<0.0f) max=vid->GetLengthSeconds();
+
+				if(vid->GetPreloadEnabled())
+				{
+					float pct = vid->GetPreloadPercent();
+					max=vid->GetLengthSeconds()*pct;
+					if(max>60.0f) max-=10.0f;
+				}
+
+				vid->SetTime(max*neoFreqBrightness);
+			}
+			else if(neoFreqBrightness>0.0f)
+			{
+				float speedFactor=
+					(vid==vidL) ? 1.0f : 4.0f;
+				float timeNew=vid->GetTime()+speedFactor*(1.0f/60.0f);
+
+				if(vid->GetPreloadEnabled())
+				{
+					float pct = vid->GetPreloadPercent();
+					if(timeNew+1.0f >= vid->GetLengthSeconds()*pct)
+					{
+						timeNew*=LGL_RandFloat(0.1f,0.5f);
+					}
+				}
+				vid->SetTime(timeNew);
+
+				/*
+				float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+				if(min<0.0f) min=0.0f;
+				float max=vid->GetLengthSeconds()-10.0f;
+				if(max<0.0f) max=vid->GetLengthSeconds();
+
+				vid->SetTime(max*neoFreqBrightness);
+				*/
 			}
 		}
 	}
@@ -1738,7 +1741,7 @@ DrawVideos
 				float myFreqFactor=freqFactor;
 				float br = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
 				if(vid==vidL) br*=4;	//FIXME: Ben / Zebbler hack... Shouldn't be this way!!
-				br*=vid->StoredBrightness*freqSenseBright;
+				br*=vid->StoredBrightness[tt->GetWhich()]*freqSenseBright;
 
 				LGL_Image* image = vid->GetImage();//EIGHT_WAY ? !preview : preview);
 				{

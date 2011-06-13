@@ -802,7 +802,6 @@ int main(int argc, char** argv)
 		channels,
 		appName
 	);
-	printf("CPUs: %i\n",LGL_CPUCount());
 
 	LGL_MouseVisible(false);
 	LGL_SetFPSMax(GetFPSMax());

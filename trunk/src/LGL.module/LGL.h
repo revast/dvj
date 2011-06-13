@@ -1185,6 +1185,17 @@ private:
 
 };
 
+class lgl_FrameBufferSortContainer
+{
+
+public:
+	
+	lgl_FrameBufferSortContainer(lgl_FrameBuffer* inFrameBuffer);
+
+	lgl_FrameBuffer*	FrameBuffer;
+	long			FrameNumber;
+};
+
 class LGL_VideoDecoder
 {
 
@@ -1315,7 +1326,7 @@ private:
 	int			VideoOKUserCount;
 
 public:
-	float			StoredBrightness;	//Hate this!
+	float			StoredBrightness[2];	//Hate this!
 
 private:
 
