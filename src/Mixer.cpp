@@ -772,6 +772,16 @@ NextFrame
 		}
 		*/
 
+		//Set FreqSense videos
+		{
+			float br0=Turntable[0]->GetFreqSenseBrightnessFinal();
+			float br1=Turntable[1]->GetFreqSenseBrightnessFinal();
+			TurntableObj* tt = (br0 >= br1) ? Turntable[0] : Turntable[1];
+
+			tt->GetVideoLo()->SetVideo(tt->GetVideoLoPath());
+			tt->GetVideoHi()->SetVideo(tt->GetVideoHiPath());
+		}
+
 		for(int i=0;i<2;i++)
 		{
 			if(Turntable[i]->GetVideo())

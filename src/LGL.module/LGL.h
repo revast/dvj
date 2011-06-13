@@ -1181,6 +1181,8 @@ private:
 	long			FrameNumber;
 	AVPacket*		Packet;
 	LGL_Semaphore		PacketSemaphore;
+
+public:
 	LGL_Semaphore		BufferSemaphore;
 
 };
@@ -1255,7 +1257,7 @@ private:
 	char			PathShort[2048];
 	char			PathNext[2048];
 	int			PathNum;
-	
+
 	double			FPS;
 	double			FPSTimestamp;
 	int			FPSDisplayed;
