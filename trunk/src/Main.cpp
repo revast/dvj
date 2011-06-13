@@ -656,7 +656,7 @@ int
 SwapOutOtherPrograms(void* baka)
 {
 	long int memDelta = 128;
-	long int memMax = 2048;
+	long int memMax = 1024*8;
 	for(long int size=memDelta;size<=memMax;size+=memDelta)
 	{
 		LGL_DelayMS(1);
@@ -802,6 +802,7 @@ int main(int argc, char** argv)
 		channels,
 		appName
 	);
+	printf("CPUs: %i\n",LGL_CPUCount());
 
 	LGL_MouseVisible(false);
 	LGL_SetFPSMax(GetFPSMax());

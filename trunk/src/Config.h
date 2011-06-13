@@ -212,10 +212,16 @@ bool
 GetConfigAlwaysUseAudioInForFreqSense();
 
 int
+GetVideoBufferFrames();
+
+int
 GetVideoBufferFramesFreqSense();
 
 int
-GetVideoBufferFrames();
+GetPreloadVideoMaxMB();
+
+int
+GetPreloadFreqSenseMaxMB();
 
 int	GetInputKeyboardFocusChangeKey();
 int	GetInputKeyboardFocusBottomKey();

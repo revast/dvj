@@ -772,13 +772,25 @@ TurntableObj
 
 	VideoFront=new LGL_VideoDecoder(NULL);
 	VideoFront->SetFrameBufferAddRadius(GetVideoBufferFrames());
+	VideoFront->SetPreloadMaxMB(GetPreloadVideoMaxMB());
+	VideoFront->SetPreloadFromCurrentTime(true);
+	VideoFront->SetReadAheadMB(16);
+	VideoFront->SetReadAheadDelayMS(200);
 	VideoBack=NULL;
 	VideoLo=new LGL_VideoDecoder(NULL);
 	VideoLo->SetFrameBufferAddRadius(GetVideoBufferFramesFreqSense());
 	VideoLo->SetFrameBufferAddBackwards(false);
+	VideoLo->SetPreloadMaxMB(GetPreloadFreqSenseMaxMB());
+	VideoLo->SetPreloadFromCurrentTime(false);
+	VideoLo->SetReadAheadMB(0);
+	VideoLo->SetReadAheadDelayMS(10000);
 	VideoHi=new LGL_VideoDecoder(NULL);
 	VideoHi->SetFrameBufferAddRadius(GetVideoBufferFramesFreqSense());
 	VideoHi->SetFrameBufferAddBackwards(false);
+	VideoHi->SetPreloadMaxMB(GetPreloadFreqSenseMaxMB());
+	VideoHi->SetPreloadFromCurrentTime(false);
+	VideoHi->SetReadAheadMB(0);
+	VideoHi->SetReadAheadDelayMS(10000);
 	VideoAdvanceRate=1.0f;
 	VideoBrightness=1.0f;
 	SyphonBrightness=0.0f;
@@ -802,8 +814,6 @@ TurntableObj
 	VideoEncoderReason[0]='\0';
 
 	ENTIRE_WAVE_ARRAY_COUNT=LGL_WindowResolutionX();
-
-	ClearRecallOrigin();
 
 	WhiteFactor=1.0f;
 	NoiseFactor=1.0f;
@@ -1404,7 +1414,6 @@ NextFrame
 							SavePointUnsetFlashPercent[a]=0.0f;
 						}
 						FilterText.ReleaseFocus();
-						ClearRecallOrigin();
 
 						char* update=new char[1024];
 						sprintf(update,"ALPHA: %s",SoundName);
@@ -1624,7 +1633,6 @@ NextFrame
 				if(Looping()==false)
 				{
 					LoopAlphaSeconds=-1.0f;
-					//ClearRecallOrigin();
 				}
 				if
 				(
@@ -1674,7 +1682,6 @@ NextFrame
 				if(Looping()==false)
 				{
 					LoopAlphaSeconds=-1.0f;
-					//ClearRecallOrigin();
 					Sound->SetWarpPoint(Channel);
 				}
 				RecordScratch=true;
@@ -1885,7 +1892,6 @@ NextFrame
 					if(Looping()==false)
 					{
 						LoopAlphaSeconds=-1.0f;
-						ClearRecallOrigin();
 					}
 				}
 				if(Sound->GetWarpPointSecondsAlpha(Channel)>0.0f)
@@ -1933,7 +1939,6 @@ NextFrame
 						}
 
 						Sound->SetWarpPoint(Channel,timeToWarp,savePointSecondsQuantized);
-						Sound->DivergeRecallPush(Channel,Pitchbend);
 					}
 				}
 			}
@@ -1947,7 +1952,6 @@ NextFrame
 					if(candidate>1.0f)
 					{
 						lockWarp=true;
-						ClearRecallOrigin();
 						candidate-=1.0f;
 					}
 					candidate=LGL_Clamp(0.0f,candidate,1.0f);
@@ -2114,14 +2118,20 @@ NextFrame
 				loopThenRecallActiveLastFrame != LoopThenRecallActive
 			);
 
-		if
-		(
-			LoopThenRecallActive &&
-			loopThenRecallActiveLastFrame==false
-		)
+		if(LoopThenRecallActive != loopThenRecallActiveLastFrame)
 		{
-			LoopActive=false;
-			SetRecallOrigin();
+			if
+			(
+				LoopThenRecallActive
+			)
+			{
+				LoopActive=false;
+				Diverge();
+			}
+			else
+			{
+				Recall();
+			}
 		}
 
 		if(BPMAvailable())
@@ -2187,18 +2197,6 @@ NextFrame
 				{
 					Sound->SetWarpPoint(Channel);
 					LoopAlphaSeconds=-1.0f;
-					if
-					(
-						loopThenRecallActiveLastFrame &&
-						PauseMultiplier!=0.0f
-					)
-					{
-						Recall();
-					}
-					else
-					{
-						ClearRecallOrigin();
-					}
 				}
 				else
 				{
@@ -2310,23 +2308,7 @@ NextFrame
 
 			if(loopChanged)
 			{
-				if(Looping()==false)
-				{
-					Sound->SetWarpPoint(Channel);
-					if
-					(
-						loopThenRecallActiveLastFrame &&
-						PauseMultiplier!=0.0f
-					)
-					{
-						Recall();
-					}
-					else
-					{
-						ClearRecallOrigin();
-					}
-				}
-				else
+				if(Looping())
 				{
 					float deltaSeconds = QuantizePeriodNoBPMSeconds;
 					LoopOmegaSeconds=LGL_Min
@@ -2426,6 +2408,19 @@ NextFrame
 		float newBright=GetInput().WaveformVideoBrightness(target);
 		if(newBright!=-1.0f)
 		{
+			if
+			(
+				VideoBrightness==0.0f &&
+				newBright>0.0f
+			)
+			{
+				/*
+				if(LGL_VideoDecoder* dec = GetVideo())
+				{
+					dec->ForcePreload();
+				}
+				*/
+			}
 			VideoBrightness=newBright;
 		}
 		VideoBrightness=LGL_Clamp
@@ -2474,6 +2469,15 @@ NextFrame
 		}
 		if(newBright!=-1.0f)
 		{
+			if
+			(
+				FreqSenseBrightness==0.0f &&
+				newBright>0.0f
+			)
+			{
+				//VideoLo->ForcePreload();
+				//VideoHi->ForcePreload();
+			}
 			float tmp = FreqSenseBrightness;
 			FreqSenseBrightness=newBright;
 			if
@@ -2697,11 +2701,11 @@ NextFrame
 
 				if(reverseMultiplierPrev==1.0f)
 				{
-					Sound->DivergeRecallPush(Channel,Pitchbend);
+					Diverge();
 				}
 				else
 				{
-					Sound->DivergeRecallPop(Channel);
+					Recall();
 				}
 			}
 		}
@@ -2921,118 +2925,6 @@ NextFrame
 				GrainStreamActive=false;
 				GrainStreamInactiveSeconds+=secondsElapsed;
 			}
-
-			bool savePointJump=false;
-			bool savePointRecall=false;
-
-			if
-			(
-				LuminScratch==false &&
-				RecordScratch==false
-			)
-			{
-				if
-				(
-					RecallIsSet() &&
-					savePointRecall
-				)
-				{
-					//Jump to where we'd be, had we not done any Save Point jumping
-					Recall();
-				}
-
-				if
-				(
-					savePointJump &&
-					SavePointIndex>=0 &&
-					SavePointSeconds[SavePointIndex]>=0.0
-				)
-				{
-					//Jump to Save Point
-					if(RecallIsSet()==false)
-					{
-						SetRecallOrigin();
-					}
-					if
-					(
-						GetBPM()==0 ||
-						PauseMultiplier==0
-					)
-					{
-						double pos = SavePointSeconds[SavePointIndex];
-						if
-						(
-							pos < 0.0f &&
-							Sound->IsLoaded()==false
-						)
-						{
-							pos=0.0f;
-						}
-						else if(pos <0.0f)
-						{
-							pos += Sound->GetLengthSeconds();
-						}
-						Sound->SetPositionSeconds(Channel,pos);
-					}
-					else
-					{
-						double beatStart=GetBPMFirstBeatSeconds();
-						double measureLength=GetMeasureLengthSeconds();
-						double savePointSeconds=SavePointSeconds[SavePointIndex];
-						if
-						(
-							savePointSeconds < 0.0f &&
-							Sound->IsLoaded()==false
-						)
-						{
-							savePointSeconds=0.0f;
-						}
-						else if(savePointSeconds < 0.0f)
-						{
-							savePointSeconds += Sound->GetLengthSeconds();
-						}
-						double savePointSecondsQuantized=beatStart;
-						double closest=99999.0;
-						for(double test=beatStart;test<savePointSeconds+2*measureLength;test+=0.25*measureLength)
-						{
-							if(fabsf(test-savePointSeconds)<closest)
-							{
-								closest=fabsf(test-savePointSeconds);
-								savePointSecondsQuantized=test;
-							}
-						}
-						double nowSeconds=Sound->GetPositionSeconds(Channel);
-						double savePointMeasureStart=beatStart;
-						while(savePointMeasureStart+measureLength<savePointSecondsQuantized)
-						{
-							savePointMeasureStart+=measureLength;
-						}
-						double savePointSecondsIntoMeasure=savePointSecondsQuantized-savePointMeasureStart;
-						double nowMeasureStart=beatStart;
-						while(nowMeasureStart+measureLength<nowSeconds)
-						{
-							nowMeasureStart+=measureLength;
-						}
-						double timeToWarp=nowMeasureStart+savePointSecondsIntoMeasure;
-						while(timeToWarp<nowSeconds)
-						{
-							timeToWarp+=measureLength;
-						}
-						Sound->SetWarpPoint(Channel,timeToWarp,savePointSecondsQuantized);
-						Sound->DivergeRecallPush(Channel,Pitchbend);
-					}
-				}
-			}
-		}
-
-		if
-		(
-			0 &&
-			VideoSwitchInterval> 0.001f &&
-			GetBeatThisFrame(VideoSwitchInterval)
-		)
-		{
-			SelectNewVideo(true);
 		}
 	}
 
@@ -5751,32 +5643,14 @@ Looping()
 
 void
 TurntableObj::
-SetRecallOrigin()
+Diverge()
 {
 	if(Sound==NULL)
 	{
-		ClearRecallOrigin();
 		return;
 	}
 
-	RecallOrigin=Sound->GetPositionSeconds(Channel);
 	Sound->DivergeRecallPush(Channel,Pitchbend*PauseMultiplier);
-}
-
-void
-TurntableObj::
-ClearRecallOrigin()
-{
-	//if(Channel>=0 && Sound!=NULL) Sound->DivergeRecallPop(Channel);
-	RecallOrigin=-1.0f;
-	Sound->DivergeRecallPop(Channel);
-}
-
-bool
-TurntableObj::
-RecallIsSet()
-{
-	return(Sound!=NULL && RecallOrigin>=0.0f);
 }
 
 void
@@ -5789,12 +5663,18 @@ Recall()
 	}
 
 	//Change our speed instantly.
-	Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier,true);
+	Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier*ReverseMultiplier,true);
+	Sound->SetWarpPoint(Channel);
 	Sound->DivergeRecallPop(Channel);
 
 	SmoothWaveformScrollingSample=Sound->GetPositionSamples(Channel);
-	
-	ClearRecallOrigin();
+}
+
+bool
+TurntableObj::
+RecallIsSet()
+{
+	return(Sound!=NULL && Sound->GetDivergeRecallCount(Channel)>0);
 }
 
 double

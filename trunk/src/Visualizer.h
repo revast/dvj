@@ -25,6 +25,7 @@
 #define	_DVJ_VISUALIZER_H_
 
 #include "LGL.module/LGL.h"
+#include "ProjMapGrid.h"
 #include <vector>
 
 class VisualizerObj;
@@ -211,6 +212,8 @@ private:
 	float			ProjMapOffsetPrevX[4];
 	float			ProjMapOffsetPrevY[4];
 	char			ProjMapCornersPath[2048];
+
+	ProjMapGridObj		ProjMapGrid;
 };
 
 #endif	//_DVJ_VISUALIZER_H_
