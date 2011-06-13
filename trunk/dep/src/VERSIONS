@@ -3,7 +3,7 @@ library		version				src
 SDL		2010.12.18 (5:17pm PST)		hg clone http://hg.libsdl.org/SDL
 SDL_image	1.2.7				http://www.libsdl.org/projects/SDL_image/release/SDL_image-1.2.7.tar.gz
 SDL_net		1.2.7				[1] http://www.libsdl.org/projects/SDL_net/release/SDL_net-1.2.7.tar.gz
-ffmpeg		2010.07.29 (5pm EST)		svn export svn://svn.ffmpeg.org/ffmpeg/trunk ffmpeg
+ffmpeg		2011.06.12 (11:40pm PST)	svn export svn://svn.ffmpeg.org/ffmpeg/trunk ffmpeg
 fftw		3.2.1				http://www.fftw.org/fftw-3.2.1.tar.gz
 JACK		0.118.0				http://jackaudio.org/downloads/jack-audio-connection-kit-0.118.0.tar.gz
 jpeg		6b				[2] http://www.ijg.org/files/jpegsrc.v6b.tar.gz
