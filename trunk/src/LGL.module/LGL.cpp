@@ -9107,10 +9107,19 @@ SwapInNewBufferRGB
 {
 	LGL_ScopeLock bufferLock(__FILE__,__LINE__,BufferSemaphore);
 
-	unsigned char* bufferOld=Buffer;
-	unsigned int bufferBytesOld=BufferBytes;
+	//unsigned char* bufferOld=Buffer;
+	//unsigned int bufferBytesOld=BufferBytes;
 
-	Buffer=bufferRGB;
+	if(BufferBytes<bufferRGBBytes)
+	{
+		if(Buffer)
+		{
+			delete Buffer;
+		}
+		Buffer = new unsigned char[bufferRGBBytes];
+	}
+	//Buffer=bufferRGB;
+	memcpy(Buffer,bufferRGB,bufferRGBBytes);
 	BufferBytes=bufferRGBBytes;
 	BufferWidth=bufferWidth;
 	BufferHeight=bufferHeight;
@@ -9119,8 +9128,8 @@ SwapInNewBufferRGB
 	BufferIsRGB=true;
 	Ready=true;
 
-	bufferRGB=bufferOld;
-	bufferRGBBytes=bufferBytesOld;
+	//bufferRGB=bufferOld;
+	//bufferRGBBytes=bufferBytesOld;
 }
 
 void
@@ -9137,10 +9146,19 @@ SwapInNewBufferYUV
 {
 	LGL_ScopeLock bufferLock(__FILE__,__LINE__,BufferSemaphore);
 
-	unsigned char* bufferOld=Buffer;
-	unsigned int bufferBytesOld=BufferBytes;
+	//unsigned char* bufferOld=Buffer;
+	//unsigned int bufferBytesOld=BufferBytes;
 
-	Buffer=bufferYUV;
+	if(BufferBytes<bufferYUVBytes)
+	{
+		if(Buffer)
+		{
+			delete Buffer;
+		}
+		Buffer = new unsigned char[bufferYUVBytes];
+	}
+	//Buffer=bufferYUV;
+	memcpy(Buffer,bufferYUV,bufferYUVBytes);
 	BufferBytes=bufferYUVBytes;
 	BufferWidth=bufferWidth;
 	BufferHeight=bufferHeight;
@@ -9149,8 +9167,8 @@ SwapInNewBufferYUV
 	BufferIsRGB=false;
 	Ready=true;
 
-	bufferYUV=bufferOld;
-	bufferYUVBytes=bufferBytesOld;
+	//bufferYUV=bufferOld;
+	//bufferYUVBytes=bufferBytesOld;
 }
 
 const char*
@@ -9718,16 +9736,23 @@ SetVideo
 	const char*	path
 )
 {
-	LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
-	if(path==NULL) path="NULL";
+	if
+	(
+		path==NULL ||
+		path[0]=='\0'
+	)
+	{
+		path="NULL";
+	}
 	if(strcmp(Path,path)!=0)
 	{
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 		if(Image)
 		{
 			Image->SetFrameNumber(-1);
 		}
+		strcpy(PathNext,path);
 	}
-	strcpy(PathNext,path);
 }
 
 const char*
@@ -9957,64 +9982,74 @@ GetImage()
 		return(Image);
 	}
 
-if(IsYUV420P()==false)
-{
-	Image->UpdateTexture
-	(
-		frameBuffer->GetBufferWidth(),
-		frameBuffer->GetBufferHeight(),
-		4,
-		frameBuffer->GetBufferRGB(),
-		true,
-		name
-	);
-}
-else
-{
-	Image->YUV_UpdateTexture
-	(
-		BufferWidth,
-		BufferHeight,
-		frameBuffer->GetBufferY(),
-		frameBuffer->GetBufferU(),
-		frameBuffer->GetBufferV(),
-		name
-	);
-	/*
-	if(BufferYUVAsRGB==NULL)
 	{
-		BufferYUVAsRGBBytes=BufferWidth*BufferHeight*4;
-		BufferYUVAsRGB=new unsigned char[BufferYUVAsRGBBytes];
-	}
-
-	if(unsigned char* bufChosen = frameBuffer->GetBufferV())
-	{
-		int width=(bufChosen == frameBuffer->GetBufferY()) ? frameBuffer->GetBufferWidth() : (frameBuffer->GetBufferWidth()/2);
-		int height=(bufChosen == frameBuffer->GetBufferY()) ? frameBuffer->GetBufferHeight() : (frameBuffer->GetBufferHeight()/2);
-		for(int h=0;h<height;h++)
+		LGL_ScopeLock bufferLock(__FILE__,__LINE__,frameBuffer->BufferSemaphore);
+		if(frameBuffer->GetBufferRGB())
 		{
-			for(int w=0;w<width;w++)
+			if(IsYUV420P()==false)
 			{
-				for(int c=0;c<3;c++)
+				Image->UpdateTexture
+				(
+					frameBuffer->GetBufferWidth(),
+					frameBuffer->GetBufferHeight(),
+					4,
+					frameBuffer->GetBufferRGB(),
+					true,
+					name
+				);
+			}
+			else
+			{
+				Image->YUV_UpdateTexture
+				(
+					BufferWidth,
+					BufferHeight,
+					frameBuffer->GetBufferY(),
+					frameBuffer->GetBufferU(),
+					frameBuffer->GetBufferV(),
+					name
+				);
+			/*
+			if(BufferYUVAsRGB==NULL)
+			{
+				BufferYUVAsRGBBytes=BufferWidth*BufferHeight*4;
+				BufferYUVAsRGB=new unsigned char[BufferYUVAsRGBBytes];
+			}
+
+			if(unsigned char* bufChosen = frameBuffer->GetBufferV())
+			{
+				int width=(bufChosen == frameBuffer->GetBufferY()) ? frameBuffer->GetBufferWidth() : (frameBuffer->GetBufferWidth()/2);
+				int height=(bufChosen == frameBuffer->GetBufferY()) ? frameBuffer->GetBufferHeight() : (frameBuffer->GetBufferHeight()/2);
+				for(int h=0;h<height;h++)
 				{
-					BufferYUVAsRGB[c+4*(w+h*width)]=
-						bufChosen[(w+h*width)];
+					for(int w=0;w<width;w++)
+					{
+						for(int c=0;c<3;c++)
+						{
+							BufferYUVAsRGB[c+4*(w+h*width)]=
+								bufChosen[(w+h*width)];
+						}
+					}
 				}
+
+				Image->UpdateTexture
+				(
+					width,
+					height,
+					4,
+					BufferYUVAsRGB,
+					true,
+					name
+				);
+			}
+			*/
 			}
 		}
-
-		Image->UpdateTexture
-		(
-			width,
-			height,
-			4,
-			BufferYUVAsRGB,
-			true,
-			name
-		);
+		else
+		{
+			return(Image);
+		}
 	}
-	*/
-}
 	Image->SetFrameNumber(frameBuffer->GetFrameNumber());
 	FrameNumberDisplayed=frameBuffer->GetFrameNumber();
 
@@ -11447,7 +11482,7 @@ GetFrameBufferReadyList
 		}
 	}
 
-	if(sorted)
+	if(sorted && ret.size()>0)
 	{
 		std::vector<lgl_FrameBufferSortContainer*> sortContainerList;
 		for(unsigned int a=0;a<ret.size();a++)
@@ -11495,7 +11530,7 @@ GetFrameBufferLoadedList
 		}
 	}
 
-	if(sorted)
+	if(sorted && ret.size()>0)
 	{
 		std::vector<lgl_FrameBufferSortContainer*> sortContainerList;
 		for(unsigned int a=0;a<ret.size();a++)

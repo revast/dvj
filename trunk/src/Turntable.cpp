@@ -798,6 +798,10 @@ TurntableObj
 		VideoHi->SetReadAheadMB(0);
 		VideoHi->SetReadAheadDelayMS(10000);
 	}
+	VideoLoPath[0]='\0';
+	VideoHiPath[0]='\0';
+	VideoLoPathShort[0]='\0';
+	VideoHiPathShort[0]='\0';
 	VideoAdvanceRate=1.0f;
 	VideoBrightness=1.0f;
 	SyphonBrightness=0.0f;
@@ -2483,8 +2487,8 @@ NextFrame
 				tmp==0.0f &&
 				FreqSenseBrightness >= 0.0f &&
 				(
-					strcmp(VideoLo->GetPath(),"NULL")==0 ||
-					strcmp(VideoHi->GetPath(),"NULL")==0
+					VideoLoPath[0]=='\0' ||
+					VideoHiPath[0]=='\0'
 				)
 			)
 			{
@@ -4240,6 +4244,11 @@ DrawFrame
 			bool waveArrayFilledBefore=(EntireWaveArrayFillIndex==ENTIRE_WAVE_ARRAY_COUNT);
 
 			LGL_DrawLogPause();
+			float freqSensePathActiveMultiplier=1.0f;
+			if(strcmp(VideoLo->GetPathShort(),VideoLoPathShort)!=0)
+			{
+				freqSensePathActiveMultiplier=0.5f;
+			}
 			Turntable_DrawWaveform
 			(
 				Which,
@@ -4306,9 +4315,9 @@ DrawFrame
 				SyphonBrightness,					//59
 				OscilloscopeBrightness,					//60
 				FreqSenseBrightness,					//61
-				LGL_Min(FreqSensePathBrightness,1.0f),			//61
-				VideoLo->GetPathShort(),
-				VideoHi->GetPathShort(),
+				LGL_Min(FreqSensePathBrightness,1.0f)*freqSensePathActiveMultiplier,
+				VideoLoPathShort,
+				VideoHiPathShort,
 				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()],	//62
 				FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()],	//63
 				FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()],	//64
@@ -4999,6 +5008,20 @@ TurntableObj::
 GetVideoHi()
 {
 	return(VideoHi);
+}
+
+const char*
+TurntableObj::
+GetVideoLoPath()
+{
+	return(VideoLoPath);
+}
+
+const char*
+TurntableObj::
+GetVideoHiPath()
+{
+	return(VideoHiPath);
 }
 
 float
@@ -5843,10 +5866,26 @@ SelectNewVideo
 	{
 		//Change the freq-videos
 		Visualizer->GetNextVideoPathRandomLow(path);
-		VideoLo->SetVideo(path);
+		strcpy(VideoLoPath,path);
+		if(const char* lastSlash = strrchr(VideoLoPath,'/'))
+		{
+			strcpy(VideoLoPathShort,&(lastSlash[1]));
+		}
+		else
+		{
+			strcpy(VideoLoPathShort,VideoLoPath);
+		}
 
 		Visualizer->GetNextVideoPathRandomHigh(path);
-		VideoHi->SetVideo(path);
+		strcpy(VideoHiPath,path);
+		if(const char* lastSlash = strrchr(VideoHiPath,'/'))
+		{
+			strcpy(VideoHiPathShort,&(lastSlash[1]));
+		}
+		else
+		{
+			strcpy(VideoHiPathShort,VideoHiPath);
+		}
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoLo->GetPath());
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoHi->GetPath());
 	}
