@@ -40,3 +40,7 @@ sudo rm -rf /usr/local/lib/jack
 make clean
 cd ..
 
+cd nasm-2.09.08
+make clean
+cd ..
+

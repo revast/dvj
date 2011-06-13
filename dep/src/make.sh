@@ -8,4 +8,6 @@
 ./yasm-1.0.1.sh
 ./ffmpeg.sh
 ./jack-audio-connection-kit-0.118.0.sh
+./nasm-2.09.08.sh
+./libjpeg-turbo-1.1.1.sh
 

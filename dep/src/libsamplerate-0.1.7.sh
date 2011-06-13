@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd libsamplerate-0.1.7
-./configure.dvj
+./configure
 make
 sudo make install
 cd ..
