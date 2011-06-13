@@ -802,7 +802,7 @@ TurntableObj
 	VideoBrightness=1.0f;
 	SyphonBrightness=0.0f;
 	OscilloscopeBrightness=0.0f;
-	FreqSenseBrightness=1.0f;
+	FreqSenseBrightness=0.0f;
 	FreqSensePathBrightness=0.0f;
 
 	FreqSenseLEDGroupFloat=0.0f;
