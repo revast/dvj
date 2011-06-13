@@ -772,13 +772,12 @@ TurntableObj
 
 	TrackListFileUpdates.clear();
 
-	VideoFront=new LGL_VideoDecoder(NULL);
-	VideoFront->SetFrameBufferAddRadius(GetVideoBufferFrames());
-	VideoFront->SetPreloadMaxMB(GetPreloadVideoMaxMB());
-	VideoFront->SetPreloadFromCurrentTime(true);
-	VideoFront->SetReadAheadMB(16);
-	VideoFront->SetReadAheadDelayMS(200);
-	VideoBack=NULL;
+	Video=new LGL_VideoDecoder(NULL);
+	Video->SetFrameBufferAddRadius(GetVideoBufferFrames());
+	Video->SetPreloadMaxMB(GetPreloadVideoMaxMB());
+	Video->SetPreloadFromCurrentTime(true);
+	Video->SetReadAheadMB(16);
+	Video->SetReadAheadDelayMS(200);
 	if(VideoLo==NULL)
 	{
 		VideoLo=new LGL_VideoDecoder(NULL);
@@ -923,15 +922,10 @@ TurntableObj::
 		TrackListFileUpdates[a]=NULL;
 	}
 	TrackListFileUpdates.clear();
-	if(VideoFront)
+	if(Video)
 	{
-		delete VideoFront;
-		VideoFront=NULL;
-	}
-	if(VideoBack)
-	{
-		delete VideoBack;
-		VideoBack=NULL;
+		delete Video;
+		Video=NULL;
 	}
 	if(VideoLo)
 	{
@@ -983,26 +977,26 @@ NextFrame
 	{
 		if(LGL_AudioJackXrun())
 		{
-			VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()/2);
+			Video->SetFrameBufferAddRadius(Video->GetFrameBufferAddRadius()/2);
 		}
 
 		if(LGL_RamFreeMB()<100)
 		{
-			if(VideoFront->GetFrameBufferAddRadius()>2)
+			if(Video->GetFrameBufferAddRadius()>2)
 			{
-				//VideoFront->SetFrameBufferAddRadius(VideoFront->GetFrameBufferAddRadius()-1);
+				//Video->SetFrameBufferAddRadius(Video->GetFrameBufferAddRadius()-1);
 			}
 		}
 		else if(LGL_RamFreeMB()>200)
 		{
-			if(VideoFrontRadiusIncreaseDelayTimer.SecondsSinceLastReset()>0.5f)
+			if(VideoRadiusIncreaseDelayTimer.SecondsSinceLastReset()>0.5f)
 			{
 				int radiusDesired = GetVideoBufferFrames();
-				int radiusNow = VideoFront->GetFrameBufferAddRadius();
+				int radiusNow = Video->GetFrameBufferAddRadius();
 				if(radiusNow<radiusDesired)
 				{
-					VideoFront->SetFrameBufferAddRadius(radiusNow+1);
-					VideoFrontRadiusIncreaseDelayTimer.Reset();
+					Video->SetFrameBufferAddRadius(radiusNow+1);
+					VideoRadiusIncreaseDelayTimer.Reset();
 				}
 			}
 		}
@@ -1427,13 +1421,9 @@ NextFrame
 						sprintf(update,"ALPHA: %s",SoundName);
 						TrackListFileUpdates.push_back(update);
 
-						if(VideoFront)
+						if(Video)
 						{
-							VideoFront->InvalidateAllFrameBuffers();
-						}
-						if(VideoBack)
-						{
-							VideoBack->InvalidateAllFrameBuffers();
+							Video->InvalidateAllFrameBuffers();
 						}
 
 						WhiteFactor=1.0f;
@@ -2786,15 +2776,10 @@ NextFrame
 			DatabaseEntryNow=NULL;
 			VideoEncoderPathSrc[0]='\0';
 			VideoEncoderUnsupportedCodecTime=0.0f;
-			if(VideoFront)
+			if(Video)
 			{
-				VideoFront->InvalidateAllFrameBuffers();
-				VideoFront->SetVideo(NULL);
-			}
-			if(VideoBack)
-			{
-				VideoBack->InvalidateAllFrameBuffers();
-				VideoBack->SetVideo(NULL);
+				Video->InvalidateAllFrameBuffers();
+				Video->SetVideo(NULL);
 			}
 			Mode=0;
 			FilterTextMostRecent[0]='\0';
@@ -4097,12 +4082,12 @@ DrawFrame
 			float videoSecondsBufferedRight=0.0f;
 			float videoSecondsLoadedLeft=0.0f;
 			float videoSecondsLoadedRight=0.0f;
-			if(VideoFront)
+			if(Video)
 			{
-				videoSecondsBufferedLeft=VideoFront->GetSecondsBufferedLeft(false,true);
-				videoSecondsBufferedRight=VideoFront->GetSecondsBufferedRight(false,true);
-				videoSecondsLoadedLeft=VideoFront->GetSecondsBufferedLeft(true,true);
-				videoSecondsLoadedRight=VideoFront->GetSecondsBufferedRight(true,true);
+				videoSecondsBufferedLeft=Video->GetSecondsBufferedLeft(false,true);
+				videoSecondsBufferedRight=Video->GetSecondsBufferedRight(false,true);
+				videoSecondsLoadedLeft=Video->GetSecondsBufferedLeft(true,true);
+				videoSecondsLoadedRight=Video->GetSecondsBufferedRight(true,true);
 			}
 			if(GetVideoBrightnessPreview()==0.0f)
 			{
@@ -4996,31 +4981,10 @@ GetVideo()
 		VideoEncoderAudioOnly
 	)
 	{
-		if(VideoFront!=NULL)
-		{
-			return(VideoFront);
-		}
-		else
-		{
-			return(VideoBack);
-		}
+		return(Video);
 	}
 
 	return(NULL);
-}
-
-LGL_VideoDecoder*
-TurntableObj::
-GetVideoFront()
-{
-	return(VideoFront);
-}
-
-LGL_VideoDecoder*
-TurntableObj::
-GetVideoBack()
-{
-	return(VideoBack);
 }
 
 LGL_VideoDecoder*
@@ -5853,15 +5817,6 @@ GetSecondsSinceFileEverOpened()
 	}
 }
 
-void
-TurntableObj::
-SwapVideos()
-{
-	LGL_VideoDecoder* temp=VideoFront;
-	VideoFront=VideoBack;
-	VideoBack=temp;
-}
-
 bool
 TurntableObj::
 GetSurroundMode()
@@ -5922,46 +5877,23 @@ SelectNewVideo
 				Visualizer->GetNextVideoPathRandomHigh(path);
 			}
 
-			if(path[0]!='\0')
-			{
-				if(VideoBack==NULL)
-				{
-					VideoBack=new LGL_VideoDecoder(path);
-					VideoBack->SetFrameBufferAddRadius(GetVideoBufferFrames());
-				}
-				else
-				{
-					VideoBack->SetVideo(path);
-				}
-			}
-			else
-			{
-				//There aren't any videos available. That's fine.
-				return;
-			}
-
 			VideoOffsetSeconds=LGL_RandFloat(0,1000.0f);
-
-			assert(VideoBack);
 		}
 		else
 		{
 			if
 			(
-				VideoFront &&
-				strcmp(VideoFront->GetPath(),videoFileName)==0
+				Video &&
+				strcmp(Video->GetPath(),videoFileName)==0
 			)
 			{
 				return;
 			}
 
-			VideoFront->SetVideo(videoFileName);
+			Video->SetVideo(videoFileName);
 			VideoOffsetSeconds=0;
 		}
-		//assert(VideoBack);
-		//SwapVideos();
-		//assert(VideoFront);
-		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoFront->GetPath());
+		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",Video->GetPath());
 	}
 }
 
