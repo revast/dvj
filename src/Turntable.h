@@ -294,8 +294,8 @@ static	VisualizerObj*			Visualizer;
 
 	LGL_VideoDecoder*		VideoFront;
 	LGL_VideoDecoder*		VideoBack;
-	LGL_VideoDecoder*		VideoLo;
-	LGL_VideoDecoder*		VideoHi;
+static	LGL_VideoDecoder*		VideoLo;
+static	LGL_VideoDecoder*		VideoHi;
 	float				VideoSwitchInterval;
 	float				VideoOffsetSeconds;
 	float				VideoAdvanceRate;
