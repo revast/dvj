@@ -2362,7 +2362,7 @@ if(1)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		for(int v=0;v<2;v++)
 		{
 			const char* path = (v==0) ? freqSenseHighPathShort : freqSenseLowPathShort;
-			float h = (v==0) ? 0.3f : 0.2f;
+			float h = (v==0) ? 0.65f : 0.35f;
 			float fontHeight2=fontHeight;
 			float fontWidth=LGL_GetFont().GetWidthString(fontHeight2,path);
 			float fontWidthMax=viewportWidth*0.55f;
