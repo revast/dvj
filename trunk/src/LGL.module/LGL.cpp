@@ -77,6 +77,7 @@
 
 #ifdef	LGL_OSX
 
+#include <CoreServices/CoreServices.h>
 #include <Aliases.h>
 #include <mach/mach_init.h>
 #include <mach/thread_policy.h>
@@ -86,6 +87,8 @@
 #include <mach/mach_host.h>
 #include <mach/task.h>
 #include <mach/task_info.h>
+#include <mach/mach.h>
+#include <mach/mach_time.h>
 
 #endif	//LGL_OSX
 
@@ -3070,6 +3073,15 @@ SecondsSinceLastReset() const
 	ret+=(timeNow.tv_usec-TimeAtLastReset.tv_usec)/(1000.0*1000.0);
 	if(ret<0) ret=0;
 	return(ret);
+
+
+	/*
+	int64_t timeNowMach=mach_absolute_time();
+	int64_t deltaMach = timeNowMach - TimeAtLastResetMach;
+	Nanoseconds deltaNano = AbsoluteToNanoseconds( *(AbsoluteTime *) &deltaMach );
+
+	return((*((uint64_t *) (&deltaNano)))/(1000.0*1000.0*1000.0));
+	*/
 }
 
 void
@@ -3077,6 +3089,7 @@ LGL_Timer::
 Reset()
 {
 	gettimeofday(&TimeAtLastReset,NULL);
+	//TimeAtLastResetMach=mach_absolute_time();
 }
 
 unsigned int
@@ -14361,6 +14374,11 @@ lgl_DebugPrintfInternal
 	const char*	string
 )
 {
+	if(lgl_lgl_initialized==false)
+	{
+		return;
+	}
+
 	const float height=0.015f;
 	LGL.DebugPrintfY-=height*2.0f;
 

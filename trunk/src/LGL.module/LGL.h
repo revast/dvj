@@ -440,6 +440,7 @@ public:
 private:
 
 	timeval		TimeAtLastReset;
+	//uint64_t	TimeAtLastResetMach;
 };
 
 
