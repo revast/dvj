@@ -4185,7 +4185,8 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 			//Quantize to n/60.0f
 			for(int a=0;a<10;a++)
 			{
-				if(LGL.SecondsSinceLastFrame<0.5f*((a+1.0f)/60.0f+(a+2.0f)/60.0f))
+				//if(LGL.SecondsSinceLastFrame<0.5f*((a+1.0f)/60.0f+(a+2.0f)/60.0f))
+				if(LGL.SecondsSinceLastFrame<(a+2.0f)/60.0f)
 				{
 					LGL.SecondsSinceLastFrame=(a+1.0f)/60.0f;
 					break;
