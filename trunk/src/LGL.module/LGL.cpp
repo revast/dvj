@@ -13323,7 +13323,7 @@ GetImage()
 		SrcPath
 	);
 	Image->SetFrameNumber(1);
-	Image->InvertY=false;
+	Image->InvertY=true;
 
 	return(Image);
 }
@@ -17323,6 +17323,7 @@ LGL_Sound
 	LoadSecondsUntilLoaded=9999.0f;
 
 	BadFile=false;
+	Silent=false;
 
 	PercentLoaded=0.0f;
 	LoadedSmooth=0.0f;
@@ -18868,6 +18869,13 @@ GetMetadata
 	return(true);
 }
 
+bool
+LGL_Sound::
+GetSilent()	const
+{
+	return(Silent);
+}
+
 float
 LGL_Sound::
 GetVolumePeak()
@@ -19045,6 +19053,7 @@ LoadToMemory()
 		if(BufferLength>BufferLengthTotal) BufferLength=BufferLengthTotal;
 		bzero(Buffer,BufferLength);
 		MetadataVolumePeak=0.0f;
+		Silent=true;
 	}
 	else
 	{
