@@ -3584,6 +3584,25 @@ Turntable_DrawSliders
 			1
 		);
 
+		float pointsXY[8];
+		pointsXY[0]=sliderL;
+		pointsXY[1]=sliderB;
+		pointsXY[2]=sliderR;
+		pointsXY[3]=sliderB;
+		pointsXY[4]=sliderR;
+		pointsXY[5]=sliderT;
+		pointsXY[6]=sliderL;
+		pointsXY[7]=sliderT;
+
+		LGL_DrawLineStripToScreen
+		(
+			pointsXY,
+			4,
+			r,g,b,1,
+			thickness
+		);
+
+		/*
 		//Left
 		LGL_DrawLineToScreen
 		(
@@ -3619,6 +3638,7 @@ Turntable_DrawSliders
 			r,g,b,1,
 			thickness
 		);
+		*/
 
 		LGL_GetFont().DrawString
 		(
