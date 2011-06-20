@@ -11529,6 +11529,7 @@ MaybeInvalidateBuffers()
 
 	std::vector<lgl_FrameBuffer*>& list = FrameBufferList;
 	int subtractRadius = FrameBufferSubtractRadius;
+	long nextDecodeFrameNumber = GetNextFrameNumberToDecodePredictNext(false);
 	for(unsigned int a=0;a<list.size();a++)
 	{
 		if
@@ -11540,7 +11541,7 @@ MaybeInvalidateBuffers()
 				fabsf(frameNumberPredict-list[a]->GetFrameNumber())			> subtractRadius &&
 				fabsf((frameNumberNow-frameNumberLength)-list[a]->GetFrameNumber())	> subtractRadius &&
 				fabsf((frameNumberNow+frameNumberLength)-list[a]->GetFrameNumber())	> subtractRadius &&
-				GetNextFrameNumberToDecodePredictNext(false) != list[a]->GetFrameNumber()
+				nextDecodeFrameNumber != list[a]->GetFrameNumber()
 			)
 		)
 		{
