@@ -725,6 +725,10 @@ GetVisualBrightnessAtCenter()
 	);
 }
 
+float colorCoolR=-1.0f;
+float colorCoolG=-1.0f;
+float colorCoolB=-1.0f;
+
 void
 GetColorCool
 (
@@ -733,10 +737,21 @@ GetColorCool
 	float&	b
 )
 {
-	r=dvjrcConfigFile->read<float>("colorCoolR",0.0f);
-	g=dvjrcConfigFile->read<float>("colorCoolG",0.0f);
-	b=dvjrcConfigFile->read<float>("colorCoolB",0.5f);
+	if(colorCoolR==-1.0f)
+	{
+		colorCoolR=dvjrcConfigFile->read<float>("colorCoolR",0.0f);
+		colorCoolG=dvjrcConfigFile->read<float>("colorCoolG",0.0f);
+		colorCoolB=dvjrcConfigFile->read<float>("colorCoolB",0.5f);
+	}
+
+	r=colorCoolR;
+	g=colorCoolG;
+	b=colorCoolB;
 }
+
+float colorWarmR=-1.0f;
+float colorWarmG=-1.0f;
+float colorWarmB=-1.0f;
 
 void
 GetColorWarm
@@ -746,9 +761,16 @@ GetColorWarm
 	float&	b
 )
 {
-	r=dvjrcConfigFile->read<float>("colorWarmR",0.4f);
-	g=dvjrcConfigFile->read<float>("colorWarmG",0.2f);
-	b=dvjrcConfigFile->read<float>("colorWarmB",1.0f);
+	if(colorWarmR==-1.0f)
+	{
+		colorWarmR=dvjrcConfigFile->read<float>("colorWarmR",0.4f);
+		colorWarmG=dvjrcConfigFile->read<float>("colorWarmG",0.2f);
+		colorWarmB=dvjrcConfigFile->read<float>("colorWarmB",1.0f);
+	}
+
+	r=colorWarmR;
+	g=colorWarmG;
+	b=colorWarmB;
 }
 
 int
