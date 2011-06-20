@@ -915,6 +915,9 @@ double myH[1024];
 double myZ[1024];
 int myPstate;
 
+//#define	GL_TEXTURE_LGL (GL_TEXTURE_2D)
+#define	GL_TEXTURE_LGL (GL_TEXTURE_RECTANGLE_ARB)
+
 //GL2 Function Pointer Mapping
 
 typedef void (*glShaderSourceARB_Func)
@@ -2556,18 +2559,24 @@ printf("CreateWindow(%i): %i x %i\n",
 	LGL.VidCamHeightNow=1;
 	LGL.VidCamBufferRaw=(unsigned char*)malloc(3);
 	LGL.VidCamBufferProcessed=(unsigned char*)malloc(3);
-	LGL.VidCamImageRaw=new LGL_Image
+	LGL.VidCamImageRaw=NULL;
+	/*
+	new LGL_Image
 	(
 		LGL.VidCamWidthNow,LGL.VidCamHeightNow,
 		3,
 		LGL.VidCamBufferRaw
 	);
-	LGL.VidCamImageProcessed=new LGL_Image
+	*/
+	LGL.VidCamImageProcessed=NULL;
+	/*
+	new LGL_Image
 	(
 		LGL.VidCamWidthNow,LGL.VidCamHeightNow,
 		3,
 		LGL.VidCamBufferProcessed
 	);
+	*/
 	LGL.VidCamFD=-1;
 	LGL.VidCamCaptureDelay=(2.0/30.0);
 	LGL.VidCamCaptureDelayTimer.Reset();
@@ -3062,10 +3071,23 @@ LGL_Timer::
 	//
 }
 
+double ConvertMicrosecondsToDouble(UnsignedWidePtr microsecondsValue)
+{ 
+	double twoPower32 = 4294967296.0; 
+	double doubleValue; 
+
+	double upperHalf = (double)microsecondsValue->hi; 
+	double lowerHalf = (double)microsecondsValue->lo; 
+
+	doubleValue = (upperHalf * twoPower32) + lowerHalf; 
+	return doubleValue;
+}
+
 double
 LGL_Timer::
 SecondsSinceLastReset() const
 {
+	/*
 	timeval timeNow;
 	gettimeofday(&timeNow,NULL);
 
@@ -3073,7 +3095,7 @@ SecondsSinceLastReset() const
 	ret+=(timeNow.tv_usec-TimeAtLastReset.tv_usec)/(1000.0*1000.0);
 	if(ret<0) ret=0;
 	return(ret);
-
+	*/
 
 	/*
 	int64_t timeNowMach=mach_absolute_time();
@@ -3082,14 +3104,30 @@ SecondsSinceLastReset() const
 
 	return((*((uint64_t *) (&deltaNano)))/(1000.0*1000.0*1000.0));
 	*/
+
+	UnsignedWide currentTime;
+	Microseconds(&currentTime);
+	double currentTimeAsDouble = ConvertMicrosecondsToDouble(&currentTime);
+
+	double oneMicrosecond = .000001;
+	double elapsedTime = currentTimeAsDouble - TimeAtLastResetMicroSeconds;
+
+	// Convert elapsed time to seconds.
+	double elapsedTimeInSeconds = elapsedTime * oneMicrosecond;
+	return(elapsedTimeInSeconds);
 }
 
 void
 LGL_Timer::
 Reset()
 {
-	gettimeofday(&TimeAtLastReset,NULL);
+	//gettimeofday(&TimeAtLastReset,NULL);
+
 	//TimeAtLastResetMach=mach_absolute_time();
+
+	UnsignedWide currentTime; 
+	Microseconds(&currentTime); 
+	TimeAtLastResetMicroSeconds = ConvertMicrosecondsToDouble(&currentTime); 
 }
 
 unsigned int
@@ -6339,7 +6377,7 @@ LGL_Image
 {
 	ReferenceCount=0;
 	TextureGL=0;
-	TextureGLRect=false;
+	TextureGLRect=(GL_TEXTURE_LGL==GL_TEXTURE_RECTANGLE_ARB);
 
 #ifdef	LGL_NO_GRAPHICS
 	return;
@@ -6387,7 +6425,7 @@ LGL_Image
 {
 	ReferenceCount=0;
 	TextureGL=0;
-	TextureGLRect=false;
+	TextureGLRect=(GL_TEXTURE_LGL==GL_TEXTURE_RECTANGLE_ARB);
 
 #ifdef	LGL_NO_GRAPHICS
 	return;
@@ -6481,7 +6519,12 @@ LGL_Image
 	TexH=LGL_NextPowerOfTwo(ImgH);
 
 	TextureGL=0;
-	TextureGLRect=false;
+	TextureGLRect=(GL_TEXTURE_LGL==GL_TEXTURE_RECTANGLE_ARB);
+	if(TextureGLRect)
+	{
+		TexW=ImgW;
+		TexH=ImgH;
+	}
 	TextureGLMine=true;
 	FrameBufferImage=false;
 	InvertY=false;
@@ -6523,7 +6566,7 @@ LGL_Image
 {
 	ReferenceCount=0;
 	TextureGL=0;
-	TextureGLRect=false;
+	TextureGLRect=(GL_TEXTURE_LGL==GL_TEXTURE_RECTANGLE_ARB);
 
 #ifdef	LGL_NO_GRAPHICS
 	return;
@@ -6568,15 +6611,19 @@ LGL_Image
 
 	TexW=LGL_NextPowerOfTwo(LGL.WindowResolutionX[LGL.DisplayNow]);
 	TexH=LGL_NextPowerOfTwo(LGL.WindowResolutionY[LGL.DisplayNow]);
+	if(TextureGLRect)
+	{
+		TexW=LGL.WindowResolutionX[LGL.DisplayNow];
+		TexH=LGL.WindowResolutionY[LGL.DisplayNow];
+	}
 	TextureGL=0;
-	TextureGLRect=false;
 	TextureGLMine=true;
 
 	glGenTextures(1,&(TextureGL));
-	glBindTexture(GL_TEXTURE_2D,TextureGL);
+	glBindTexture(GL_TEXTURE_LGL,TextureGL);
 	glTexImage2D
 	(
-		GL_TEXTURE_2D,
+		GL_TEXTURE_LGL,
 		0,			//Level of Detail=0
 		GL_RGB,			//Internal Format
 		TexW,TexH,
@@ -6585,16 +6632,16 @@ LGL_Image
 		GL_UNSIGNED_BYTE,
 		NULL
 	);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	//glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri
 	(
-		GL_TEXTURE_2D,
+		GL_TEXTURE_LGL,
 		GL_TEXTURE_MIN_FILTER,
 		GL_NEAREST
 	);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	FrameBufferUpdate();
 
@@ -6884,10 +6931,10 @@ DrawToScreen
 
 	//Prepare RGB vs YUV (Omega)
 
-if(TextureGLRect)
-{
-	enableShader=false;
-}
+	if(TextureGLRect)
+	{
+		enableShader=false;
+	}
 
 	if(enableShader)
 	{
@@ -6925,16 +6972,16 @@ if(TextureGLRect)
 	if(YUV_Available())
 	{
 		gl2ActiveTexture(GL_TEXTURE0_ARB);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[0]);
+		glEnable(GL_TEXTURE_LGL);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[0]);
 
 		gl2ActiveTexture(GL_TEXTURE1_ARB);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[1]);
+		glEnable(GL_TEXTURE_LGL);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[1]);
 
 		gl2ActiveTexture(GL_TEXTURE2_ARB);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[2]);
+		glEnable(GL_TEXTURE_LGL);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[2]);
 		
 		shader->SetUniformAttributeInt
 		(
@@ -6957,17 +7004,17 @@ if(TextureGLRect)
 		if(TextureGLRect)
 		{
 			//gl2ActiveTexture(GL_TEXTURE0_ARB);
+			glDisable(GL_TEXTURE_LGL);
 			glEnable(GL_TEXTURE_RECTANGLE_ARB);
 			glBindTexture(GL_TEXTURE_RECTANGLE_ARB,textureGL);
-			glDisable(GL_TEXTURE_2D);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		}
 		else
 		{
 			gl2ActiveTexture(GL_TEXTURE0_ARB);
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D,textureGL);
+			glEnable(GL_TEXTURE_LGL);
+			glBindTexture(GL_TEXTURE_LGL,textureGL);
 		}
 	}
 
@@ -7024,13 +7071,13 @@ if(TextureGLRect)
 	if(YUV_Available())
 	{
 		gl2ActiveTexture(GL_TEXTURE0_ARB);
-		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_LGL);
 
 		gl2ActiveTexture(GL_TEXTURE1_ARB);
-		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_LGL);
 
 		gl2ActiveTexture(GL_TEXTURE2_ARB);
-		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_LGL);
 
 		gl2ActiveTexture(GL_TEXTURE0_ARB);
 	}
@@ -7042,7 +7089,7 @@ if(TextureGLRect)
 		}
 		else
 		{
-			glDisable(GL_TEXTURE_2D);
+			glDisable(GL_TEXTURE_LGL);
 		}
 	}
 
@@ -7113,8 +7160,8 @@ DrawToScreenAsLine
 	{
 		glDisable(GL_BLEND);
 	}
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D,TextureGL);
+	glEnable(GL_TEXTURE_LGL);
+	glBindTexture(GL_TEXTURE_LGL,TextureGL);
 	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
 	glBegin(GL_QUADS);
 	{
@@ -7181,7 +7228,7 @@ DrawToScreenAsLine
 	glEnd();
 
 	glDisable(GL_BLEND);
-	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_TEXTURE_LGL);
 }
 
 void
@@ -7207,10 +7254,10 @@ LoadSurfaceToTexture
 	{
 		TextureGLMine=true;
 		glGenTextures(1,&(TextureGL));
-		glBindTexture(GL_TEXTURE_2D,TextureGL);
+		glBindTexture(GL_TEXTURE_LGL,TextureGL);
 		glTexImage2D
 		(
-			GL_TEXTURE_2D,
+			GL_TEXTURE_LGL,
 			0,					//Level of Detail=0
 			AlphaChannel ? GL_RGBA : GL_RGB,	//Internal Format
 			TexW,TexH,
@@ -7224,7 +7271,7 @@ LoadSurfaceToTexture
 		{
 			glTexSubImage2D
 			(
-				GL_TEXTURE_2D,
+				GL_TEXTURE_LGL,
 				0,					//Level of Detail=0
 				0,					//X-Offset
 				0,					//Y-Offset
@@ -7241,20 +7288,20 @@ LoadSurfaceToTexture
 			/*
 			glTexParameteri
 			(
-				GL_TEXTURE_2D,
+				GL_TEXTURE_LGL,
 				GL_TEXTURE_MIN_FILTER,
 				GL_LINEAR
 			);
 			*/
 			glTexParameteri
 			(
-				GL_TEXTURE_2D,
+				GL_TEXTURE_LGL,
 				GL_TEXTURE_MIN_FILTER,
 				GL_NEAREST
 			);
 			glTexParameteri
 			(
-				GL_TEXTURE_2D,
+				GL_TEXTURE_LGL,
 				GL_TEXTURE_MAG_FILTER,
 				GL_LINEAR
 			);
@@ -7263,20 +7310,20 @@ LoadSurfaceToTexture
 		{
 			glTexParameteri
 			(
-				GL_TEXTURE_2D,
+				GL_TEXTURE_LGL,
 				GL_TEXTURE_MIN_FILTER,
 				GL_NEAREST
 			);
 			glTexParameteri
 			(
-				GL_TEXTURE_2D,
+				GL_TEXTURE_LGL,
 				GL_TEXTURE_MAG_FILTER,
 				GL_NEAREST
 			);
 		}
 		
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
 		/*
 		gluBuild2DMipmapLevels
@@ -7299,12 +7346,12 @@ LoadSurfaceToTexture
 	{
 		TextureGL=loadToExistantGLTexture;
 		TextureGLMine=false;
-		glBindTexture(GL_TEXTURE_2D,TextureGL);
+		glBindTexture(GL_TEXTURE_LGL,TextureGL);
 		if(SurfaceSDL)
 		{
 			glTexSubImage2D
 			(
-				GL_TEXTURE_2D,
+				GL_TEXTURE_LGL,
 				0,				//Level of Detail=0
 				loadToExistantGLTextureX,	//X-Offset
 				loadToExistantGLTextureY,	//Y-Offset
@@ -7389,10 +7436,10 @@ UpdateTexture
 		TextureGLMine=true;
 
 		glGenTextures(1,&(TextureGL));
-		glBindTexture(GL_TEXTURE_2D,TextureGL);
+		glBindTexture(GL_TEXTURE_LGL,TextureGL);
 		glTexImage2D
 		(
-			GL_TEXTURE_2D,
+			GL_TEXTURE_LGL,
 			0,			//Level of Detail=0
 			GL_RGB,			//Internal Format
 			TexW,TexH,
@@ -7401,16 +7448,16 @@ UpdateTexture
 			GL_UNSIGNED_BYTE,
 			NULL
 		);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		//glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri
 		(
-			GL_TEXTURE_2D,
+			GL_TEXTURE_LGL,
 			GL_TEXTURE_MIN_FILTER,
 			GL_NEAREST
 		);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	}
 
 	if(w!=ImgW)
@@ -7424,8 +7471,8 @@ UpdateTexture
 	assert(bytesperpixel==3 || bytesperpixel==4);
 	if(data==NULL)
 	{
-//LGL_Assertf(data!=NULL,("LGL_Image::UpdateTexture(): NULL data! WTF!\n"));
-printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
+		//LGL_Assertf(data!=NULL,("LGL_Image::UpdateTexture(): NULL data! WTF!\n"));
+		printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
 		return;
 	}
 	LinearInterpolation=inLinearInterpolation;
@@ -7443,24 +7490,15 @@ printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
 
 	UpdatePixelBufferObjects();
 
-	bool pboReady = gl2IsBuffer(PixelBufferObjectFrontGL);
-
 	if(TextureGL==0)
 	{
 		//Though surface might be quite undefined at this point... Hmm...
 		LoadSurfaceToTexture(LinearInterpolation);
 	}
 
-	glBindTexture(GL_TEXTURE_2D,TextureGL);
-	if(pboReady)
-	{
-		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
-		gl2BufferData(GL_PIXEL_UNPACK_BUFFER, ImgW*ImgH*bytesperpixel, data, GL_STREAM_DRAW);
-	}
-	else
-	{
-		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
-	}
+	glBindTexture(GL_TEXTURE_LGL,TextureGL);
+
+	bool pboReady=false;
 
 	//Swap
 	/*
@@ -7468,6 +7506,9 @@ printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
 	PixelBufferObjectBackGL=PixelBufferObjectFrontGL;
 	PixelBufferObjectFrontGL=tmp;
 	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectFrontGL);
+
+	pboReady = gl2IsBuffer(PixelBufferObjectFrontGL);
+
 	if(PixelBufferVirgin)
 	{
 		pboReady=false;
@@ -7476,20 +7517,53 @@ printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
 	}
 	*/
 
-	glTexSubImage2D
+#ifdef	LGL_OSX
+	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+	glTexParameteri
 	(
-		GL_TEXTURE_2D,
-		0,			//Level of Detail=0
-		0,			//X-Offset
-		0,			//Y-Offset
-		ImgW,
-		ImgH,
-		bytesperpixel==3?GL_RGB:GL_BGRA,
-		GL_UNSIGNED_BYTE,
-		pboReady?0:data
+		GL_TEXTURE_LGL,
+		GL_TEXTURE_STORAGE_HINT_APPLE,
+		GL_STORAGE_CACHED_APPLE
 	);
+	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+	pboReady=false;
+#endif
+
+LGL_Timer timer;
+	if(TextureGLRect)
+	{
+		glTexImage2D
+		(
+			GL_TEXTURE_LGL,
+			0,
+			GL_RGBA,
+			ImgW,
+			ImgH,
+			0,
+			GL_BGRA,
+			GL_UNSIGNED_INT_8_8_8_8_REV,
+			pboReady?0:data
+		);
+	}
+	else
+	{
+		glTexSubImage2D
+		(
+			GL_TEXTURE_LGL,
+			0,			//Level of Detail=0
+			0,			//X-Offset
+			0,			//Y-Offset
+			ImgW,
+			ImgH,
+			bytesperpixel==3?GL_RGB:GL_BGRA,
+			GL_UNSIGNED_INT_8_8_8_8_REV,
+			pboReady?0:data
+		);
+	}
+LGL_DebugPrintf("glTexSubImage2D(): %f\n",timer.SecondsSinceLastReset());
 
 	/*
+	pboReady = gl2IsBuffer(PixelBufferObjectBackGL);
 	if(pboReady)
 	{
 		gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,PixelBufferObjectBackGL);
@@ -7501,11 +7575,12 @@ printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
 			gl2UnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		}
 	}
-	*/
 
 	gl2BindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+	*/
 
 	InvertY=false;
+	glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
 }
 
 void
@@ -7603,10 +7678,10 @@ FrameBufferUpdate()
 	{
 		glReadBuffer(GL_BACK_LEFT);
 	}
-	glBindTexture(GL_TEXTURE_2D,TextureGL);
+	glBindTexture(GL_TEXTURE_LGL,TextureGL);
 	glCopyTexSubImage2D
 	(
-		GL_TEXTURE_2D,	//target
+		GL_TEXTURE_LGL,	//target
 		0,		//level
 		0,		//xoffset
 		0,		//yoffset
@@ -8297,10 +8372,10 @@ YUV_ConstructTextures()
 		int w = (c==0) ? YUV_TexW : (YUV_TexW/2);
 		int h = (c==0) ? YUV_TexH : (YUV_TexH/2);
 		glGenTextures(1,&YUV_TextureGL[c]);
-		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[c]);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[c]);
 		glTexImage2D
 		(
-			GL_TEXTURE_2D,
+			GL_TEXTURE_LGL,
 			0,			//Level of Detail=0
 			GL_LUMINANCE,		//Internal Format
 			w,
@@ -8310,16 +8385,16 @@ YUV_ConstructTextures()
 			GL_UNSIGNED_BYTE,
 			NULL
 		);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		//glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri
 		(
-			GL_TEXTURE_2D,
+			GL_TEXTURE_LGL,
 			GL_TEXTURE_MIN_FILTER,
 			GL_NEAREST
 		);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	}
 }
 
@@ -8499,7 +8574,7 @@ printf("LGL_Image::YUV_UpdateTexture(): NULL data! WTF!\n");
 		int imgWNow = (c==0) ? YUV_ImgW : (YUV_ImgW/2);
 		int imgHNow = (c==0) ? YUV_ImgH : (YUV_ImgH/2);
 
-		glBindTexture(GL_TEXTURE_2D,YUV_TextureGL[c]);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[c]);
 		if(pboReady)
 		{
 			gl2BindBuffer
@@ -8522,7 +8597,7 @@ printf("LGL_Image::YUV_UpdateTexture(): NULL data! WTF!\n");
 
 		glTexSubImage2D
 		(
-			GL_TEXTURE_2D,
+			GL_TEXTURE_LGL,
 			0,			//Level of Detail=0
 			0,			//X-Offset
 			0,			//Y-Offset
@@ -11337,8 +11412,13 @@ MaybeDecodeImage
 	//If we read a frame, put it into our lgl_FrameBuffer
 	if(frameRead)
 	{
-		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
+		char path[2048];
+		{
+			LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
+			strcpy(path,Path);
+		}
 
+		/*
 		if(SDL_ThreadID()==LGL.ThreadIDMain)
 		{
 			LGL_DebugPrintf("MAIN\n");
@@ -11347,6 +11427,7 @@ MaybeDecodeImage
 		{
 			LGL_DebugPrintf("THREAD\n");
 		}
+		*/
 
 		if(frameBuffer)
 		{
@@ -11354,7 +11435,7 @@ MaybeDecodeImage
 			{
 				frameBuffer->SwapInNewBufferRGB
 				(
-					Path,
+					path,
 					BufferRGB,	//Changes...
 					BufferRGBBytes,	//Changes...
 					BufferWidth,
@@ -11366,7 +11447,7 @@ MaybeDecodeImage
 			{
 				frameBuffer->SwapInNewBufferYUV
 				(
-					Path,
+					path,
 					BufferYUV,	//Changes...
 					BufferYUVBytes,	//Changes...
 					BufferWidth,
@@ -11459,8 +11540,8 @@ MaybeInvalidateBuffers()
 			)
 		)
 		{
-			list[a]->NullifyBuffer();
-			//list[a]->InvalidateBuffer();
+			//list[a]->NullifyBuffer();
+			list[a]->Invalidate();
 		}
 	}
 }
@@ -13238,6 +13319,7 @@ GetImage()
 		SrcPath
 	);
 	Image->SetFrameNumber(1);
+	Image->InvertY=false;
 
 	return(Image);
 }
@@ -13771,13 +13853,14 @@ LGL_Font
 
 	//Create our Font texture.
 	glGenTextures(1,&(TextureGL));
-	glBindTexture(GL_TEXTURE_2D,TextureGL);
+	glBindTexture(GL_TEXTURE_LGL,TextureGL);
 	glTexImage2D
 	(
-		GL_TEXTURE_2D,
+		GL_TEXTURE_LGL,
 		0,			//Level of Detail=0
 		GL_RGBA,		//Internal Format
-		TextureSideLength,TextureSideLength,
+		TextureSideLength,
+		TextureSideLength,
 		0,			//Boarder=0
 		GL_RGBA,
 		GL_UNSIGNED_BYTE,
@@ -13785,19 +13868,19 @@ LGL_Font
 	);
 	glTexParameteri
 	(
-		GL_TEXTURE_2D,
+		GL_TEXTURE_LGL,
 		GL_TEXTURE_MIN_FILTER,
 		GL_NEAREST
 	);
 	glTexParameteri
 	(
-		GL_TEXTURE_2D,
+		GL_TEXTURE_LGL,
 		GL_TEXTURE_MAG_FILTER,
 		GL_NEAREST
 	);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_LGL, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
 	LGL.TexturePixels+=TextureSideLength*TextureSideLength;
 
@@ -13812,7 +13895,7 @@ LGL_Font
 		
 		if(LGL_FileExists(path))
 		{
-			Glyph[a]=new LGL_Image(path,false,true,TextureGL,x,y);/*{{{*//*}}}*/
+			Glyph[a]=new LGL_Image(path,false,true,TextureGL,x,y);
 			GlyphTexLeft[a]=x;
 			GlyphTexRight[a]=x+Glyph[a]->GetWidth();
 			GlyphTexBottom[a]=y+Glyph[a]->GetHeight();
@@ -14043,8 +14126,16 @@ const	char	*string,
 		
 		float texLeft = (GlyphTexLeft[ch]+safety)/(float)TextureSideLength;
 		float texRight = (GlyphTexRight[ch]-safety)/(float)TextureSideLength;
-		float texBottom = (GlyphTexBottom[ch]-safety)/(float)TextureSideLength;	//Mote: bottom is numerically greater than top, here.
+		float texBottom = (GlyphTexBottom[ch]-safety)/(float)TextureSideLength;	//Note: bottom is numerically greater than top, here.
 		float texTop = (GlyphTexTop[ch]+safety)/(float)TextureSideLength;
+
+		if(GL_TEXTURE_LGL==GL_TEXTURE_RECTANGLE_ARB)
+		{
+			texLeft = (GlyphTexLeft[ch]+safety);
+			texRight = (GlyphTexRight[ch]-safety);
+			texBottom = (GlyphTexBottom[ch]-safety);	//Note: bottom is numerically greater than top, here.
+			texTop = (GlyphTexTop[ch]+safety);
+		}
 
 		textureArray[(a*16)+0] = texLeft;	//LB.x
 		textureArray[(a*16)+1] = texBottom;	//LB.y
@@ -14085,10 +14176,13 @@ const	char	*string,
 	//glLoadIdentity();
 	//glScalef(1.0f/TextureSideLength, 1.0f/TextureSideLength, 1);
 
+	LGL_Shader* shader=&LGL_Image::ImageShader;
+	shader->Disable();
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D,TextureGL);
+	glEnable(GL_TEXTURE_LGL);
+	glBindTexture(GL_TEXTURE_LGL,TextureGL);
 
 	glEnableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
@@ -14131,7 +14225,7 @@ const	char	*string,
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
 
-	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_TEXTURE_LGL);
 
 	//glPopMatrix();
 
@@ -30832,7 +30926,7 @@ Init
 			timeoutSeconds!=0,
 			timeoutSeconds
 		);
-		if(0 && mainBlocked)
+		if(mainBlocked)
 		{
 			printf("Main thread blocks on semaphore!\n");
 			printf("\tName: %s\n",name);
