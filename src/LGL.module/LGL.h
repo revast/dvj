@@ -439,8 +439,9 @@ public:
 
 private:
 
-	timeval		TimeAtLastReset;
+	//timeval	TimeAtLastReset;
 	//uint64_t	TimeAtLastResetMach;
+	double		TimeAtLastResetMicroSeconds;
 };
 
 
