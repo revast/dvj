@@ -1785,102 +1785,116 @@ GetOscClientList()
 	return(ret);
 }
 
+DVJ_GuiElement	faders[FADER_MAX];
+bool		fadersCached=false;
+
 DVJ_GuiElement
 GetFader
 (
 	int	index
 )
 {
-	index=LGL_Clamp(0,index,FADER_MAX);
+	index=LGL_Clamp(0,index,FADER_MAX-1);
 
-	//Defaults
-	DVJ_GuiElement ret = GUI_ELEMENT_NULL;
-	if(index==0)
+	if(fadersCached==false)
 	{
-		ret=GUI_ELEMENT_EQ_LOW;
-	}
-	else if(index==1)
-	{
-		ret=GUI_ELEMENT_EQ_MID;
-	}
-	else if(index==2)
-	{
-		ret=GUI_ELEMENT_EQ_HIGH;
-	}
-	else if(index==3)
-	{
-		ret=GUI_ELEMENT_EQ_GAIN;
-	}
-	else if(index==4)
-	{
-		ret=GUI_ELEMENT_VIDEO;
+		for(int i=0;i<FADER_MAX;i++)
+		{
+			//Defaults
+			DVJ_GuiElement ret = GUI_ELEMENT_NULL;
+			if(i==0)
+			{
+				ret=GUI_ELEMENT_EQ_LOW;
+			}
+			else if(i==1)
+			{
+				ret=GUI_ELEMENT_EQ_MID;
+			}
+			else if(i==2)
+			{
+				ret=GUI_ELEMENT_EQ_HIGH;
+			}
+			else if(i==3)
+			{
+				ret=GUI_ELEMENT_EQ_GAIN;
+			}
+			else if(i==4)
+			{
+				ret=GUI_ELEMENT_VIDEO;
+			}
+
+			char key[512];
+			sprintf(key,"Fader%02i",i);
+
+			std::string valStr = dvjrcConfigFile->read<std::string>(key,"NULL");
+			const char* val=valStr.c_str();
+
+			//Key/Vals
+			if(strcasecmp(val,"NULL")==0)
+			{
+				ret=GUI_ELEMENT_NULL;
+			}
+			else if(strcasecmp(val,"LowEQ")==0)
+			{
+				ret=GUI_ELEMENT_EQ_LOW;
+			}
+			else if(strcasecmp(val,"MidEQ")==0)
+			{
+				ret=GUI_ELEMENT_EQ_MID;
+			}
+			else if(strcasecmp(val,"HighEQ")==0)
+			{
+				ret=GUI_ELEMENT_EQ_HIGH;
+			}
+			else if(strcasecmp(val,"Gain")==0)
+			{
+				ret=GUI_ELEMENT_EQ_GAIN;
+			}
+			else if(strcasecmp(val,"Video")==0)
+			{
+				ret=GUI_ELEMENT_VIDEO;
+			}
+			else if(strcasecmp(val,"VideoFreqSense")==0)
+			{
+				ret=GUI_ELEMENT_VIDEO_FREQSENSE;
+			}
+			else if(strcasecmp(val,"Syphon")==0)
+			{
+				ret=GUI_ELEMENT_SYPHON;
+			}
+			else if(strcasecmp(val,"Oscilloscope")==0)
+			{
+				ret=GUI_ELEMENT_OSCILLOSCOPE;
+			}
+			else if(strcasecmp(val,"LEDFreqSense")==0)
+			{
+				ret=GUI_ELEMENT_LED_FREQSENSE;
+			}
+			else if(strcasecmp(val,"LEDColorLow")==0)
+			{
+				ret=GUI_ELEMENT_LED_COLOR_LOW;
+			}
+			else if(strcasecmp(val,"LEDColorHigh")==0)
+			{
+				ret=GUI_ELEMENT_LED_COLOR_HIGH;
+			}
+			else if(strcasecmp(val,"LEDColorHighWash")==0)
+			{
+				ret=GUI_ELEMENT_LED_COLOR_HIGH_WASH;
+			}
+			else if(strcasecmp(val,"LEDGroup")==0)
+			{
+				ret=GUI_ELEMENT_LED_GROUP;
+			}
+
+			faders[i]=ret;
+		}
+
+		fadersCached=true;
 	}
 
-	char key[512];
-	sprintf(key,"Fader%02i",index);
 
-	std::string valStr = dvjrcConfigFile->read<std::string>(key,"NULL");
-	const char* val=valStr.c_str();
-
-	//Key/Vals
-	if(strcasecmp(val,"NULL")==0)
-	{
-		ret=GUI_ELEMENT_NULL;
-	}
-	else if(strcasecmp(val,"LowEQ")==0)
-	{
-		ret=GUI_ELEMENT_EQ_LOW;
-	}
-	else if(strcasecmp(val,"MidEQ")==0)
-	{
-		ret=GUI_ELEMENT_EQ_MID;
-	}
-	else if(strcasecmp(val,"HighEQ")==0)
-	{
-		ret=GUI_ELEMENT_EQ_HIGH;
-	}
-	else if(strcasecmp(val,"Gain")==0)
-	{
-		ret=GUI_ELEMENT_EQ_GAIN;
-	}
-	else if(strcasecmp(val,"Video")==0)
-	{
-		ret=GUI_ELEMENT_VIDEO;
-	}
-	else if(strcasecmp(val,"VideoFreqSense")==0)
-	{
-		ret=GUI_ELEMENT_VIDEO_FREQSENSE;
-	}
-	else if(strcasecmp(val,"Syphon")==0)
-	{
-		ret=GUI_ELEMENT_SYPHON;
-	}
-	else if(strcasecmp(val,"Oscilloscope")==0)
-	{
-		ret=GUI_ELEMENT_OSCILLOSCOPE;
-	}
-	else if(strcasecmp(val,"LEDFreqSense")==0)
-	{
-		ret=GUI_ELEMENT_LED_FREQSENSE;
-	}
-	else if(strcasecmp(val,"LEDColorLow")==0)
-	{
-		ret=GUI_ELEMENT_LED_COLOR_LOW;
-	}
-	else if(strcasecmp(val,"LEDColorHigh")==0)
-	{
-		ret=GUI_ELEMENT_LED_COLOR_HIGH;
-	}
-	else if(strcasecmp(val,"LEDColorHighWash")==0)
-	{
-		ret=GUI_ELEMENT_LED_COLOR_HIGH_WASH;
-	}
-	else if(strcasecmp(val,"LEDGroup")==0)
-	{
-		ret=GUI_ELEMENT_LED_GROUP;
-	}
-
-	return(ret);
+	return(faders[index]);
 }
 
 bool
