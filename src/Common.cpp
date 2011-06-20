@@ -1028,6 +1028,242 @@ float entireWaveArrayLine2Colors[pointResolutionMax*4];
 float entireWaveArrayTriColors[pointResolutionMax*4*2];
 
 void
+Turntable_DrawWaveformZoomed
+(
+	LGL_Sound*	sound,
+	float		centerX,
+	float		viewportWidth,
+	long		pointResolution,
+	float		pointLeft,
+	float		pointWidth,
+	float		vertLeft,
+	float		vertRight,
+	long		sampleLeft,
+	long		sampleWidth,
+	long		sampleLeftBase,
+	double		deltaSample,
+	long		samplesPerLoopPeriod,
+	long		bpmFirstBeatCurrentMeasureSamples,
+	float		glitchSampleLeft,
+	float		glitchSampleRight,
+	bool		glitchLines,
+	float		pointBottom,
+	float		pointHeight,
+	float		pointTop,
+	int		pointsToDrawIndexBegin,
+	int		pointsToDrawIndexEnd,
+	float		needleDeltaL,
+	float		needleDeltaR,
+	float		volumeMultiplierNow,
+	bool		rapidVolumeInvertSelf,
+	bool		lowRez
+)
+{
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
+	for(int z=-pointResolution;z<pointResolution*2;z++)
+	{
+		int a=z+pointResolution;
+		float xPreview = pointLeft + z/(float)(pointResolution-2)*pointWidth;
+		if
+		(
+			xPreview >= vertLeft &&
+			xPreview <= vertRight
+		)
+		{
+			long sampleNow=(long)(sampleLeftBase+deltaSample*z);
+			const long sampleLast=(long)(sampleNow+deltaSample);
+			float zeroCrossingFactor;
+			float magnitudeAve;
+			float magnitudeMax;
+
+			sound->GetMetadata
+			(
+				sampleNow/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
+				sampleLast/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
+				zeroCrossingFactor,
+				magnitudeAve,
+				magnitudeMax
+			);
+
+			zeroCrossingFactor=GetFreqBrightness(true,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak());
+			if(0)
+			{
+				magnitudeAve*=(GetFreqBrightness(false,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak()) + zeroCrossingFactor > 0.0f) ? 1.0f : 0.0f;
+			}
+
+			magnitudeAve*=volumeMultiplierNow*0.5f;
+			magnitudeMax*=volumeMultiplierNow*0.5f;
+
+			double sampleNowDouble=(sampleLeft+sampleWidth*(z/(double)pointResolution));
+			float xOffset=1.0f-(sampleNow-sampleNowDouble)/(float)deltaSample;
+
+			arrayV[(a*2)+0]=pointLeft+((z-xOffset)/(float)pointResolution)*pointWidth;
+			arrayV[(a*2)+1]=LGL_Clamp(pointBottom,pointBottom+(0.5f+0.5f*magnitudeAve)*pointHeight,pointTop);
+
+			float glitchDelta = -0.35f*(glitchSampleRight-glitchSampleLeft);
+
+			bool active=
+			(
+				(
+					glitchLines &&
+					sampleNow>glitchSampleLeft-glitchDelta &&
+					sampleNow<glitchSampleRight-glitchDelta
+				) ||
+				(
+					arrayV[(a*2)+0] >= centerX+needleDeltaL*viewportWidth &&
+					arrayV[(a*2)+0] <= centerX+needleDeltaR*viewportWidth
+				)
+			);
+
+			bool muted=false;
+			if(rapidVolumeInvertSelf)
+			{
+				muted=(((long)fabs(sampleNow-bpmFirstBeatCurrentMeasureSamples)/samplesPerLoopPeriod)%2)==1;
+				if(sampleNow<bpmFirstBeatCurrentMeasureSamples)
+				{
+					muted=!muted;
+				}
+			}
+			if(muted)
+			{
+				for(int m=0;m<4;m++)
+				{
+					arrayC[a*4+m]=0;
+				}
+			}
+			else
+			{
+				arrayC[(a*4)+0]=
+					active ?
+					1.0f :
+					(
+						(1.0f-zeroCrossingFactor)*coolR +
+						(0.0f+zeroCrossingFactor)*warmR
+					);
+				arrayC[(a*4)+1]=
+					active ?
+					1.0f :
+					(
+						(1.0f-zeroCrossingFactor)*coolG +
+						(0.0f+zeroCrossingFactor)*warmG
+					);
+				arrayC[(a*4)+2]=
+					active ?
+					1.0f :
+					(
+						(1.0f-zeroCrossingFactor)*coolB +
+						(0.0f+zeroCrossingFactor)*warmB
+					);
+				arrayC[(a*4)+3]=1.0f;
+			}
+
+			//Tristrip!
+
+			//Top
+			arrayVtri[(a*4)+0]=arrayV[(a*2)+0];
+			arrayVtri[(a*4)+1]=arrayV[(a*2)+1];
+
+			//Bottom
+			arrayVtri[(a*4)+2]=arrayV[(a*2)+0];
+			arrayVtri[(a*4)+3]=(pointBottom+0.5f*pointHeight)-(arrayV[a*2+1]-(pointBottom+0.5f*pointHeight));
+
+			//Top
+			arrayCtri[(a*8)+0]=arrayC[a*4+0]*(0.5f+0.5f*zeroCrossingFactor);
+			arrayCtri[(a*8)+1]=arrayC[a*4+1]*(0.5f+0.5f*zeroCrossingFactor);
+			arrayCtri[(a*8)+2]=arrayC[a*4+2]*(0.5f+0.5f*zeroCrossingFactor);
+			arrayCtri[(a*8)+3]=arrayC[a*4+3];
+
+			//Bottom
+			arrayCtri[(a*8)+4]=arrayC[a*4+0]*(0.5f+0.5f*zeroCrossingFactor);
+			arrayCtri[(a*8)+5]=arrayC[a*4+1]*(0.5f+0.5f*zeroCrossingFactor);
+			arrayCtri[(a*8)+6]=arrayC[a*4+2]*(0.5f+0.5f*zeroCrossingFactor);
+			arrayCtri[(a*8)+7]=arrayC[a*4+3];
+
+			//Silhouette
+			arrayC[(a*4)+0]+=0.5f*zeroCrossingFactor;
+			arrayC[(a*4)+1]+=0.5f*zeroCrossingFactor;
+			arrayC[(a*4)+2]+=0.5f*zeroCrossingFactor;
+
+			if(magnitudeMax>1.0f)
+			{
+				arrayC[(a*4)+0]=1.0f;
+				arrayC[(a*4)+1]=0.0f;
+				arrayC[(a*4)+2]=0.0f;
+			}
+		}
+		else if(xPreview < vertLeft)
+		{
+			pointsToDrawIndexBegin=a+2;
+		}
+		else if(xPreview > vertRight)
+		{
+			pointsToDrawIndexEnd=a-1;
+			break;
+		}
+	}
+	//Tristrip!
+	if(!lowRez)
+	{
+		LGL_DrawTriStripToScreen
+		(
+			&(arrayVtri[pointsToDrawIndexBegin*4]),
+			&(arrayCtri[pointsToDrawIndexBegin*8]),
+			2*(pointsToDrawIndexEnd-pointsToDrawIndexBegin),
+			!lowRez
+		);
+	}
+
+	//Linestrip top!
+	for(int a=0;a<pointsToDrawIndexEnd;a++)
+	{
+		if(overdriven[a])
+		{
+			arrayC[(a*4)+0]=1.0f;
+			arrayC[(a*4)+1]=0.0f;
+			arrayC[(a*4)+2]=0.0f;
+			//arrayC[(a*4)+3]=1.0f;
+		}
+		else
+		{
+			arrayC[(a*4)+0]*=1.25f;
+			arrayC[(a*4)+1]*=1.25f;
+			arrayC[(a*4)+2]*=1.25f;
+			//arrayC[(a*4)+3]=1.0f;
+		}
+	}
+	LGL_DrawLineStripToScreen
+	(
+		&(arrayV[pointsToDrawIndexBegin*2]),
+		&(arrayC[pointsToDrawIndexBegin*4]),
+		pointsToDrawIndexEnd-pointsToDrawIndexBegin,
+		3.5f,
+		!lowRez
+	);
+
+	//Linestrip bottom!
+	for(int a=pointsToDrawIndexBegin;a<pointsToDrawIndexEnd;a++)
+	{
+		arrayV[(a*2)+1]=(pointBottom+0.5f*pointHeight)-(arrayV[(a*2)+1]-(pointBottom+0.5f*pointHeight));
+	}
+	LGL_DrawLineStripToScreen
+	(
+		&(arrayV[pointsToDrawIndexBegin*2]),
+		&(arrayC[pointsToDrawIndexBegin*4]),
+		pointsToDrawIndexEnd-pointsToDrawIndexBegin,
+		3.5f,
+		!lowRez
+	);
+}
+
+void
 Turntable_DrawWaveform
 (
 	int		which,
@@ -1339,7 +1575,7 @@ Turntable_DrawWaveform
 		sampleLeftBase*=(deltaSampleLong*2);
 		//bool sampleLeftBaseIsOdd=(sampleLeftBase%(deltaSampleLong*2))!=0;
 
-		int pointsToDrawIndexStart=0;
+		int pointsToDrawIndexBegin=0;
 		int pointsToDrawIndexEnd=pointResolution;
 
 		float vertLeft = wavLeft-0.05f;
@@ -1381,198 +1617,35 @@ Turntable_DrawWaveform
 		//Experimental frequency-sensitive renderer
 if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 {
-		for(int z=-pointResolution;z<pointResolution*2;z++)
-		{
-			int a=z+pointResolution;
-			float xPreview = pointLeft + z/(float)(pointResolution-2)*pointWidth;
-			if
-			(
-				xPreview >= vertLeft &&
-				xPreview <= vertRight
-			)
-			{
-				long sampleNow=(long)(sampleLeftBase+deltaSample*z);
-				const long sampleLast=(long)(sampleNow+deltaSample);
-				float zeroCrossingFactor;
-				float magnitudeAve;
-				float magnitudeMax;
-
-				sound->GetMetadata
-				(
-					sampleNow/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
-					sampleLast/44100.0f-(0.5f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND),
-					zeroCrossingFactor,
-					magnitudeAve,
-					magnitudeMax
-				);
-
-				zeroCrossingFactor=GetFreqBrightness(true,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak());
-				if(0)
-				{
-					magnitudeAve*=(GetFreqBrightness(false,zeroCrossingFactor,magnitudeAve/sound->GetVolumePeak()) + zeroCrossingFactor > 0.0f) ? 1.0f : 0.0f;
-				}
-
-				magnitudeAve*=volumeMultiplierNow*0.5f;
-				magnitudeMax*=volumeMultiplierNow*0.5f;
-
-				double sampleNowDouble=(sampleLeft+sampleWidth*(z/(double)pointResolution));
-				float xOffset=1.0f-(sampleNow-sampleNowDouble)/(float)deltaSample;
-
-				arrayV[(a*2)+0]=pointLeft+((z-xOffset)/(float)pointResolution)*pointWidth;
-				arrayV[(a*2)+1]=LGL_Clamp(pointBottom,pointBottom+(0.5f+0.5f*magnitudeAve)*pointHeight,pointTop);
-
-				float glitchDelta = -0.35f*(glitchSampleRight-glitchSampleLeft);
-
-				bool active=
-				(
-					(
-						glitchLines &&
-						sampleNow>glitchSampleLeft-glitchDelta &&
-						sampleNow<glitchSampleRight-glitchDelta
-					) ||
-					(
-						arrayV[(a*2)+0] >= centerX+needleDeltaL*viewportWidth &&
-						arrayV[(a*2)+0] <= centerX+needleDeltaR*viewportWidth
-					)
-				);
-
-				bool muted=false;
-				if(rapidVolumeInvertSelf)
-				{
-					muted=(((long)fabs(sampleNow-bpmFirstBeatCurrentMeasureSamples)/samplesPerLoopPeriod)%2)==1;
-					if(sampleNow<bpmFirstBeatCurrentMeasureSamples)
-					{
-						muted=!muted;
-					}
-				}
-				if(muted)
-				{
-					for(int m=0;m<4;m++)
-					{
-						arrayC[a*4+m]=0;
-					}
-				}
-				else
-				{
-					arrayC[(a*4)+0]=
-						active ?
-						1.0f :
-						(
-							(1.0f-zeroCrossingFactor)*coolR +
-							(0.0f+zeroCrossingFactor)*warmR
-						);
-					arrayC[(a*4)+1]=
-						active ?
-						1.0f :
-						(
-							(1.0f-zeroCrossingFactor)*coolG +
-							(0.0f+zeroCrossingFactor)*warmG
-						);
-					arrayC[(a*4)+2]=
-						active ?
-						1.0f :
-						(
-							(1.0f-zeroCrossingFactor)*coolB +
-							(0.0f+zeroCrossingFactor)*warmB
-						);
-					arrayC[(a*4)+3]=1.0f;
-				}
-
-				//Tristrip!
-
-				//Top
-				arrayVtri[(a*4)+0]=arrayV[(a*2)+0];
-				arrayVtri[(a*4)+1]=arrayV[(a*2)+1];
-
-				//Bottom
-				arrayVtri[(a*4)+2]=arrayV[(a*2)+0];
-				arrayVtri[(a*4)+3]=(pointBottom+0.5f*pointHeight)-(arrayV[a*2+1]-(pointBottom+0.5f*pointHeight));
-
-				//Top
-				arrayCtri[(a*8)+0]=arrayC[a*4+0]*(0.5f+0.5f*zeroCrossingFactor);
-				arrayCtri[(a*8)+1]=arrayC[a*4+1]*(0.5f+0.5f*zeroCrossingFactor);
-				arrayCtri[(a*8)+2]=arrayC[a*4+2]*(0.5f+0.5f*zeroCrossingFactor);
-				arrayCtri[(a*8)+3]=arrayC[a*4+3];
-
-				//Bottom
-				arrayCtri[(a*8)+4]=arrayC[a*4+0]*(0.5f+0.5f*zeroCrossingFactor);
-				arrayCtri[(a*8)+5]=arrayC[a*4+1]*(0.5f+0.5f*zeroCrossingFactor);
-				arrayCtri[(a*8)+6]=arrayC[a*4+2]*(0.5f+0.5f*zeroCrossingFactor);
-				arrayCtri[(a*8)+7]=arrayC[a*4+3];
-
-				//Silhouette
-				arrayC[(a*4)+0]+=0.5f*zeroCrossingFactor;
-				arrayC[(a*4)+1]+=0.5f*zeroCrossingFactor;
-				arrayC[(a*4)+2]+=0.5f*zeroCrossingFactor;
-
-				if(magnitudeMax>1.0f)
-				{
-					arrayC[(a*4)+0]=1.0f;
-					arrayC[(a*4)+1]=0.0f;
-					arrayC[(a*4)+2]=0.0f;
-				}
-			}
-			else if(xPreview < vertLeft)
-			{
-				pointsToDrawIndexStart=a+2;
-			}
-			else if(xPreview > vertRight)
-			{
-				pointsToDrawIndexEnd=a-1;
-				break;
-			}
-		}
-		//Tristrip!
-		if(!lowRez)
-		{
-			LGL_DrawTriStripToScreen
-			(
-				&(arrayVtri[pointsToDrawIndexStart*4]),
-				&(arrayCtri[pointsToDrawIndexStart*8]),
-				2*(pointsToDrawIndexEnd-pointsToDrawIndexStart),
-				!lowRez
-			);
-		}
-
-		//Linestrip top!
-		for(int a=0;a<pointsToDrawIndexEnd;a++)
-		{
-			if(overdriven[a])
-			{
-				arrayC[(a*4)+0]=1.0f;
-				arrayC[(a*4)+1]=0.0f;
-				arrayC[(a*4)+2]=0.0f;
-				//arrayC[(a*4)+3]=1.0f;
-			}
-			else
-			{
-				arrayC[(a*4)+0]*=1.25f;
-				arrayC[(a*4)+1]*=1.25f;
-				arrayC[(a*4)+2]*=1.25f;
-				//arrayC[(a*4)+3]=1.0f;
-			}
-		}
-		LGL_DrawLineStripToScreen
+		Turntable_DrawWaveformZoomed
 		(
-			&(arrayV[pointsToDrawIndexStart*2]),
-			&(arrayC[pointsToDrawIndexStart*4]),
-			pointsToDrawIndexEnd-pointsToDrawIndexStart,
-			3.5f,
-			!lowRez
-		);
-
-		//Linestrip bottom!
-		for(int a=pointsToDrawIndexStart;a<pointsToDrawIndexEnd;a++)
-		{
-			arrayV[(a*2)+1]=(pointBottom+0.5f*pointHeight)-(arrayV[(a*2)+1]-(pointBottom+0.5f*pointHeight));
-		}
-		LGL_DrawLineStripToScreen
-		(
-			&(arrayV[pointsToDrawIndexStart*2]),
-			&(arrayC[pointsToDrawIndexStart*4]),
-			pointsToDrawIndexEnd-pointsToDrawIndexStart,
-			3.5f,
-			!lowRez
+			sound,
+			centerX,
+			viewportWidth,
+			pointResolution,
+			pointLeft,
+			pointWidth,
+			vertLeft,
+			vertRight,
+			sampleLeft,
+			sampleWidth,
+			sampleLeftBase,
+			deltaSample,
+			samplesPerLoopPeriod,
+			bpmFirstBeatCurrentMeasureSamples,
+			glitchSampleLeft,
+			glitchSampleRight,
+			glitchLines,
+			pointBottom,
+			pointHeight,
+			pointTop,
+			pointsToDrawIndexBegin,
+			pointsToDrawIndexEnd,
+			needleDeltaL,
+			needleDeltaR,
+			volumeMultiplierNow,
+			rapidVolumeInvertSelf,
+			lowRez
 		);
 }
 
