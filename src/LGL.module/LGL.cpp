@@ -11085,8 +11085,12 @@ lgl_decode_jpeg
 	/* JSAMPLEs per row in output buffer */
 	row_stride = cinfo.output_width * cinfo.output_components;
 	/* Make a one-row-high sample array that will go away when done with image */
+	/*
 	buffer = (*cinfo.mem->alloc_sarray)
 		((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+	*/
+	long baka=0;
+	buffer=(JSAMPARRAY)(&baka);
 
 
 
@@ -11102,10 +11106,11 @@ lgl_decode_jpeg
 		* Here the array is only one element long, but you could ask for
 		* more than one scanline at a time if that's more convenient.
 		*/
+		buffer[0] = &(dstData[row_stride*(cinfo.output_scanline)]);
 		jpeg_read_scanlines(&cinfo, buffer, 1);
 		/* Assume put_scanline_someplace wants a pointer and sample count. */
 		//put_scanline_someplace(buffer[0], row_stride);
-		memcpy(&(dstData[row_stride*(cinfo.output_scanline-1)]),buffer[0],row_stride);
+		//memcpy(&(dstData[row_stride*(cinfo.output_scanline-1)]),buffer[0],row_stride);
 	}
 
 
@@ -11123,6 +11128,7 @@ lgl_decode_jpeg
 	/* Step 8: Release JPEG decompression object */
 
 	/* This is an important step since it will release a good deal of memory. */
+	buffer=NULL;
 	jpeg_destroy_decompress(&cinfo);
 
 
