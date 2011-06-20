@@ -1379,7 +1379,7 @@ Turntable_DrawWaveform
 		long samplesPerLoopPeriod = secondsPerLoopPeriod*44100.0;
 
 		//Experimental frequency-sensitive renderer
-if(1)//LGL_KeyDown(LGL_KEY_RALT)==false)
+if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 {
 		for(int z=-pointResolution;z<pointResolution*2;z++)
 		{

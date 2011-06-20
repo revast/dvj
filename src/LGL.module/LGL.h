@@ -2199,6 +2199,7 @@ public:
 				float&	magnitudeAve,
 				float&	magnitudeMax
 			);
+	bool		GetSilent() const;
 	float		GetVolumePeak();
 	void		SetVolumePeak(float volumePeak);
 	void		LoadToMemory();
@@ -2251,6 +2252,7 @@ private:
 	int		ReferenceCount;
 
 	bool		BadFile;
+	bool		Silent;
 
 	bool		HogCPU;
 	bool		DestructorHint;
