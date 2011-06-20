@@ -4647,6 +4647,24 @@ LGL_DrawLineToScreen
 	return;
 #endif	//LGL_NO_GRAPHICS
 
+#if 1
+	float pointsXY[4];
+	pointsXY[0]=x1;
+	pointsXY[1]=y1;
+	pointsXY[2]=x2;
+	pointsXY[3]=y2;
+	LGL_DrawLineStripToScreen
+	(
+		pointsXY,
+		2,
+		r,
+		g,
+		b,
+		a,
+		thickness,
+		antialias
+	);
+#else
 	lgl_glScreenify2D();
 	
 	if(LGL.DrawLogFD && !LGL.DrawLogPause)
@@ -4698,6 +4716,7 @@ LGL_DrawLineToScreen
 
 	glDisable(GL_BLEND);
 	glEnable(GL_LINE_SMOOTH);
+#endif
 }
 
 void
