@@ -3144,6 +3144,24 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				}
 			}
 
+			float pointsXY[8];
+			pointsXY[0]=myL;
+			pointsXY[1]=myB;
+			pointsXY[2]=myR;
+			pointsXY[3]=myB;
+			pointsXY[4]=myR;
+			pointsXY[5]=myT;
+			pointsXY[6]=myL;
+			pointsXY[7]=myT;
+			LGL_DrawLineStripToScreen
+			(
+				pointsXY,
+				4,
+				r,g,b,1,
+				thickness
+			);
+
+			/*
 			//Left
 			LGL_DrawLineToScreen
 			(
@@ -3179,6 +3197,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				r,g,b,1,
 				thickness
 			);
+			*/
 
 			float savePointSetScalar = mySavePointSet[i] ? 1.0f : 0.0f;
 
