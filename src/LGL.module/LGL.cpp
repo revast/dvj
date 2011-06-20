@@ -7529,7 +7529,6 @@ UpdateTexture
 	pboReady=false;
 #endif
 
-LGL_Timer timer;
 	if(TextureGLRect)
 	{
 		glTexImage2D
@@ -7560,7 +7559,6 @@ LGL_Timer timer;
 			pboReady?0:data
 		);
 	}
-LGL_DebugPrintf("glTexSubImage2D(): %f\n",timer.SecondsSinceLastReset());
 
 	/*
 	pboReady = gl2IsBuffer(PixelBufferObjectBackGL);
