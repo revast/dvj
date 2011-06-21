@@ -10001,7 +10001,11 @@ GetImage()
 
 	char path[2048];
 	{
-		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore,0.0f);
+		if(pathLock.GetLockObtained()==false)
+		{
+			return(Image);
+		}
 		strcpy(path,Path);
 	}
 	if(strcmp(Image->GetVideoPath(),path)!=0)
@@ -11173,6 +11177,20 @@ MaybeDecodeImage
 		}
 	}
 	*/
+
+	//We can early out before grabbing the lock
+	if
+	(
+		FormatContext==NULL ||
+		CodecContext==NULL ||
+		FrameNative==NULL ||
+		FrameRGB==NULL ||
+		strcmp(Path,"NULL")==0 ||
+		VideoOK==false
+	)
+	{
+		return(false);
+	}
 
 	//Lock the video
 	{
