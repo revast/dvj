@@ -10947,7 +10947,11 @@ MaybeLoadImage()
 	//If we read a frame, put it into an lgl_FrameBuffer
 	if(frameRead)
 	{
-		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
+		char path[2048];
+		{
+			LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
+			strcpy(path,Path);
+		}
 		//Prepare a framebuffer, and swap its buffer with BufferRGB
 		lgl_FrameBuffer* frameBuffer = GetInvalidFrameBuffer();
 
