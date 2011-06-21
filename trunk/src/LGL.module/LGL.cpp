@@ -9277,6 +9277,48 @@ SwapInNewBufferYUV
 	//bufferYUVBytes=bufferBytesOld;
 }
 
+unsigned char*
+lgl_FrameBuffer::
+LockBufferRGB
+(
+	unsigned int	bufferRGBBytes
+)
+{
+	BufferSemaphore.Lock(__FILE__,__LINE__);
+
+	if(BufferBytes<bufferRGBBytes)
+	{
+		if(Buffer)
+		{
+			delete Buffer;
+		}
+		Buffer = new unsigned char[bufferRGBBytes];
+		BufferBytes=bufferRGBBytes;
+	}
+
+	return(Buffer);
+}
+
+void
+lgl_FrameBuffer::
+UnlockBufferRGB
+(
+const	char*		videoPath,
+	int		bufferWidth,
+	int		bufferHeight,
+	long		frameNumber
+)
+{
+	BufferWidth=bufferWidth;
+	BufferHeight=bufferHeight;
+	FrameNumber=frameNumber;
+	strcpy(VideoPath,videoPath?videoPath:"");
+	BufferIsRGB=true;
+	Ready=true;
+
+	BufferSemaphore.Unlock();
+}
+
 const char*
 lgl_FrameBuffer::
 GetVideoPath()	const
@@ -9457,7 +9499,15 @@ lgl_video_decoder_decode_thread
 		{
 			break;
 		}
-		bool imageDecoded=dec->MaybeDecodeImage();
+		bool imageDecoded=false;
+		if
+		(
+			LGL_FPS()>=dec->GetFPS()*0.90f &&
+			dec->GetDecodeInThread()
+		)
+		{
+			imageDecoded=dec->MaybeDecodeImage();
+		}
 		LGL_DelayMS(imageDecoded ? 5 : 10);
 	}
 
@@ -9728,6 +9778,7 @@ Init()
 	PreloadPercent=0.0f;
 	ReadAheadMB=16;
 	ReadAheadDelayMS=500;
+	DecodeInThread=true;
 
 	FormatContext=NULL;
 	CodecContext=NULL;
@@ -9803,7 +9854,7 @@ Init()
 	ThreadPreload=LGL_ThreadCreate(lgl_video_decoder_preload_thread,this);
 	ThreadReadAhead=LGL_ThreadCreate(lgl_video_decoder_readahead_thread,this);
 	ThreadLoad=LGL_ThreadCreate(lgl_video_decoder_load_thread,this);
-	if(LGL_CPUCount()>=4)
+	if(1)//LGL_CPUCount()>=4)
 	{
 		ThreadDecode=LGL_ThreadCreate(lgl_video_decoder_decode_thread,this);
 	}
@@ -9929,7 +9980,10 @@ GetFPSMissed()
 
 LGL_Image*
 LGL_VideoDecoder::
-GetImage()
+GetImage
+(
+	bool	decodeAllowed
+)
 {
 	MaybeInvalidateBuffers();
 
@@ -10020,7 +10074,10 @@ GetImage()
 	}
 	else
 	{
-		MaybeDecodeImage(frameNumber);
+		if(decodeAllowed)
+		{
+			MaybeDecodeImage(frameNumber);
+		}
 	}
 	lgl_FrameBuffer* frameBuffer=NULL;
 
@@ -10581,6 +10638,23 @@ SetReadAheadDelayMS
 	ReadAheadDelayMS=delayMS;
 }
 
+bool
+LGL_VideoDecoder::
+GetDecodeInThread()
+{
+	return(DecodeInThread);
+}
+
+void
+LGL_VideoDecoder::
+SetDecodeInThread
+(
+	bool	decodeInThread
+)
+{
+	DecodeInThread=decodeInThread;
+}
+
 void
 LGL_VideoDecoder::
 MaybeLoadVideo()
@@ -11096,6 +11170,8 @@ lgl_decode_jpeg
 
 	cinfo.out_color_space = JCS_EXT_BGRX;
 	cinfo.output_components = 4;
+	cinfo.do_fancy_upsampling=false;
+	cinfo.dct_method=JDCT_FASTEST;
 	jpeg_start_decompress(&cinfo);
 	/* We can ignore the return value since suspension is not possible
 	* with the stdio data source.
@@ -11192,6 +11268,33 @@ MaybeDecodeImage
 		return(false);
 	}
 
+	//Find the next lgl_FrameBuffer
+	lgl_FrameBuffer* frameBuffer=NULL;
+	if(desiredFrameNum!=-1)
+	{
+		std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(false);
+		for(unsigned int a=0;a<frameBufferReady.size();a++)
+		{
+			if(frameBufferReady[a]->GetFrameNumber()==desiredFrameNum)
+			{
+				//Our desired frame is already ready!
+				return(false);
+			}
+		}
+	}
+
+	char path[2048];
+	{
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore,
+			(SDL_ThreadID()==LGL.ThreadIDMain) ? 0.0f : -1.0f
+		);
+		if(pathLock.GetLockObtained()==false)
+		{
+			return(false);
+		}
+		strcpy(path,Path);
+	}
+
 	//Lock the video
 	{
 		LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
@@ -11220,24 +11323,8 @@ MaybeDecodeImage
 		return(false);
 	}
 
-	//Find the next lgl_FrameBuffer
-	lgl_FrameBuffer* frameBuffer=NULL;
 	if(desiredFrameNum!=-1)
 	{
-		std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(false);
-		for(unsigned int a=0;a<frameBufferReady.size();a++)
-		{
-			if(frameBufferReady[a]->GetFrameNumber()==desiredFrameNum)
-			{
-				//Our desired frame is already ready!
-				//Unlock the video
-				{
-					LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
-					VideoOKUserCount--;
-				}
-				return(false);
-			}
-		}
 		//std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
 		std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
 		for(unsigned int a=0;a<frameBufferLoaded.size();a++)
@@ -11333,17 +11420,35 @@ MaybeDecodeImage
 	}
 */
 
+	//Obtain address in which to copy
+
+	unsigned int bufferBytesNow=avpicture_get_size
+	(
+		PIX_FMT_BGRA,
+		BufferWidth,
+		BufferHeight
+	);
+	unsigned char* dst=frameBuffer->LockBufferRGB
+	(
+		bufferBytesNow
+	);
+
+	if(dst==NULL)
+	{
+		//Unlock the video
+		{
+			LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
+			VideoOKUserCount--;
+		}
+		return(false);
+	}
+
 	//Decode video frame
 	int frameFinished=0;
-	const int useLibJpegTurbo=(SDL_ThreadID()!=LGL.ThreadIDMain);
+	const int useLibJpegTurbo=true;//(SDL_ThreadID()!=LGL.ThreadIDMain);
 	if(useLibJpegTurbo)
 	{
-		unsigned int bufferBytesNow=avpicture_get_size
-		(
-			PIX_FMT_BGRA,
-			BufferWidth,
-			BufferHeight
-		);
+		/*
 		if
 		(
 			BufferRGB==NULL ||
@@ -11355,6 +11460,8 @@ MaybeDecodeImage
 			BufferRGB=new uint8_t[BufferRGBBytes];
 		}
 		frameFinished=lgl_decode_jpeg(BufferRGB,BufferRGBBytes,packet->data,(long)packet->size);
+		*/
+		frameFinished=lgl_decode_jpeg(dst,bufferBytesNow,packet->data,(long)packet->size);
 	}
 	else
 	{
@@ -11398,12 +11505,7 @@ MaybeDecodeImage
 			IsYUV420P()==false
 		)
 		{
-			unsigned int bufferBytesNow=avpicture_get_size
-			(
-				PIX_FMT_BGRA,
-				BufferWidth,
-				BufferHeight
-			);
+			/*
 			if
 			(
 				BufferRGB==NULL ||
@@ -11419,6 +11521,16 @@ MaybeDecodeImage
 			(
 				(AVPicture*)FrameRGB,
 				BufferRGB,
+				PIX_FMT_BGRA,
+				BufferWidth,
+				BufferHeight
+			);
+			*/
+			//Update FrameRGB to point to dst.
+			avpicture_fill
+			(
+				(AVPicture*)FrameRGB,
+				dst,
 				PIX_FMT_BGRA,
 				BufferWidth,
 				BufferHeight
@@ -11461,13 +11573,6 @@ MaybeDecodeImage
 	//If we read a frame, put it into our lgl_FrameBuffer
 	if(frameRead)
 	{
-		char path[2048];
-		{
-			LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
-			strcpy(path,Path);
-		}
-
-		/*
 		if(SDL_ThreadID()==LGL.ThreadIDMain)
 		{
 			LGL_DebugPrintf("MAIN\n");
@@ -11476,17 +11581,25 @@ MaybeDecodeImage
 		{
 			LGL_DebugPrintf("THREAD\n");
 		}
-		*/
 
 		if(frameBuffer)
 		{
 			if(IsYUV420P()==false)
 			{
+				/*
 				frameBuffer->SwapInNewBufferRGB
 				(
 					path,
 					BufferRGB,	//Changes...
 					BufferRGBBytes,	//Changes...
+					BufferWidth,
+					BufferHeight,
+					frameBuffer->GetFrameNumber()
+				);
+				*/
+				frameBuffer->UnlockBufferRGB
+				(
+					path,
 					BufferWidth,
 					BufferHeight,
 					frameBuffer->GetFrameNumber()

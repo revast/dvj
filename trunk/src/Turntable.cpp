@@ -778,6 +778,7 @@ TurntableObj
 	Video->SetPreloadFromCurrentTime(true);
 	Video->SetReadAheadMB(16);
 	Video->SetReadAheadDelayMS(200);
+	Video->SetDecodeInThread(true);
 	if(VideoLo==NULL)
 	{
 		VideoLo=new LGL_VideoDecoder(NULL);
@@ -787,6 +788,7 @@ TurntableObj
 		VideoLo->SetPreloadFromCurrentTime(false);
 		VideoLo->SetReadAheadMB(0);
 		VideoLo->SetReadAheadDelayMS(10000);
+		VideoLo->SetDecodeInThread(LGL_CPUCount()>=4);
 	}
 	if(VideoHi==NULL)
 	{
@@ -797,6 +799,7 @@ TurntableObj
 		VideoHi->SetPreloadFromCurrentTime(false);
 		VideoHi->SetReadAheadMB(0);
 		VideoHi->SetReadAheadDelayMS(10000);
+		VideoHi->SetDecodeInThread(LGL_CPUCount()>=4);
 	}
 	VideoLoPath[0]='\0';
 	VideoHiPath[0]='\0';
