@@ -1718,126 +1718,6 @@ DrawVideos
 	oscilloscopeBright*=ejectBrightnessScalar;
 	freqSenseBright*=ejectBrightnessScalar;
 
-	if(freqSenseBright>0.0f)
-	{
-		//Frequency-sensitive video mixing
-
-		LGL_VideoDecoder* vidL=tt->GetVideoLo();
-		LGL_VideoDecoder* vidH=tt->GetVideoHi();
-
-		float volAve;
-		float volMax;
-		float freqFactor;
-		tt->GetFreqMetaData(volAve,volMax,freqFactor);
-		volAve = LGL_Min(1.0f,volAve*2.0f);
-
-		for(int a=0;a<2;a++)
-		{
-			LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
-			if(vid)
-			{
-				float vol = LGL_Min(1,volAve*tt->GetGain());
-				float multFreq = (vid==vidL) ? tt->GetEQLo() : tt->GetEQHi();
-				float myFreqFactor=freqFactor;
-				float br = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
-				if(vid==vidL) br*=4;	//FIXME: Ben / Zebbler hack... Shouldn't be this way!!
-				br*=vid->StoredBrightness[tt->GetWhich()]*freqSenseBright;
-
-				LGL_Image* image = vid->GetImage();//EIGHT_WAY ? !preview : preview);
-				{
-					if
-					(
-						image &&
-						image->GetFrameNumber()!=-1
-					)
-					{
-						float myL = l;
-						float myR = r;
-						float myB = b;
-						float myT = t;
-
-						GetProjectorARCoordsFromViewportCoords
-						(
-							myL,
-							myR,
-							myB,
-							myT
-						);
-
-						float alpha=0.0f;
-						if(preview==false)
-						{
-							if
-							(
-								LGL_GetActiveDisplay()==0 &&
-								ProjectorPreviewClear
-							)
-							{
-								alpha=1.0f;
-								ProjectorPreviewClear=false;
-							}
-
-							if
-							(
-								LGL_GetActiveDisplay()==1 &&
-								ProjectorClear
-							)
-							{
-								alpha=1.0f;
-								ProjectorClear=false;
-							}
-						}
-
-						float x[4];
-						float y[4];
-
-						if(LGL_GetActiveDisplay()==0)
-						{
-							//LB
-							x[0]=myL;
-							y[0]=myB;
-							//RB
-							x[1]=myR;
-							y[1]=myB;
-							//RT
-							x[2]=myR;
-							y[2]=myT;
-							//LT
-							x[3]=myL;
-							y[3]=myT;
-						}
-						else
-						{
-							//LB
-							x[0]=myL+ProjMapOffsetX[0];
-							y[0]=myB+ProjMapOffsetY[0];
-							//RB
-							x[1]=myR+ProjMapOffsetX[3];
-							y[1]=myB+ProjMapOffsetY[3];
-							//RT
-							x[2]=myR+ProjMapOffsetX[2];
-							y[2]=myT+ProjMapOffsetY[2];
-							//LT
-							x[3]=myL+ProjMapOffsetX[1];
-							y[3]=myT+ProjMapOffsetY[1];
-						}
-						image->DrawToScreen
-						(
-							x,
-							y,
-							1.0f,
-							1.0f,
-							1.0f,
-							alpha,
-							br
-						);
-//LGL_DebugPrintf("br: %.2f\n",br);
-					}
-				}
-			}
-		}
-	}
-
 	if(oscilloscopeBright > 0.0f)
 	{
 		bool drewOscilloscope=false;
@@ -1943,7 +1823,6 @@ DrawVideos
 				if(image)
 				{
 					image->SetFrameNumber(0);
-//if(preview==false) LGL_SyphonPushImage(image);
 				}
 			}
 			else
@@ -2354,6 +2233,126 @@ DrawVideos
 					);
 				}
 				*/
+			}
+		}
+	}
+
+	if(freqSenseBright>0.0f)
+	{
+		//Frequency-sensitive video mixing
+
+		LGL_VideoDecoder* vidL=tt->GetVideoLo();
+		LGL_VideoDecoder* vidH=tt->GetVideoHi();
+
+		float volAve;
+		float volMax;
+		float freqFactor;
+		tt->GetFreqMetaData(volAve,volMax,freqFactor);
+		volAve = LGL_Min(1.0f,volAve*2.0f);
+
+		for(int a=0;a<2;a++)
+		{
+			LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
+			if(vid)
+			{
+				float vol = LGL_Min(1,volAve*tt->GetGain());
+				float multFreq = (vid==vidL) ? tt->GetEQLo() : tt->GetEQHi();
+				float myFreqFactor=freqFactor;
+				float br = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
+				if(vid==vidL) br*=4;	//FIXME: Ben / Zebbler hack... Shouldn't be this way!!
+				br*=vid->StoredBrightness[tt->GetWhich()]*freqSenseBright;
+
+				LGL_Image* image = vid->GetImage();//LGL_SecondsSinceLastFrame()<1.0f/30.0f);//EIGHT_WAY ? !preview : preview);
+				{
+					if
+					(
+						image &&
+						image->GetFrameNumber()!=-1
+					)
+					{
+						float myL = l;
+						float myR = r;
+						float myB = b;
+						float myT = t;
+
+						GetProjectorARCoordsFromViewportCoords
+						(
+							myL,
+							myR,
+							myB,
+							myT
+						);
+
+						float alpha=0.0f;
+						if(preview==false)
+						{
+							if
+							(
+								LGL_GetActiveDisplay()==0 &&
+								ProjectorPreviewClear
+							)
+							{
+								alpha=1.0f;
+								ProjectorPreviewClear=false;
+							}
+
+							if
+							(
+								LGL_GetActiveDisplay()==1 &&
+								ProjectorClear
+							)
+							{
+								alpha=1.0f;
+								ProjectorClear=false;
+							}
+						}
+
+						float x[4];
+						float y[4];
+
+						if(LGL_GetActiveDisplay()==0)
+						{
+							//LB
+							x[0]=myL;
+							y[0]=myB;
+							//RB
+							x[1]=myR;
+							y[1]=myB;
+							//RT
+							x[2]=myR;
+							y[2]=myT;
+							//LT
+							x[3]=myL;
+							y[3]=myT;
+						}
+						else
+						{
+							//LB
+							x[0]=myL+ProjMapOffsetX[0];
+							y[0]=myB+ProjMapOffsetY[0];
+							//RB
+							x[1]=myR+ProjMapOffsetX[3];
+							y[1]=myB+ProjMapOffsetY[3];
+							//RT
+							x[2]=myR+ProjMapOffsetX[2];
+							y[2]=myT+ProjMapOffsetY[2];
+							//LT
+							x[3]=myL+ProjMapOffsetX[1];
+							y[3]=myT+ProjMapOffsetY[1];
+						}
+						image->DrawToScreen
+						(
+							x,
+							y,
+							1.0f,
+							1.0f,
+							1.0f,
+							alpha,
+							br
+						);
+//LGL_DebugPrintf("br: %.2f\n",br);
+					}
+				}
 			}
 		}
 	}

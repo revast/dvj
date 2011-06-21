@@ -1148,6 +1148,14 @@ public:
 					int		bufferHeight,
 					long		frameNumber
 				);
+	unsigned char*		LockBufferRGB(unsigned int bufferBytes);
+	void			UnlockBufferRGB
+				(
+				const	char*		videoPath,
+					int		bufferWidth,
+					int		bufferHeight,
+					long		frameNumber
+				);
 	const char*		GetVideoPath() const;
 	unsigned char*		GetBufferRGB() const;
 	unsigned int		GetBufferRGBBytes() const;
@@ -1220,7 +1228,7 @@ public:
 	double			GetFPS();
 	int			GetFPSDisplayed();
 	int			GetFPSMissed();
-	LGL_Image*		GetImage();
+	LGL_Image*		GetImage(bool decodeAllowed=true);
 	double			GetSecondsBufferedLeft(bool loaded, bool ready);
 	double			GetSecondsBufferedRight(bool loaded, bool ready);
 	void			SetFrameBufferAddBackwards(bool addBackwards=true);
@@ -1243,6 +1251,8 @@ public:
 	void			SetReadAheadMB(int MB);
 	int			GetReadAheadDelayMS();
 	void			SetReadAheadDelayMS(int ms);
+	bool			GetDecodeInThread();
+	void			SetDecodeInThread(bool decodeInThread=true);
 
 	//Thread Functions
 
@@ -1297,6 +1307,7 @@ private:
 	float			PreloadPercent;
 	int			ReadAheadMB;
 	int			ReadAheadDelayMS;
+	bool			DecodeInThread;
 
 	bool			ThreadTerminate;
 	SDL_Thread*		ThreadPreload;
