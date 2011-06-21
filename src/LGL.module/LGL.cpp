@@ -11194,7 +11194,11 @@ MaybeDecodeImage
 
 	//Lock the video
 	{
-		LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
+		LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
+		if(videoOKLock.GetLockObtained()==false)
+		{
+			return(false);
+		}
 		VideoOKUserCount++;
 	}
 
@@ -11550,7 +11554,11 @@ MaybeInvalidateBuffers()
 
 	char path[2048];
 	{
-		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
+		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore,0.0f);
+		if(pathLock.GetLockObtained()==false)
+		{
+			return;
+		}
 		strcpy(path,Path);
 	}
 
@@ -30968,7 +30976,8 @@ Init
 		if
 		(
 			SDL_ThreadID() == LGL.ThreadIDMain &&
-			Semaphore->IsLocked()
+			Semaphore->IsLocked() &&
+			timeoutSeconds!=0.0f
 		)
 		{
 			mainBlocked=true;
