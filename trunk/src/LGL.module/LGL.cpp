@@ -4167,14 +4167,17 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 {
 	if(LGL.DisplayNow==0)
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.DebugPrintfSemaphore);
-		for(unsigned int a=0;a<LGL.DebugPrintfBuffer.size();a++)
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.DebugPrintfSemaphore,0.0f);
+		if(lock.GetLockObtained())
 		{
-			lgl_DebugPrintfInternal(LGL.DebugPrintfBuffer[a]);
-			delete LGL.DebugPrintfBuffer[a];
-			LGL.DebugPrintfBuffer[a]=NULL;
+			for(unsigned int a=0;a<LGL.DebugPrintfBuffer.size();a++)
+			{
+				lgl_DebugPrintfInternal(LGL.DebugPrintfBuffer[a]);
+				delete LGL.DebugPrintfBuffer[a];
+				LGL.DebugPrintfBuffer[a]=NULL;
+			}
+			LGL.DebugPrintfBuffer.clear();
 		}
-		LGL.DebugPrintfBuffer.clear();
 	}
 
 	if(endFrame)
@@ -10150,7 +10153,14 @@ GetImage
 	}
 
 	{
-		LGL_ScopeLock bufferLock(__FILE__,__LINE__,frameBuffer->BufferSemaphore);
+		LGL_ScopeLock bufferLock(__FILE__,__LINE__,frameBuffer->BufferSemaphore,
+			(SDL_ThreadID()==LGL.ThreadIDMain) ? 0.0f : -1.0f
+		);
+		if(bufferLock.GetLockObtained()==false)
+		{
+			return(Image);
+		}
+
 		if(frameBuffer->GetBufferRGB())
 		{
 			if(IsYUV420P()==false)
@@ -14602,7 +14612,13 @@ LGL_DebugPrintf
 )
 {
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.DebugPrintfSemaphore);
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.DebugPrintfSemaphore,
+			(SDL_ThreadID()==LGL.ThreadIDMain) ? 0.0f : -1.0f
+		);
+		if(lock.GetLockObtained()==false)
+		{
+			return;
+		}
 		if(LGL.DebugPrintfBuffer.size()>32)
 		{
 			return;
