@@ -13459,7 +13459,11 @@ GetImage()
 	}
 
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,DstFrameYUVSemaphore);
+		LGL_ScopeLock lock(__FILE__,__LINE__,DstFrameYUVSemaphore,0.0f);
+		if(lock.GetLockObtained()==false)
+		{
+			return(Image);
+		}
 		if(DstFrameYUV->quality==1)
 		{
 			lgl_sws_scale
