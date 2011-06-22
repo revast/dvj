@@ -6953,10 +6953,12 @@ DrawToScreen
 
 	//Prepare RGB vs YUV (Omega)
 
+	/*
 	if(TextureGLRect)
 	{
 		enableShader=false;
 	}
+	*/
 
 	if(enableShader)
 	{
