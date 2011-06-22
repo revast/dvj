@@ -656,7 +656,7 @@ int
 SwapOutOtherPrograms(void* baka)
 {
 	long int memDelta = 128;
-	long int memMax = 1024*8;
+	long int memMax = 1024*2;
 	for(long int size=memDelta;size<=memMax;size+=memDelta)
 	{
 		LGL_DelayMS(1);
