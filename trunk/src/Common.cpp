@@ -3144,7 +3144,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				}
 			}
 
-			float pointsXY[8];
+			float pointsXY[10];
 			pointsXY[0]=myL;
 			pointsXY[1]=myB;
 			pointsXY[2]=myR;
@@ -3153,10 +3153,12 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 			pointsXY[5]=myT;
 			pointsXY[6]=myL;
 			pointsXY[7]=myT;
+			pointsXY[8]=myL;
+			pointsXY[9]=myB;
 			LGL_DrawLineStripToScreen
 			(
 				pointsXY,
-				4,
+				5,
 				r,g,b,1,
 				thickness
 			);
@@ -3603,7 +3605,7 @@ Turntable_DrawSliders
 			1
 		);
 
-		float pointsXY[8];
+		float pointsXY[10];
 		pointsXY[0]=sliderL;
 		pointsXY[1]=sliderB;
 		pointsXY[2]=sliderR;
@@ -3612,11 +3614,13 @@ Turntable_DrawSliders
 		pointsXY[5]=sliderT;
 		pointsXY[6]=sliderL;
 		pointsXY[7]=sliderT;
+		pointsXY[8]=sliderL;
+		pointsXY[9]=sliderB;
 
 		LGL_DrawLineStripToScreen
 		(
 			pointsXY,
-			4,
+			5,
 			r,g,b,1,
 			thickness
 		);
