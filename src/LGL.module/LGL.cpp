@@ -13512,6 +13512,13 @@ GetImage()
 	return(Image);
 }
 
+const char*
+LGL_VideoEncoder::
+GetSrcPath()
+{
+	return(SrcPath);
+}
+
 //LGL_AudioEncoder
 
 int
@@ -30956,6 +30963,7 @@ Lock
 	bool printMore=false;
 	if(mainBlocked)
 	{
+		assert(false);
 		printf("Main thread blocks on semaphore!\n");
 		printMore=true;
 	}
