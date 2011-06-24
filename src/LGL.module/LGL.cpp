@@ -273,6 +273,7 @@ typedef struct
 	int			MasterWindowResolutionY;
 
 	SDL_threadID		ThreadIDMain;
+	SDL_threadID		ThreadIDWatch;
 
 	float			DisplayViewportLeft[LGL_DISPLAY_MAX];
 	float			DisplayViewportRight[LGL_DISPLAY_MAX];
@@ -1393,13 +1394,6 @@ LGL_JackInit()
 int lgl_MidiInit2();
 
 LGL_Semaphore&
-lgl_get_vsync_semaphore()
-{
-	static LGL_Semaphore sem("vsync",false);
-	return(sem);
-}
-
-LGL_Semaphore&
 lgl_get_av_semaphore()
 {
 	static LGL_Semaphore sem("av_semaphore",true);	//Promiscuous?!
@@ -2363,6 +2357,7 @@ printf("CreateWindow(%i): %i x %i\n",
 	SDL_GL_MakeCurrent(LGL.WindowID[0], LGL.GLContext);
 
 	LGL.ThreadIDMain = SDL_ThreadID();
+	LGL.ThreadIDWatch = NULL;
 
 	//GL Settings
 
@@ -2888,10 +2883,6 @@ LGL_ExitOmega()
 
 	lgl_SyphonExit();
 
-	if(lgl_get_vsync_semaphore().IsLocked())
-	{
-		lgl_get_vsync_semaphore().Unlock();
-	}
 	if(LGL.WriteFileAsyncThread)
 	{
 		LGL_ThreadWait(LGL.WriteFileAsyncThread);
@@ -4158,8 +4149,6 @@ if(biggestType>=0) printf("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tLGL_DrawLog.biggest
 	LGL.SecondsSinceExecution=LGL.SecondsSinceExecutionTimer.SecondsSinceLastReset();
 }
 
-bool firstSwap=true;
-
 void
 LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 {
@@ -4206,10 +4195,6 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 				LGL.FrameTimeGraph[a]=LGL.FrameTimeGraph[a+1];
 			}
 			LGL.FrameTimeGraph[59]=frameTime;
-			if(firstSwap==false)
-			{
-				lgl_get_vsync_semaphore().Unlock();
-			}
 		}
 		//Enforce sub60fps
 		if(LGL.FPSMax<=30 && vsync)
@@ -4227,12 +4212,10 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 				}
 			}
 		}
-		firstSwap=false;
 		SDL_GL_SwapWindow(LGL.WindowID[LGL.DisplayNow]);
 		if(vsync)
 		{
 			LGL.FramesSinceExecution++;
-			lgl_get_vsync_semaphore().Lock(__FILE__,__LINE__);
 			LGL.SecondsSinceLastFrame=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
 			//Quantize to n/60.0f
 			for(int a=0;a<10;a++)
@@ -9287,7 +9270,12 @@ LockBufferRGB
 	unsigned int	bufferRGBBytes
 )
 {
-	BufferSemaphore.Lock(__FILE__,__LINE__);
+	bool obtained=BufferSemaphore.Lock(__FILE__,__LINE__,0.0f);
+
+	if(obtained==false)
+	{
+		return(NULL);
+	}
 
 	if(BufferBytes<bufferRGBBytes)
 	{
@@ -10951,25 +10939,6 @@ MaybeLoadImage()
 		return(false);
 	}
 
-	//Chill, if we're not waiting on vsync
-	/*
-	if(SDL_ThreadID()!=LGL.ThreadIDMain)
-	{
-		{
-			LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
-		}
-	}
-	*/
-	{
-		{
-			if(GetSecondsBufferedRight(true,true)*FPS>FrameBufferAddRadius*0.5f)
-			{
-				LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
-			}
-		}
-		//LGL_DelayMS(0);
-	}
-
 	//Return early if we have enough frames loaded
 	std::vector<lgl_FrameBuffer*> frameBufferLoaded = GetFrameBufferLoadedList(false);
 	if((int)frameBufferLoaded.size()>=FrameBufferAddRadius*(FrameBufferAddBackwards ? 2 : 1))
@@ -11261,16 +11230,6 @@ MaybeDecodeImage
 	long	desiredFrameNum
 )
 {
-	//Chill, if we're not waiting on vsync
-	/*
-	if(SDL_ThreadID()!=LGL.ThreadIDMain)
-	{
-		{
-			LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
-		}
-	}
-	*/
-
 	//We can early out before grabbing the lock
 	if
 	(
@@ -11317,15 +11276,22 @@ MaybeDecodeImage
 	if(mainThread)
 	{
 		bool lockObtained=VideoOKSemaphore.Lock(__FILE__,__LINE__,0.0f);
-	}
-	//Lock the video
-	{
-		LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
-		if(videoOKLock.GetLockObtained()==false)
+		if(lockObtained==false)
 		{
 			return(false);
 		}
-		VideoOKUserCount++;
+	}
+	//Lock the video
+	{
+		if(mainThread==false)
+		{
+			LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
+			VideoOKUserCount++;
+		}
+		else
+		{
+			VideoOKUserCount++;
+		}
 	}
 
 	if
@@ -11339,9 +11305,15 @@ MaybeDecodeImage
 	)
 	{
 		//Unlock the video
+		if(mainThread==false)
 		{
 			LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
 			VideoOKUserCount--;
+		}
+		else
+		{
+			VideoOKUserCount--;
+			VideoOKSemaphore.Unlock();
 		}
 		return(false);
 	}
@@ -11393,9 +11365,15 @@ MaybeDecodeImage
 	if(frameBuffer==NULL)
 	{
 		//Unlock the video
+		if(mainThread==false)
 		{
 			LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
 			VideoOKUserCount--;
+		}
+		else
+		{
+			VideoOKUserCount--;
+			VideoOKSemaphore.Unlock();
 		}
 		return(false);
 	}
@@ -11427,9 +11405,15 @@ MaybeDecodeImage
 		printf("NULL packet??\n");
 		frameBuffer->Invalidate();
 		//Unlock the video
+		if(mainThread==false)
 		{
 			LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
 			VideoOKUserCount--;
+		}
+		else
+		{
+			VideoOKUserCount--;
+			VideoOKSemaphore.Unlock();
 		}
 		return(false);
 	}
@@ -11458,10 +11442,15 @@ MaybeDecodeImage
 
 	if(dst==NULL)
 	{
-		//Unlock the video
+		if(mainThread==false)
 		{
 			LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
 			VideoOKUserCount--;
+		}
+		else
+		{
+			VideoOKUserCount--;
+			VideoOKSemaphore.Unlock();
 		}
 		return(false);
 	}
@@ -11672,9 +11661,15 @@ MaybeDecodeImage
 		}
 	}
 	//Unlock the video
+	if(mainThread==false)
 	{
 		LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore);
 		VideoOKUserCount--;
+	}
+	else
+	{
+		VideoOKUserCount--;
+		VideoOKSemaphore.Unlock();
 	}
 	return(frameRead);
 }
@@ -13794,23 +13789,6 @@ ThreadFunc()
 	{
 		FlushBuffer();
 		LGL_DelayMS(5);
-		//chill
-		/*
-		while
-		(
-			LGL.MainThreadVsyncWait==false &&
-			LGL.Running
-		)
-		{
-			LGL_DelayMS(1);
-		}
-		*/
-		{
-			{
-				LGL_ScopeLock waitOnVsync(__FILE__,__LINE__,lgl_get_vsync_semaphore(),15.0f/60.0f);
-			}
-			LGL_DelayMS(0);
-		}
 		if
 		(
 			DestructHint ||
@@ -30934,25 +30912,22 @@ Lock
 {
 	if(Promiscuous) return(true);
 
-const bool debugMainThreadWaits=true;
-
-	if(debugMainThreadWaits)
+	LGL_Timer timer;
+	char name[1024];
+	strcpy(name,GetName());
+	char lockOwnerFile[1024];
+	strcpy(lockOwnerFile,GetLockOwnerFile());
+	int lockOwnerLine;
+	lockOwnerLine=GetLockOwnerLine();
+	bool mainBlocked=false;
+	if
+	(
+		SDL_ThreadID() == LGL.ThreadIDMain &&
+		IsLocked() &&
+		timeoutSeconds!=0.0f
+	)
 	{
-		if(SDL_ThreadID()==LGL.ThreadIDMain)
-		{
-			if
-			(
-				timeoutSeconds!=0.0f &&
-				SDL_SemValue(Sem)==0
-			)
-			{
-				printf("Main Thread Wait:\n");
-				printf("\tSem = %s\n",Name);
-				printf("\tLocking file = %s\n",LockOwnerFile);
-				printf("\tLocking line = %i\n",LockOwnerLine);
-				printf("\n");
-			}
-		}
+		mainBlocked=true;
 	}
 
 	bool ret=false;
@@ -30977,6 +30952,31 @@ const bool debugMainThreadWaits=true;
 		strcpy(LockOwnerFile,file);
 		LockOwnerLine=line;
 		TimeOfLock = LGL_SecondsSinceExecution();
+	}
+
+	bool printMore=false;
+	if(mainBlocked)
+	{
+		printf("Main thread blocks on semaphore!\n");
+		printMore=true;
+	}
+	else if(timer.SecondsSinceLastReset()>1.0f)
+	{
+		printf("Long lock!\n");
+		printMore=true;
+	}
+	if(printMore)
+	{
+		printf("\tName: %s\n",name);
+		printf("\tTime: %.4f\n",timer.SecondsSinceLastReset());
+		printf("\tLock Owner File: %s\n",lockOwnerFile);
+		printf("\tLock Owner Line: %i\n",lockOwnerLine);
+		printf("\tLock Waiter File: %s\n",file);
+		printf("\tLock Waiter Line: %i\n",line);
+		printf("\tLock Waiter Thread: %i (%i)\n",
+			(int)SDL_ThreadID(),
+			(int)LGL.ThreadIDMain);
+		printf("\n");
 	}
 	return(ret);
 }
@@ -31103,6 +31103,7 @@ Init
 	LockObtained=false;
 	if(Semaphore)
 	{
+		/*
 		LGL_Timer timer;
 		char name[1024];
 		strcpy(name,Semaphore->GetName());
@@ -31120,13 +31121,14 @@ Init
 		{
 			mainBlocked=true;
 		}
-
+		*/
 		LockObtained=Semaphore->Lock
 		(
 			file,
 			line,
 			timeoutSeconds
 		);
+		/*
 		if(mainBlocked)
 		{
 			printf("Main thread blocks on semaphore!\n");
@@ -31155,6 +31157,7 @@ Init
 				(int)LGL.ThreadIDMain);
 			printf("\n");
 		}
+		*/
 	}
 	if(LockObtained==false)
 	{
