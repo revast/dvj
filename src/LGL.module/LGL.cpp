@@ -9420,9 +9420,21 @@ GetBufferVBytes()	const
 
 AVPacket*
 lgl_FrameBuffer::
-GetPacket()
+LockPacket()
 {
+	bool locked=PacketSemaphore.Lock(__FILE__,__LINE__,0.0f);
+	if(!locked)
+	{
+		return(NULL);
+	}
 	return(Packet);
+}
+
+void
+lgl_FrameBuffer::
+UnlockPacket()
+{
+	PacketSemaphore.Unlock();
 }
 
 void
@@ -11399,11 +11411,9 @@ MaybeDecodeImage
 	}
 
 	//Get the AVPacket
-	AVPacket* packet = frameBuffer->GetPacket();
+	AVPacket* packet = frameBuffer->LockPacket();
 	if(packet==NULL)
 	{
-		printf("NULL packet??\n");
-		frameBuffer->Invalidate();
 		//Unlock the video
 		if(mainThread==false)
 		{
@@ -11452,6 +11462,7 @@ MaybeDecodeImage
 			VideoOKUserCount--;
 			VideoOKSemaphore.Unlock();
 		}
+		frameBuffer->UnlockPacket();
 		return(false);
 	}
 
@@ -11460,19 +11471,6 @@ MaybeDecodeImage
 	const int useLibJpegTurbo=true;//(SDL_ThreadID()!=LGL.ThreadIDMain);
 	if(useLibJpegTurbo)
 	{
-		/*
-		if
-		(
-			BufferRGB==NULL ||
-			BufferRGBBytes<bufferBytesNow
-		)
-		{
-			BufferRGBBytes=bufferBytesNow;
-			delete BufferRGB;
-			BufferRGB=new uint8_t[BufferRGBBytes];
-		}
-		frameFinished=lgl_decode_jpeg(BufferRGB,BufferRGBBytes,packet->data,(long)packet->size);
-		*/
 		frameFinished=lgl_decode_jpeg(dst,bufferBytesNow,packet->data,(long)packet->size);
 	}
 	else
@@ -11671,6 +11669,7 @@ MaybeDecodeImage
 		VideoOKUserCount--;
 		VideoOKSemaphore.Unlock();
 	}
+	frameBuffer->UnlockPacket();
 	return(frameRead);
 }
 
