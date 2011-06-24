@@ -273,7 +273,6 @@ typedef struct
 	int			MasterWindowResolutionY;
 
 	SDL_threadID		ThreadIDMain;
-	SDL_threadID		ThreadIDWatch;
 
 	float			DisplayViewportLeft[LGL_DISPLAY_MAX];
 	float			DisplayViewportRight[LGL_DISPLAY_MAX];
@@ -2364,7 +2363,6 @@ printf("CreateWindow(%i): %i x %i\n",
 	SDL_GL_MakeCurrent(LGL.WindowID[0], LGL.GLContext);
 
 	LGL.ThreadIDMain = SDL_ThreadID();
-	LGL.ThreadIDWatch = NULL;
 
 	//GL Settings
 
@@ -4234,7 +4232,7 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 		if(vsync)
 		{
 			LGL.FramesSinceExecution++;
-			lgl_get_vsync_semaphore().Lock(__FILE__,__LINE__,"Main");
+			lgl_get_vsync_semaphore().Lock(__FILE__,__LINE__);
 			LGL.SecondsSinceLastFrame=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
 			//Quantize to n/60.0f
 			for(int a=0;a<10;a++)
@@ -10725,12 +10723,13 @@ MaybeLoadVideo()
 	for(;;)
 	{
 		if(delayCount>0) LGL_DelayMS(1);
-		LGL_ScopeLock videoOkLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
-		if(videoOkLock.GetLockObtained()==false)
+		if(VideoOKUserCount>0)
 		{
+			delayCount++;
 			continue;
 		}
-		if(VideoOKUserCount>0)
+		LGL_ScopeLock videoOkLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
+		if(videoOkLock.GetLockObtained()==false)
 		{
 			delayCount++;
 			continue;
@@ -11312,7 +11311,13 @@ MaybeDecodeImage
 		}
 		strcpy(path,Path);
 	}
+	
+	bool mainThread=(SDL_ThreadID()==LGL.ThreadIDMain);
 
+	if(mainThread)
+	{
+		bool lockObtained=VideoOKSemaphore.Lock(__FILE__,__LINE__,0.0f);
+	}
 	//Lock the video
 	{
 		LGL_ScopeLock videoOKLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
@@ -30924,21 +30929,20 @@ Lock
 (
 	const char*	file,
 	int		line,
-	bool		blockUntilTimeout,
 	float		timeoutSeconds
 )
 {
 	if(Promiscuous) return(true);
 
 const bool debugMainThreadWaits=true;
+
 	if(debugMainThreadWaits)
 	{
 		if(SDL_ThreadID()==LGL.ThreadIDMain)
 		{
 			if
 			(
-				blockUntilTimeout &&
-				timeoutSeconds>0 &&
+				timeoutSeconds!=0.0f &&
 				SDL_SemValue(Sem)==0
 			)
 			{
@@ -30949,40 +30953,23 @@ const bool debugMainThreadWaits=true;
 				printf("\n");
 			}
 		}
-
-		if(SDL_ThreadID()==LGL.ThreadIDWatch)
-		{
-			if
-			(
-				blockUntilTimeout &&
-				timeoutSeconds>0 &&
-				SDL_SemValue(Sem)==0
-			)
-			{
-				printf("Watch Thread Wait:\n");
-				printf("\tSem = %s\n",Name);
-				printf("\tLocking file = %s\n",LockOwnerFile);
-				printf("\tLocking line = %i\n",LockOwnerLine);
-				printf("\n");
-			}
-		}
 	}
 
 	bool ret=false;
-	if(blockUntilTimeout==false)
+	if(timeoutSeconds==0.0f)
 	{
+		//Despite its name, SDL_SemTryWait() doesn't actually wait... It's nonblocking.
 		ret = (SDL_SemTryWait(Sem)==0);
+	}
+	else if(timeoutSeconds<0)
+	{
+		//This suspends the thread until the sem is obtained
+		ret = (SDL_SemWait(Sem)==0);
 	}
 	else
 	{
-		if(timeoutSeconds<0)
-		{
-			ret = (SDL_SemWait(Sem)==0);
-		}
-		else
-		{
-			ret = (SDL_SemWaitTimeout(Sem,(Uint32)(timeoutSeconds*1000.0))==0);
-		}
+		//This waits a given amount of time, and then gives up.
+		ret = (SDL_SemWaitTimeout(Sem,(Uint32)(timeoutSeconds*1000.0))==0);
 	}
 
 	if(ret)
@@ -31138,7 +31125,6 @@ Init
 		(
 			file,
 			line,
-			timeoutSeconds!=0,
 			timeoutSeconds
 		);
 		if(mainBlocked)
@@ -31822,36 +31808,6 @@ lgl_AudioOutCallbackGenerator
 		}
 	}
 	memcpy(stream16,tempStream16Silence,len16);
-
-//I'm not down with any locks in the audio thread
-#if 0
-	if(LGL.AudioStreamListSemaphore->IsLocked())
-	{
-		printf("Locked 1\n");
-	}
-	LGL.AudioStreamListSemaphore->Lock("AudioOut","Calling MixIntoStream()");
-	for(unsigned int a=0;a<LGL.AudioStreamList.size();a++)
-	{
-		LGL.AudioStreamList[a]->MixIntoStream
-		(
-			userdata,
-			stream8,
-			len8
-		);
-
-		if(LGL.AudioStreamList[a]->Finished())
-		{
-			delete LGL.AudioStreamList[a];
-			LGL.AudioStreamList.erase
-			(
-				(std::vector<LGL_AudioStream*>::iterator)(&(LGL.AudioStreamList[a]))
-			);
-			a--;
-		}
-	}
-	LGL.AudioStreamListSemaphore->Unlock();
-#endif
-
 
 	//if(LGL.AudioAvailable==false) return;
 	unsigned long PosLastPrev;

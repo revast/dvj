@@ -474,7 +474,6 @@ public:
 			(
 				const char*	file,
 				int		line,
-				bool		blockUntilTimeout=true,
 				float		timeoutSeconds=-1		//-1=inf, never timeout
 			);
 	bool		Unlock();
