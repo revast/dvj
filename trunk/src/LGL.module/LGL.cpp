@@ -14646,8 +14646,18 @@ LGL_DebugPrintf
 	char* target = new char[strlen(tmpstr)+2];
 	strcpy(target,tmpstr);
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.DebugPrintfSemaphore);
-		LGL.DebugPrintfBuffer.push_back(target);
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.DebugPrintfSemaphore,
+			(SDL_ThreadID()==LGL.ThreadIDMain) ? 0.0f : -1.0f
+		);
+		if(lock.GetLockObtained()==false)
+		{
+			delete target;
+			return;
+		}
+		else
+		{
+			LGL.DebugPrintfBuffer.push_back(target);
+		}
 	}
 }
 
