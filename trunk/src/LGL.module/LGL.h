@@ -1169,7 +1169,8 @@ public:
 	unsigned int		GetBufferUBytes() const;
 	unsigned char*		GetBufferV() const;
 	unsigned int		GetBufferVBytes() const;
-	AVPacket*		GetPacket();
+	AVPacket*		LockPacket();
+	void			UnlockPacket();
 	void			SetPacket
 				(
 					AVPacket*	packet,
