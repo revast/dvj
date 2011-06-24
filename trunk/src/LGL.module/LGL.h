@@ -1315,6 +1315,7 @@ private:
 	SDL_Thread*		ThreadLoad;
 	SDL_Thread*		ThreadDecode;
 	LGL_Semaphore		PathSemaphore;
+	LGL_Semaphore		PathNextSemaphore;
 
 	AVFormatContext*	FormatContext;
 	AVCodecContext*		CodecContext;
