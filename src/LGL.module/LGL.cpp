@@ -9550,11 +9550,13 @@ lgl_video_decoder_preload_thread
 					dec->GetPreloadMaxMB() >
 					(LGL_FileLengthBytes(dec->GetPath())/(1024.0f*1024.0f))
 				);
+/*
 printf("preload '%s'? %s: %.2f vs %.2f\n",
 	dec->GetPath(),
 	preload ? "YES" : "NO",
 	dec->GetPreloadMaxMB(),
 	LGL_FileLengthBytes(dec->GetPath())/(1024.0f*1024.0f));
+*/
 			dec->SetPreloadPercent(0.0f);
 			dec->SetPreloadEnabled(preload);
 			if(preload)
