@@ -9505,7 +9505,7 @@ lgl_video_decoder_decode_thread
 		bool imageDecoded=false;
 		if
 		(
-			LGL_FPS()>=dec->GetFPS()*0.90f &&
+			LGL_FPS()>=50 &&
 			dec->GetDecodeInThread()
 		)
 		{
