@@ -1969,7 +1969,7 @@ DrawVideos
 						}
 					}
 				}
-				else if(tt->GetAspectRatioMode()!=2)
+				else if(1)//tt->GetAspectRatioMode()!=2)
 				{
 					if(tt->GetAspectRatioMode()!=2)
 					{
@@ -2102,7 +2102,7 @@ DrawVideos
 						image->DrawToScreen
 						(
 							myL13rd,myL,
-							myB,myT,
+							myT,myB,
 							0,
 							vBright,
 							vBright,
@@ -2112,7 +2112,7 @@ DrawVideos
 						image->DrawToScreen
 						(
 							myL13rd,myL23rd,
-							myB,myT,
+							myT,myB,
 							0,
 							vBright,
 							vBright,
@@ -2122,7 +2122,7 @@ DrawVideos
 						image->DrawToScreen
 						(
 							myR,myL23rd,
-							myB,myT,
+							myT,myB,
 							0,
 							vBright,
 							vBright,
