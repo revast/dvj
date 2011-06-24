@@ -9707,6 +9707,7 @@ LGL_VideoDecoder
 	const char* path
 ) :
 	PathSemaphore("Path Semaphore"),
+	PathNextSemaphore("Path Next Semaphore"),
 	VideoOKSemaphore("VideoOK Semaphore")
 {
 	Init();
@@ -9910,7 +9911,7 @@ SetVideo
 	}
 	if(strcmp(Path,path)!=0)
 	{
-		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
+		LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
 		if(Image)
 		{
 			Image->SetFrameNumber(-1);
@@ -10678,29 +10679,34 @@ MaybeLoadVideo()
 		return;
 	}
 
+	char pathNextLocal[2048];
+	{
+		LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
+		strcpy(pathNextLocal,PathNext);
+		PathNext[0]='\0';
+	}
+
 	FPSDisplayed=0;
 	FPSMissed=0;
 	FPSDisplayedHitCounter=0;
 	FPSDisplayedMissCounter=0;
 
-	if(strcmp(PathNext,"NULL")==0)
+	if(strcmp(pathNextLocal,"NULL")==0)
 	{
-		strcpy(Path,PathNext);
-		PathNext[0]='\0';
+		strcpy(Path,pathNextLocal);
 		return;
 	}
 
-	//PathNext => Path
+	//pathNextLocal => Path
 	{
 		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore);
 
-		if(LGL_FileExists(PathNext)==false)
+		if(LGL_FileExists(pathNextLocal)==false)
 		{
-			PathNext[0]='\0';
 			return;
 		}
 
-		strcpy(Path,PathNext);
+		strcpy(Path,pathNextLocal);
 		if(const char* lastSlash = strrchr(Path,'/'))
 		{
 			strcpy(PathShort,&(lastSlash[1]));
@@ -10709,8 +10715,6 @@ MaybeLoadVideo()
 		{
 			strcpy(PathShort,Path);
 		}
-
-		PathNext[0]='\0';
 
 		PathNum++;
 	}
