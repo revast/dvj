@@ -263,81 +263,6 @@ findVideoPath
 )
 {
 	findCachedPath(foundPath,srcPath,"mjpeg.avi");
-	if(LGL_FileExists(foundPath))
-	{
-		if(GetDebugVideoCaching())
-		{
-			LGL_DebugPrintf("findCachedPath() success: %s",foundPath);
-		}
-		return;
-	}
-
-	bool isMjpeg=LGL_VideoIsMJPEG(srcPath);
-
-	if(GetDebugVideoCaching())
-	{
-		LGL_DebugPrintf("MJPEG? %s",isMjpeg ? "YES": "NO");
-	}
-
-	if(isMjpeg)
-	{
-		static LGL_Semaphore lnSym("lnSym");
-		LGL_ScopeLock lock(__FILE__,__LINE__,lnSym);
-		char soundSrcDir[2048];
-		strcpy(soundSrcDir,srcPath);
-		if(char* lastSlash = strrchr(soundSrcDir,'/'))
-		{
-			lastSlash[0]='\0';
-		}
-		else
-		{
-			soundSrcDir[0]='\0';
-		}
-		char soundName[2048];
-		if(strrchr(soundSrcDir,'/'))
-		{
-			strcpy(soundName,&(strrchr(srcPath,'/')[1]));
-		}
-		else
-		{
-			strcpy(soundName,srcPath);
-		}
-		sprintf(foundPath,"%s/%s/%s.mjpeg.avi",soundSrcDir,GetDvjCacheDirName(),soundName);
-		if(LGL_FileExists(foundPath)==false)
-		{
-			if(GetDebugVideoCaching())
-			{
-				LGL_DebugPrintf("Attempting symlink at path: '%s'",foundPath);
-				LGL_DebugPrintf("Attempting symlink target: '%s'",srcPath);
-			}
-			LGL_FileDelete(foundPath);	//For stale symlinks...
-			char cmd[4096];
-			char dir[4096];
-			sprintf(dir,"%s/%s",soundSrcDir,GetDvjCacheDirName());
-			LGL_DirectoryCreate(dir);
-			sprintf
-			(
-				cmd,
-				"ln -s '%s' '%s'",
-				srcPath,
-				foundPath
-			);
-			system(cmd);
-		}
-		if(GetDebugVideoCaching())
-		{
-			LGL_DebugPrintf("srcPath: %s\n",srcPath);
-			LGL_DebugPrintf("Symlink exists? '%s'",LGL_FileExists(foundPath) ? "YES" : "NO");
-			LGL_DebugPrintf("Symlink is symlink? '%s'",LGL_PathIsSymlink(foundPath) ? "YES" : "NO");
-			if(LGL_PathIsSymlink(foundPath))
-			{
-				char symlinkTarget[2048];
-				bool ok=LGL_ResolveSymlink(symlinkTarget,2048,foundPath);
-				LGL_DebugPrintf("Symlink target: '%s' (%s)",symlinkTarget,ok ? "OK" : "FAIL");
-			}
-		}
-		return;
-	}
 }
 
 void
@@ -437,15 +362,76 @@ videoEncoderThread
 		}
 		else if(LGL_FileExists(encoderDst)==false)
 		{
-			char foundVideo[2048];
+			char foundPath[2048];
 			findVideoPath
 			(
-				foundVideo,
+				foundPath,
 				encoderSrc
 			);
-			if(LGL_FileExists(foundVideo))
+
+			bool isMjpeg=LGL_VideoIsMJPEG(encoderSrc);
+
+			if(isMjpeg)
 			{
-				strcpy(encoderDst,foundVideo);
+				static LGL_Semaphore lnSym("lnSym");
+				LGL_ScopeLock lock(__FILE__,__LINE__,lnSym);
+				char soundSrcDir[2048];
+				strcpy(soundSrcDir,encoderSrc);
+				if(char* lastSlash = strrchr(soundSrcDir,'/'))
+				{
+					lastSlash[0]='\0';
+				}
+				else
+				{
+					soundSrcDir[0]='\0';
+				}
+				char soundName[2048];
+				if(strrchr(soundSrcDir,'/'))
+				{
+					strcpy(soundName,&(strrchr(encoderSrc,'/')[1]));
+				}
+				else
+				{
+					strcpy(soundName,encoderSrc);
+				}
+				sprintf(foundPath,"%s/%s/%s.mjpeg.avi",soundSrcDir,GetDvjCacheDirName(),soundName);
+				if(LGL_FileExists(foundPath)==false)
+				{
+					if(GetDebugVideoCaching())
+					{
+						LGL_DebugPrintf("Attempting symlink at path: '%s'",foundPath);
+						LGL_DebugPrintf("Attempting symlink target: '%s'",encoderSrc);
+					}
+					LGL_FileDelete(foundPath);	//For stale symlinks...
+					char cmd[4096];
+					char dir[4096];
+					sprintf(dir,"%s/%s",soundSrcDir,GetDvjCacheDirName());
+					LGL_DirectoryCreate(dir);
+					sprintf
+					(
+						cmd,
+						"ln -s '%s' '%s'",
+						encoderSrc,
+						foundPath
+					);
+					system(cmd);
+				}
+				if(GetDebugVideoCaching())
+				{
+					LGL_DebugPrintf("srcPath: %s\n",encoderSrc);
+					LGL_DebugPrintf("Symlink exists? '%s'",LGL_FileExists(foundPath) ? "YES" : "NO");
+					LGL_DebugPrintf("Symlink is symlink? '%s'",LGL_PathIsSymlink(foundPath) ? "YES" : "NO");
+					if(LGL_PathIsSymlink(foundPath))
+					{
+						char symlinkTarget[2048];
+						bool ok=LGL_ResolveSymlink(symlinkTarget,2048,foundPath);
+						LGL_DebugPrintf("Symlink target: '%s' (%s)",symlinkTarget,ok ? "OK" : "FAIL");
+					}
+				}
+			}
+			if(LGL_FileExists(foundPath))
+			{
+				strcpy(encoderDst,foundPath);
 			}
 		}
 
