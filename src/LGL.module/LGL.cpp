@@ -526,9 +526,13 @@ typedef struct
 	char			HomeDir[2048];
 	char			Username[2048];
 
-	LGL_Semaphore*		WriteFileAsyncSemaphore;
 	std::vector<lgl_WriteFileAsyncWorkItem*>
 				WriteFileAsyncWorkItemList;
+	int			WriteFileAsyncWorkItemListSize;
+	std::vector<lgl_WriteFileAsyncWorkItem*>
+				WriteFileAsyncWorkItemListNew;
+	int			WriteFileAsyncWorkItemListNewSize;
+	LGL_Semaphore*		WriteFileAsyncWorkItemListNewSemaphore;
 	SDL_Thread*		WriteFileAsyncThread;
 } LGL_State;
 
@@ -2515,7 +2519,7 @@ printf("CreateWindow(%i): %i x %i\n",
 #endif	//LGL_OSX
 
 	LGL.WiimoteSemaphore = new LGL_Semaphore("Wiimote");
-	LGL.WriteFileAsyncSemaphore = new LGL_Semaphore("WriteFileAsyncSemaphore");
+	LGL.WriteFileAsyncWorkItemListNewSemaphore = new LGL_Semaphore("WriteFileAsyncWorkItemListNewSemaphore");
 	LGL.WriteFileAsyncThread = NULL;
 
 #ifdef	LGL_LINUX_VIDCAM
@@ -13542,6 +13546,7 @@ LGL_AudioEncoder
 )
 {
 	strcpy(DstMp3Path,dstPath);
+	SurroundMode=surroundMode;
 
 	DstMp3OutputFormat=NULL;
 	DstMp3FormatContext=NULL;
@@ -13559,95 +13564,9 @@ LGL_AudioEncoder
 	CircularBufferTail=0;
 
 	Valid=false;
+	AVOpened=false;
 	Thread=NULL;
 	DestructHint=false;
-
-	if(FILE* fd=fopen(DstMp3Path,"w"))
-	{
-		fclose(fd);
-		fd=NULL;
-		LGL_FileDelete(DstMp3Path);
-	}
-	else
-	{
-		return;
-	}
-
-	{
-		CodecID acodec = CODEC_ID_FLAC;
-
-		// find the audio encoder
-		DstMp3Codec = lgl_avcodec_find_encoder(acodec);
-		if(DstMp3Codec==NULL)
-		{
-			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't find audio encoding codec\n");
-			return;
-		}
-
-		// Set format
-		DstMp3OutputFormat = av_guess_format("flac", NULL, NULL);
-		if(DstMp3OutputFormat==NULL)
-		{
-			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't find audio encoding format\n");
-			return;
-		}
-		DstMp3OutputFormat->audio_codec = acodec;	//FIXME: mp3?? vorbis?? Pick one and name appropriately!
-		DstMp3OutputFormat->video_codec = CODEC_ID_NONE;
-
-		// FormatContext
-		DstMp3FormatContext = lgl_avformat_alloc_context();	//FIXME: We never explicitly deallocate this... memleak?
-		DstMp3FormatContext->oformat = DstMp3OutputFormat;
-		sprintf(DstMp3FormatContext->filename, "%s",DstMp3Path);
-
-		// audio stream
-		DstMp3Stream = lgl_av_new_stream(DstMp3FormatContext,0);
-		DstMp3Stream->quality=FF_QP2LAMBDA * 100;
-		DstMp3FormatContext->streams[0] = DstMp3Stream;
-		DstMp3FormatContext->nb_streams = 1;
-
-		DstMp3CodecContext = DstMp3Stream->codec;
-		lgl_avcodec_get_context_defaults(DstMp3CodecContext);
-		DstMp3CodecContext->codec_id=acodec;
-		DstMp3CodecContext->codec_type=CODEC_TYPE_AUDIO;
-		DstMp3CodecContext->flags |= CODEC_FLAG_GLOBAL_HEADER;
-		DstMp3CodecContext->bit_rate=256*1024;	//This doesn't seem to matter much
-		DstMp3CodecContext->bit_rate_tolerance=DstMp3CodecContext->bit_rate/4;
-		DstMp3CodecContext->global_quality=DstMp3Stream->quality;
-		DstMp3CodecContext->flags |= CODEC_FLAG_QSCALE;
-		DstMp3CodecContext->sample_rate=LGL.AudioSpec->freq;
-		DstMp3CodecContext->time_base = (AVRational){1,DstMp3CodecContext->sample_rate};
-		DstMp3CodecContext->channels=surroundMode ? 4 : 2;
-		DstMp3CodecContext->sample_fmt=SAMPLE_FMT_S16;
-
-		int openResult=-1;
-		{
-			openResult = lgl_avcodec_open(DstMp3CodecContext, DstMp3Codec);
-		}
-		if(openResult < 0)
-		{
-			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't open audio encoder codec\n");
-			return;
-		}
-		else
-		{
-			//dump_format(DstMp3FormatContext,0,DstMp3FormatContext->filename,1);
-			
-			int result = lgl_url_fopen(&(DstMp3FormatContext->pb), DstMp3FormatContext->filename, URL_WRONLY);
-			if(result<0)
-			{
-				printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't url_fopen() audio output file '%s' (%i)\n",DstMp3FormatContext->filename,result);
-				return;
-			}
-
-			lgl_av_write_header(DstMp3FormatContext);
-
-			DstMp3Buffer = (int16_t*)lgl_av_mallocz(CircularBufferBytes);
-			DstMp3BufferSamples = (int16_t*)lgl_av_mallocz(CircularBufferBytes*2);
-			DstMp3Buffer2 = (int16_t*)lgl_av_mallocz(CircularBufferBytes);
-
-			lgl_av_init_packet(&DstMp3Packet);
-		}
-	}
 
 	CircularBuffer = new char[CircularBufferBytes];
 
@@ -13814,6 +13733,103 @@ FlushBuffer
 )
 {
 	LGL_ScopeLock(__FILE__,__LINE__,LGL.AudioEncoderSemaphore);
+
+	if(AVOpened==false)
+	{
+		AVOpened=true;
+		Valid=false;
+		if(FILE* fd=fopen(DstMp3Path,"w"))
+		{
+			fclose(fd);
+			fd=NULL;
+			LGL_FileDelete(DstMp3Path);
+		}
+		else
+		{
+			return;
+		}
+
+		CodecID acodec = CODEC_ID_FLAC;
+
+		// find the audio encoder
+		DstMp3Codec = lgl_avcodec_find_encoder(acodec);
+		if(DstMp3Codec==NULL)
+		{
+			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't find audio encoding codec\n");
+			return;
+		}
+
+		// Set format
+		DstMp3OutputFormat = av_guess_format("flac", NULL, NULL);
+		if(DstMp3OutputFormat==NULL)
+		{
+			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't find audio encoding format\n");
+			return;
+		}
+		DstMp3OutputFormat->audio_codec = acodec;	//FIXME: mp3?? vorbis?? Pick one and name appropriately!
+		DstMp3OutputFormat->video_codec = CODEC_ID_NONE;
+
+		// FormatContext
+		DstMp3FormatContext = lgl_avformat_alloc_context();	//FIXME: We never explicitly deallocate this... memleak?
+		DstMp3FormatContext->oformat = DstMp3OutputFormat;
+		sprintf(DstMp3FormatContext->filename, "%s",DstMp3Path);
+
+		// audio stream
+		DstMp3Stream = lgl_av_new_stream(DstMp3FormatContext,0);
+		DstMp3Stream->quality=FF_QP2LAMBDA * 100;
+		DstMp3FormatContext->streams[0] = DstMp3Stream;
+		DstMp3FormatContext->nb_streams = 1;
+
+		DstMp3CodecContext = DstMp3Stream->codec;
+		lgl_avcodec_get_context_defaults(DstMp3CodecContext);
+		DstMp3CodecContext->codec_id=acodec;
+		DstMp3CodecContext->codec_type=CODEC_TYPE_AUDIO;
+		DstMp3CodecContext->flags |= CODEC_FLAG_GLOBAL_HEADER;
+		DstMp3CodecContext->bit_rate=256*1024;	//This doesn't seem to matter much
+		DstMp3CodecContext->bit_rate_tolerance=DstMp3CodecContext->bit_rate/4;
+		DstMp3CodecContext->global_quality=DstMp3Stream->quality;
+		DstMp3CodecContext->flags |= CODEC_FLAG_QSCALE;
+		DstMp3CodecContext->sample_rate=LGL.AudioSpec->freq;
+		DstMp3CodecContext->time_base = (AVRational){1,DstMp3CodecContext->sample_rate};
+		DstMp3CodecContext->channels=SurroundMode ? 4 : 2;
+		DstMp3CodecContext->sample_fmt=SAMPLE_FMT_S16;
+
+		int openResult=-1;
+		{
+			openResult = lgl_avcodec_open(DstMp3CodecContext, DstMp3Codec);
+		}
+		if(openResult < 0)
+		{
+			printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't open audio encoder codec\n");
+			return;
+		}
+		else
+		{
+			//dump_format(DstMp3FormatContext,0,DstMp3FormatContext->filename,1);
+			
+			int result = lgl_url_fopen(&(DstMp3FormatContext->pb), DstMp3FormatContext->filename, URL_WRONLY);
+			if(result<0)
+			{
+				printf("LGL_AudioEncoder::LGL_AudioEncoder(): Couldn't url_fopen() audio output file '%s' (%i)\n",DstMp3FormatContext->filename,result);
+				return;
+			}
+
+			lgl_av_write_header(DstMp3FormatContext);
+
+			DstMp3Buffer = (int16_t*)lgl_av_mallocz(CircularBufferBytes);
+			DstMp3BufferSamples = (int16_t*)lgl_av_mallocz(CircularBufferBytes*2);
+			DstMp3Buffer2 = (int16_t*)lgl_av_mallocz(CircularBufferBytes);
+
+			lgl_av_init_packet(&DstMp3Packet);
+		}
+
+		Valid=true;
+	}
+
+	if(Valid==false)
+	{
+		return;
+	}
 
 	//Circular buffer to fixed buffer
 	long circularBufferHead=CircularBufferHead;
@@ -27501,168 +27517,98 @@ lgl_MergeSortDirectoryList
 	}
 }
 
-LGL_FileToMemory::
-LGL_FileToMemory
+int
+lgl_FileToRam_WorkerThread
+(
+	void*	ptr
+)
+{
+	LGL_FileToRam* obj = (LGL_FileToRam*)ptr;
+	obj->Thread_Load();
+	return(0);
+}
+
+LGL_FileToRam::
+LGL_FileToRam
 (
 	const char*	path
 )
 {
-	Path[0]='\0';
-	FileDescriptor=-1;
-	Pointer=NULL;
-	Size=0;
-	Status=-1;
-
-	LoadFile(path);
-}
-
-LGL_FileToMemory::
-~LGL_FileToMemory()
-{
-	LoadFile(NULL);
-}
-
-void
-LGL_FileToMemory::
-LoadFile
-(
-	const char*	path
-)
-{
-	if(path==NULL || strlen(path)>=2040)
+	if(path)
 	{
-printf("Load File Omega A\n");
-		//Unload
+		strcpy(Path,path);
+	}
+	else
+	{
 		Path[0]='\0';
-		if(FileDescriptor!=-1)
-		{
-			close(FileDescriptor);
-			FileDescriptor=-1;
-		}
-		if(Pointer!=NULL)
-		{
-			free(Pointer);
-			Pointer=NULL;
-		}
-		Size=0;
-		Status=-1;
-		return;
 	}
-
-	strcpy(Path,path);
-
-	FILE* fd=fopen(Path,"r");
-printf("Loading '%s'\n",Path);
-	if(fd)
-	{
-		fseek(fd,0,SEEK_END);
-		Size = ftell(fd);
-		Pointer = malloc(Size);
-		fclose(fd);
-	}
-	else
-	{
-printf("Load File Omega B\n");
-		LoadFile(NULL);
-		return;
-	}
-
-	FileDescriptor = open
-	(
-		Path,
-		O_RDONLY | O_NONBLOCK | O_ASYNC
-	);
-	perror("open");
-	printf("FD: %i\n",FileDescriptor);
-	if(FileDescriptor==-1)
-	{
-		perror("bad fd");
-		LoadFile(NULL);
-		return;
-	}
-	printf("read alpha\n");
-	int result = read
-	(
-		FileDescriptor,
-		Pointer,
-		Size
-	);
-	perror("read");
-	printf("read omega\n");
-	if(result==-1)
-	{
-		Status=-1;
-	}
-	else
-	{
-		Status=0;
-	}
+	Data=NULL;
+	ByteCount=0;
+	Status=0;
+	//ThreadWorker=NULL;
+	//Thread_Load();
+	ThreadWorker = LGL_ThreadCreate(lgl_FileToRam_WorkerThread,this);
+	ThreadTerminateSignal=false;
 }
 
-bool
-LGL_FileToMemory::
-GetReady()
+LGL_FileToRam::
+~LGL_FileToRam()
 {
-	if(FileDescriptor==-1)
+	SetThreadTerminateSignal();
+	if(ThreadWorker)
 	{
-		printf("Fail A\n");
-		return(false);
+		LGL_ThreadWait(ThreadWorker);
+		ThreadWorker=NULL;
 	}
 
-	if(Status==-1)
+	if(Data)
 	{
-		printf("Fail B\n");
-		return(false);
-	}
-	else if(Status==1)
-	{
-		return(true);
-	}
-	else
-	{
-		fd_set setRead;
-		fd_set setWrite;
-		fd_set setException;
-		FD_ZERO(&setRead);
-		FD_ZERO(&setWrite);
-		FD_ZERO(&setException);
-		FD_SET(FileDescriptor,&setRead);
-		struct timeval timeVal;
-		timeVal.tv_sec=0;
-		timeVal.tv_usec=0;
-		printf("Select Start!\n");
-		select(FD_SETSIZE,&setRead,&setWrite,&setException,&timeVal);
-		printf("Select Done!\n");
-		bool result = FD_ISSET(FileDescriptor,&setRead);
-		if(result==false)
-		{
-			//Still reading...
-		}
-		else
-		{
-			//We're done!
-			Status=1;
-		}
-
-		return(Status==1);
+		delete Data;
 	}
 }
 
+const char*
+LGL_FileToRam::
+GetPath()
+{
+	return(Path);
+}
+
+int
+LGL_FileToRam::
+GetStatus()
+{
+	return(Status);
+}
+
 bool
-LGL_FileToMemory::
+LGL_FileToRam::
 GetFailed()
 {
-	GetReady();
-	return(Status==-1);
+	return(GetStatus()==-1);
 }
 
-void*
-LGL_FileToMemory::
-GetPointer()
+bool
+LGL_FileToRam::
+GetLoading()
+{
+	return(GetStatus()==0);
+}
+
+bool
+LGL_FileToRam::
+GetReady()
+{
+	return(GetStatus()==1);
+}
+
+const char*
+LGL_FileToRam::
+GetData()
 {
 	if(GetReady())
 	{
-		return(Pointer);
+		return(Data);
 	}
 	else
 	{
@@ -27671,10 +27617,74 @@ GetPointer()
 }
 
 long
-LGL_FileToMemory::
-GetSize()
+LGL_FileToRam::
+GetByteCount()
 {
-	return(Size);
+	if(GetReady())
+	{
+		return(ByteCount);
+	}
+	else
+	{
+		return(0);
+	}
+}
+
+bool
+LGL_FileToRam::
+GetThreadTerminateSignal()
+{
+	return(ThreadTerminateSignal);
+}
+
+void
+LGL_FileToRam::
+SetThreadTerminateSignal()
+{
+	ThreadTerminateSignal=true;
+}
+
+bool
+LGL_FileToRam::
+GetReadyForNonblockingDelete()
+{
+	return(Status!=0);
+}
+
+void
+LGL_FileToRam::
+Thread_Load()
+{
+	if(GetPath()==NULL)
+	{
+		Status=-1;
+		return;
+	}
+
+	if(FILE* fd = fopen(GetPath(),"r"))
+	{
+		fseek(fd,0,SEEK_END);
+		long len=ftell(fd);
+		fseek(fd,0,SEEK_SET);
+
+		char* buf=new char[len+1];
+
+		fread(buf,len,1,fd);
+		buf[len]='\0';
+
+		fclose(fd);
+		
+		Data=buf;
+		ByteCount=len;
+		Status=1;
+		
+		return;
+	}
+	else
+	{
+		Status=-1;
+		return;
+	}
 }
 
 bool
@@ -29014,7 +29024,26 @@ lgl_WriteFileAsyncThread
 		lgl_WriteFileAsyncWorkItem* wi = NULL;
 		
 		{
-			LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WriteFileAsyncSemaphore);
+			if(LGL.WriteFileAsyncWorkItemListNewSize>0)
+			{
+				std::vector<lgl_WriteFileAsyncWorkItem*> listNew;
+				{
+					LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WriteFileAsyncWorkItemListNewSemaphore);
+					listNew=LGL.WriteFileAsyncWorkItemListNew;
+					LGL.WriteFileAsyncWorkItemListNew.clear();
+					LGL.WriteFileAsyncWorkItemListSize=listNew.size() + LGL.WriteFileAsyncWorkItemList.size();
+					LGL.WriteFileAsyncWorkItemListNewSize=0;
+				}
+
+				for(unsigned int a=0;a<listNew.size();a++)
+				{
+					LGL.WriteFileAsyncWorkItemList.push_back
+					(
+						listNew[a]
+					);
+				}
+			}
+
 			workItemSize = LGL.WriteFileAsyncWorkItemList.size();
 			wi=NULL;
 			if(workItemSize>0)
@@ -29072,19 +29101,60 @@ LGL_WriteFileAsync
 	);
 
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WriteFileAsyncSemaphore);
-		LGL.WriteFileAsyncWorkItemList.push_back(wi);
+		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WriteFileAsyncWorkItemListNewSemaphore);
+		LGL.WriteFileAsyncWorkItemListNew.push_back(wi);
 	}
 }
 
 unsigned int
 LGL_WriteFileAsyncQueueCount()
 {
-	LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WriteFileAsyncSemaphore);
-	return(LGL.WriteFileAsyncWorkItemList.size());
+	return(LGL.WriteFileAsyncWorkItemListSize);
 }
 
 //Memory
+
+int64_t
+LGL_RamTotalB()
+{
+#ifdef	LGL_OSX
+	vm_size_t page_size;
+	mach_port_t mach_port;
+	mach_msg_type_number_t count;
+	vm_statistics_data_t vm_stats;
+
+	mach_port = mach_host_self();
+	count = sizeof(vm_stats) / sizeof(natural_t);
+	if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
+	    KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, 
+					    (host_info_t)&vm_stats, &count))
+	{
+		int64_t myTotalMemory =
+		(
+			(
+				(int64_t)vm_stats.free_count +
+				(int64_t)vm_stats.inactive_count +
+				(int64_t)vm_stats.active_count +
+				(int64_t)vm_stats.wire_count
+			) * (int64_t)page_size
+		);
+		return(myTotalMemory);
+
+		/*
+		used_memory = ((int64_t)vm_stats.active_count + 
+			   (int64_t)vm_stats.inactive_count + 
+			   (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
+*/
+	}
+#endif	//LGL_OSX
+	return(1024*1024*1024);
+}
+
+int
+LGL_RamTotalMB()
+{
+	return((int)(LGL_RamTotalB()/((int64_t)(1024*1024))));
+}
 
 int64_t
 LGL_RamFreeB()
@@ -29157,53 +29227,13 @@ LGL_MemoryUsedByThisMB()
 float
 LGL_MemoryFreePercent()
 {
-#ifdef	LGL_LINUX
-	float memTotal=-1.0f;
-	float memFree=-1.0f;
-	float memCached=-1.0f;
-	if(FILE* fd=fopen("/proc/meminfo","r"))
-	{
-		char buf[2048];
-		while(feof(fd)==false)
-		{
-			fgets(buf,2048,fd);
-			if(strstr(buf,"MemTotal:"))
-			{
-				memTotal=atof(&(strchr(buf,':')[1]));
-			}
-			else if(strstr(buf,"MemFree:"))
-			{
-				memFree=atof(&(strchr(buf,':')[1]));
-			}
-			else if(strstr(buf,"Cached:")==buf)
-			{
-				memCached=atof(&(strchr(buf,':')[1]));
-			}
-		}
-		fclose(fd);
-	}
-	if
-	(
-		memTotal>=0 &&
-		memFree>=0 &&
-		memCached>=0
-	)
-	{
-		return((memFree+memCached)/memTotal);
-	}
-	else
-	{
-		return(1.0f);
-	}
-#else	//LGL_LINUX
-	return(1.0f);
-#endif	//LGL_LINUX
+	return(LGL_RamFreeMB()/(float)LGL_RamTotalMB());
 }
 
 bool
 LGL_BatteryChargeDraining()
 {
-#ifdef	LGL_LINUX
+#ifndef	LGL_OSX
 	if(FILE* fd=fopen("/proc/acpi/battery/BAT0/state","r"))
 	{
 		char buf[2048];
@@ -29228,7 +29258,7 @@ LGL_BatteryChargeDraining()
 float
 LGL_BatteryChargePercent()
 {
-#ifdef	LGL_LINUX
+#ifndef	LGL_OSX
 	float capacity=-1.0f;
 	float charge=-1.0f;
 
@@ -30574,8 +30604,8 @@ operator*
 std::vector<int>
 lgl_read_proc_cpuinfo()
 {
-#ifdef	LGL_LINUX
 	std::vector<int> cpuSpeeds;
+#ifndef	LGL_OSX
 	if(FILE* fd = fopen("/proc/cpuinfo","r"))
 	{
 		while(!feof(fd))
@@ -30593,12 +30623,9 @@ lgl_read_proc_cpuinfo()
 		}
 		fclose(fd);
 	}
-	return(cpuSpeeds);
 #else	//LGL_LINUX
-	printf("lgl_read_proc_cpuinfo(): Error!! Why are you calling this outside of linux??\n");
-	assert(false);
-	return(false);
 #endif	//LGL_LINUX
+	return(cpuSpeeds);
 }
 
 unsigned int
@@ -30697,12 +30724,19 @@ LGL_CPUTemp()
 #endif	//LGL_LINUX
 }
 
+int isOsxAppBundleCached=0;
+
 bool
 LGL_IsOsxAppBundle()
 {
-	char wd[2048];
-	getcwd(wd,20480);
-	return(strstr(wd,"Contents/MacOS"));
+	if(isOsxAppBundleCached==0)
+	{
+		char wd[2048];
+		getcwd(wd,20480);
+		isOsxAppBundleCached = (strstr(wd,"Contents/MacOS")) ? 1 : -1;
+	}
+
+	return(isOsxAppBundleCached==1);
 }
 
 
@@ -30963,7 +30997,6 @@ Lock
 	bool printMore=false;
 	if(mainBlocked)
 	{
-		assert(false);
 		printf("Main thread blocks on semaphore!\n");
 		printMore=true;
 	}

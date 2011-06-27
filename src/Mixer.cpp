@@ -990,6 +990,7 @@ SetRecording
 		if(Recording)
 		{
 			RecordingSecondsSinceExecution=LGL_SecondsSinceExecution();
+			/*
 			char file[2048];
 			strcpy(file,RecordingTrackListPath);
 			RecordingTrackListFD=fopen(file,"w");
@@ -1010,14 +1011,17 @@ SetRecording
 			{
 				//
 			}
+			*/
 		}
 		else
 		{
+			/*
 			if(RecordingTrackListFD!=NULL)
 			{
 				fclose(RecordingTrackListFD);
 				RecordingTrackListFD=NULL;
 			}
+			*/
 		}
 	}
 }
@@ -1218,6 +1222,7 @@ DrawStatus
 	LGL_DrawLogPause(false);
 	*/
 
+#ifndef	LGL_OSX
 	CPUSpeedHighest=(int)LGL_Max(LGL_CPUSpeed(),CPUSpeedHighest);
 
 	int cpuTemp=999;//LGL_CPUTemp();
@@ -1300,6 +1305,7 @@ DrawStatus
 			);
 		}
 	}
+#endif
 
 	if(LGL_BatteryChargeDraining() || drawEverything)
 	{
