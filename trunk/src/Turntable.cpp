@@ -1390,6 +1390,7 @@ NextFrame
 				{
 					SoundSrcDir[0]='\0';
 				}
+				strcpy(SoundName,&(strrchr(SoundSrcPath,'/')[1]));
 
 				Sound=NULL;
 				WhiteFactor=1.0f;
@@ -1397,6 +1398,12 @@ NextFrame
 				NoiseFactorVideo=1.0f;
 				FilterText.ReleaseFocus();
 				Mode1Timer.Reset();
+				for(int a=0;a<18;a++)
+				{
+					SavePointSeconds[a]=-1.0f;
+					SavePointUnsetNoisePercent[a]=0.0f;
+					SavePointUnsetFlashPercent[a]=0.0f;
+				}
 				Mode=1;
 			}
 			else if
@@ -2936,7 +2943,6 @@ NextFrame
 				char videoTracksPath[2048];
 				sprintf(videoTracksPath,"%s/%s",SoundSrcDir,GetDvjCacheDirName());
 
-				strcpy(SoundName,&(strrchr(SoundSrcPath,'/')[1]));
 				ResetAllCachedData();
 
 				LGL_DrawLogWrite("!dvj::NewSound|%s|%i\n",FoundAudioPath,Which);
@@ -2966,12 +2972,6 @@ printf("Loading '%s'\n",FoundAudioPath);
 				LoopThenRecallActive=false;
 				AutoDivergeRecallActive=false;
 				SavePointIndex=0;
-				for(int a=0;a<18;a++)
-				{
-					SavePointSeconds[a]=-1.0f;
-					SavePointUnsetNoisePercent[a]=0.0f;
-					SavePointUnsetFlashPercent[a]=0.0f;
-				}
 
 				char* update=new char[1024];
 				sprintf(update,"ALPHA: %s",SoundName);
@@ -5265,11 +5265,8 @@ void
 TurntableObj::
 LoadMetaData(const char* data)
 {
-	if
-	(
-		data==NULL ||
-		Sound==NULL
-	)
+printf("LoadMetaData(): Alpha\n");
+	if(data==NULL)
 	{
 		return;
 	}
@@ -5294,6 +5291,7 @@ LoadMetaData(const char* data)
 		for(unsigned int a=0;a<fi.Size()-1 && a<18;a++)
 		{
 			SavePointSeconds[a]=atof(fi[a+1]);
+			printf("SPS[%i]: %.2f\n",a,SavePointSeconds[a]);
 		}
 	}
 }

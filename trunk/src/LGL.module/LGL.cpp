@@ -27657,6 +27657,7 @@ Thread_Load()
 {
 	if(GetPath()==NULL)
 	{
+		printf("FTR: NULL Path\n");
 		Status=-1;
 		return;
 	}
@@ -27676,12 +27677,13 @@ Thread_Load()
 		
 		Data=buf;
 		ByteCount=len;
+
 		Status=1;
-		
 		return;
 	}
 	else
 	{
+		printf("FTR: Failed to open path '%s'\n",GetPath());
 		Status=-1;
 		return;
 	}
