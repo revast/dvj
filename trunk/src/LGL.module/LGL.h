@@ -1495,6 +1495,7 @@ private:
 
 	void			FlushBuffer(bool force=false);
 
+	bool			SurroundMode;
 	char			DstMp3Path[2048];
 	AVOutputFormat*		DstMp3OutputFormat;
 	AVFormatContext*	DstMp3FormatContext;
@@ -1512,6 +1513,7 @@ private:
 	long			CircularBufferTail;
 
 	bool			Valid;
+	bool			AVOpened;
 
 	SDL_Thread*		Thread;
 	bool			DestructHint;
@@ -2309,6 +2311,8 @@ float		LGL_FreqBufferR(int index, int width=0);
 float		LGL_FreqBufferMono(int index, int width=0);
 int		LGL_GetRecordDVJToFile();
 void		LGL_RecordDVJToFileStart(const char* path, bool surroundMode=false);
+void		LGL_RecordDVJToFileStartPaused(const char* path, bool surroundMode=false);
+void		LGL_RecordDVJToTileUnpause();
 const char*	LGL_RecordDVJToFilePath();
 const char*	LGL_RecordDVJToFilePathShort();
 void		LGL_SetRecordDVJToFileVolume(float volume);
@@ -3191,27 +3195,37 @@ private:
 	bool			WorkerThreadDone;
 };
 
-class LGL_FileToMemory
+class LGL_FileToRam
 {
 
 public:
 
-				LGL_FileToMemory(const char* path=NULL);
-				~LGL_FileToMemory();
-	
-	void			LoadFile(const char* path=NULL);
-	bool			GetReady(); 
-	bool			GetFailed();
-	void*			GetPointer();
-	long			GetSize();
+				LGL_FileToRam(const char* path);
+				~LGL_FileToRam();
+
+	const char*		GetPath();
+	int			GetStatus();
+	bool			GetFailed();	//Status == -1
+	bool			GetLoading();	//Status == 0
+	bool			GetReady();	//Status == 1
+const	char*			GetData();
+	long			GetByteCount();
+	bool			GetThreadTerminateSignal();
+	void			SetThreadTerminateSignal();
+	bool			GetReadyForNonblockingDelete();
+
+	//Thread funcs
+
+	void			Thread_Load();
 
 private:
 
 	char			Path[2048];
-	int			FileDescriptor;
-	void*			Pointer;
-	long			Size;
+	char*			Data;
+	long			ByteCount;
 	int			Status;
+	SDL_Thread*		ThreadWorker;
+	bool			ThreadTerminateSignal;
 };
 
 //FIXME: LGL_DirectoryListCreate returns a vector<char*>, which encourages memleaks.

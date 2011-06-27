@@ -636,6 +636,13 @@ else if(LGL_FileExists(encoderAudioDst)==false)
 			//LGL_FileExists(encoderAudioDst)
 		)
 		{
+			char videoFileName[1024];
+			findVideoPath
+			(
+				videoFileName,
+				tt->SoundSrcPath
+			);
+			tt->VideoFileExists=LGL_FileExists(videoFileName);
 			tt->VideoEncoderPercent=2.0f;
 		}
 		else
@@ -652,6 +659,49 @@ else if(LGL_FileExists(encoderAudioDst)==false)
 
 	return(0);
 }
+
+int
+loadAllCachedDataThread
+(
+	void*	ptr
+)
+{
+	TurntableObj* tt = (TurntableObj*)ptr;
+
+	tt->LoadAllCachedData();
+
+	return(0);
+}
+
+int
+findAudioPathThread
+(
+	void*	ptr
+)
+{
+	TurntableObj* tt = (TurntableObj*)ptr;
+	
+	findAudioPath(tt->FoundAudioPath,tt->SoundSrcPath);
+	if(LGL_FileExists(tt->FoundAudioPath)==false)
+	{
+		strcpy(tt->FoundAudioPath,tt->SoundSrcPath);
+	}
+
+	findVideoPath
+	(
+		tt->FoundVideoPath,
+		tt->SoundSrcPath
+	);
+	tt->VideoFileExists=LGL_FileExists(tt->FoundVideoPath);
+
+	tt->FindAudioPathDone=true;
+
+	return(0);
+}
+
+
+
+
 
 TurntableObj::
 TurntableObj
@@ -737,6 +787,7 @@ TurntableObj
 	AutoDivergeRecallActive=false;
 	SavePointIndex=0;
 	MetaDataSavedThisFrame=NULL;
+	MetaDataFileToRam=NULL;
 	RecordScratch=false;
 	LuminScratch=false;
 
@@ -836,6 +887,8 @@ TurntableObj
 	}
 
 	LowRez=false;
+	LoadAllCachedDataThread=NULL;
+	FindAudioPathThread=NULL;
 	AspectRatioMode=0;
 	EncodeEveryTrack=0;
 	EncodeEveryTrackIndex=0;
@@ -1304,7 +1357,6 @@ NextFrame
 
 			strcpy(targetPath,DatabaseFilteredEntries[FileSelectInt]->PathFull);
 			targetIsDir=DatabaseFilteredEntries[FileSelectInt]->IsDir;
-			bool loadable=DatabaseFilteredEntries[FileSelectInt]->Loadable;
 			bool targetPathIsDotDot = false;
 			if(strcmp(targetPath,"..")==0)
 			{
@@ -1323,14 +1375,12 @@ NextFrame
 			)
 			{
 				strcpy(SoundSrcPathShort,DatabaseFilteredEntries[FileSelectInt]->PathShort);
-				char filename[2048];
 				sprintf
 				(
-					 filename,
+					 SoundSrcPath,
 					 "%s",
 					 targetPath
 				);
-				strcpy(SoundSrcPath,filename);
 				strcpy(SoundSrcDir,SoundSrcPath);
 				if(char* lastSlash = strrchr(SoundSrcDir,'/'))
 				{
@@ -1340,99 +1390,14 @@ NextFrame
 				{
 					SoundSrcDir[0]='\0';
 				}
-				
-				char videoTracksPath[2048];
-				sprintf(videoTracksPath,"%s/%s",SoundSrcDir,GetDvjCacheDirName());
-				char filenameCached[2048];
-				findAudioPath(filenameCached,SoundSrcPath);
 
-				if
-				(
-					loadable &&
-					LGL_FileExists(filename)
-				)
-				{
-					strcpy(SoundName,&(strrchr(filename,'/')[1]));
-					LoadAllCachedData();
-
-					const char* filenameSnd = filename;
-					if(LGL_FileExists(filenameCached))
-					{
-						filenameSnd=filenameCached;
-					}
-					LGL_DrawLogWrite("!dvj::NewSound|%s|%i\n",filenameSnd,Which);
-//printf("Loading '%s'\n",filenameSnd);
-					Sound=new LGL_Sound
-					(
-						 filenameSnd,
-						 true,
-						 2,
-						 SoundBuffer,
-						 SoundBufferLength
-					);
-					Sound->SetVolumePeak(CachedVolumePeak);
-					DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed=true;
-					if(Sound->IsUnloadable())
-					{
-						LGL_DrawLogWrite("!dvj::DeleteSound|%i\n",Which);
-						Sound->PrepareForDelete();
-						Mode=3;
-						BadFileFlash=1.0f;
-						if(LGL_VideoDecoder* dec = GetVideo())
-						{
-							LGL_DrawLogWrite("!dvj::DeleteVideo|%s\n",dec->GetPath());
-						}
-						return;
-					}
-					else
-					{
-						Mode=1;
-						Mode1Timer.Reset();
-						DatabaseEntryNow=DatabaseFilteredEntries[FileSelectInt];
-						DecodeTimer.Reset();
-						SecondsLast=0.0f;
-						SecondsNow=0.0f;
-						VolumeInvertBinary=false;
-						RhythmicVolumeInvert=false;
-						RhythmicSoloInvert=false;
-						LoopAlphaSeconds=-1.0;
-						//QuantizePeriodMeasuresExponent=QuantizePeriodMeasuresExponent
-						QuantizePeriodNoBPMSeconds=1.0;
-						LoopActive=false;
-						LoopThenRecallActive=false;
-						AutoDivergeRecallActive=false;
-						SavePointIndex=0;
-						for(int a=0;a<18;a++)
-						{
-							SavePointSeconds[a]=-1.0f;
-							SavePointUnsetNoisePercent[a]=0.0f;
-							SavePointUnsetFlashPercent[a]=0.0f;
-						}
-						FilterText.ReleaseFocus();
-
-						char* update=new char[1024];
-						sprintf(update,"ALPHA: %s",SoundName);
-						TrackListFileUpdates.push_back(update);
-
-						if(Video)
-						{
-							Video->InvalidateAllFrameBuffers();
-						}
-
-						WhiteFactor=1.0f;
-						NoiseFactor=1.0f;
-						NoiseFactorVideo=1.0f;
-					}
-				}
-				else
-				{
-					BadFileFlash=1.0f;
-					DatabaseFilteredEntries[FileSelectInt]->Loadable=false;
-					if(EncodeEveryTrack)
-					{
-						EncodeEveryTrackIndex++;
-					}
-				}
+				Sound=NULL;
+				WhiteFactor=1.0f;
+				NoiseFactor=1.0f;
+				NoiseFactorVideo=1.0f;
+				FilterText.ReleaseFocus();
+				Mode1Timer.Reset();
+				Mode=1;
 			}
 			else if
 			(
@@ -1537,11 +1502,18 @@ NextFrame
 	{
 		//Decoding...
 
-		LGL_Assert(Sound!=NULL);
-
 		if
 		(
-			Sound->IsUnloadable() ||
+			Sound &&
+			Sound->IsUnloadable()
+		)
+		{
+			DatabaseFilteredEntries[FileSelectInt]->Loadable=false;
+		}
+		bool loadable=DatabaseFilteredEntries[FileSelectInt]->Loadable;
+		if
+		(
+			loadable==false ||
 			GetInput().WaveformEject(target) ||
 			Mode1Timer.SecondsSinceLastReset() > (EncodeEveryTrack ? 20.0f : 5.0f)
 		)
@@ -2360,13 +2332,6 @@ NextFrame
 		if(VideoEncoderPercent==2.0f)
 		{
 			VideoEncoderPercent=-1.0f;
-			char videoFileName[1024];
-			findVideoPath
-			(
-				videoFileName,
-				SoundSrcPath
-			);
-			VideoFileExists=LGL_FileExists(videoFileName);
 			if(VideoFileExists)
 			{
 				VideoSwitchInterval=0.0f;
@@ -2755,9 +2720,38 @@ NextFrame
 			VideoEncoderTerminateSignal=1;
 		}
 
+		if(FindAudioPathThread)
+		{
+			if(FindAudioPathDone)
+			{
+				LGL_ThreadWait(FindAudioPathThread);
+				FindAudioPathThread=NULL;
+			}
+		}
+
+		if(LoadAllCachedDataThread)
+		{
+			if(LoadAllCachedDataDone)
+			{
+				LGL_ThreadWait(LoadAllCachedDataThread);
+				LoadAllCachedDataThread=NULL;
+			}
+		}
+
+		if(MetaDataFileToRam)
+		{
+			if(MetaDataFileToRam->GetStatus()!=0)
+			{
+				delete MetaDataFileToRam;
+				MetaDataFileToRam=NULL;
+			}
+		}
+
 		if
 		(
 			VideoEncoderThread==NULL &&
+			LoadAllCachedDataThread==NULL &&
+			MetaDataFileToRam==NULL &&
 			Sound->ReadyForDelete()
 		)
 		{
@@ -2928,16 +2922,110 @@ NextFrame
 	else if(Mode==1)
 	{
 		//Loading...
+
+		if(Sound==NULL)
+		{
+			if(FindAudioPathThread==NULL)
+			{
+				FindAudioPathDone=false;
+				FindAudioPathThread=LGL_ThreadCreate(findAudioPathThread,this);
+			}
+
+			if(FindAudioPathDone)
+			{
+				char videoTracksPath[2048];
+				sprintf(videoTracksPath,"%s/%s",SoundSrcDir,GetDvjCacheDirName());
+
+				strcpy(SoundName,&(strrchr(SoundSrcPath,'/')[1]));
+				ResetAllCachedData();
+
+				LGL_DrawLogWrite("!dvj::NewSound|%s|%i\n",FoundAudioPath,Which);
+printf("Loading '%s'\n",FoundAudioPath);
+				Sound=new LGL_Sound
+				(
+					FoundAudioPath,
+					true,
+					2,
+					SoundBuffer,
+					SoundBufferLength
+				);
+				Sound->SetVolumePeak(CachedVolumePeak);
+				DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed=true;
+
+				DatabaseEntryNow=DatabaseFilteredEntries[FileSelectInt];
+				DecodeTimer.Reset();
+				SecondsLast=0.0f;
+				SecondsNow=0.0f;
+				VolumeInvertBinary=false;
+				RhythmicVolumeInvert=false;
+				RhythmicSoloInvert=false;
+				LoopAlphaSeconds=-1.0;
+				//QuantizePeriodMeasuresExponent=QuantizePeriodMeasuresExponent
+				QuantizePeriodNoBPMSeconds=1.0;
+				LoopActive=false;
+				LoopThenRecallActive=false;
+				AutoDivergeRecallActive=false;
+				SavePointIndex=0;
+				for(int a=0;a<18;a++)
+				{
+					SavePointSeconds[a]=-1.0f;
+					SavePointUnsetNoisePercent[a]=0.0f;
+					SavePointUnsetFlashPercent[a]=0.0f;
+				}
+
+				char* update=new char[1024];
+				sprintf(update,"ALPHA: %s",SoundName);
+				TrackListFileUpdates.push_back(update);
+
+				if(Video)
+				{
+					Video->InvalidateAllFrameBuffers();
+				}
+			}
+		}
+
+		if(MetaDataFileToRam==NULL)
+		{
+			char metaDataPath[2048];
+			GetMetaDataPath(metaDataPath);
+			MetaDataFileToRam=new LGL_FileToRam(metaDataPath);
+		}
+
+		if(LoadAllCachedDataThread==NULL)
+		{
+			LoadAllCachedDataDone=false;
+			LoadAllCachedDataThread = LGL_ThreadCreate(loadAllCachedDataThread,this);
+		}
 		
 		if
 		(
+			Sound &&
 			Sound->GetLengthSamples()>0 &&
+			MetaDataFileToRam->GetStatus()!=0 &&
+			LoadAllCachedDataDone &&
 			LGL_WriteFileAsyncQueueCount()==0
 		)
 		{
 			Mode=2;
 
-			LoadMetaData();
+			if(FindAudioPathThread)
+			{
+				LGL_ThreadWait(FindAudioPathThread);
+				FindAudioPathThread=NULL;
+			}
+
+			if(LoadAllCachedDataThread)
+			{
+				LGL_ThreadWait(LoadAllCachedDataThread);
+				LoadAllCachedDataThread=NULL;
+			}
+
+			if(MetaDataFileToRam->GetStatus()==1)
+			{
+				LoadMetaData(MetaDataFileToRam->GetData());
+			}
+			delete MetaDataFileToRam;
+			MetaDataFileToRam=NULL;
 
 			BPMRecalculationRequired=true;
 
@@ -3034,13 +3122,6 @@ NextFrame
 			//Load Video if possible
 			SelectNewVideo();
 
-			char videoFileName[1024];
-			findVideoPath
-			(
-				videoFileName,
-				SoundSrcPath
-			);
-			VideoFileExists=LGL_FileExists(videoFileName);
 			if(VideoFileExists)
 			{
 				VideoSwitchInterval=0.0f;
@@ -3993,43 +4074,46 @@ DrawFrame
 			1,1,1,1,
 			true,.5,
 			"%.2f",
-			Sound->GetPercentLoadedSmooth()*100
+			Sound ? (Sound->GetPercentLoadedSmooth()*100) : 0.0f
 		);
 
-		float minutes=0;
-		float seconds=ceil(Sound->GetSecondsUntilLoaded());
-		while(seconds>=60)
+		if(Sound)
 		{
-			minutes++;
-			seconds-=60;
-		}
+			float minutes=0;
+			float seconds=ceil(Sound->GetSecondsUntilLoaded());
+			while(seconds>=60)
+			{
+				minutes++;
+				seconds-=60;
+			}
 
-		char temp[2048];
-		if(seconds<10)
-		{
-			sprintf
+			char temp[2048];
+			if(seconds<10)
+			{
+				sprintf
+				(
+					temp,
+					"%.0f:0%.0f",
+					minutes,seconds
+				);
+			}
+			else
+			{
+				sprintf
+				(
+					temp,
+					"%.0f:%.0f",
+					minutes,seconds
+				);
+			}
+			LGL_GetFont().DrawString
 			(
-				temp,
-				"%.0f:0%.0f",
-				minutes,seconds
+				CenterX,ViewportBottom+ViewportHeight*.10f,.015f,
+				1,1,1,1,
+				true,.5f,
+				temp
 			);
 		}
-		else
-		{
-			sprintf
-			(
-				temp,
-				"%.0f:%.0f",
-				minutes,seconds
-			);
-		}
-		LGL_GetFont().DrawString
-		(
-			CenterX,ViewportBottom+ViewportHeight*.10f,.015f,
-			1,1,1,1,
-			true,.5f,
-			temp
-		);
 	}
 	if(Mode==2)
 	{
@@ -5179,31 +5263,13 @@ GetSavePointIndexAtNull() const
 
 void
 TurntableObj::
-LoadMetaData()
-{
-	if(Sound==NULL)
-	{
-		return;
-	}
-
-	char metaDataPath[2048];
-	GetMetaDataPath(metaDataPath);
-	FILE* fd=fopen(metaDataPath,"r");
-	if(fd)
-	{
-		const int dataLen=2048;
-		char data[dataLen];
-		fgets(data,dataLen,fd);
-		fclose(fd);
-		LoadMetaData(data);
-	}
-}
-
-void
-TurntableObj::
 LoadMetaData(const char* data)
 {
-	if(Sound==NULL)
+	if
+	(
+		data==NULL ||
+		Sound==NULL
+	)
 	{
 		return;
 	}
@@ -5295,7 +5361,7 @@ GetMetaDataSavedThisFrame()	const
 
 void
 TurntableObj::
-LoadAllCachedData()
+ResetAllCachedData()
 {
 	//Initialize to default values
 	EntireWaveArrayFillIndex=0;
@@ -5307,10 +5373,16 @@ LoadAllCachedData()
 	}
 	CachedLengthSeconds=0.0f;
 	CachedVolumePeak=0.0f;
+}
 
-	//Load data if possible
+void
+TurntableObj::
+LoadAllCachedData()
+{
 	LoadWaveArrayData();
 	LoadCachedMetadata();
+
+	LoadAllCachedDataDone=true;
 }
 
 void
@@ -5367,6 +5439,11 @@ SaveWaveArrayData()
 {
 	char waveArrayDataPath[1024];
 	sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),SoundName,ENTIRE_WAVE_ARRAY_COUNT);
+	long len = 3*ENTIRE_WAVE_ARRAY_COUNT*sizeof(float);
+	char* data = new char[len];
+	LGL_WriteFileAsync(waveArrayDataPath,data,len);
+
+	/*
 	FILE* fd=fopen(waveArrayDataPath,"wb");
 	if(fd)
 	{
@@ -5376,6 +5453,7 @@ SaveWaveArrayData()
 		EntireWaveArrayFillIndex=ENTIRE_WAVE_ARRAY_COUNT;
 		fclose(fd);
 	}
+	*/
 }
 
 void
@@ -5446,6 +5524,14 @@ SaveCachedMetadata()
 
 	char cachedLengthPath[2048];
 	GetCacheMetaDataPath(cachedLengthPath);
+
+	char data[2048];
+	sprintf(data,"%.3f\n%f\n",CachedLengthSeconds,Sound->GetVolumePeak());
+
+	long len = strlen(data);
+	LGL_WriteFileAsync(cachedLengthPath,data,len);
+
+	/*
 	FILE* fd=fopen(cachedLengthPath,"w");
 	if(fd)
 	{
@@ -5453,6 +5539,7 @@ SaveCachedMetadata()
 		fprintf(fd,"%f\n",Sound->GetVolumePeak());
 		fclose(fd);
 	}
+	*/
 }
 
 const
@@ -5565,57 +5652,6 @@ SetLowRez
 )
 {
 	LowRez=lowRez;
-}
-
-void
-TurntableObj::
-ProcessHintFile
-(
-	char*	path
-)
-{
-	ImageSetPrefix[0]='\0';
-	MovieClipPrefix[0]='\0';
-	
-	char HintPath[512];
-	sprintf(HintPath,"%s",path);
-	FILE* HintFile=fopen(HintPath,"r");
-	if(HintFile)
-	{
-		char tempstring[256];
-		while(!feof(HintFile))
-		{
-			fgets(tempstring,255,HintFile);
-			if(tempstring[0]=='$')
-			{
-				if(strchr(tempstring,'='))
-				{
-					char *tempstring2=strchr(tempstring,'=');
-					char value[256];
-					strcpy(value,&(tempstring2[1]));
-					char argument[256];
-					tempstring2[0]='\0';
-					strcpy(argument,tempstring);
-					if(value[strlen(value)-1]=='\n')
-					{
-						value[strlen(value)-1]='\0';
-					}
-					//int valueint=atoi(value);
-					//float valuefloat=atof(value);
-
-					if(strcmp(argument,"$ImageSetPrefix")==0)
-					{
-						sprintf(ImageSetPrefix,"%s",value);
-					}
-					if(strcmp(argument,"$MovieClipPrefix")==0)
-					{
-						sprintf(MovieClipPrefix,"%s",value);
-					}
-				}
-			}
-		}
-		fclose(HintFile);
-	}
 }
 
 bool
@@ -5882,13 +5918,6 @@ SelectNewVideo
 	if(VideoEncoderThread==NULL)
 	{
 		//Change the normal videos
-		char videoFileName[2048];
-		findVideoPath
-		(
-			videoFileName,
-			SoundSrcPath
-		);
-
 		if
 		(
 			forceRandom ||
@@ -5912,13 +5941,13 @@ SelectNewVideo
 			if
 			(
 				Video &&
-				strcmp(Video->GetPath(),videoFileName)==0
+				strcmp(Video->GetPath(),FoundVideoPath)==0
 			)
 			{
 				return;
 			}
 
-			Video->SetVideo(videoFileName);
+			Video->SetVideo(FoundVideoPath);
 			VideoOffsetSeconds=0;
 		}
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",Video->GetPath());

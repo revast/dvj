@@ -126,6 +126,7 @@ public:
 	void				SaveMetaData();
 	const char*			GetMetaDataSavedThisFrame() const;
 
+	void				ResetAllCachedData();
 	void				LoadAllCachedData();
 	void				SaveAllCachedData();
 
@@ -150,10 +151,6 @@ const	char*				GetSoundPathShort();
 
 private:
 
-	void				ProcessHintFile(char* path);
-
-private:
-
 	float				ViewportLeft;
 	float				ViewportRight;
 	float				ViewportBottom;
@@ -169,9 +166,17 @@ private:
 	LGL_Timer			Mode1Timer;
 	LGL_Sound*			Sound;
 	char				SoundName[2048];
+public:
 	char				SoundSrcPath[2048];
+private:
 	char				SoundSrcPathShort[2048];
 	char				SoundSrcDir[2048];
+public:
+	char				FoundVideoPath[2048];
+	char				FoundAudioPath[2048];
+	bool				FindAudioPathDone;
+private:
+	SDL_Thread*			FindAudioPathThread;
 	Uint8*				SoundBuffer;
 	unsigned long			SoundBufferLength;
 	unsigned long			SoundBufferCurrentPageIndex;
@@ -251,7 +256,9 @@ private:
 	float				VolumeInvertBinary;
 	bool				RhythmicVolumeInvert;
 	bool				RhythmicSoloInvert;
+public:
 	bool				VideoFileExists;
+private:
 	float				MixerVolumeFront;
 	float				MixerVolumeBack;
 	float				MixerCrossfadeFactorFront;
@@ -269,6 +276,7 @@ private:
 	int				SavePointIndex;
 	double				SavePointSeconds[18];
 	char*				MetaDataSavedThisFrame;
+	LGL_FileToRam*			MetaDataFileToRam;
 	double				SmoothWaveformScrollingSample;
 	double				SmoothWaveformScrollingSampleRate;
 	float				SavePointUnsetNoisePercent[18];
@@ -372,6 +380,8 @@ static	LGL_Image*			LoopImage;
 	int				EntireWaveArrayFillIndex;
 	float				CachedLengthSeconds;
 	float				CachedVolumePeak;
+	SDL_Thread*			LoadAllCachedDataThread;
+	bool				LoadAllCachedDataDone;
 
 	LGL_Timer			Mode0BackspaceTimer;
 static	bool				FileEverOpened;
