@@ -759,7 +759,7 @@ DrawVisuals
 					x=myR;
 					y=myT;
 				}
-				else if(a==3)
+				else// if(a==3)
 				{
 					//Bottom Right
 					x=myR;
