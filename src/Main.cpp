@@ -117,8 +117,11 @@ void InitializeGlobals()
 	GetInput().AddChild(&GetInputMouse());
 	if
 	(
-		LGL_DisplayCount()==1 &&
-		GetDebugUseMultiTouchWithOneDisplay()
+		1 ||
+		(
+			LGL_DisplayCount()==1 &&
+			GetDebugUseMultiTouchWithOneDisplay()
+		)
 	)
 	{
 		GetInput().AddChild(&GetInputMultiTouch());

@@ -1992,7 +1992,7 @@ LGL_Init
 	}
 	else
 	{
-		SDL_VideoInit(NULL,0);
+		SDL_VideoInit(NULL);
 		lgl_sdl_initialized=true;
 		//printf("LGL: SDL_Init() Success!\n");
 	}
@@ -2005,9 +2005,9 @@ printf("%i displays!\n",LGL.DisplayCount);
 
 	for(int d=0;d<LGL.DisplayCount;d++)
 	{
-		SDL_SelectVideoDisplay(d);
+		//SDL_SelectVideoDisplay(d);
 		SDL_DisplayMode mode;
-		SDL_GetDesktopDisplayMode(&mode);
+		SDL_GetDesktopDisplayMode(d,&mode);
 
 		LGL.DisplayResolutionX[d] = mode.w;
 		LGL.DisplayResolutionY[d] = mode.h;
@@ -2026,7 +2026,7 @@ printf("\t[%i]: %i x %i\n",
 	}
 printf("\n");
 
-	SDL_SelectVideoDisplay(0);
+	//SDL_SelectVideoDisplay(0);
 
 	//Determine WindowResolutions
 	LGL.MasterWindowResolutionX=0;
@@ -2303,9 +2303,9 @@ printf("\n");
 
 	for(int d=LGL.DisplayCount-1;d>=0;d--)
 	{
-		SDL_SelectVideoDisplay(d);
+		//SDL_SelectVideoDisplay(d);
 
-		int windowFlags = SDL_WINDOW_OPENGL;// | SDL_WINDOW_SHOWN;
+		int windowFlags = SDL_WINDOW_OPENGL;// | SDL_WINDOW_HIDDEN;
 		if(d>0)
 		{
 			windowFlags |= SDL_WINDOW_BORDERLESS;
@@ -2321,8 +2321,8 @@ printf("\n");
 		LGL.WindowID[d] = SDL_CreateWindow
 		(
 			inWindowTitle,
-			SDL_WINDOWPOS_CENTERED,
-			SDL_WINDOWPOS_CENTERED,
+			SDL_WINDOWPOS_CENTERED_DISPLAY(d),
+			SDL_WINDOWPOS_CENTERED_DISPLAY(d),
 			LGL.WindowResolutionX[d],
 			LGL.WindowResolutionY[d],
 			windowFlags
@@ -2347,15 +2347,15 @@ printf("CreateWindow(%i): %i x %i\n",
 		}
 	}
 
-	SDL_SelectVideoDisplay(0);
+	//SDL_SelectVideoDisplay(0);
 	LGL.MasterWindowID = SDL_CreateWindow
 	(
 		inWindowTitle,
-		SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED_DISPLAY(0),
+		SDL_WINDOWPOS_CENTERED_DISPLAY(0),
 		LGL.MasterWindowResolutionX,
 		LGL.MasterWindowResolutionY,
-		SDL_WINDOW_OPENGL// | SDL_WINDOW_SHOWN
+		SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN
 	);
 	LGL.GLContext = SDL_GL_CreateContext(LGL.MasterWindowID);
 	SDL_GL_MakeCurrent(LGL.WindowID[0], LGL.GLContext);
@@ -3653,7 +3653,7 @@ LGL_FFT
 
 //Video
 
-float*	tempAudioBufferBackSilence=NULL;
+float*	audioBufferBackSilence=NULL;
 int	lgl_MidiUpdate();	//Internal LGL function
 
 #define	FONT_BUFFER_SIZE (1024*1024)	//4MB for fonts... that sould be more than enough, right?
@@ -3720,25 +3720,25 @@ lgl_EndFrame()
 			sizeof(LGL.AudioBufferRBack)
 		);
 
-		if(tempAudioBufferBackSilence==NULL)
+		if(audioBufferBackSilence==NULL)
 		{
-			tempAudioBufferBackSilence=new float[1024];
+			audioBufferBackSilence=new float[1024];
 			for(int a=0;a<1024;a++)
 			{
-				tempAudioBufferBackSilence[a]=0.5f;
+				audioBufferBackSilence[a]=0.5f;
 			}
 		}
 
 		memcpy
 		(
 			LGL.AudioBufferLBack,
-			tempAudioBufferBackSilence,
+			audioBufferBackSilence,
 			sizeof(LGL.AudioBufferLBack)
 		);
 		memcpy
 		(
 			LGL.AudioBufferRBack,
-			tempAudioBufferBackSilence,
+			audioBufferBackSilence,
 			sizeof(LGL.AudioBufferRBack)
 		);
 
@@ -15450,7 +15450,7 @@ ProcessChannel
 	{
 		//Combine EQ'd userInput with carryOver, output results to userOutput
 
-		unsigned long sampleCount=(unsigned long)LGL_Min(samples-sampleStart,samplesMaxFFTHalf);
+		const unsigned int sampleCount=(unsigned int)LGL_Min(samples-sampleStart,samplesMaxFFTHalf);
 
 		float fftInputReal[samplesMaxFFT];
 		float fftInputImaginary[samplesMaxFFT];
@@ -15477,7 +15477,7 @@ ProcessChannel
 		);
 
 		//Apply EQ
-		for(unsigned int a=0;a<=samplesMaxFFT;a++)
+		for(unsigned int a=0;a<samplesMaxFFT;a++)
 		{
 			//Multiplication is a little complex in the complex frequency domain...
 			float real=
@@ -22099,6 +22099,7 @@ LGL_MouseVisible
 	bool	visible
 )
 {
+	/*
 	if(visible)
 	{
 		SDL_ShowCursor(SDL_ENABLE);
@@ -22107,6 +22108,7 @@ LGL_MouseVisible
 	{
 		SDL_ShowCursor(SDL_DISABLE);
 	}
+	*/
 }
 
 void
