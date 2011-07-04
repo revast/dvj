@@ -1977,7 +1977,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 					}
 					else
 					{
-						sprintf(str,"%C",'A'+(((unsigned char)a)-12));
+						sprintf(str,"%c",'A'+(((unsigned char)a)-12));
 					}
 					float fontHeight=0.10f*pointHeight;
 					float lDelta=0.02f;
@@ -3259,7 +3259,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				}
 				else
 				{
-					sprintf(str,"%C",'A'+(((unsigned char)i)-13));
+					sprintf(str,"%c",'A'+(((unsigned char)i)-13));
 				}
 
 				LGL_GetFont().DrawString
