@@ -1186,6 +1186,7 @@ jack_driver_t *driver_initialize(jack_client_t * client,
 			
 		case 'l':
 			display_device_names();
+			exit(0);
 			break;
 		}
     }
