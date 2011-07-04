@@ -41,6 +41,10 @@
 /* Someone has already included glext.h */
 #define NO_SDL_GLEXT
 #endif
+#ifdef __gltypes_h_
+/* Someone has already included gltypes.h */
+#define NO_SDL_GLEXT
+#endif
 #ifndef NO_SDL_GLEXT
 #define __glext_h_              /* Don't let gl.h include glext.h */
 #endif
