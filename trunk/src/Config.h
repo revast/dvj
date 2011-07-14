@@ -132,6 +132,9 @@ GetMusicRootPath();
 const char*
 GetMusicRootConfigFilePath();
 
+void
+SetMusicRootPathOverride(const char* path);
+
 const char*
 GetDvjCacheDirName();
 

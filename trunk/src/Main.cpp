@@ -778,10 +778,25 @@ int main(int argc, char** argv)
 		{
 			wireMemory=false;
 		}
+		else if(strcasecmp(argv[a],"--musicRoot")==0)
+		{
+			if(a<argc-1)
+			{
+				a++;
+				if(LGL_DirectoryExists(argv[a]))
+				{
+					SetMusicRootPathOverride(argv[a]);
+				}
+				else
+				{
+					printf("Warning: musicRoot '%s' doesn't exist\n",argv[a]);
+				}
+			}
+		}
 		else if(strcasecmp(argv[a],"--help")==0)
 		{
 			printf("dvj, svn pre-release\n\n");
-			printf("usage: dvj [--480p] [--720p] [--1080p] [--drawFPS] [--noWireMemory] [--help]\n\n");
+			printf("usage: dvj [--480p] [--720p] [--1080p] [--drawFPS] [--noWireMemory] [--musicRoot /path/to/root] [--help]\n\n");
 			exit(0);
 		}
 	}
