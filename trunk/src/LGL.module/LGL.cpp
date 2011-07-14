@@ -7054,7 +7054,7 @@ DrawToScreen
 					GLenum target;
 					if(c==0) target = GL_TEXTURE0_ARB;
 					else if(c==1) target = GL_TEXTURE1_ARB;
-					else if(c==2) target = GL_TEXTURE2_ARB;
+					else/*if(c==2)*/ target = GL_TEXTURE2_ARB;
 					glMultiTexCoord2d
 					(
 						target,
@@ -13493,8 +13493,8 @@ GetImage()
 	//Update Image
 	if
 	(
-		SrcBufferWidth<0 ||
-		SrcBufferHeight<0
+		SrcBufferWidth<=0 ||
+		SrcBufferHeight<=0
 	)
 	{
 		Image->SetFrameNumber(-1);
