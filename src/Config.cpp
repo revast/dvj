@@ -56,6 +56,7 @@ ConfigFile* inputKeyboardConfigFile=NULL;
 ConfigFile* inputOscConfigFile=NULL;
 char dotDvj[2048];
 char musicRootPath[2048];
+char* musicRootPathOverride=NULL;
 char dvjSessionFlacPath[2048];
 char dvjSessionTracklistPath[2048];
 char dvjSessionDrawLogPath[2048];
@@ -557,7 +558,14 @@ printf("Running cmd:\n\t'%s'\n",cmd);
 const char*
 GetMusicRootPath()
 {
-	return(musicRootPath);
+	if(musicRootPathOverride)
+	{
+		return(musicRootPathOverride);
+	}
+	else
+	{
+		return(musicRootPath);
+	}
 }
 
 const char*
@@ -570,6 +578,31 @@ GetMusicRootConfigFilePath()
 		sprintf(musicRootPathConfigPath,"%s/musicRootPath.txt",dotDvj);
 	}
 	return(musicRootPathConfigPath);
+}
+
+void
+SetMusicRootPathOverride
+(
+	const char*	path
+)
+{
+	if(musicRootPathOverride)
+	{
+		delete musicRootPathOverride;
+		musicRootPathOverride=NULL;
+	}
+
+	if
+	(
+		path==NULL ||
+		path[0]=='\0'
+	)
+	{
+		return;
+	}
+
+	musicRootPathOverride=new char[strlen(path)+1];
+	strcpy(musicRootPathOverride,path);
 }
 
 const char*
