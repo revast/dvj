@@ -104,13 +104,13 @@ LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cfl
 #DEFINE OSX BUILD OPTIONS
 
 AR_OSX			= ar rcs
-CC_OSX			= g++
+CC_OSX			= clang++
 MODEFLAGS_OSX		= -g
 DEFINES_OSX		= -DLGL_LINUX -DLGL_OSX -Dfopen64=fopen -D__MACOSX_CORE__
-CFLAGS_OSX		= -Wall -I$(OBJDIR_OSX) `sdl-config --cflags` $(MODEFLAGS_OSX) -I$(ROOT_SRC_DIR) $(DEFINES_OSX) -I/opt/libjpeg-turbo/include -L/usr/local/lib/ -I/usr/local/include/ -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers
+CFLAGS_OSX		= -Wall -Wconditional-uninitialized -I$(OBJDIR_OSX) `sdl-config --cflags` $(MODEFLAGS_OSX) -I$(ROOT_SRC_DIR) $(DEFINES_OSX) -I/opt/libjpeg-turbo/include -I/usr/local/include/ -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers
 #-fsingle-precision-constant
-CPPFLAGS_OSX		= -include PrecompiledHeaders.h $(CFLAGS_OSX)
-LGLLIBRARIES_OSX	= -lSDL_image -lSDL_net -framework OpenGL -lSDL -framework AppKit -framework CoreMidi -framework CoreAudio -framework CoreFoundation -framework Syphon -lSDL -lsamplerate -ljack -lavcore -lavcodec -lavformat -lswscale -lavutil -lz -lbz2 -lfftw3f /opt/libjpeg-turbo/lib64/libjpeg.a
+CPPFLAGS_OSX		= -include PrecompiledHeaders.pch $(CFLAGS_OSX)
+LGLLIBRARIES_OSX	= -L/usr/local/lib -lSDL_image -lSDL_net -framework OpenGL -lSDL -framework AppKit -framework CoreMidi -framework CoreAudio -framework CoreFoundation -framework Syphon -lSDL -lsamplerate -ljack -lavcore -lavcodec -lavformat -lswscale -lavutil -lz -lbz2 -lfftw3f /opt/libjpeg-turbo/lib64/libjpeg.a
 
 
 
