@@ -1,8 +1,10 @@
+#!/bin/bash
+
 cd jpeg-6b
 make clean
 cd ..
 
-cd libpng-1.5.4
+cd libpng-1.2.46
 make clean
 cd ..
 
@@ -44,3 +46,8 @@ cd nasm-2.09.08
 make clean
 cd ..
 
+cd libjpeg-turbo-1.1.1
+make clean
+cd ..
+
+rm clean
