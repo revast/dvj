@@ -77,7 +77,11 @@ lgl_SyphonImageInfo
 				cStringUsingEncoding:NSMacOSRomanStringEncoding
 			];
 
-		if(strcmp(name,"dvj.osx"))
+		if
+		(
+			strcmp(name,"dvj.osx") &&
+			strcmp(name,"ZEBBLERTRON.osx")
+		)
 		{
 			serverIndex=s;
 			break;
@@ -93,7 +97,11 @@ lgl_SyphonImageInfo
 				]
 				cStringUsingEncoding:NSMacOSRomanStringEncoding
 			];
-		if(strcmp(name,"dvj.osx")==0)
+		if
+		(
+			strcmp(name,"dvj.osx")==0 ||
+			strcmp(name,"ZEBBLERTRON.osx")==0
+		)
 		{
 			return(false);
 		}
