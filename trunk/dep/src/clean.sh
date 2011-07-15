@@ -2,7 +2,7 @@ cd jpeg-6b
 make clean
 cd ..
 
-cd libpng-1.2.37
+cd libpng-1.5.4
 make clean
 cd ..
 
