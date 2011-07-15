@@ -169,7 +169,7 @@ lgl_SyphonPushImage
 
 	if(syServer)
 	{
-		[syServer publishFrameTexture:glID textureTarget:GL_TEXTURE_2D imageRegion:NSMakeRect(0, 0, imgW, imgH) textureDimensions:NSMakeSize(texW, texH) flipped:NO];
+		[syServer publishFrameTexture:glID textureTarget:GL_TEXTURE_RECTANGLE_ARB imageRegion:NSMakeRect(0, 0, imgW, imgH) textureDimensions:NSMakeSize(texW, texH) flipped:NO];
 	}
 }
 
