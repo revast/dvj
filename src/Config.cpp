@@ -163,6 +163,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"Fader11=LEDGroup\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"syphonServerEnabled=0\n");
+		fprintf(fd,"hideProjectorWindows=0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"ledClient_000_Host = localhost\n");
 		fprintf(fd,"ledClient_000_Port = 0\n");
@@ -1935,6 +1936,13 @@ GetSyphonServerEnabled()
 {
 	int enabled=dvjrcConfigFile->read<int>("syphonServerEnabled",0);
 	return(enabled!=0);
+}
+
+bool
+GetHideProjectorWindows()
+{
+	int hide=dvjrcConfigFile->read<int>("hideProjectorWindows",0);
+	return(hide!=0);
 }
 
 std::vector<LEDClient>

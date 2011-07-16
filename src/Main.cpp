@@ -117,11 +117,8 @@ void InitializeGlobals()
 	GetInput().AddChild(&GetInputMouse());
 	if
 	(
-		1 ||
-		(
-			LGL_DisplayCount()==1 &&
-			GetDebugUseMultiTouchWithOneDisplay()
-		)
+		LGL_DisplayCount()==1 &&
+		GetDebugUseMultiTouchWithOneDisplay()
 	)
 	{
 		GetInput().AddChild(&GetInputMultiTouch());
@@ -811,6 +808,11 @@ int main(int argc, char** argv)
 		{
 			appName = &(lastSlash[1]);
 		}
+	}
+
+	if(GetHideProjectorWindows())
+	{
+		LGL_HideProjectorWindows();
 	}
 
 	LGL_Init
