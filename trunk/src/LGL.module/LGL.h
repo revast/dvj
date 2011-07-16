@@ -74,7 +74,7 @@
 #include "oscpack.module/UdpSocket.h"
 
 //Syphon
-#include "syphon.moduloid/lgl_syphon.h"
+#include "syphon.module/lgl_syphon.h"
 
 #include <stdlib.h>
 #include <stdio.h>
