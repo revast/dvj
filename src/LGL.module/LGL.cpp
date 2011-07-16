@@ -1233,7 +1233,6 @@ LGL_JackInit()
 	if(jack_client==NULL)
 	{
 		printf("LGL_JackInit(): Error! jack_client_open() failed! status = 0x%.2x\n",status);
-		/*
 		char dotJackdrcPath[2048];
 		sprintf(dotJackdrcPath,"%s/.jackdrc",LGL_GetHomeDir());
 		if(FILE* fd = fopen(dotJackdrcPath,"r"))
@@ -1242,14 +1241,17 @@ LGL_JackInit()
 			char buf[bufLen];
 			fgets(buf,bufLen,fd);
 			buf[strlen(buf)-1]='\0';	//Get rid of '\n'
+			printf("LGL_JackInit(): ~/.jackdrc:\n");
+			printf("\t%s\n",buf);
+			/*
 			strcat(buf," > /tmp/jack.fail 2>&1");
 			printf("Generating /tmp/jack.fail: Alpha\n");
 			printf("\t%s\n",buf);
 			system(buf);
 			printf("Generating /tmp/jack.fail: Omega\n");
+			*/
 			fclose(fd);
 		}
-		*/
 		return(false);
 	}
 	if(status & JackServerStarted)
@@ -1264,7 +1266,7 @@ LGL_JackInit()
 
 	if(jack_get_sample_rate(jack_client)==0)
 	{
-		printf("LG_JackInit(): JACK init failed (Sample Rate is Zero)...\n");
+		printf("LG_JackInit(): JACK init failed (Sample rate is zero)...\n");
 		jack_client_close(jack_client);
 		return(false);
 	}
@@ -31044,11 +31046,11 @@ Lock
 	{
 		printf("\tName: %s\n",name);
 		printf("\tTime: %.4f\n",timer.SecondsSinceLastReset());
-		printf("\tLock Owner File: %s\n",lockOwnerFile);
-		printf("\tLock Owner Line: %i\n",lockOwnerLine);
 		printf("\tLock Waiter File: %s\n",file);
 		printf("\tLock Waiter Line: %i\n",line);
 		printf("\tLock Waiter Thread: %i (%i)\n",
+		printf("\tLock Owner File: %s\n",lockOwnerFile);
+		printf("\tLock Owner Line: %i\n",lockOwnerLine);
 			(int)SDL_ThreadID(),
 			(int)LGL.ThreadIDMain);
 		printf("\n");
