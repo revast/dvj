@@ -349,7 +349,7 @@ tags: $(SRC) $(HDR)
 else
 tags: $(SRC) $(HDR)
 	@echo "	Updating vim tags..."
-	@ctags *.cpp *.h reference/*.h 2>/dev/null 1>/dev/null || ctags *.cpp *.h 2>/dev/null 1>/dev/null || ctags *.cpp 2>/dev/null 1>/dev/null
+	@ctags *.mm *.cpp *.h reference/*.h 2>/dev/null 1>/dev/null || @ctags *.cpp *.h reference/*.h 2>/dev/null 1>/dev/null || ctags *.cpp *.h 2>/dev/null 1>/dev/null || ctags *.cpp 2>/dev/null 1>/dev/null
 endif
 
 
