@@ -652,18 +652,23 @@ static jack_driver_t *coreaudio_driver_new(char* name,
 	driver->playback_frame_latency = playback_latency;
 	
 	// Duplex
-    if (strcmp(capture_driver_uid, "") != 0 && strcmp(playback_driver_uid, "") != 0) {
-		JCALog("Open duplex \n");
-        if (get_device_id_from_uid(playback_driver_uid, &driver->device_id) != noErr) {
-            if (get_default_device(&driver->device_id) != noErr) {
-				jack_error("Cannot open default device");
-				goto error;
-			}
-		}
-		if (get_device_name_from_id(driver->device_id, driver->capture_driver_name) != noErr || get_device_name_from_id(driver->device_id, driver->playback_driver_name) != noErr) {
-			jack_error("Cannot get device name from device ID");
-			goto error;
-		}
+    if (strcmp(capture_driver_uid, "") != 0 && strcmp(playback_driver_uid, "") != 0)
+    {
+	JCALog("Open duplex \n");
+        if (get_device_id_from_uid(playback_driver_uid, &driver->device_id) != noErr)
+	{
+		jack_error("get_device_id_from_uid() failed (%s)",playback_driver_uid);
+            if (get_default_device(&driver->device_id) != noErr)
+	    {
+		jack_error("Cannot open default device");
+		goto error;
+	    }
+	}
+	if (get_device_name_from_id(driver->device_id, driver->capture_driver_name) != noErr || get_device_name_from_id(driver->device_id, driver->playback_driver_name) != noErr)
+	{
+		jack_error("Cannot get device name from device ID");
+		goto error;
+	}
 		
 	// Capture only
 	} else if (strcmp(capture_driver_uid, "") != 0) {
