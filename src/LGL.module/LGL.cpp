@@ -39,6 +39,7 @@
 #include <stdlib.h>		//malloc()
 #include <unistd.h>		//read(), LGL_Memory*
 #include <sys/types.h>
+#define _DARWIN_USE_64_BIT_INODE
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pwd.h>
@@ -27167,7 +27168,6 @@ Refresh_INTERNAL()
 		else
 		{
 			//It's a file
-
 			FileList.push_back(everything[a]);
 		}
 	}
@@ -28143,8 +28143,8 @@ LGL_FileLengthBytes
 	char*	file
 )
 {
-	struct stat64 stbuf;
-	if(stat64(file, &stbuf) < 0)
+	struct stat stbuf;
+	if(stat(file, &stbuf) < 0)
 	{
 		printf("Can't stat() '%s'\n", file ? file : "(NULL)");
 		return(-1);
@@ -28177,15 +28177,15 @@ LGL_FirstFileMoreRecentlyModified
 	const char*	secondFile
 )
 {
-	struct stat64 stbuf1;
-	if(stat64(firstFile, &stbuf1) < 0)
+	struct stat stbuf1;
+	if(stat(firstFile, &stbuf1) < 0)
 	{
 		printf("Can't stat() %s\n",firstFile);
 		return(false);
 	}
 
-	struct stat64 stbuf2;
-	if(stat64(secondFile, &stbuf2) < 0)
+	struct stat stbuf2;
+	if(stat(secondFile, &stbuf2) < 0)
 	{
 		printf("Can't stat() %s\n",secondFile);
 		return(false);
