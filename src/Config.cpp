@@ -131,6 +131,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"alwaysUseAudioInForFreqSense=0\n");
 		fprintf(fd,"wireMemory=1\n");
 		fprintf(fd,"escDuringScanExits=1\n");
+		fprintf(fd,"audioSwapOutputStreams=0\n");
 		fprintf(fd,"debugVideoCaching=0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#Fader Options (Fader00-Fader11 valid):\n");
@@ -869,6 +870,13 @@ GetEscDuringScanExits()
 {
 	int exits=LGL_Clamp(0,dvjrcConfigFile->read<int>("escDuringScanExits",1),1);
 	return(exits!=0);
+}
+
+bool
+GetAudioSwapOutputStreams()
+{
+	int swap=LGL_Clamp(0,dvjrcConfigFile->read<int>("audioSwapOutputStreams",0),1);
+	return(swap!=0);
 }
 
 bool

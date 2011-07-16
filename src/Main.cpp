@@ -844,6 +844,11 @@ int main(int argc, char** argv)
 		LGL_HideProjectorWindows();
 	}
 
+	if(GetAudioSwapOutputStreams())
+	{
+		LGL_AudioSwapOutputStreams();
+	}
+
 	LGL_Init
 	(
 		resX,
