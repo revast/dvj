@@ -708,6 +708,35 @@ SwapOutOtherPrograms(void* baka)
 	return(0);
 }
 
+void
+WireMemory()
+{
+	const char* line1 = NULL;
+	const char* line2 = "Obtaining memory";
+	const char* line3 = "[ESC] skips (and risks audio/video skippage)";
+	float loadScreenPercent=0.0f;
+	DrawLoadScreen(loadScreenPercent,line1,line2,line3);
+	SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
+	for(;;)
+	{
+		if(LGL_KeyStroke(LGL_KEY_ESCAPE))
+		{
+			SwapOutOtherProgramsFinished=true;
+			break;
+		}
+		loadScreenPercent=powf(SwapOutOtherProgramsPercent,3);
+		DrawLoadScreen(loadScreenPercent,line1,line2,line3);
+		LGL_DelaySeconds(1.0f/60.0f);
+
+		if(SwapOutOtherProgramsFinished)
+		{
+			LGL_ThreadWait(thread);
+			loadScreenPercent=3.0f;
+			break;
+		}
+	}
+}
+
 int main(int argc, char** argv)
 {
 	//Set working directory
@@ -828,36 +857,12 @@ int main(int argc, char** argv)
 
 	VerifyMusicDir();
 
-	float loadScreenPercent=0.0f;
-
 	if(wireMemory)
 	{
-		const char* line1 = NULL;
-		const char* line2 = "Obtaining memory";
-		const char* line3 = "[ESC] skips (and risks audio/video skippage)";
-		DrawLoadScreen(loadScreenPercent,line1,line2,line3);
-		SDL_Thread* thread = LGL_ThreadCreate(SwapOutOtherPrograms);
-		for(;;)
-		{
-			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
-			{
-				SwapOutOtherProgramsFinished=true;
-				break;
-			}
-			loadScreenPercent=powf(SwapOutOtherProgramsPercent,3);
-			DrawLoadScreen(loadScreenPercent,line1,line2,line3);
-			LGL_DelaySeconds(1.0f/60.0f);
-
-			if(SwapOutOtherProgramsFinished)
-			{
-				LGL_ThreadWait(thread);
-				loadScreenPercent=3.0f;
-				break;
-			}
-		}
+		WireMemory();
 	}
 
-	loadScreenPercent=0.0f;
+	float loadScreenPercent=0.0f;
 	DrawLoadScreen(loadScreenPercent,NULL,"Scanning library");
 
 	InitializeGlobals();
