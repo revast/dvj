@@ -58,10 +58,11 @@ PCH_OSX			= $(OBJDIR_OSX)PrecompiledHeaders.h.gch
 PCH_W32			= $(OBJDIR_W32)PrecompiledHeaders.h.gch
 
 SRC			= $(wildcard *.cpp)
+SRC_MM			= $(wildcard *.mm)
 HDR			= $(wildcard *.h)
 
 OBJ_LIN			= $(patsubst %.cpp, $(OBJDIR_LIN)%.o, $(SRC))
-OBJ_OSX			= $(patsubst %.cpp, $(OBJDIR_OSX)%.o, $(SRC))
+OBJ_OSX			= $(patsubst %.cpp, $(OBJDIR_OSX)%.o, $(SRC)) $(patsubst %.mm, $(OBJDIR_OSX)%.o, $(SRC_MM))
 OBJ_W32			= $(patsubst %.cpp, $(OBJDIR_W32)%.o, $(SRC))
 OBJ_ALL			= $(OBJ_LIN) $(OBJ_OSX) $(OBJ_W32)
 
@@ -235,6 +236,10 @@ $(OBJDIR_LIN)%.o: %.cpp $(PCH_LIN) $(MODULE_PCHS)
 $(OBJDIR_OSX)%.o: %.cpp $(PCH_OSX) $(MODULE_PCHS)
 	@echo "	$(CC_OSX) $*.cpp"
 	@$(CC_OSX) $(CPPFLAGS_OSX) -c $*.cpp -o $(OBJDIR_OSX)$*.o
+
+$(OBJDIR_OSX)%.o: %.mm $(PCH_OSX) $(MODULE_PCHS)
+	@echo "	$(CC_OSX) $*.mm"
+	@$(CC_OSX) $(CPPFLAGS_OSX) -c $*.mm -o $(OBJDIR_OSX)$*.o -I Syphon.framework/Headers
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
 $(OBJDIR_W32)%.o: %.cpp $(PCH_W32) $(MODULE_PCHS)
