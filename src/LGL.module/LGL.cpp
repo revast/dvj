@@ -31059,10 +31059,10 @@ Lock
 		printf("\tLock Waiter File: %s\n",file);
 		printf("\tLock Waiter Line: %i\n",line);
 		printf("\tLock Waiter Thread: %i (%i)\n",
-		printf("\tLock Owner File: %s\n",lockOwnerFile);
-		printf("\tLock Owner Line: %i\n",lockOwnerLine);
 			(int)SDL_ThreadID(),
 			(int)LGL.ThreadIDMain);
+		printf("\tLock Owner File: %s\n",lockOwnerFile);
+		printf("\tLock Owner Line: %i\n",lockOwnerLine);
 		printf("\n");
 	}
 	return(ret);
