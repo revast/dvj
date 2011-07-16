@@ -209,6 +209,9 @@ bool
 GetEscDuringScanExits();
 
 bool
+GetAudioSwapOutputStreams();
+
+bool
 GetAudioInPassThru();
 
 bool

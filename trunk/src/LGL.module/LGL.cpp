@@ -261,6 +261,14 @@ LGL_HideProjectorWindows()
 	lgl_HideProjectorWindows=true;
 }
 
+bool lgl_AudioSwapOutputStreams=false;
+
+void
+LGL_AudioSwapOutputStreams()
+{
+	lgl_AudioSwapOutputStreams=true;
+}
+
 typedef struct
 {
 	//Video
@@ -3826,11 +3834,13 @@ lgl_EndFrame()
 		}
 		LGL.AudioInGrainListFront.clear();
 
-		//FIXME: We're blocking our audio thread!! (ever so briefly...)
 		{
-			LGL_ScopeLock AudioInSemaphoreLock(__FILE__,__LINE__,LGL.AudioInSemaphore);
-			LGL.AudioInGrainListFront=LGL.AudioInGrainListBack;
-			LGL.AudioInGrainListBack.clear();
+			LGL_ScopeLock audioInSemaphoreLock(__FILE__,__LINE__,LGL.AudioInSemaphore,0.0f);
+			if(audioInSemaphoreLock.GetLockObtained())
+			{
+				LGL.AudioInGrainListFront=LGL.AudioInGrainListBack;
+				LGL.AudioInGrainListBack.clear();
+			}
 		}
 
 		for(unsigned int a=0;a<LGL.AudioInGrainListFront.size();a++)
@@ -32940,6 +32950,18 @@ lgl_AudioOutCallbackGenerator
 				{
 					stream16rec[encodeChannels*l+2]=(Sint16)LGL_Clamp(-32767,stream16rec[encodeChannels*l+2]+tempStreamRecBL[l]*LGL.RecordVolume,32767);
 					stream16rec[encodeChannels*l+3]=(Sint16)LGL_Clamp(-32767,stream16rec[encodeChannels*l+3]+tempStreamRecBR[l]*LGL.RecordVolume,32767);
+				}
+
+				if(lgl_AudioSwapOutputStreams)
+				{
+					Sint16 frontL=stream16[4*l+0];
+					Sint16 frontR=stream16[4*l+1];
+					Sint16 backL=stream16[4*l+2];
+					Sint16 backR=stream16[4*l+3];
+					stream16[4*l+0]=backL;
+					stream16[4*l+1]=backR;
+					stream16[4*l+2]=frontL;
+					stream16[4*l+3]=frontR;
 				}
 
 				if(LGL.AudioBufferPos+l<1024)
