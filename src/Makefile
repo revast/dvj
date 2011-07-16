@@ -173,7 +173,7 @@ $(TARGET_BIN_LIN): $(TARGET_LIB_LIN)
 	@$(CC_LIN) $(CPPFLAGS_LIN) $(OBJ_FULL_LIN) $(LGLLIBRARIES_LIN) -o $(TARGET_BIN_LIN)
 
 $(TARGET_BIN_OSX): $(TARGET_LIB_OSX)
-	@echo "	$(CC_OSX) $(TARGET_BIN_OSX)"
+	@echo "	$(PREFIX_BIN)		$(CC_OSX)		$(TARGET_BIN_OSX)"
 	@$(CC_OSX) $(OBJ_FULL_OSX) $(LGLLIBRARIES_OSX) -o $(TARGET_BIN_OSX)
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
@@ -200,10 +200,10 @@ ifeq ($(CREATE_BINARY), 0)
 endif
 
 $(TARGET_LIB_OSX): $(MODULE_LIBS_OSX) $(OBJ_OSX)
-	@echo "	$(AR_OSX) $(TARGET_LIB_OSX)"
+	@echo "	$(PREFIX_BIN)		$(AR_OSX)		$(TARGET_LIB_OSX)"
 	@$(AR_OSX) $(TARGET_LIB_OSX) $(MODULE_LIBS_OSX) $(OBJ_FULL_OSX)
 ifeq ($(CREATE_BINARY), 0)
-	@echo "	cp $(OBJDIR_OSX)*.o ../$(OBJDIR_OSX)"
+	@echo "	$(PREFIX_BIN)		cp		$(OBJDIR_OSX)*.o ../$(OBJDIR_OSX)"
 	@cp $(OBJDIR_OSX)*.o ../$(OBJDIR_OSX)
 endif
 
@@ -233,12 +233,12 @@ $(OBJDIR_LIN)%.o: %.cpp $(PCH_LIN) $(MODULE_PCHS)
 	@echo "	$(CC_LIN) $*.cpp"
 	@$(CC_LIN) $(CPPFLAGS_LIN) -c $*.cpp -o $(OBJDIR_LIN)$*.o
 
-$(OBJDIR_OSX)%.o: %.cpp $(PCH_OSX) $(MODULE_PCHS)
-	@echo "	$(CC_OSX) $*.cpp"
+$(OBJDIR_OSX)%.o: %.cpp $(PCH_OSX) PrecompiledHeaders.pch
+	@echo "	$(PREFIX_BIN)		$(CC_OSX)		$*.cpp"
 	@$(CC_OSX) $(CPPFLAGS_OSX) -c $*.cpp -o $(OBJDIR_OSX)$*.o
 
-$(OBJDIR_OSX)%.o: %.mm $(PCH_OSX) $(MODULE_PCHS)
-	@echo "	$(CC_OSX) $*.mm"
+$(OBJDIR_OSX)%.o: %.mm $(PCH_OSX) PrecompiledHeaders.pch
+	@echo "	$(PREFIX_BIN)		$(CC_OSX)		$*.mm"
 	@$(CC_OSX) $(CPPFLAGS_OSX) -c $*.mm -o $(OBJDIR_OSX)$*.o -I Syphon.framework/Headers
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
@@ -261,10 +261,9 @@ $(OBJDIR_LIN)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
 	@$(CC_LIN) $(CFLAGS_LIN) -x c++-header -c PrecompiledHeaders.pch -o $(OBJDIR_LIN)PrecompiledHeaders.h.gch
 	@rm -f ../$(PCH_LIN)
 
-$(OBJDIR_OSX)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
-	@echo "	$(CC_OSX) PrecompiledHeaders.gch"
+$(OBJDIR_OSX)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch $(MODULES_PCHS)
+	@echo "	$(PREFIX_BIN)		$(CC_OSX)		PrecompiledHeaders.h.gch"
 	@$(CC_OSX) $(CFLAGS_OSX) -x c++-header -c PrecompiledHeaders.pch -o $(OBJDIR_OSX)PrecompiledHeaders.h.gch
-	@rm -f ../PrecompiledHeaders.pch
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
 $(OBJDIR_W32)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
@@ -277,6 +276,7 @@ $(OBJDIR_W32)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
 endif
 
 PrecompiledHeaders.pch: $(HDR)
+	@echo "	$(PREFIX_BIN)		$(CC_OSX)		PrecompiledHeaders.pch"
 	@ls -1 *.h | sed "s/\(.*\)/#include \"\1\"/" > PrecompiledHeaders.pch
 	
 
@@ -291,7 +291,7 @@ PrecompiledHeaders.pch: $(HDR)
 	@make -C $*.module lin-lib
 
 %.module/$(OBJDIR_SHORT)/osx/module.osx.lib: phony
-	@echo "	make $*.module"
+	@echo "	$(PREFIX_BIN)		make		$*.module"
 	@make -C $*.module osx-lib
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
@@ -325,19 +325,19 @@ $(OBJDIR_W32_SHORT): $(OBJDIR_SHORT)
 	$(shell mkdir $(OBJDIR_W32_SHORT)))
 else
 $(OBJDIR):
-	@echo "	Creating $(OBJDIR)"
+	@echo "	$(PREFIX_BIN)		mkdir -p	$(OBJDIR)"
 	@mkdir $(OBJDIR)
 
 $(OBJDIR_LIN): $(OBJDIR)
-	@echo "	Creating $(OBJDIR_LIN)"
+	@echo "	$(PREFIX_BIN)		mkdir -p	$(OBJDIR_LIN)"
 	@mkdir $(OBJDIR_LIN)
 
 $(OBJDIR_OSX): $(OBJDIR)
-	@echo "	Creating $(OBJDIR_OSX)"
+	@echo "	$(PREFIX_BIN)		mkdir -p	$(OBJDIR_OSX)"
 	@mkdir $(OBJDIR_OSX)
 
 $(OBJDIR_W32): $(OBJDIR)
-	@echo "	Creating $(OBJDIR_W32)"
+	@echo "	$(PREFIX_BIN)		mkdir -p	$(OBJDIR_W32)"
 	@mkdir $(OBJDIR_W32)
 endif
 
@@ -353,8 +353,8 @@ tags: $(SRC) $(HDR)
 #	ctags *.cpp *.h
 else
 tags: $(SRC) $(HDR)
-	@echo "	Updating vim tags..."
-	@ctags *.mm *.cpp *.h reference/*.h 2>/dev/null 1>/dev/null || @ctags *.cpp *.h reference/*.h 2>/dev/null 1>/dev/null || ctags *.cpp *.h 2>/dev/null 1>/dev/null || ctags *.cpp 2>/dev/null 1>/dev/null
+	@echo "	$(PREFIX_BIN)		ctags		*.cpp *.mm *.h"
+	@ctags *.mm *.cpp *.h reference/*.h 2>/dev/null 1>/dev/null || @ctags *.cpp *.h reference/*.h 2>/dev/null 1>/dev/null || ctags *.cpp *.h 2>/dev/null 1>/dev/null || ctags *.cpp 2>/dev/null 1>/dev/null || ctags *.mm 2>/dev/null 1>/dev/null || touch tags
 endif
 
 
@@ -366,11 +366,11 @@ endif
 .PHONY: %.module.clean %.module.spotless
 
 %.module.clean:
-	@echo "	make clean $*.module"
+	@echo "	$(PREFIX_BIN)		make clean	$*.module"
 	@make -C $*.module clean
 
 %.module.spotless:
-	@echo "	make spotless $*.module"
+	@echo "	$(PREFIX_BIN)		make spotless	$*.module"
 	@make -C $*.module spotless
 
 
@@ -390,9 +390,9 @@ clean: $(MODULE_DIRS_CLEAN)
 	rm -f $(OBJDIR_LIN)* $(OBJDIR_OSX)* $(OBJDIR_W32)* *.lib
 else
 clean: $(MODULE_DIRS_CLEAN)
-	@echo "	rm -f PrecompiledHeaders.pch $(TARGET_LIB_ALL)"
+	@echo "	$(PREFIX_BIN)		rm -f		PrecompiledHeaders.pch $(TARGET_LIB_ALL)"
 	@rm -f PrecompiledHeaders.pch $(TARGET_LIB_ALL)
-	@echo "	rm -f $(OBJDIR_LIN)* $(OBJDIR_OSX)* $(OBJDIR_W32)* *.lib"
+	@echo "	$(PREFIX_BIN)		rm -f		$(OBJDIR_LIN)* $(OBJDIR_OSX)* $(OBJDIR_W32)* *.lib"
 	@rm -f $(OBJDIR_LIN)* $(OBJDIR_OSX)* $(OBJDIR_W32)* *.lib
 endif
 
@@ -404,10 +404,10 @@ ifeq ($(CREATE_BINARY), 1)
 endif
 else
 spotless: clean $(MODULE_DIRS_SPOTLESS)
-	@echo "	rm -rf obj tags"
+	@echo "	$(PREFIX_BIN)		rm -rf		obj tags"
 	@rm -rf obj tags
 ifeq ($(CREATE_BINARY), 1)
-	@echo "	rm -f $(TARGET_BIN_ALL)"
+	@echo "	$(PREFIX_BIN)		rm -f		$(TARGET_BIN_ALL)"
 	@rm -f $(TARGET_BIN_ALL)
 endif
 endif
