@@ -32211,7 +32211,7 @@ lgl_AudioOutCallbackGenerator
 					double gFLnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+0)]));
 					double gFRnn=(Sint16)(sc->GlitchVolume*SWAP16(myBuffer[(unsigned long)(GlitchSamplesNowNext*BPS/2+1)]));
 					double gBLnn=gFLnn;
-					double gBRnn=gBRnn;
+					double gBRnn=gFRnn;
 
 					if(sc->Channels==4)
 					{
