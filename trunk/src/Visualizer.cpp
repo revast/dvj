@@ -56,7 +56,17 @@ VisualizerObj()
 	//float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
 	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
 	float top=1.0f;
-	Accumulation=new LGL_Image(left,right,bottom,top);
+
+	if(LGL_DisplayCount()==1)
+	{
+		Accumulation=new LGL_Image(left,right,bottom,top);
+	}
+	else
+	{
+		LGL_SetActiveDisplay(1);
+		Accumulation=new LGL_Image(0.0f,1.0f,0.0f,1.0f);
+		LGL_SetActiveDisplay(0);
+	}
 
 	if(LGL_DisplayCount()>1)
 	{
@@ -806,8 +816,8 @@ DrawVisuals
 			}
 		}
 	}
-	
-	if(LGL_GetActiveDisplay()==0)
+
+	if(LGL_GetActiveDisplay()==LGL_DisplayCount()-1)
 	{
 		if(GetSyphonServerEnabled())
 		{
@@ -1095,8 +1105,6 @@ SetViewportVisuals
 	ViewportVisualsTop=top;
 	ViewportVisualsWidth=right-left;
 	ViewportVisualsHeight=top-bottom;
-
-	//Accumulation->FrameBufferViewport(left,right,bottom,top);
 }
 
 float
@@ -1153,24 +1161,6 @@ VisualizerObj::
 ToggleFullScreen()
 {
 	FullScreen=!FullScreen;
-	/*
-	if(FullScreen)
-	{
-		Accumulation->FrameBufferViewport
-		(
-			0,1,
-			0,1
-		);
-	}
-	else
-	{
-		Accumulation->FrameBufferViewport
-		(
-			ViewportVisualsLeft,	ViewportVisualsRight,
-			ViewportVisualsBottom,	ViewportVisualsTop
-		);
-	}
-	*/
 }
 
 void

@@ -252,6 +252,14 @@ private:
 	int		Len;
 };
 
+bool lgl_HideProjectorWindows=false;
+
+void
+LGL_HideProjectorWindows()
+{
+	lgl_HideProjectorWindows=true;
+}
+
 typedef struct
 {
 	//Video
@@ -1992,7 +2000,7 @@ LGL_Init
 	}
 	else
 	{
-		SDL_VideoInit(NULL);
+		SDL_VideoInit(NULL,0);
 		lgl_sdl_initialized=true;
 		//printf("LGL: SDL_Init() Success!\n");
 	}
@@ -2005,9 +2013,9 @@ printf("%i displays!\n",LGL.DisplayCount);
 
 	for(int d=0;d<LGL.DisplayCount;d++)
 	{
-		//SDL_SelectVideoDisplay(d);
+		SDL_SelectVideoDisplay(d);
 		SDL_DisplayMode mode;
-		SDL_GetDesktopDisplayMode(d,&mode);
+		SDL_GetDesktopDisplayMode(&mode);
 
 		LGL.DisplayResolutionX[d] = mode.w;
 		LGL.DisplayResolutionY[d] = mode.h;
@@ -2026,7 +2034,7 @@ printf("\t[%i]: %i x %i\n",
 	}
 printf("\n");
 
-	//SDL_SelectVideoDisplay(0);
+	SDL_SelectVideoDisplay(0);
 
 	//Determine WindowResolutions
 	LGL.MasterWindowResolutionX=0;
@@ -2303,12 +2311,18 @@ printf("\n");
 
 	for(int d=LGL.DisplayCount-1;d>=0;d--)
 	{
-		//SDL_SelectVideoDisplay(d);
+		SDL_SelectVideoDisplay(d);
 
-		int windowFlags = SDL_WINDOW_OPENGL;// | SDL_WINDOW_HIDDEN;
+		int windowFlags = SDL_WINDOW_OPENGL;// | SDL_WINDOW_SHOWN;
 		if(d>0)
 		{
 			windowFlags |= SDL_WINDOW_BORDERLESS;
+			/*
+			if(lgl_HideProjectorWindows)
+			{
+				windowFlags |= SDL_WINDOW_HIDDEN;
+			}
+			*/
 		}
 		/*
 		if(LGL.WindowFullscreen)
@@ -2321,12 +2335,13 @@ printf("\n");
 		LGL.WindowID[d] = SDL_CreateWindow
 		(
 			inWindowTitle,
-			SDL_WINDOWPOS_CENTERED_DISPLAY(d),
-			SDL_WINDOWPOS_CENTERED_DISPLAY(d),
+			SDL_WINDOWPOS_CENTERED,
+			SDL_WINDOWPOS_CENTERED,
 			LGL.WindowResolutionX[d],
 			LGL.WindowResolutionY[d],
 			windowFlags
 		);
+		
 printf("CreateWindow(%i): %i x %i\n",
 	d,
 	LGL.WindowResolutionX[d],
@@ -2347,15 +2362,15 @@ printf("CreateWindow(%i): %i x %i\n",
 		}
 	}
 
-	//SDL_SelectVideoDisplay(0);
+	SDL_SelectVideoDisplay(0);
 	LGL.MasterWindowID = SDL_CreateWindow
 	(
 		inWindowTitle,
-		SDL_WINDOWPOS_CENTERED_DISPLAY(0),
-		SDL_WINDOWPOS_CENTERED_DISPLAY(0),
+		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED,
 		LGL.MasterWindowResolutionX,
 		LGL.MasterWindowResolutionY,
-		SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN
+		SDL_WINDOW_OPENGL// | SDL_WINDOW_SHOWN
 	);
 	LGL.GLContext = SDL_GL_CreateContext(LGL.MasterWindowID);
 	SDL_GL_MakeCurrent(LGL.WindowID[0], LGL.GLContext);
@@ -2476,7 +2491,14 @@ printf("CreateWindow(%i): %i x %i\n",
 		LGL_SetActiveDisplay(d);
 		LGL_SwapBuffers();
 		LGL_SwapBuffers();
-		SDL_ShowWindow(LGL.WindowID[d]);
+		if
+		(
+			d==0 ||
+			lgl_HideProjectorWindows==false
+		)
+		{
+			SDL_ShowWindow(LGL.WindowID[d]);
+		}
 	}
 
 	//Video Decoding via avcodec
@@ -4184,6 +4206,14 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 #else
 	{
 		bool vsync=endFrame;//true;
+		if
+		(
+			lgl_HideProjectorWindows &&
+			LGL.DisplayNow==0
+		)
+		{
+			vsync=true;
+		}
 		/*
 		if(LGL.DisplayNow==0 && LGL.DisplayCount>0)
 		{
@@ -6616,12 +6646,15 @@ LGL_Image
 	ReadFromFrontBuffer=inReadFromFrontBuffer;
 	FrameBufferViewport(left,right,bottom,top);
 
-	TexW=LGL_NextPowerOfTwo(LGL.WindowResolutionX[LGL.DisplayNow]);
-	TexH=LGL_NextPowerOfTwo(LGL.WindowResolutionY[LGL.DisplayNow]);
 	if(TextureGLRect)
 	{
 		TexW=LGL.WindowResolutionX[LGL.DisplayNow];
 		TexH=LGL.WindowResolutionY[LGL.DisplayNow];
+	}
+	else
+	{
+		TexW=LGL_NextPowerOfTwo(LGL.WindowResolutionX[LGL.DisplayNow]);
+		TexH=LGL_NextPowerOfTwo(LGL.WindowResolutionY[LGL.DisplayNow]);
 	}
 	TextureGL=0;
 	TextureGLMine=true;
@@ -22099,7 +22132,6 @@ LGL_MouseVisible
 	bool	visible
 )
 {
-	/*
 	if(visible)
 	{
 		SDL_ShowCursor(SDL_ENABLE);
@@ -22108,7 +22140,6 @@ LGL_MouseVisible
 	{
 		SDL_ShowCursor(SDL_DISABLE);
 	}
-	*/
 }
 
 void
@@ -23743,7 +23774,7 @@ LGL_MidiDeviceName
 	unsigned int	which
 )
 {
-	if(which < 0 || which >= LGL_MidiDeviceCount())
+	if(which >= LGL_MidiDeviceCount())
 	{
 		printf("LGL_MidiDeviceName(%i): Error! [0 < arg < %i] violated!\n",which,LGL_MidiDeviceCount());
 		assert(which<LGL_MidiDeviceCount());

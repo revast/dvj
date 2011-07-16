@@ -321,6 +321,9 @@ GetFader
 bool
 GetSyphonServerEnabled();
 
+bool
+GetHideProjectorWindows();
+
 class LEDClient
 {
 
