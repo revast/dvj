@@ -4262,6 +4262,7 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 		SDL_GL_SwapWindow(LGL.WindowID[LGL.DisplayNow]);
 		if(vsync)
 		{
+			glFlush();
 			LGL.FramesSinceExecution++;
 			LGL.SecondsSinceLastFrame=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
 			//Quantize to n/60.0f
@@ -27728,7 +27729,7 @@ Thread_Load()
 	}
 	else
 	{
-		printf("FTR: Failed to open path '%s'\n",GetPath());
+		printf("FTR: Failed to open path '%s' (%s)\n",GetPath(),LGL_FileExists(Path) ? "File exists" : "File doesn't exist");
 		Status=-1;
 		return;
 	}
