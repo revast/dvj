@@ -62,7 +62,8 @@ findCachedPath
 	{
 		if(GetDebugVideoCaching())
 		{
-			LGL_DebugPrintf("found: File is image!");
+			printf("found: File is image!\n");
+			LGL_DebugPrintf("found: File is image!\n");
 		}
 		strcpy(foundPath,srcPath);
 		return;
@@ -82,7 +83,8 @@ findCachedPath
 		//hajnal.mov has .mjpeg.avi extension in it, indicating we look no further.
 		if(GetDebugVideoCaching())
 		{
-			LGL_DebugPrintf("found: srcPath has .mjpeg.avi extension");
+			printf("found: srcPath has .mjpeg.avi extension\n");
+			LGL_DebugPrintf("found: srcPath has .mjpeg.avi extension\n");
 		}
 		return;
 	}
@@ -114,7 +116,8 @@ findCachedPath
 		//Found /home/id/mp3/hajnal.mov.mjpeg.avi
 		if(GetDebugVideoCaching())
 		{
-			LGL_DebugPrintf("found: %s",foundPath);
+			printf("found: %s\n",foundPath);
+			LGL_DebugPrintf("found: %s\n",foundPath);
 		}
 		return;
 	}
@@ -122,7 +125,8 @@ findCachedPath
 	{
 		if(GetDebugVideoCaching())
 		{
-			LGL_DebugPrintf("no exist: %s",foundPath);
+			printf("no exist: %s\n",foundPath);
+			LGL_DebugPrintf("no exist: %s\n",foundPath);
 		}
 	}
 
@@ -140,7 +144,8 @@ findCachedPath
 		{
 			if(GetDebugVideoCaching())
 			{
-				LGL_DebugPrintf("found: %s",foundPath);
+				printf("found: %s\n",foundPath);
+				LGL_DebugPrintf("found: %s\n",foundPath);
 			}
 			return;
 		}
@@ -149,7 +154,8 @@ findCachedPath
 	{
 		if(GetDebugVideoCaching())
 		{
-			LGL_DebugPrintf("no exist: %s",foundPath);
+			printf("no exist: %s\n",foundPath);
+			LGL_DebugPrintf("no exist: %s\n",foundPath);
 		}
 	}
 
@@ -172,7 +178,8 @@ findCachedPath
 			{
 				if(GetDebugVideoCaching())
 				{
-					LGL_DebugPrintf("found: %s",foundPath);
+					printf("found: %s\n",foundPath);
+					LGL_DebugPrintf("found: %s\n",foundPath);
 				}
 				return;
 			}
@@ -181,7 +188,8 @@ findCachedPath
 		{
 			if(GetDebugVideoCaching())
 			{
-				LGL_DebugPrintf("no exist: %s",foundPath);
+				printf("no exist: %s\n",foundPath);
+				LGL_DebugPrintf("no exist: %s\n",foundPath);
 			}
 		}
 	}
@@ -192,7 +200,8 @@ findCachedPath
 		//Found /home/id/.dvj/video/tracks/hajnal.mov.mjpeg.avi
 		if(GetDebugVideoCaching())
 		{
-			LGL_DebugPrintf("found: %s",foundPath);
+			printf("found: %s\n",foundPath);
+			LGL_DebugPrintf("found: %s\n",foundPath);
 		}
 		return;
 	}
@@ -200,7 +209,8 @@ findCachedPath
 	{
 		if(GetDebugVideoCaching())
 		{
-			LGL_DebugPrintf("no exist: %s",foundPath);
+			printf("no exist: %s\n",foundPath);
+			LGL_DebugPrintf("no exist: %s\n",foundPath);
 		}
 	}
 
@@ -217,7 +227,8 @@ findCachedPath
 			//Found /home/id/mp3/dvj/hajnal.mov.mjpeg.avi
 			if(GetDebugVideoCaching())
 			{
-				LGL_DebugPrintf("found: %s",foundPath);
+				printf("found: %s",foundPath);
+				LGL_DebugPrintf("found: %s\n",foundPath);
 			}
 			return;
 		}
@@ -225,7 +236,8 @@ findCachedPath
 		{
 			if(GetDebugVideoCaching())
 			{
-				LGL_DebugPrintf("no exist: %s",foundPath);
+				printf("no exist: %s",foundPath);
+				LGL_DebugPrintf("no exist: %s\n",foundPath);
 			}
 		}
 	}
@@ -238,7 +250,8 @@ findCachedPath
 			//Found /home/id/mp3/hajnal.mov
 			if(GetDebugVideoCaching())
 			{
-				LGL_DebugPrintf("found: %s",foundPath);
+				printf("found: %s\n",foundPath);
+				LGL_DebugPrintf("found: %s\n",foundPath);
 			}
 			return;
 		}
@@ -246,7 +259,8 @@ findCachedPath
 		{
 			if(GetDebugVideoCaching())
 			{
-				LGL_DebugPrintf("no exist: %s",foundPath);
+				printf("no exist: %s\n",foundPath);
+				LGL_DebugPrintf("no exist: %s\n",foundPath);
 			}
 		}
 	}
@@ -643,6 +657,14 @@ else if(LGL_FileExists(encoderAudioDst)==false)
 				tt->SoundSrcPath
 			);
 			tt->VideoFileExists=LGL_FileExists(videoFileName);
+			if(tt->VideoFileExists)
+			{
+				strcpy(tt->FoundVideoPath,videoFileName);
+			}
+			else
+			{
+				tt->FoundVideoPath[0]='\0';
+			}
 			tt->VideoEncoderPercent=2.0f;
 		}
 		else
@@ -5929,7 +5951,7 @@ SelectNewVideo
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoHi->GetPath());
 	}
 
-	if(VideoEncoderThread==NULL)
+	if(VideoEncoderPercent==2.0f || VideoEncoderThread==NULL)
 	{
 		//Change the normal videos
 		if
