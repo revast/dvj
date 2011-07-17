@@ -2305,10 +2305,22 @@ NextFrame
 		int autoDivergeRecall = GetInput().WaveformAutoDivergeRecall(target);
 		if(autoDivergeRecall==-2)
 		{
+			if(AutoDivergeRecallActive==false)
+			{
+				Diverge();
+			}
+			else
+			{
+				Recall();
+			}
 			AutoDivergeRecallActive=!AutoDivergeRecallActive;
 		}
 		else if(autoDivergeRecall==-1)
 		{
+			if(AutoDivergeRecallActive)
+			{
+				Recall();
+			}
 			AutoDivergeRecallActive=false;
 		}
 		else if (autoDivergeRecall==0)
@@ -2317,6 +2329,10 @@ NextFrame
 		}
 		else
 		{
+			if(AutoDivergeRecallActive==false)
+			{
+				Diverge();
+			}
 			AutoDivergeRecallActive=true;
 		}
 
