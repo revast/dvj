@@ -552,7 +552,7 @@ typedef struct
 	LGL_Semaphore*		WriteFileAsyncWorkItemListNewSemaphore;
 	SDL_Thread*		WriteFileAsyncThread;
 	
-	lgl_PathIsAliasCacher	PathIsAliasCacher;
+	//lgl_PathIsAliasCacher	PathIsAliasCacher;
 } LGL_State;
 
 LGL_State LGL;
@@ -2922,7 +2922,7 @@ LGL_ExitOmega()
 
 	lgl_SyphonExit();
 
-	LGL.PathIsAliasCacher.Save();
+	//LGL.PathIsAliasCacher.Save();
 
 	if(LGL.WriteFileAsyncThread)
 	{
@@ -29261,9 +29261,10 @@ LGL_PathIsAlias
 {
 #ifdef	LGL_OSX
 	int cacherResult = -1;
+	useCache=false;
 	if(useCache)
 	{
-		cacherResult=LGL.PathIsAliasCacher.Check(path);
+		//cacherResult=LGL.PathIsAliasCacher.Check(path);
 	}
 	if(cacherResult!=-1)
 	{
@@ -29314,11 +29315,13 @@ LGL_PathIsAlias
 			}
 		}
 
+		/*
 		LGL.PathIsAliasCacher.Add
 		(
 			path,
 			result ? 1 : 0
 		);
+		*/
 		return(result);
 	}
 #endif	//LGL_OSX
