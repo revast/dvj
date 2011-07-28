@@ -862,7 +862,11 @@ int main(int argc, char** argv)
 
 	VerifyMusicDir();
 
-	if(wireMemory)
+	if
+	(
+		wireMemory &&
+		LGL_RamFreeMB()<1024*3
+	)
 	{
 		WireMemory();
 	}
