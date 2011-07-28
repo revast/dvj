@@ -702,6 +702,48 @@ findAudioPathThread
 )
 {
 	TurntableObj* tt = (TurntableObj*)ptr;
+
+	LGL_FileInfo fileInfo(tt->SoundSrcPath);
+	if(fileInfo.Type==LGL_FILETYPE_SYMLINK)
+	{
+		if(LGL_DirectoryExists(tt->SoundSrcPath))
+		{
+			strcpy(tt->FoundAudioPath,tt->SoundSrcPath);
+			tt->FoundAudioPathIsDir=true;
+			tt->FindAudioPathDone=true;
+			return(0);
+		}
+	}
+	else if(fileInfo.Type==LGL_FILETYPE_FILE)
+	{
+		if(LGL_PathIsAlias(tt->SoundSrcPath))
+		{
+			LGL_ResolveAlias(tt->FoundAudioPath,2048,tt->SoundSrcPath);
+			if(LGL_DirectoryExists(tt->FoundAudioPath))
+			{
+				char checkDotSymlink[2048];
+				sprintf(checkDotSymlink,"%s.symlink",tt->SoundSrcPath);
+				if
+				(
+					LGL_FileExists(checkDotSymlink)==false &&
+					LGL_DirectoryExists(checkDotSymlink)==false
+				)
+				{
+					LGL_FileDelete(checkDotSymlink);
+					symlink(tt->FoundAudioPath,checkDotSymlink);
+				}
+				strcpy(tt->FoundAudioPath,checkDotSymlink);
+				tt->Database->Refresh(tt->FoundAudioPath);
+				tt->FoundAudioPathIsDir=true;
+				tt->FindAudioPathDone=true;
+				return(0);
+			}
+			else
+			{
+				strcpy(tt->SoundSrcPath,tt->FoundAudioPath);
+			}
+		}
+	}
 	
 	findAudioPath(tt->FoundAudioPath,tt->SoundSrcPath);
 	if(LGL_FileExists(tt->FoundAudioPath)==false)
@@ -1549,7 +1591,10 @@ NextFrame
 		{
 			//Abort load. Select new track.
 			LGL_DrawLogWrite("!dvj::DeleteSound|%i\n",Which);
-			Sound->PrepareForDelete();
+			if(Sound)
+			{
+				Sound->PrepareForDelete();
+			}
 			Channel=-1;
 			Mode=3;
 			BadFileFlash=1.0f;
@@ -2797,13 +2842,19 @@ NextFrame
 			VideoEncoderThread==NULL &&
 			LoadAllCachedDataThread==NULL &&
 			MetaDataFileToRam==NULL &&
-			Sound->ReadyForDelete()
+			(
+				Sound==NULL ||
+				Sound->ReadyForDelete()
+			)
 		)
 		{
 			char oldSelection[2048];
 			strcpy(oldSelection,SoundSrcPathShort);
-			delete Sound;
-			Sound=NULL;
+			if(Sound)
+			{
+				delete Sound;
+				Sound=NULL;
+			}
 			Channel=-1;
 			DatabaseEntryNow=NULL;
 			VideoEncoderPathSrc[0]='\0';
@@ -2973,11 +3024,44 @@ NextFrame
 			if(FindAudioPathThread==NULL)
 			{
 				FindAudioPathDone=false;
+				FoundAudioPathIsDir=false;
+				printf("Making a FindAudioPathThread (MODE = 1)\n");
 				FindAudioPathThread=LGL_ThreadCreate(findAudioPathThread,this);
 			}
 
 			if(FindAudioPathDone)
 			{
+				if(FoundAudioPathIsDir)
+				{
+					FilterTextMostRecent[0]='\0';
+					FilterText.SetString("");
+					char oldDir[2048];
+					strcpy(oldDir,&(strrchr(DatabaseFilter.GetDir(),'/')[1]));
+
+					DatabaseFilter.SetDir(FoundAudioPath);
+					DatabaseFilter.SetPattern(FilterText.GetString());
+					DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+
+					FileTop=0;
+					FileSelectInt=0;
+					FileSelectFloat=0.0f;
+					FilterText.SetString();
+					NoiseFactor=1.0f;
+					WhiteFactor=1.0f;
+
+					/*
+					if(targetPathIsDotDot)
+					{
+						FileSelectToString(oldDir);
+						FileTop-=2;
+						if(FileTop<0) FileTop=0;
+					}
+					*/
+
+					Mode=3;
+					return;
+				}
+
 				char videoTracksPath[2048];
 				sprintf(videoTracksPath,"%s/%s",SoundSrcDir,GetDvjCacheDirName());
 

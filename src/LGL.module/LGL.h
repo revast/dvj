@@ -86,6 +86,7 @@
 #include <vector>
 #include <deque>
 #include <list>
+#include <map>
 #include <algorithm>
 
 extern "C"
@@ -3138,6 +3139,36 @@ float		LGL_SwapAvailablePercent();
 
 //Filesystem
 
+enum
+LGL_FileType
+{
+	LGL_FILETYPE_UNDEF,
+	LGL_FILETYPE_FILE,
+	LGL_FILETYPE_DIR,
+	LGL_FILETYPE_SYMLINK,
+	LGL_FILETYPE_ALIAS
+};
+
+class LGL_FileInfo
+{
+
+public:
+
+				LGL_FileInfo
+				(
+					const char*	path,
+					LGL_FileType	type=LGL_FILETYPE_UNDEF,
+					long		bytes=-1
+				);
+				~LGL_FileInfo();
+
+	char*			Path;
+	const char*		GetPathShort();
+	LGL_FileType		Type;
+	long			Bytes;
+	LGL_FileInfo*		ResolvedFileInfo;
+};
+
 class LGL_DirTree
 {
 
@@ -3248,20 +3279,52 @@ bool		LGL_FileExtensionIsImage(const char* filename);
 void		LGL_SimplifyPath(char* simplePath, const char* complexPath);
 const char*	LGL_GetUsername();
 const char*	LGL_GetHomeDir();
-bool		LGL_PathIsAlias(const char* path);
+bool		LGL_PathIsAlias(const char* path, bool useCache=true);
 bool		LGL_ResolveAlias(char* outPath, int outPathLength, const char* inPath);
 bool		LGL_PathIsSymlink(const char* path);
 bool		LGL_ResolveSymlink(char* outPath, int outPathLength, const char* inPath);
 void		LGL_WriteFileAsync(const char* path, const char* data, int len);
 unsigned int	LGL_WriteFileAsyncQueueCount();
 
+class
+lgl_PathIsAliasCacher
+{
+
+public:
+
+		lgl_PathIsAliasCacher(const char* path=NULL);
+		~lgl_PathIsAliasCacher();
+
+	void	Load();
+	void	Save();
+
+	void	Add
+		(
+			const char*	path,
+			int		isAlias
+		);
+	
+	int	Check
+		(
+			const char*	path
+		);
+
+private:
+
+	char*	Path;
+	std::map<std::string, int>
+		Map;
+
+};
+
 //DEPRECATED! Use LGL_DirTree.
 std::vector<char*>
 		LGL_DirectoryListCreate
 		(
-			const char*	TargetDir,
-			bool		justFiles=true,
-			bool		seeHidden=false
+			const char*			TargetDir,
+			bool				justFiles=true,
+			bool				seeHidden=false,
+			std::vector<LGL_FileInfo*>*	fileInfoList=NULL
 		);
 void		LGL_DirectoryListDelete(std::vector<char*>& list);
 

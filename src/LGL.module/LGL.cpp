@@ -551,6 +551,8 @@ typedef struct
 	int			WriteFileAsyncWorkItemListNewSize;
 	LGL_Semaphore*		WriteFileAsyncWorkItemListNewSemaphore;
 	SDL_Thread*		WriteFileAsyncThread;
+	
+	lgl_PathIsAliasCacher	PathIsAliasCacher;
 } LGL_State;
 
 LGL_State LGL;
@@ -2919,6 +2921,8 @@ LGL_ExitOmega()
 	LGL_ExitAlpha();
 
 	lgl_SyphonExit();
+
+	LGL.PathIsAliasCacher.Save();
 
 	if(LGL.WriteFileAsyncThread)
 	{
@@ -8841,6 +8845,7 @@ LGL_Animation::
 LoadImages()
 {
 	std::vector<char*> DirList=LGL_DirectoryListCreate(Path);
+
 	ImageCountMax=DirList.size();
 	if(ImageCountMax==0)
 	{
@@ -26861,6 +26866,152 @@ LGL_NetIPToHost
 	return(ret);
 }
 
+bool lgl_FileInfoSortPredicate(const LGL_FileInfo* fi1, const LGL_FileInfo* fi2)
+{
+	return(strcmp(fi1->Path,fi2->Path)<0);
+}
+
+LGL_FileInfo::
+LGL_FileInfo
+(
+	const char*	path,
+	LGL_FileType	type,
+	long		bytes
+)
+{
+	Path=NULL;
+	Type=LGL_FILETYPE_UNDEF;
+	Bytes=0;
+	ResolvedFileInfo=NULL;
+
+	if(path)
+	{
+		Path = new char[strlen(path)+1];
+		strcpy(Path,path);
+	}
+	else
+	{
+		Path = new char[1];
+		Path[0]='\0';
+		Type=LGL_FILETYPE_UNDEF;
+		return;
+	}
+
+	Type=type;
+	if(Type==LGL_FILETYPE_UNDEF)
+	{
+		struct stat buf;
+		int ok=lstat(Path,&buf);
+		//int ok=stat(Path,&buf);
+
+		if(ok==-1)
+		{
+			Type=LGL_FILETYPE_UNDEF;
+		}
+		else if(S_ISREG(buf.st_mode))
+		{
+			//Aliases show up as files... grr...
+			Type=LGL_FILETYPE_FILE;
+		}
+		else if(S_ISDIR(buf.st_mode))
+		{
+			Type=LGL_FILETYPE_DIR;
+		}
+		else if(S_ISLNK(buf.st_mode))
+		{
+			Type=LGL_FILETYPE_SYMLINK;
+			if(0 && strstr(Path,".symlink"))
+			{
+				Type=LGL_FILETYPE_DIR;
+			}
+			else
+			{
+				struct stat buf2;
+				int ok2=stat(Path,&buf2);
+				if(ok2==-1)
+				{
+					Type=LGL_FILETYPE_UNDEF;
+				}
+				else if(S_ISREG(buf2.st_mode))
+				{
+					//Aliases show up as files... grr...
+					Type=LGL_FILETYPE_FILE;
+				}
+				else if(S_ISDIR(buf2.st_mode))
+				{
+					Type=LGL_FILETYPE_DIR;
+				}
+			}
+		}
+		else if(LGL_PathIsAlias(Path,true))
+		{
+			Type=LGL_FILETYPE_ALIAS;
+		}
+		else
+		{
+			Type=LGL_FILETYPE_UNDEF;
+		}
+	}
+
+	Bytes=bytes;
+	if(Bytes==-1)
+	{
+		Bytes=LGL_FileLengthBytes(Path);
+	}
+
+	/*
+	if
+	(
+		Type==LGL_FILETYPE_SYMLINK ||
+		Type==LGL_FILETYPE_ALIAS
+	)
+	{
+		char resolvedPath[2048];
+		if(Type==LGL_FILETYPE_SYMLINK)
+		{
+			LGL_ResolveSymlink(resolvedPath,2048,Path);
+		}
+		else if(Type==LGL_FILETYPE_ALIAS)
+		{
+			LGL_ResolveAlias(resolvedPath,2048,Path);
+		}
+
+		printf("Resolved '%s' => '%s'\n",Path,resolvedPath);
+		ResolvedFileInfo=new LGL_FileInfo(resolvedPath);
+	}
+	*/
+}
+
+LGL_FileInfo::
+~LGL_FileInfo()
+{
+	if(Path)
+	{
+		delete Path;
+		Path=NULL;
+	}
+	Type=LGL_FILETYPE_UNDEF;
+	if(ResolvedFileInfo)
+	{
+		delete ResolvedFileInfo;
+		ResolvedFileInfo=NULL;
+	}
+}
+
+const char*
+LGL_FileInfo::
+GetPathShort()
+{
+	if(const char* lastSlash = strrchr(Path,'/'))
+	{
+		return(&(lastSlash[1]));
+	}
+	else
+	{
+		return(Path);
+	}
+}
+
 int
 lgl_dirTreeRefreshThreadFunc
 (
@@ -26942,7 +27093,7 @@ SetPath
 	{
 		return(false);
 	}
-	
+
 	char neopath[1024];
 	strcpy(neopath,path);
 
@@ -27044,7 +27195,8 @@ SetPath
 
 	if(LGL_DirectoryExists(absPath)==false)
 	{
-		LGL_Assertf(false,("LGL_DirTree::SetPath(): Error! For path '%s', absPath '%s' isn't a directory!",path,absPath));
+		//LGL_Assertf(false,("LGL_DirTree::SetPath(): Error! For path '%s', absPath '%s' isn't a directory!",path,absPath));
+		printf("LGL_DirTree::SetPath(): Warning! For path '%s', absPath '%s' isn't a directory!\n",path,absPath);
 		return(false);
 	}
 
@@ -27101,16 +27253,33 @@ Refresh_INTERNAL()
 		DirList.push_back(dotdot);
 	}
 
-	std::vector<char*> everything=LGL_DirectoryListCreate(Path,false);
+	std::vector<LGL_FileInfo*> fileInfoList;
+	std::vector<char*> everything=LGL_DirectoryListCreate(Path,false,false,&fileInfoList);
 
-	for(unsigned int a=0;a<everything.size();a++)
+	for(unsigned int a=0;a<fileInfoList.size();a++)
 	{
 		char check[4096];
 
-		sprintf(check,"%s/%s",Path,everything[a]);
+		sprintf(check,"%s/%s",Path,fileInfoList[a]->GetPathShort());
 
-		bool isAlias = LGL_PathIsAlias(check);
-		
+		bool isAlias = false;
+		if(0 && LGL_KeyDown(LGL_KEY_LSHIFT))
+		{
+			//isAlias=LGL_PathIsAlias(check);
+		}
+		else
+		{
+			if
+			(
+				fileInfoList[a]->Type==LGL_FILETYPE_FILE &&
+				1//strchr(fileInfoList[a]->GetPathShort(),'.')==NULL
+			)
+			{
+				//printf("Checking for alias-dir: %s\n",check);
+				isAlias=LGL_PathIsAlias(check,true);
+			}
+		}
+
 		if(isAlias)
 		{
 			const int len=4096;
@@ -27134,15 +27303,7 @@ Refresh_INTERNAL()
 				)
 				{
 					LGL_FileDelete(checkDotSymlink);
-					char cmd[4096];
-					sprintf
-					(
-						cmd,
-						"ln -s '%s' '%s'",
-						aliasPath,
-						checkDotSymlink
-					);
-					system(cmd);
+					symlink(aliasPath,checkDotSymlink);
 				}
 				strcpy(check,checkDotSymlink);
 				char* checkDotSymlinkShort = strrchr(checkDotSymlink,'/');
@@ -27150,9 +27311,9 @@ Refresh_INTERNAL()
 				{
 					checkDotSymlinkShort=&(checkDotSymlinkShort[1]);
 					bool alreadyExisted=false;
-					for(unsigned int b=0;b<everything.size();b++)
+					for(unsigned int b=0;b<fileInfoList.size();b++)
 					{
-						if(strcmp(checkDotSymlinkShort,everything[b])==0)
+						if(strcmp(checkDotSymlinkShort,fileInfoList[b]->GetPathShort())==0)
 						{
 							alreadyExisted=true;
 							break;
@@ -27160,32 +27321,60 @@ Refresh_INTERNAL()
 					}
 					if(alreadyExisted==false)
 					{
+						/*
 						char* neo=new char[strlen(checkDotSymlinkShort)+1];
 						strcpy(neo,checkDotSymlinkShort);
 						everything.push_back(neo);
+						*/
+
+						LGL_FileInfo* neo=new LGL_FileInfo(checkDotSymlinkShort,LGL_FILETYPE_DIR);
+						fileInfoList.push_back(neo);
 					}
 				}
 			}
 		}
 
+		if(fileInfoList[a]->Type==LGL_FILETYPE_SYMLINK)
+		{
+			printf("SYMLINK!! DOING NOTHING!! %s\n",check);
+		}
+
 		if(isAlias)
 		{
 			//It's an alias
-			delete everything[a];
+			//delete everything[a];
 		}
-		else if(LGL_DirectoryExists(check))
+		else if(fileInfoList[a]->Type==LGL_FILETYPE_DIR)
 		{
 			//It's a directory
-			DirList.push_back(everything[a]);
+			//DirList.push_back(everything[a]);
+			char* neo = new char[strlen(fileInfoList[a]->GetPathShort())+1];
+			strcpy(neo,fileInfoList[a]->GetPathShort());
+			DirList.push_back(neo);
 		}
-		else
+		else if(fileInfoList[a]->Type==LGL_FILETYPE_FILE)
 		{
 			//It's a file
-			FileList.push_back(everything[a]);
+			//FileList.push_back(everything[a]);
+			char* neo = new char[strlen(fileInfoList[a]->GetPathShort())+1];
+			strcpy(neo,fileInfoList[a]->GetPathShort());
+			FileList.push_back(neo);
 		}
 	}
 
+	for(unsigned int a=0;a<everything.size();a++)
+	{
+		delete everything[a];
+		everything[a]=NULL;
+	}
 	everything.clear();
+
+	for(unsigned int a=0;a<fileInfoList.size();a++)
+	{
+		delete fileInfoList[a];
+		fileInfoList[a]=NULL;
+	}
+	fileInfoList.clear();
 
 	GenerateFilterLists();
 
@@ -27503,63 +27692,43 @@ ClearLists()
 	FilteredDirList.clear();
 }
 
-void
-lgl_MergeSortDirectoryList
+bool
+lgl_CharStarSortPredicate
 (
-	std::vector<char*>*	list,
-	int			begin,
-	int			end
+	const char*	s1,
+	const char*	s2
 )
 {
-	if(begin<end)
+	if
+	(
+		s1==NULL ||
+		s2==NULL
+	)
 	{
-		//Sort both halves
+		return(false);
+	}
 
-		int middle=(begin+end)/2;
-		lgl_MergeSortDirectoryList(list,begin,middle);
-		lgl_MergeSortDirectoryList(list,middle+1,end);
+	return(strcmp(s1,s2)<0);
+}
 
-		std::vector<char*>& List=(*list);
-
-		std::vector<char*> GoodList;
-		int counter1=begin;
-		int counter2=middle+1;
-		int counter3=begin;
-		
-		while(counter1<=middle && counter2<=end)
-		{
-			if(strcasecmp(List[counter1],List[counter2])<=0)
-			{
-				GoodList.push_back(List[counter1]);
-				counter1++;
-			}
-			else
-			{
-				GoodList.push_back(List[counter2]);
-				counter2++;
-			}
-			counter3++;
-		}
-		while(counter1<=middle)
-		{
-			GoodList.push_back(List[counter1]);
-			counter1++;
-			counter3++;
-		}
-		while(counter2<=end)
-		{
-			GoodList.push_back(List[counter2]);
-			counter2++;
-			counter3++;
-		}
-
-		int baka=0;
-		for(int a=begin;a<=end;a++)
-		{
-			List[a]=GoodList[baka];
-			baka++;
-		}
-		GoodList.clear();
+void
+lgl_SortDirectoryList
+(
+	std::vector<char*>*	list
+)
+{
+	if
+	(
+		list &&
+		list->empty()==false
+	)
+	{
+		std::sort
+		(
+			list->begin(),
+			list->end(),
+			lgl_CharStarSortPredicate
+		);
 	}
 }
 
@@ -27963,25 +28132,163 @@ printf("LGL_DirectoryDelete('%s'\n",dir);
 #endif	//LGL_WIN32
 }
 
+
+
+lgl_PathIsAliasCacher::
+lgl_PathIsAliasCacher
+(
+	const char*	path
+)
+{
+	if(path==NULL)
+	{
+		Path = new char[2048];
+		sprintf(Path,"%s/.dvj/cache/aliasCache.txt",LGL_GetHomeDir());
+	}
+	else
+	{
+		Path = new char[strlen(path)+1];
+		strcpy(Path,path);
+	}
+
+	Load();
+}
+
+lgl_PathIsAliasCacher::
+~lgl_PathIsAliasCacher()
+{
+	delete Path;
+	Path=NULL;
+}
+
+void
+lgl_PathIsAliasCacher::
+Load()
+{
+	if(FILE* fd=fopen(Path,"r"))
+	{
+		const int bufSize=2048;
+		char buf[bufSize];
+		while(feof(fd)==false)
+		{
+			//Get path
+			fgets(buf,bufSize,fd);
+			char path[bufSize];
+			strcpy(path,buf);
+			if(char* newline=strrchr(path,'\n'))
+			{
+				newline[0]='\0';
+			}
+
+			//Get status
+			fgets(buf,bufSize,fd);
+			int status = atoi(buf);
+
+			//Add to map
+			Add(path,status);
+		}
+	}
+}
+
+void
+lgl_PathIsAliasCacher::
+Save()
+{
+	if(FILE* fd=fopen(Path,"w"))
+	{
+		for
+		(
+			std::map<std::string,int>::iterator it = Map.begin();
+			it != Map.end();
+			it++
+		)
+		{
+			fprintf(fd,"%s\n%i\n",it->first.c_str(),it->second);
+		}
+		fclose(fd);
+	}
+}
+
+void
+lgl_PathIsAliasCacher::
+Add
+(
+	const char*	path,
+	int		isAlias
+)
+{
+	if
+	(
+		path==NULL ||
+		path[0]=='\0' ||
+		path[1]=='\0' ||
+		path[2]=='\0'
+	)
+	{
+		return;
+	}
+
+	if(isAlias==-1)
+	{
+		isAlias = LGL_PathIsAlias(path,false) ? 1 : 0;
+	}
+	std::string pathStr(path);
+	Map[pathStr] = (isAlias ? 1 : 0);
+}
+
+int
+lgl_PathIsAliasCacher::
+Check
+(
+	const char*	path
+)
+{
+	std::string pathStr(path);
+	std::map<std::string,int>::iterator it = Map.find(pathStr);
+	if(it==Map.end())
+	{
+		//printf("Check(): %i %s\n",-1,path);
+		return(-1);
+	}
+	else
+	{
+		//printf("Check(): %i %s\n",it->second,path);
+		return(it->second);
+	}
+}
+
+
+
 std::vector<char*>
 LGL_DirectoryListCreate
 (
-	const
-	char*	targetDir,
-	bool	justFiles,
-	bool	seeHidden
+	const char*			targetDir,
+	bool				justFiles,
+	bool				seeHidden,
+	std::vector<LGL_FileInfo*>*	fileInfoList
 )
 {
-	std::vector<char*> ReturnMe;
+	if
+	(
+		fileInfoList &&
+		fileInfoList->empty()==false
+	)
+	{
+		printf("LGL_DirectoryListCreate(): Warning! fileInfoList isn't empty!\n");
+	}
+
+	std::vector<char*> returnMe;
 
 #ifdef	LGL_LINUX
-
-	assert(targetDir!=NULL);
+	if(targetDir==NULL)
+	{
+		return(returnMe);
+	}
 	DIR* myDir=opendir(targetDir);
 	if(myDir==NULL)
 	{
 		printf("LGL_DirectoryListCreate(): Error! opendir(%s) failed...\n",targetDir);
-		assert(false);
+		return(returnMe);
 	}
 	
 	int totallength=0;
@@ -27999,11 +28306,12 @@ LGL_DirectoryListCreate
 			
 			sprintf(temp,"%s/%s",targetDir,myEnt->d_name);
 			int ret=lstat(temp,&buf);
+			//int ret=stat(temp,&buf);
 
 			if(ret==-1)
 			{
-				printf("LGL_DirectoryListCreate(): Error! lstat(%s) returns NULL or -1.\n",temp);
-				assert(false);
+				printf("LGL_DirectoryListCreate(): Warning! stat(%s) returns NULL or -1.\n",temp);
+				continue;
 			}
 			if
 			(
@@ -28041,17 +28349,82 @@ LGL_DirectoryListCreate
 				totallength+=length;
 				char* temp2=new char[length];
 				sprintf(temp2,"%s",myEnt->d_name);
-				ReturnMe.push_back(temp2);
+				returnMe.push_back(temp2);
+
+				if(fileInfoList)
+				{
+					/*
+					if(S_ISLNK(buf.st_mode))
+					{
+						stat(temp,&buf);
+					}
+					*/
+
+					LGL_FileType type=LGL_FILETYPE_UNDEF;
+					if(S_ISREG(buf.st_mode))
+					{
+						/*
+						if(LGL_PathIsAlias(temp))
+						{
+							printf("Alias showing up as a file... (%s)\n",temp);
+						}
+						*/
+						type=LGL_FILETYPE_FILE;
+					}
+					else if(S_ISDIR(buf.st_mode))
+					{
+						/*
+						if(LGL_PathIsAlias(temp))
+						{
+							printf("Alias showing up as a dir... (%s)\n",temp);
+						}
+						*/
+						type=LGL_FILETYPE_DIR;
+					}
+					else if(S_ISLNK(buf.st_mode))
+					{
+						/*
+						if(LGL_PathIsAlias(temp))
+						{
+							printf("Alias showing up as a symlink(?!)... (%s)\n",temp);
+						}
+						*/
+						type=LGL_FILETYPE_UNDEF;
+						//type=LGL_FILETYPE_SYMLINK;
+					}
+					else
+					{
+						type=LGL_FILETYPE_UNDEF;
+					}
+
+					LGL_FileInfo* neo = new LGL_FileInfo
+					(
+						temp,
+						type,
+						(long)buf.st_size
+					);
+					fileInfoList->push_back(neo);
+				}
 			}
 		}
 	}
 	closedir(myDir);
 
-	if(ReturnMe.empty()==false)
+	lgl_SortDirectoryList(&returnMe);
+	if
+	(
+		fileInfoList &&
+		fileInfoList->empty()==false
+	)
 	{
-		lgl_MergeSortDirectoryList(&ReturnMe,0,ReturnMe.size()-1);
+		std::sort
+		(
+			fileInfoList->begin(),
+			fileInfoList->end(),
+			lgl_FileInfoSortPredicate
+		);
 	}
-	
+
 #endif	//LGL_LINUX
 #ifdef	LGL_WIN32
 
@@ -28098,7 +28471,7 @@ LGL_DirectoryListCreate
 
 			char* neo=new char[strlen(findData.cFileName)+1];
 			strcpy(neo,findData.cFileName);
-			ReturnMe.push_back(neo);
+			returnMe.push_back(neo);
 		}
 		if(FindNextFile(handle,&findData)==0)
 		{
@@ -28106,12 +28479,9 @@ LGL_DirectoryListCreate
 		}
 	}
 	FindClose(handle);
-	if(ReturnMe.empty()==false)
-	{
-		lgl_MergeSortDirectoryList(&ReturnMe,0,ReturnMe.size()-1);
-	}
+	lgl_SortDirectoryList(&returnMe);
 #endif	//LGL_WIN32
-	return(ReturnMe);
+	return(returnMe);
 }
 
 void
@@ -28205,6 +28575,30 @@ LGL_FirstFileMoreRecentlyModified
 	}
 
 	return(stbuf1.st_mtime > stbuf2.st_mtime);
+}
+
+int LGL_CompareTimeSpecs(struct timespec& ts1, struct timespec& ts2)
+{
+	if(ts1.tv_sec < ts2.tv_sec)
+	{
+		return(-1);
+	}
+	else if(ts1.tv_sec > ts2.tv_sec)
+	{
+		return(1);
+	}
+	else if(ts1.tv_nsec < ts2.tv_nsec)
+	{
+		return(-1);
+	}
+	else if(ts1.tv_nsec > ts2.tv_nsec)
+	{
+		return(1);
+	}
+	else
+	{
+		return(0);
+	}
 }
 
 //Begin RSA Code
@@ -28861,41 +29255,72 @@ LGL_GetHomeDir()
 bool
 LGL_PathIsAlias
 (
-	const
-	char*	path
+	const char*	path,
+	bool		useCache
 )
 {
 #ifdef	LGL_OSX
-	OSStatus err = noErr;
-	FSRef fsRef;
-	Boolean fileFlag;
-	Boolean folderFlag;
-
-	err = FSPathMakeRef
-	(
-		(UInt8*)path,
-		&fsRef,
-		&fileFlag
-	);
-
-	if(err != noErr)
+	int cacherResult = -1;
+	if(useCache)
 	{
-		return(false);
+		cacherResult=LGL.PathIsAliasCacher.Check(path);
 	}
-
-	err = FSIsAliasFile
-	(
-		&fsRef,
-		&fileFlag,
-		&folderFlag
-	);
-
-	if(err != noErr)
+	if(cacherResult!=-1)
 	{
-		return(false);
+		//if(useCache) printf("PathIsAlias(): Cache hit!! %i %s\n",cacherResult,path);
+		return(cacherResult);
 	}
+	else
+	{
+		//if(useCache) printf("PathIsAlias(): Cache miss!   %s\n",path);
+		bool result=true;
 
-	return(err == noErr && fileFlag);
+		OSStatus err = noErr;
+		FSRef fsRef;
+		Boolean fileFlag;
+		Boolean folderFlag;
+
+		err = FSPathMakeRef
+		(
+			(UInt8*)path,
+			&fsRef,
+			&fileFlag
+		);
+
+		if(err != noErr)
+		{
+			result=false;
+		}
+		else
+		{
+			err = FSIsAliasFile
+			(
+				&fsRef,
+				&fileFlag,
+				&folderFlag
+			);
+
+			if(err != noErr)
+			{
+				result=false;
+			}
+			else
+			{
+				result = 
+				(
+					err == noErr &&
+					fileFlag
+				);
+			}
+		}
+
+		LGL.PathIsAliasCacher.Add
+		(
+			path,
+			result ? 1 : 0
+		);
+		return(result);
+	}
 #endif	//LGL_OSX
 
 	return(false);
@@ -28966,6 +29391,7 @@ LGL_ResolveAlias
 
 			if(err == noErr)
 			{
+				printf("ResolveAlias(): %s => %s\n",inPath,outPath);
 				return(true);
 			}
 		}
@@ -28981,10 +29407,23 @@ LGL_PathIsSymlink
 	const char*	path
 )
 {
+	struct stat buf;
+	int ret=lstat(path,&buf);
+	if(ret==-1)
+	{
+		return(false);
+	}
+	else
+	{
+		return(S_ISLNK(buf.st_mode));
+	}
+
+	/*
 	const int outPathLength=2048;
 	char outPath[outPathLength];
 	int num = readlink(path,outPath,outPathLength);
 	return(num>=0);
+	*/
 }
 
 bool
@@ -31059,9 +31498,12 @@ Lock
 		printf("\tTime: %.4f\n",timer.SecondsSinceLastReset());
 		printf("\tLock Waiter File: %s\n",file);
 		printf("\tLock Waiter Line: %i\n",line);
-		printf("\tLock Waiter Thread: %i (%i)\n",
-			(int)SDL_ThreadID(),
-			(int)LGL.ThreadIDMain);
+		printf("\tLock Waiter Thread: %s\n",
+			(
+				(int)SDL_ThreadID() == 
+				(int)LGL.ThreadIDMain
+			) ? "Main" : "Not Main"
+		);
 		printf("\tLock Owner File: %s\n",lockOwnerFile);
 		printf("\tLock Owner Line: %i\n",lockOwnerLine);
 		printf("\n");

@@ -174,6 +174,7 @@ private:
 public:
 	char				FoundVideoPath[2048];
 	char				FoundAudioPath[2048];
+	bool				FoundAudioPathIsDir;
 	bool				FindAudioPathDone;
 private:
 	SDL_Thread*			FindAudioPathThread;
@@ -207,7 +208,9 @@ private:
 	float				CenterX;
 	float				CenterY;
 
+public:
 	DatabaseObj*			Database;
+private:
 	DatabaseFilterObj		DatabaseFilter;
 	std::vector<DatabaseEntryObj*>	DatabaseFilteredEntries;
 	DatabaseEntryObj*		DatabaseEntryNow;
