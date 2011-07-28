@@ -282,7 +282,7 @@ $(OBJDIR_W32)PrecompiledHeaders.h.gch: PrecompiledHeaders.pch
 	@$(CC_W32) $(CFLAGS_W32) -x c++-header -c PrecompiledHeaders.pch -o $(OBJDIR_W32)PrecompiledHeaders.h.gch
 endif
 
-PrecompiledHeaders.pch: $(HDR)
+PrecompiledHeaders.pch: $(HDR) $(MODULE_PCHS)
 	@echo "	$(PREFIX_BIN)		$(CC_OSX)		PrecompiledHeaders.pch"
 	@ls -1 *.h | sed "s/\(.*\)/#include \"\1\"/" > PrecompiledHeaders.pch
 	
