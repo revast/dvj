@@ -29394,7 +29394,6 @@ LGL_ResolveAlias
 
 			if(err == noErr)
 			{
-				printf("ResolveAlias(): %s => %s\n",inPath,outPath);
 				return(true);
 			}
 		}
