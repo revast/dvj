@@ -120,7 +120,8 @@ DatabaseEntryObj::
 DatabaseEntryObj
 (
 	const char*	pathFromMusicRoot,
-	float		bpm
+	float		bpm,
+	LGL_FileType	type
 )
 {
 	PathFull = new char[strlen(pathFromMusicRoot)+1];
@@ -142,8 +143,20 @@ DatabaseEntryObj
 	pathShort[0]=tmp;
 
 	BPM=bpm;
-	IsDir=LGL_DirectoryExists(pathFromMusicRoot);
-	Loadable=IsDir || LGL_FileExists(pathFromMusicRoot);
+	if(type!=LGL_FILETYPE_UNDEF)
+	{
+		IsDir=type==LGL_FILETYPE_DIR;
+		Loadable=IsDir || type==LGL_FILETYPE_FILE;
+		if(type==LGL_FILETYPE_SYMLINK)
+		{
+			Loadable=IsDir || LGL_FileExists(pathFromMusicRoot);
+		}
+	}
+	else
+	{
+		IsDir=LGL_DirectoryExists(pathFromMusicRoot);
+		Loadable=IsDir || LGL_FileExists(pathFromMusicRoot);
+	}
 	AlreadyPlayed=false;
 }
 
@@ -325,7 +338,7 @@ DatabaseObj() :
 	ThreadRefreshTarget[0]='\0';
 	ThreadCompletionPercent=0.0f;
 
-	Refresh();
+	Refresh(NULL,true);
 }
 
 DatabaseObj::
@@ -390,7 +403,8 @@ void
 DatabaseObj::
 Refresh
 (
-	const char*	subdirPath
+	const char*	subdirPath,
+	bool		drawLoadScreen
 )
 {
 	//Update MetadataEntryList
@@ -445,45 +459,51 @@ Refresh
 			);
 			if(FilesProcessed>0 || ThreadCompletionPercent==1.0f)
 			{
-				GetMostRecentFileScanned(mostRecentFileScanned);
-				if(ExpectedFilesProcessed==-1)
+				if(drawLoadScreen)
 				{
-					//sprintf(count,"%i",FilesProcessed);
-					DrawLoadScreen
-					(
-						-1.0f,
-						NULL,//count,
-						"Scanning library",
-						mostRecentFileScanned,
-						bright
-					);
-				}
-				else
-				{
-					DrawLoadScreen
-					(
-						ThreadCompletionPercent,
-						NULL,//count,
-						"Scanning library",
-						mostRecentFileScanned,
-						bright
-					);
+					GetMostRecentFileScanned(mostRecentFileScanned);
+					if(ExpectedFilesProcessed==-1)
+					{
+						//sprintf(count,"%i",FilesProcessed);
+						DrawLoadScreen
+						(
+							-1.0f,
+							NULL,//count,
+							"Scanning library",
+							NULL,//mostRecentFileScanned,
+							bright
+						);
+					}
+					else
+					{
+						DrawLoadScreen
+						(
+							ThreadCompletionPercent,
+							NULL,//count,
+							"Scanning library",
+							NULL,//mostRecentFileScanned,
+							bright
+						);
+					}
 				}
 			}
 
-			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
+			if(drawLoadScreen)
 			{
-				bool die=GetEscDuringScanExits();
-				if(die)
+				if(LGL_KeyStroke(LGL_KEY_ESCAPE))
 				{
-					ThreadDieHint=true;
-				}
-				SkipMetadataHint=true;
-				if(die)
-				{
-					LGL_ThreadWait(Thread);
-					Thread=NULL;
-					exit(0);
+					bool die=GetEscDuringScanExits();
+					if(die)
+					{
+						ThreadDieHint=true;
+					}
+					SkipMetadataHint=true;
+					if(die)
+					{
+						LGL_ThreadWait(Thread);
+						Thread=NULL;
+						exit(0);
+					}
 				}
 			}
 
@@ -592,7 +612,10 @@ Refresh_Internal
 		char path[2048];
 		sprintf(path,"%s/%s",subdirPath,dirTree.GetFileName(a));
 
-		SetMostRecentFileScanned((a==0) ? " " : dirTree.GetFileName(a));
+		if(a!=0)
+		{
+			SetMostRecentFileScanned(dirTree.GetFileName(a));
+		}
 
 		float bpm=0;
 		const char* dirTreeGetFileName = dirTree.GetFileName(a);
@@ -616,6 +639,7 @@ Refresh_Internal
 
 		if(metaExists)//LGL_FileExists(pathMeta))
 		{
+			LGL_Timer timer;
 			if(FILE* fd=fopen(pathMeta,"r"))
 			{
 				FileInterfaceObj fi;
@@ -683,9 +707,11 @@ Refresh_Internal
 				fclose(fd);
 				fd=NULL;
 			}
+
+			if(timer.SecondsSinceLastReset()>0.5f) printf("Long fopen(): %.2f\n",timer.SecondsSinceLastReset());
 		}
 
-		DatabaseEntryObj* ent = new DatabaseEntryObj(path,bpm);
+		DatabaseEntryObj* ent = new DatabaseEntryObj(path,bpm,LGL_FILETYPE_FILE);
 		DatabaseEntryList.push_back(ent);
 
 		FilesProcessed++;
@@ -714,7 +740,7 @@ Refresh_Internal
 		{
 			char path[2048];
 			sprintf(path,"%s/%s",subdirPath,dirTree.GetDirName(a));
-			DatabaseEntryObj* ent = new DatabaseEntryObj(path);
+			DatabaseEntryObj* ent = new DatabaseEntryObj(path,-1,LGL_FILETYPE_DIR);
 			DatabaseEntryList.push_back(ent);
 			Refresh_Internal(path,true);
 		}

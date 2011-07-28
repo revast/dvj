@@ -42,7 +42,8 @@ public:
 		DatabaseEntryObj
 		(
 			const char*	pathFromMusicRoot,
-			float		bpm=-1
+			float		bpm=-1,
+			LGL_FileType	fileType=LGL_FILETYPE_UNDEF
 		);
 		~DatabaseEntryObj();
 
@@ -74,7 +75,7 @@ public:
 	std::vector<DatabaseEntryObj*>
 		GetEntryListFromFilter(DatabaseFilterObj* filter);
 	
-	void	Refresh(const char* subdirPath=NULL);
+	void	Refresh(const char* subdirPath=NULL, bool drawLoadScreen=false);
 	void	Refresh_Internal(const char* subdirPath=NULL, bool recursing=false);
 
 	void	LoadMetadataFile(const char* file);
