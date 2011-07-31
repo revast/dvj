@@ -254,7 +254,6 @@ private:
 };
 
 bool lgl_HideProjectorWindows=false;
-
 void
 LGL_HideProjectorWindows()
 {
@@ -262,11 +261,25 @@ LGL_HideProjectorWindows()
 }
 
 bool lgl_AudioSwapOutputStreams=false;
-
 void
 LGL_AudioSwapOutputStreams()
 {
 	lgl_AudioSwapOutputStreams=true;
+}
+
+bool lgl_FakeSecondDisplay=false;
+void
+LGL_FakeSecondDisplay()
+{
+	lgl_FakeSecondDisplay=true;
+}
+
+bool lgl_FakeSecondDisplay3x=false;
+void
+LGL_FakeSecondDisplay3x()
+{
+	lgl_FakeSecondDisplay=true;
+	lgl_FakeSecondDisplay3x=true;
 }
 
 typedef struct
@@ -2020,18 +2033,37 @@ LGL_Init
 
 #ifndef	LGL_NO_GRAPHICS
 	LGL.DisplayCount=SDL_GetNumVideoDisplays();
+	if(LGL.DisplayCount>1)
+	{
+		lgl_FakeSecondDisplay=0;
+	}
+	if(lgl_FakeSecondDisplay)
+	{
+		LGL.DisplayCount=2;
+	}
 	LGL.DisplayNow=0;
 
 printf("%i displays!\n",LGL.DisplayCount);
 
 	for(int d=0;d<LGL.DisplayCount;d++)
 	{
-		SDL_SelectVideoDisplay(d);
+		if(lgl_FakeSecondDisplay)
+		{
+			SDL_SelectVideoDisplay(0);
+		}
+		{
+			SDL_SelectVideoDisplay(d);
+		}
 		SDL_DisplayMode mode;
 		SDL_GetDesktopDisplayMode(&mode);
 
 		LGL.DisplayResolutionX[d] = mode.w;
 		LGL.DisplayResolutionY[d] = mode.h;
+		if(lgl_FakeSecondDisplay3x && d==1)
+		{
+			LGL.DisplayResolutionX[d] = LGL.DisplayResolutionX[0];
+			LGL.DisplayResolutionY[d] = LGL.DisplayResolutionY[0]/3;
+		}
 printf("\t[%i]: %i x %i\n",
 	d,
 	LGL.DisplayResolutionX[d],
@@ -2049,12 +2081,21 @@ printf("\n");
 
 	SDL_SelectVideoDisplay(0);
 
+	if(lgl_FakeSecondDisplay)
+	{
+		if(inWindowResolutionX==9999)
+		{
+			inWindowResolutionX=LGL.DisplayResolutionX[0]/2;
+			inWindowResolutionY=LGL.DisplayResolutionY[0]/2;
+		}
+	}
+
 	//Determine WindowResolutions
 	LGL.MasterWindowResolutionX=0;
 	LGL.MasterWindowResolutionY=0;
 	for(int d=0;d<LGL.DisplayCount;d++)
 	{
-		if(d==0)
+		if(d==0 || lgl_FakeSecondDisplay)
 		{
 			if
 			(
@@ -2076,6 +2117,20 @@ printf("\n");
 		{
 			LGL.WindowResolutionX[d]=LGL.DisplayResolutionX[d];
 			LGL.WindowResolutionY[d]=LGL.DisplayResolutionY[d];
+		}
+		
+		if(lgl_FakeSecondDisplay3x)
+		{
+			if(d==0)
+			{
+				LGL.WindowResolutionX[d]=(LGL_DisplayResolutionX()-100)/2;
+				LGL.WindowResolutionY[d]=(LGL_DisplayResolutionY()-100)/2;
+			}
+			else if(d==1)
+			{
+				LGL.WindowResolutionX[d]=LGL_DisplayResolutionX()-100;
+				LGL.WindowResolutionY[d]=(LGL_DisplayResolutionY()-100)/2.25f;
+			}
 		}
 
 		if(LGL.MasterWindowResolutionX<LGL.WindowResolutionX[d])
@@ -2324,12 +2379,25 @@ printf("\n");
 
 	for(int d=LGL.DisplayCount-1;d>=0;d--)
 	{
-		SDL_SelectVideoDisplay(d);
+		if(lgl_FakeSecondDisplay)
+		{
+			SDL_SelectVideoDisplay(0);
+		}
+		{
+			SDL_SelectVideoDisplay(d);
+		}
 
 		int windowFlags = SDL_WINDOW_OPENGL;// | SDL_WINDOW_SHOWN;
 		if(d>0)
 		{
-			windowFlags |= SDL_WINDOW_BORDERLESS;
+			if(lgl_FakeSecondDisplay)
+			{
+				windowFlags |= SDL_WINDOW_SHOWN;
+			}
+			else
+			{
+				windowFlags |= SDL_WINDOW_BORDERLESS;
+			}
 			/*
 			if(lgl_HideProjectorWindows)
 			{
@@ -2345,11 +2413,33 @@ printf("\n");
 		}
 		*/
 
+		int posX=SDL_WINDOWPOS_CENTERED;
+		int posY=SDL_WINDOWPOS_CENTERED;
+
+		if(lgl_FakeSecondDisplay)
+		{
+			posX=0;
+			for(int e=0;e<d;e++)
+			{
+				posX+=LGL.WindowResolutionX[e];
+			}
+			posY=0;
+		}
+		if(lgl_FakeSecondDisplay3x)
+		{
+			posX=0;
+			posY=0;
+			if(d==1)
+			{
+				posY=LGL.WindowResolutionY[0]+200;
+			}
+		}
+
 		LGL.WindowID[d] = SDL_CreateWindow
 		(
 			inWindowTitle,
-			SDL_WINDOWPOS_CENTERED,
-			SDL_WINDOWPOS_CENTERED,
+			posX,
+			posY,
 			LGL.WindowResolutionX[d],
 			LGL.WindowResolutionY[d],
 			windowFlags
@@ -2858,6 +2948,9 @@ printf("CreateWindow(%i): %i x %i\n",
 	printf("SDL_net\t\t\t%s\n",LGL.NetAvailable?"Present":SDLNet_GetError());
 #ifndef	LGL_NO_GRAPHICS
 	printf("OpenGL Renderer\t\t%s\n",(char*)(glGetString(GL_RENDERER)));
+	GLint rectTexSize=0;
+	glGetIntegerv(GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB,&rectTexSize);
+	printf("GL_RECT_TEX Size\t%i\n",rectTexSize);
 	printf("OpenGL VBO\t\t%s\n",LGL_VBOAvailable()?"Present":"Absent");
 	printf("GLSL Vert Shader\t%s\n",LGL_ShaderAvailableVert()?"Present":"Absent");
 	printf("GLSL Frag Shader\t%s\n",LGL_ShaderAvailableFrag()?"Present":"Absent");
@@ -4226,7 +4319,8 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 		if
 		(
 			lgl_HideProjectorWindows &&
-			LGL.DisplayNow==0
+			LGL.DisplayNow==0 &&
+			lgl_FakeSecondDisplay==false
 		)
 		{
 			vsync=true;

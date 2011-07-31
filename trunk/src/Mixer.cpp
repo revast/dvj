@@ -114,7 +114,6 @@ NextFrame
 )
 {
 	float candidate;
-
 	if(RecordingDetermined==false)
 	{
 		int result = LGL_GetRecordDVJToFile();

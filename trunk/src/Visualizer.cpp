@@ -59,12 +59,41 @@ VisualizerObj()
 
 	if(LGL_DisplayCount()==1)
 	{
-		Accumulation=new LGL_Image(left,right,bottom,top);
+		SyphonPusher=new LGL_Image(left,right,bottom,top);
 	}
 	else
 	{
 		LGL_SetActiveDisplay(1);
-		Accumulation=new LGL_Image(0.0f,1.0f,0.0f,1.0f);
+		SyphonPusher=new LGL_Image(0.0f,1.0f,0.0f,1.0f);
+		LGL_SetActiveDisplay(0);
+	}
+
+	for(int d=0;d<LGL_DISPLAY_MAX;d++)
+	{
+		MeshMapperImage[d]=NULL;
+	}
+
+	//Mesh mapper init
+	{
+		float myL=left;
+		float myR=right;
+		float myB=bottom;
+		float myT=top;
+		GetProjectorARCoordsFromViewportCoords
+		(
+			myL,
+			myR,
+			myB,
+			myT
+		);
+		MeshMapperImage[0]=new LGL_Image(myL,myR,myB,myT);
+		MeshMapperImage[0]->InvertY=!MeshMapperImage[0]->InvertY;
+	}
+	if(LGL_DisplayCount()>1)
+	{
+		LGL_SetActiveDisplay(1);
+		MeshMapperImage[1]=new LGL_Image(0.0f,1.0f,0.0f,1.0f);
+		MeshMapperImage[1]->InvertY=!MeshMapperImage[1]->InvertY;
 		LGL_SetActiveDisplay(0);
 	}
 
@@ -243,7 +272,15 @@ VisualizerObj::
 ~VisualizerObj()
 {
 	delete	BlueScreenOfDeath;
-	delete	Accumulation;
+	delete	SyphonPusher;
+	for(int d=0;d<LGL_DISPLAY_MAX;d++)
+	{
+		if(MeshMapperImage[d])
+		{
+			delete MeshMapperImage[d];
+			MeshMapperImage[d]=NULL;
+		}
+	}
 
 	for(unsigned int a=0;a<LEDClientList.size();a++)
 	{
@@ -803,26 +840,166 @@ DrawVisuals
 				);
 			}
 		}
+	}
 
-		//ProjGrid
+	//Mesh mapping!
+	if(LGL_Image* mmi = MeshMapperImage[LGL_GetActiveDisplay()])
+	{
+		mmi->FrameBufferUpdate();
+
+		float myL=l;
+		float myR=r;
+		float myB=b;
+		float myT=t;
+		GetProjectorARCoordsFromViewportCoords
+		(
+			myL,
+			myR,
+			myB,
+			myT
+		);
+		float myW=myR-myL;
+		float myH=myT-myB;
+
+		LGL_DrawRectToScreen
+		(
+			myL,
+			myR,
+			myB,
+			myT,
+			0.0f,
+			0.0f,
+			0.0f,
+			1.0f
+		);
+
+		for(int i=0;i<ProjMapGrid.GridW-1;i++)
 		{
-			if(0 && LGL_GetActiveDisplay()==0)
+			for(int j=0;j<ProjMapGrid.GridH-1;j++)
 			{
-				ProjMapGrid.NextFrame();
-				if(LGL_KeyDown(LGL_KEY_LSHIFT))
+				float x[4];
+				float y[4];
+				//LB
+				x[0]=ProjMapGrid.GetProjMapGridValueX
+				(
+					ProjMapGrid.SrcPoints,
+					i,
+					j
+				);
+				y[0]=ProjMapGrid.GetProjMapGridValueY
+				(
+					ProjMapGrid.SrcPoints,
+					i,
+					j
+				);
+				//RB
+				x[1]=ProjMapGrid.GetProjMapGridValueX
+				(
+					ProjMapGrid.SrcPoints,
+					i+1,
+					j
+				);
+				y[1]=ProjMapGrid.GetProjMapGridValueY
+				(
+					ProjMapGrid.SrcPoints,
+					i+1,
+					j
+				);
+				//RT
+				x[2]=ProjMapGrid.GetProjMapGridValueX
+				(
+					ProjMapGrid.SrcPoints,
+					i+1,
+					j+1
+				);
+				y[2]=ProjMapGrid.GetProjMapGridValueY
+				(
+					ProjMapGrid.SrcPoints,
+					i+1,
+					j+1
+				);
+				//LT
+				x[3]=ProjMapGrid.GetProjMapGridValueX
+				(
+					ProjMapGrid.SrcPoints,
+					i,
+					j+1
+				);
+				y[3]=ProjMapGrid.GetProjMapGridValueY
+				(
+					ProjMapGrid.SrcPoints,
+					i,
+					j+1
+				);
+
+				for(int q=0;q<4;q++)
 				{
-					ProjMapGrid.DrawSrcGrid();
+					x[q]=myL+myW*x[q];
+					y[q]=myB+myH*y[q];
 				}
+
+/*
+				LGL_DebugPrintf
+				(
+					"LB: %.2f, %.2f\n",
+					x[0],y[0]
+				);
+				LGL_DebugPrintf
+				(
+					"RB: %.2f, %.2f\n",
+					x[1],y[1]
+				);
+				LGL_DebugPrintf
+				(
+					"RT: %.2f, %.2f\n",
+					x[2],y[2]
+				);
+				LGL_DebugPrintf
+				(
+					"LT: %.2f, %.2f\n",
+					x[3],y[3]
+				);
+*/
+
+				mmi->DrawToScreen
+				(
+					x,
+					y,
+					1.0f,
+					1.0f,
+					1.0f,
+					1.0f,
+					1.0f,	//brightnessScalar
+					(i+0.0f)/(ProjMapGrid.GridW-1.0f),
+					(i+1.0f)/(ProjMapGrid.GridW-1.0f),
+					//(((ProjMapGrid.GridH-2.0f)-j)+0.0f)/(ProjMapGrid.GridH-1.0f),
+					//(((ProjMapGrid.GridH-2.0f)-j)+1.0f)/(ProjMapGrid.GridH-1.0f)
+					(j+0.0f)/(ProjMapGrid.GridH-1.0f),
+					(j+1.0f)/(ProjMapGrid.GridH-1.0f)
+				);
 			}
 		}
 	}
 
+	//Syphon
 	if(LGL_GetActiveDisplay()==LGL_DisplayCount()-1)
 	{
 		if(GetSyphonServerEnabled())
 		{
-			Accumulation->FrameBufferUpdate();
-			LGL_SyphonPushImage(Accumulation);
+			SyphonPusher->FrameBufferUpdate();
+			LGL_SyphonPushImage(SyphonPusher);
+		}
+	}
+		
+	//ProjGrid
+	{
+		if(LGL_GetActiveDisplay()==0)
+		{
+			ProjMapGrid.NextFrame();
+			if(LGL_KeyDown(LGL_KEY_LSHIFT))
+			{
+				ProjMapGrid.DrawSrcGrid();
+			}
 		}
 	}
 }
@@ -1371,6 +1548,29 @@ SetProjectorPreviewClear
 
 void
 VisualizerObj::
+GetImageARCoordsFromViewportCoords
+(
+	LGL_Image*	image,
+	float&		l,
+	float&		r,
+	float&		b,
+	float&		t
+)
+{
+	float imageAR = image->GetWidth()/(float)image->GetHeight();
+
+	GetTargetARCoordsFromViewportCoords
+	(
+		imageAR,
+		l,
+		r,
+		b,
+		t
+	);
+}
+
+void
+VisualizerObj::
 GetProjectorARCoordsFromViewportCoords
 (
 	float&	l,
@@ -1406,25 +1606,55 @@ GetProjectorARCoordsFromViewportCoords
 
 void
 VisualizerObj::
-GetImageARCoordsFromViewportCoords
+GetProjectorARCoordsFromWindowCoords
 (
-	LGL_Image*	image,
-	float&		l,
-	float&		r,
-	float&		b,
-	float&		t
+	float&	x,
+	float&	y
 )
 {
-	float imageAR = image->GetWidth()/(float)image->GetHeight();
-
-	GetTargetARCoordsFromViewportCoords
+	float myL=ViewportVisualsLeft;
+	float myR=ViewportVisualsRight;
+	float myB=ViewportVisualsBottom;
+	float myT=ViewportVisualsTop;
+	GetProjectorARCoordsFromViewportCoords
 	(
-		imageAR,
-		l,
-		r,
-		b,
-		t
+		myL,
+		myR,
+		myB,
+		myT
 	);
+
+	float myW=myR-myL;
+	float myH=myT-myB;
+
+	x=(x-myL)/myW;
+	y=(y-myB)/myH;
+}
+
+void
+VisualizerObj::
+GetWindowARCoordsFromProjectorCoords
+(
+	float&	x,
+	float&	y
+)
+{
+	float myL=ViewportVisualsLeft;
+	float myR=ViewportVisualsRight;
+	float myB=ViewportVisualsBottom;
+	float myT=ViewportVisualsTop;
+	GetProjectorARCoordsFromViewportCoords
+	(
+		myL,
+		myR,
+		myB,
+		myT
+	);
+	float myW=myR-myL;
+	float myH=myT-myB;
+
+	x=myL + myW*x;
+	y=myB + myH*y;
 }
 
 void
@@ -1881,85 +2111,7 @@ DrawVideos
 				float myB = b;
 				float myT = t;
 
-				if(0)
-				{
-					for(int i=0;i<ProjMapGrid.GridW-1;i++)
-					{
-						for(int j=0;j<ProjMapGrid.GridH-1;j++)
-						{
-							float x[4];
-							float y[4];
-							//LB
-							x[0]=ProjMapGrid.GetProjMapGridValueX
-							(
-								ProjMapGrid.SrcPoints,
-								i,
-								j
-							);
-							y[0]=ProjMapGrid.GetProjMapGridValueY
-							(
-								ProjMapGrid.SrcPoints,
-								i,
-								j
-							);
-							//RB
-							x[1]=ProjMapGrid.GetProjMapGridValueX
-							(
-								ProjMapGrid.SrcPoints,
-								i+1,
-								j
-							);
-							y[1]=ProjMapGrid.GetProjMapGridValueY
-							(
-								ProjMapGrid.SrcPoints,
-								i+1,
-								j
-							);
-							//RT
-							x[2]=ProjMapGrid.GetProjMapGridValueX
-							(
-								ProjMapGrid.SrcPoints,
-								i+1,
-								j+1
-							);
-							y[2]=ProjMapGrid.GetProjMapGridValueY
-							(
-								ProjMapGrid.SrcPoints,
-								i+1,
-								j+1
-							);
-							//LT
-							x[3]=ProjMapGrid.GetProjMapGridValueX
-							(
-								ProjMapGrid.SrcPoints,
-								i,
-								j+1
-							);
-							y[3]=ProjMapGrid.GetProjMapGridValueY
-							(
-								ProjMapGrid.SrcPoints,
-								i,
-								j+1
-							);
-
-							image->DrawToScreen
-							(
-								x,
-								y,
-								videoBright,
-								videoBright,
-								videoBright,
-								alpha,
-								1.0f,	//brightnessScalar
-								(i+0.0f)/(ProjMapGrid.GridW-1.0f),
-								(i+1.0f)/(ProjMapGrid.GridW-1.0f),
-								(j+0.0f)/(ProjMapGrid.GridH-1.0f),
-								(j+1.0f)/(ProjMapGrid.GridH-1.0f)
-							);
-						}
-					}
-				}
-				else if(1)//tt->GetAspectRatioMode()!=2)
+				if(1)//tt->GetAspectRatioMode()!=2)
 				{
 					if(tt->GetAspectRatioMode()!=2)
 					{

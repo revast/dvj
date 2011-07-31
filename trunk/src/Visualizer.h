@@ -113,6 +113,16 @@ public:
 					float&	b,
 					float&	t
 				);
+	void			GetProjectorARCoordsFromWindowCoords
+				(
+					float&	x,
+					float&	y
+				);
+	void			GetWindowARCoordsFromProjectorCoords
+				(
+					float&	x,
+					float&	y
+				);
 	
 	void			SetLEDColor
 				(
@@ -140,6 +150,7 @@ private:
 
 	void			PopulateCharStarBufferWithScrollTextFile(std::vector<char*>& buffer, const char* path);
 
+public:
 	float			ViewportVisualsLeft;
 	float			ViewportVisualsRight;
 	float			ViewportVisualsBottom;
@@ -147,9 +158,12 @@ private:
 	float			ViewportVisualsWidth;
 	float			ViewportVisualsHeight;
 
+private:
+
 	bool			FullScreen;
 
-	LGL_Image*		Accumulation;
+	LGL_Image*		SyphonPusher;
+	LGL_Image*		MeshMapperImage[LGL_DISPLAY_MAX];
 
 	LGL_Image*		BlueScreenOfDeath;
 
