@@ -2118,6 +2118,7 @@ ProcessMessage
 	const IpEndpointName&		remoteEndpoint
 )
 {
+printf("PM\n");
 	//See if we have a new client!
 	char hostStr[2048];
 	remoteEndpoint.AddressAsString(hostStr);
@@ -2207,6 +2208,45 @@ ProcessMessage
 					);
 				}
 				OscMessageUnknownBrightness=5.0f;
+			}
+		}
+
+		if(0)
+		{
+			LGL_ScopeLock lock(__FILE__,__LINE__,OscMessageUnknownSemaphore);
+			osc::ReceivedMessage::const_iterator arg = m.ArgumentsBegin();
+			if(arg!=m.ArgumentsEnd())
+			{
+				if(m.ArgumentCount()>=2)
+				{
+					float arg1=arg->AsFloat();
+					arg++;
+					float arg2=arg->AsFloat();
+					printf
+					(
+						"%s [%.2f, %.2f]\n",
+						m.AddressPattern(),
+						arg1,
+						arg2
+					);
+				}
+				else if(m.ArgumentCount()==1)
+				{
+					printf
+					(
+						"%s [%.2f]\n",
+						m.AddressPattern(),
+						arg->AsFloat()
+					);
+				}
+			}
+			else
+			{
+				printf
+				(
+					"%s (No Args!)\n",
+					m.AddressPattern()
+				);
 			}
 		}
 	}

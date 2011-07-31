@@ -555,6 +555,8 @@ void		LGL_SetActiveDisplay(int display);
 bool		LGL_VSync();
 void		LGL_HideProjectorWindows();
 void		LGL_AudioSwapOutputStreams();
+void		LGL_FakeSecondDisplay();
+void		LGL_FakeSecondDisplay3x();
 
 void		LGL_ViewportDisplay
 		(

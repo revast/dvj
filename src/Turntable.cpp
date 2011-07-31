@@ -5413,7 +5413,7 @@ printf("LoadMetaData(): Alpha\n");
 		for(unsigned int a=0;a<fi.Size()-1 && a<18;a++)
 		{
 			SavePointSeconds[a]=atof(fi[a+1]);
-			printf("SPS[%i]: %.2f\n",a,SavePointSeconds[a]);
+			//printf("SPS[%i]: %.2f\n",a,SavePointSeconds[a]);
 		}
 	}
 }

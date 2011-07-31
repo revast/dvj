@@ -777,7 +777,9 @@ int main(int argc, char** argv)
 	float drawFPSSpike=0.0f;
 	int resX=9999;
 	int resY=9999;
-	bool wireMemory=GetWireMemory();;
+	bool wireMemory=GetWireMemory();
+	bool fakeSecondDisplay=false;
+	bool fakeSecondDisplay3x=false;
 
 	for(int a=0;a<argc;a++)
 	{
@@ -819,10 +821,18 @@ int main(int argc, char** argv)
 				}
 			}
 		}
+		else if(strcasecmp(argv[a],"--fakeSecondDisplay")==0)
+		{
+			fakeSecondDisplay=true;
+		}
+		else if(strcasecmp(argv[a],"--fakeSecondDisplay3x")==0)
+		{
+			fakeSecondDisplay3x=true;
+		}
 		else if(strcasecmp(argv[a],"--help")==0)
 		{
 			printf("dvj, svn pre-release\n\n");
-			printf("usage: dvj [--480p] [--720p] [--1080p] [--drawFPS] [--noWireMemory] [--musicRoot /path/to/root] [--help]\n\n");
+			printf("usage: dvj [--480p] [--720p] [--1080p] [--drawFPS] [--noWireMemory] [--musicRoot /path/to/root] [--fakeSecondDisplay] [--fakeSecondDisplay3x] [--help]\n\n");
 			exit(0);
 		}
 	}
@@ -847,6 +857,15 @@ int main(int argc, char** argv)
 	if(GetAudioSwapOutputStreams())
 	{
 		LGL_AudioSwapOutputStreams();
+	}
+
+	if(fakeSecondDisplay)
+	{
+		LGL_FakeSecondDisplay();
+	}
+	if(fakeSecondDisplay3x)
+	{
+		LGL_FakeSecondDisplay3x();
 	}
 
 	LGL_Init

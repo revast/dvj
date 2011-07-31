@@ -31,11 +31,13 @@ ProjMapGridObj()
 	GridW=0;
 	GridH=0;
 	SrcPoints=NULL;
+	SelectedIndexX=-1;
+	SelectedIndexY=-1;
 	for(int d=0;d<PROJ_MAP_GRID_DISPLAY_MAX;d++)
 	{
 		DstPoints[d]=NULL;
 	}
-	SetWidth(4);
+	SetWidth(3);
 	SetHeight(3);
 
 #if 0
@@ -78,10 +80,10 @@ Construct()
 		DstPoints[d] = new float[GridW*GridH*2];
 	}
 
-	float l=0.0f;//GetVisualizer()->GetViewportVisualsL();
-	float r=1.0f;//GetVisualizer()->GetViewportVisualsR();
-	float b=0.5f;//GetVisualizer()->GetViewportVisualsB();
-	float t=1.0f;//GetVisualizer()->GetViewportVisualsT();
+	float l=0.0f;
+	float r=1.0f;
+	float b=0.0f;
+	float t=1.0f;
 	float w=r-l;
 	float h=t-b;
 
@@ -273,24 +275,54 @@ DrawGrid
 			{
 				if(x<GridW-1)
 				{
+					float p1X=GetProjMapGridValueX(points,x,y);
+					float p1Y=GetProjMapGridValueY(points,x,y);
+					float p2X=GetProjMapGridValueX(points,x+1,y);
+					float p2Y=GetProjMapGridValueY(points,x+1,y);
+					if(LGL_GetActiveDisplay()==0)
+					{
+						GetVisualizer()->GetWindowARCoordsFromProjectorCoords
+						(
+							p1X,
+							p1Y
+						);
+						GetVisualizer()->GetWindowARCoordsFromProjectorCoords
+						(
+							p2X,
+							p2Y
+						);
+					}
 					LGL_DrawLineToScreen
 					(
-						GetProjMapGridValueX(points,x,y),
-						GetProjMapGridValueY(points,x,y),
-						GetProjMapGridValueX(points,x+1,y),
-						GetProjMapGridValueY(points,x+1,y),
+						p1X,p1Y,
+						p2X,p2Y,
 						br,br,br,1.0f,
 						thickness
 					);
 				}
 				if(y<GridH-1)
 				{
+					float p1X=GetProjMapGridValueX(points,x,y);
+					float p1Y=GetProjMapGridValueY(points,x,y);
+					float p2X=GetProjMapGridValueX(points,x,y+1);
+					float p2Y=GetProjMapGridValueY(points,x,y+1);
+					if(LGL_GetActiveDisplay()==0)
+					{
+						GetVisualizer()->GetWindowARCoordsFromProjectorCoords
+						(
+							p1X,
+							p1Y
+						);
+						GetVisualizer()->GetWindowARCoordsFromProjectorCoords
+						(
+							p2X,
+							p2Y
+						);
+					}
 					LGL_DrawLineToScreen
 					(
-						GetProjMapGridValueX(points,x,y),
-						GetProjMapGridValueY(points,x,y),
-						GetProjMapGridValueX(points,x,y+1),
-						GetProjMapGridValueY(points,x,y+1),
+						p1X,p1Y,
+						p2X,p2Y,
 						br,br,br,1.0f,
 						thickness
 					);
@@ -319,12 +351,22 @@ DrawGrid
 					pointRadX*=1.5f;
 					pointRadY*=1.5f;
 				}
+				float p1X=GetProjMapGridValueX(points,x,y);
+				float p1Y=GetProjMapGridValueY(points,x,y);
+				if(LGL_GetActiveDisplay()==0)
+				{
+					GetVisualizer()->GetWindowARCoordsFromProjectorCoords
+					(
+						p1X,
+						p1Y
+					);
+				}
 				LGL_DrawRectToScreen
 				(
-					GetProjMapGridValueX(points,x,y)-pointRadX,
-					GetProjMapGridValueX(points,x,y)+pointRadX,
-					GetProjMapGridValueY(points,x,y)-pointRadY,
-					GetProjMapGridValueY(points,x,y)+pointRadY,
+					p1X-pointRadX,
+					p1X+pointRadX,
+					p1Y-pointRadY,
+					p1Y+pointRadY,
 					br,br,br,0.0f
 				);
 			}
@@ -436,15 +478,27 @@ GetMouseIndexes
 	float mx=LGL_MouseX();
 	float my=LGL_MouseY();
 
+	//Transform coords
+	if(display==0)
+	{
+		GetVisualizer()->GetProjectorARCoordsFromWindowCoords
+		(
+			mx,
+			my
+		);
+	}
+
 	float closestDistSq=powf(0.05f,2.0f);
 
 	for(int x=0;x<GridW;x++)
 	{
 		for(int y=0;y<GridH;y++)
 		{
+			float nowX=GetProjMapGridValueX(points,x,y);
+			float nowY=GetProjMapGridValueY(points,x,y);
 			float distSq=
-				powf(mx-(GetProjMapGridValueX(points,x,y)),2.0f)+
-				powf(my-(GetProjMapGridValueY(points,x,y)),2.0f);
+				powf(mx-nowX,2.0f)+
+				powf(my-nowY,2.0f);
 			if(distSq<closestDistSq)
 			{
 				inX=x;
