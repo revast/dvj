@@ -889,6 +889,16 @@ public:
 				float bottomsubimage=0.0f, float topsubimage=1.0f,
 				float rgbSpatializerScalar=0.0f
 			);
+	void		DrawToScreen
+			(
+				float xDst[4],
+				float yDst[4],
+				float xSrc[4],
+				float ySrc[4],
+				float r=1, float g=1, float b=1, float a=1,
+				float brightnessScalar=1.0f,
+				float rgbSpatializerScalar=0.0f
+			);
 	void		DrawToScreenAsLine
 			(
 				float x1, float y1,

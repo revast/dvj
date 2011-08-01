@@ -31,14 +31,11 @@ ProjMapGridObj()
 	GridW=0;
 	GridH=0;
 	SrcPoints=NULL;
+	DstPoints=NULL;
 	SelectedIndexX=-1;
 	SelectedIndexY=-1;
-	for(int d=0;d<PROJ_MAP_GRID_DISPLAY_MAX;d++)
-	{
-		DstPoints[d]=NULL;
-	}
-	SetWidth(3);
-	SetHeight(3);
+	SetWidth(4);
+	SetHeight(4);
 
 #if 0
 	for(int x=0;x<GridW;x++)
@@ -75,10 +72,7 @@ Construct()
 	GridH=oldH;
 
 	SrcPoints = new float[GridW*GridH*2];
-	for(int d=0;d<PROJ_MAP_GRID_DISPLAY_MAX;d++)
-	{
-		DstPoints[d] = new float[GridW*GridH*2];
-	}
+	DstPoints = new float[GridW*GridH*2];
 
 	float l=0.0f;
 	float r=1.0f;
@@ -103,21 +97,18 @@ Construct()
 				x,y,
 				b+h*(y/(GridH-1.0f))
 			);
-			for(int d=0;d<PROJ_MAP_GRID_DISPLAY_MAX;d++)
-			{
-				SetProjMapGridValueX
-				(
-					DstPoints[d],
-					x,y,
-					x/(GridW-1.0f)
-				);
-				SetProjMapGridValueY
-				(
-					DstPoints[d],
-					x,y,
-					y/(GridH-1.0f)
-				);
-			}
+			SetProjMapGridValueX
+			(
+				DstPoints,
+				x,y,
+				x/(GridW-1.0f)
+			);
+			SetProjMapGridValueY
+			(
+				DstPoints,
+				x,y,
+				y/(GridH-1.0f)
+			);
 		}
 	}
 }
@@ -132,13 +123,10 @@ Nullify()
 		delete SrcPoints;
 		SrcPoints=NULL;
 	}
-	for(int a=0;a<PROJ_MAP_GRID_DISPLAY_MAX;a++)
+	if(DstPoints)
 	{
-		if(DstPoints[a])
-		{
-			delete DstPoints[a];
-			DstPoints[a]=NULL;
-		}
+		delete DstPoints;
+		DstPoints=NULL;
 	}
 
 	GridW=0;
@@ -181,22 +169,39 @@ void
 ProjMapGridObj::
 NextFrame()
 {
+	if(LGL_KeyDown(PROJ_MAP_KEY)==false)
+	{
+		SelectedIndexX=-1;
+		SelectedIndexY=-1;
+		SelectedDrag=false;
+		return;
+	}
+
 	int selectedIndexXOld=SelectedIndexX;
 	int selectedIndexYOld=SelectedIndexY;
 
-	SelectedPoints=SrcPoints;
 	SelectedIndexX=-1;
 	SelectedIndexY=-1;
 	SelectedDrag=LGL_MouseDown(LGL_MOUSE_LEFT);
 
-	GetMouseIndexes(SelectedPoints,0,SelectedIndexX,SelectedIndexY);
+	GetMouseIndexes(SrcPoints,0,SelectedIndexX,SelectedIndexY);
 
 	if
 	(
 		SelectedDrag &&
 		(
-			SelectedIndexX==-1 ||
-			SelectedIndexY==-1
+			(
+				SelectedIndexX==-1 ||
+				SelectedIndexY==-1
+			) ||
+			(
+				SelectedIndexX!=-1 &&
+				SelectedIndexX!=selectedIndexXOld
+			) ||
+			(
+				SelectedIndexY!=-1 &&
+				SelectedIndexY!=selectedIndexYOld
+			)
 		)
 	)
 	{
@@ -212,29 +217,111 @@ NextFrame()
 	{
 		if(SelectedDrag)
 		{
+			float dxMult=1.0f;
+			float dyMult=1.0f;
+			if(LGL_GetActiveDisplay()==0)
+			{
+				float l=0.0f;
+				float r=1.0f;
+				float b=0.0f;
+				float t=1.0f;
+				GetVisualizer()->GetProjectorARCoordsFromWindowCoords
+				(
+					l,
+					b
+				);
+				GetVisualizer()->GetProjectorARCoordsFromWindowCoords
+				(
+					r,
+					t
+				);
+
+				dxMult=r-l;
+				dyMult=t-b;
+			}
 			SetProjMapGridValueX
 			(
-				SelectedPoints,
+				SrcPoints,
 				SelectedIndexX,
 				SelectedIndexY,
 				GetProjMapGridValueX
 				(
-					SelectedPoints,
+					SrcPoints,
 					SelectedIndexX,
 					SelectedIndexY
-				)+LGL_MouseDX()
+				)+LGL_MouseDX()*dxMult
 			);
 			SetProjMapGridValueY
 			(
-				SelectedPoints,
+				SrcPoints,
 				SelectedIndexX,
 				SelectedIndexY,
 				GetProjMapGridValueY
 				(
-					SelectedPoints,
+					SrcPoints,
 					SelectedIndexX,
 					SelectedIndexY
-				)+LGL_MouseDY()
+				)+LGL_MouseDY()*dyMult
+			);
+		}
+	}
+
+	if
+	(
+		SelectedIndexX!=-1 &&
+		SelectedIndexY!=-1
+	)
+	{
+		float dx=0.0f;
+		float dy=0.0f;
+		if(LGL_KeyDown(LGL_KEY_A))
+		{
+			dx-=1.0f;
+		}
+		if(LGL_KeyDown(LGL_KEY_D))
+		{
+			dx+=1.0f;
+		}
+		if(LGL_KeyDown(LGL_KEY_S))
+		{
+			dy-=1.0f;
+		}
+		if(LGL_KeyDown(LGL_KEY_W))
+		{
+			dy+=1.0f;
+		}
+
+		const float speed=0.1f;
+		if(dx!=0.0f)
+		{
+			dx*=LGL_SecondsSinceLastFrame()*speed;
+			SetProjMapGridValueX
+			(
+				DstPoints,
+				SelectedIndexX,
+				SelectedIndexY,
+				GetProjMapGridValueX
+				(
+					DstPoints,
+					SelectedIndexX,
+					SelectedIndexY
+				)+dx
+			);
+		}
+		if(dy!=0.0f)
+		{
+			dy*=LGL_SecondsSinceLastFrame()*speed;
+			SetProjMapGridValueY
+			(
+				DstPoints,
+				SelectedIndexX,
+				SelectedIndexY,
+				GetProjMapGridValueY
+				(
+					DstPoints,
+					SelectedIndexX,
+					SelectedIndexY
+				)+dy
 			);
 		}
 	}
@@ -245,6 +332,13 @@ ProjMapGridObj::
 DrawSrcGrid()
 {
 	DrawGrid(SrcPoints);
+}
+
+void
+ProjMapGridObj::
+DrawDstGrid()
+{
+	DrawGrid(DstPoints);
 }
 
 void
@@ -335,15 +429,18 @@ DrawGrid
 	float pointRadX=pointRad;
 	float pointRadY=pointRad*LGL_WindowAspectRatio();
 
-	int mouseIndexX;
-	int mouseIndexY;
-	GetMouseIndexes(points,0,mouseIndexX,mouseIndexY);
+	int mouseIndexX=SelectedIndexX;
+	int mouseIndexY=SelectedIndexY;
 
 	for(int x=0;x<GridW;x++)
 	{
 		for(int y=0;y<GridH;y++)
 		{
-			if(mouseIndexX==x && mouseIndexY==y)
+			if
+			(
+				mouseIndexX==x &&
+				mouseIndexY==y
+			)
 			{
 				float br = SelectedDrag ? 1.0f : 0.5f;
 				if(SelectedDrag)
@@ -479,14 +576,11 @@ GetMouseIndexes
 	float my=LGL_MouseY();
 
 	//Transform coords
-	if(display==0)
-	{
-		GetVisualizer()->GetProjectorARCoordsFromWindowCoords
-		(
-			mx,
-			my
-		);
-	}
+	GetVisualizer()->GetProjectorARCoordsFromWindowCoords
+	(
+		mx,
+		my
+	);
 
 	float closestDistSq=powf(0.05f,2.0f);
 

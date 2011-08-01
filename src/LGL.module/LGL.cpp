@@ -7257,6 +7257,287 @@ DrawToScreen
 
 void
 LGL_Image::
+DrawToScreen
+(
+	float	xDst[4],
+	float	yDst[4],
+	float	xSrc[4],
+	float	ySrc[4],
+	float	r,
+	float	g,
+	float	b,
+	float	a,
+	float	brightnessScalar,
+	float	rgbSpatializerScalar
+)
+{
+#ifdef	LGL_NO_GRAPHICS
+	return;
+#endif	//LGL_NO_GRAPHICS
+
+	if(InvertY)
+	{
+		//TODO
+		//printf("DrawToScreen(src,dst): InvertY not respected\n");
+	}
+
+	//xy[4]
+	//0: LT
+	//1: RT
+	//2: RB
+	//3: LB
+
+	//Swizzle 2/3
+	{
+		float xSrc2=xSrc[2];
+		float ySrc2=ySrc[2];
+		
+		float xSrc3=xSrc[3];
+		float ySrc3=ySrc[3];
+		
+		float xDst2=xDst[2];
+		float yDst2=yDst[2];
+		
+		float xDst3=xDst[3];
+		float yDst3=yDst[3];
+
+		xSrc[2]=xSrc3;
+		ySrc[2]=ySrc3;
+
+		xSrc[3]=xSrc2;
+		ySrc[3]=ySrc2;
+
+		xDst[2]=xDst3;
+		yDst[2]=yDst3;
+
+		xDst[3]=xDst2;
+		yDst[3]=yDst2;
+	}
+
+	int imgW=ImgW;
+	int imgH=ImgH;
+	int texW=TexW;
+	int texH=TexH;
+
+	if(YUV_Available())
+	{
+		imgW=YUV_ImgW;
+		imgH=YUV_ImgH;
+		texW=YUV_TexW;
+		texH=YUV_TexH;
+	}
+
+	float imgTexW=(float)imgW/(float)texW;
+	float imgTexH=(float)imgH/(float)texH;
+
+	if(TextureGLRect)
+	{
+		imgTexW=imgW;
+		imgTexH=imgH;
+	}
+
+	lgl_glScreenify2D();
+
+	if(r<0) r=0;
+	if(g<0) g=0;
+	if(b<0) b=0;
+	if(a<0) a=0;
+
+	if(r>1) r=1;
+	if(g>1) g=1;
+	if(b>1) b=1;
+	if(a>1) a=1;
+
+	//Prepare RGB vs YUV (Alpha)
+
+	GLuint textureGL=TextureGL;
+	bool alphaChannel=AlphaChannel;
+	LGL_Shader* shader=&ImageShader;
+	bool enableShader=true;//brightnessScalar!=1.0f;
+	if(YUV_Available())
+	{
+		textureGL=YUV_TextureGL[0];
+		alphaChannel=false;
+		imgW=YUV_ImgW;
+		imgH=YUV_ImgH;
+		texW=YUV_TexW;
+		texH=YUV_TexH;
+		shader=&YUV_ImageShader;
+		enableShader=true;
+	}
+
+	//Prepare RGB vs YUV (Omega)
+
+	/*
+	if(TextureGLRect)
+	{
+		enableShader=false;
+	}
+	*/
+
+	if(enableShader)
+	{
+		shader->Enable();
+		shader->SetUniformAttributeFloat
+		(
+			"brightnessScalar",
+			brightnessScalar
+		);
+		shader->SetUniformAttributeFloat
+		(
+			"rgbSpatializerScalar",
+			rgbSpatializerScalar
+		);
+	}
+
+	if(textureGL==0)
+	{
+		LoadSurfaceToTexture(LinearInterpolation);
+	}
+
+	//Draw
+
+	glColor4f(r,g,b,a);
+	if(alphaChannel==true || a<1)
+	{
+		glEnable(GL_BLEND);
+	}
+	else
+	{
+		glDisable(GL_BLEND);
+	}
+
+	//Activate appropriate textures
+	if(YUV_Available())
+	{
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+		glEnable(GL_TEXTURE_LGL);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[0]);
+
+		gl2ActiveTexture(GL_TEXTURE1_ARB);
+		glEnable(GL_TEXTURE_LGL);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[1]);
+
+		gl2ActiveTexture(GL_TEXTURE2_ARB);
+		glEnable(GL_TEXTURE_LGL);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[2]);
+		
+		shader->SetUniformAttributeInt
+		(
+			"myTextureY",
+			0
+		);
+		shader->SetUniformAttributeInt
+		(
+			"myTextureU",
+			1
+		);
+		shader->SetUniformAttributeInt
+		(
+			"myTextureV",
+			2
+		);
+	}
+	else
+	{
+		if(TextureGLRect)
+		{
+			//gl2ActiveTexture(GL_TEXTURE0_ARB);
+			glDisable(GL_TEXTURE_LGL);
+			glEnable(GL_TEXTURE_RECTANGLE_ARB);
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB,textureGL);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		}
+		else
+		{
+			gl2ActiveTexture(GL_TEXTURE0_ARB);
+			glEnable(GL_TEXTURE_LGL);
+			glBindTexture(GL_TEXTURE_LGL,textureGL);
+		}
+	}
+
+	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
+	glBegin(GL_TRIANGLE_STRIP);
+	{
+		glNormal3f(0,0,-1);
+
+		for(int v=0;v<4;v++)
+		{
+			if(YUV_Available())
+			{
+				for(int c=0;c<3;c++)
+				{
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else/*if(c==2)*/ target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
+					(
+						target,
+						xSrc[v]*imgTexW,
+						ySrc[v]*imgTexH
+					);
+				}
+			}
+			else
+			{
+				glTexCoord2d
+				(
+					xSrc[v]*(imgTexW-1),
+					ySrc[v]*(imgTexH-1)
+				);
+			}
+			glVertex2d(xDst[v],yDst[v]);
+
+/*
+			LGL_DebugPrintf("Vert %i: (%.2f, %.2f) => (%.2f, %.2f)\n",
+				v,
+				xSrc[v],
+				ySrc[v],
+				xDst[v],
+				yDst[v]
+			);
+*/
+		}
+	}
+	glEnd();
+
+	if(YUV_Available())
+	{
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+		glDisable(GL_TEXTURE_LGL);
+
+		gl2ActiveTexture(GL_TEXTURE1_ARB);
+		glDisable(GL_TEXTURE_LGL);
+
+		gl2ActiveTexture(GL_TEXTURE2_ARB);
+		glDisable(GL_TEXTURE_LGL);
+
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+	}
+	else
+	{
+		if(TextureGLRect)
+		{
+			glDisable(GL_TEXTURE_RECTANGLE_ARB);
+		}
+		else
+		{
+			glDisable(GL_TEXTURE_LGL);
+		}
+	}
+
+	glDisable(GL_BLEND);
+
+	if(enableShader)
+	{
+		shader->Disable();
+	}
+}
+
+void
+LGL_Image::
 DrawToScreenAsLine
 (
 	float x1, float y1,

@@ -25,11 +25,8 @@
 #define	_DVJ_PROJMAPGRID_H_
 
 #include "LGL.module/LGL.h"
-#include <vector>
 
-using namespace std;
-
-#define	PROJ_MAP_GRID_DISPLAY_MAX (16)
+const unsigned int PROJ_MAP_KEY = LGL_KEY_LALT;
 
 class ProjMapGridObj
 {
@@ -48,7 +45,7 @@ public:
 	void			NextFrame();
 
 	void			DrawSrcGrid();
-	void			DrawDstGrids();
+	void			DrawDstGrid();
 
 //private:
 
@@ -65,9 +62,8 @@ public:
 	int			GridW;
 	int			GridH;
 	float*			SrcPoints;
-	float*			DstPoints[PROJ_MAP_GRID_DISPLAY_MAX];
+	float*			DstPoints;
 
-	float*			SelectedPoints;
 	int			SelectedIndexX;
 	int			SelectedIndexY;
 	int			SelectedDrag;
