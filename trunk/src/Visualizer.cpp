@@ -843,8 +843,9 @@ DrawVisuals
 	}
 
 	//Mesh mapping!
-	if(LGL_Image* mmi = MeshMapperImage[LGL_GetActiveDisplay()])
+	if(LGL_GetActiveDisplay()!=0)
 	{
+		LGL_Image* mmi = MeshMapperImage[LGL_GetActiveDisplay()];
 		mmi->FrameBufferUpdate();
 
 		float myL=l;
@@ -877,105 +878,156 @@ DrawVisuals
 		{
 			for(int j=0;j<ProjMapGrid.GridH-1;j++)
 			{
-				float x[4];
-				float y[4];
+				float xSrc[4];
+				float ySrc[4];
 				//LB
-				x[0]=ProjMapGrid.GetProjMapGridValueX
+				xSrc[0]=ProjMapGrid.GetProjMapGridValueX
 				(
 					ProjMapGrid.SrcPoints,
 					i,
 					j
 				);
-				y[0]=ProjMapGrid.GetProjMapGridValueY
+				ySrc[0]=ProjMapGrid.GetProjMapGridValueY
 				(
 					ProjMapGrid.SrcPoints,
 					i,
 					j
 				);
 				//RB
-				x[1]=ProjMapGrid.GetProjMapGridValueX
+				xSrc[1]=ProjMapGrid.GetProjMapGridValueX
 				(
 					ProjMapGrid.SrcPoints,
 					i+1,
 					j
 				);
-				y[1]=ProjMapGrid.GetProjMapGridValueY
+				ySrc[1]=ProjMapGrid.GetProjMapGridValueY
 				(
 					ProjMapGrid.SrcPoints,
 					i+1,
 					j
 				);
 				//RT
-				x[2]=ProjMapGrid.GetProjMapGridValueX
+				xSrc[2]=ProjMapGrid.GetProjMapGridValueX
 				(
 					ProjMapGrid.SrcPoints,
 					i+1,
 					j+1
 				);
-				y[2]=ProjMapGrid.GetProjMapGridValueY
+				ySrc[2]=ProjMapGrid.GetProjMapGridValueY
 				(
 					ProjMapGrid.SrcPoints,
 					i+1,
 					j+1
 				);
 				//LT
-				x[3]=ProjMapGrid.GetProjMapGridValueX
+				xSrc[3]=ProjMapGrid.GetProjMapGridValueX
 				(
 					ProjMapGrid.SrcPoints,
 					i,
 					j+1
 				);
-				y[3]=ProjMapGrid.GetProjMapGridValueY
+				ySrc[3]=ProjMapGrid.GetProjMapGridValueY
 				(
 					ProjMapGrid.SrcPoints,
+					i,
+					j+1
+				);
+
+				float xDst[4];
+				float yDst[4];
+				//LB
+				xDst[0]=ProjMapGrid.GetProjMapGridValueX
+				(
+					ProjMapGrid.DstPoints,
+					i,
+					j
+				);
+				yDst[0]=ProjMapGrid.GetProjMapGridValueY
+				(
+					ProjMapGrid.DstPoints,
+					i,
+					j
+				);
+				//RB
+				xDst[1]=ProjMapGrid.GetProjMapGridValueX
+				(
+					ProjMapGrid.DstPoints,
+					i+1,
+					j
+				);
+				yDst[1]=ProjMapGrid.GetProjMapGridValueY
+				(
+					ProjMapGrid.DstPoints,
+					i+1,
+					j
+				);
+				//RT
+				xDst[2]=ProjMapGrid.GetProjMapGridValueX
+				(
+					ProjMapGrid.DstPoints,
+					i+1,
+					j+1
+				);
+				yDst[2]=ProjMapGrid.GetProjMapGridValueY
+				(
+					ProjMapGrid.DstPoints,
+					i+1,
+					j+1
+				);
+				//LT
+				xDst[3]=ProjMapGrid.GetProjMapGridValueX
+				(
+					ProjMapGrid.DstPoints,
+					i,
+					j+1
+				);
+				yDst[3]=ProjMapGrid.GetProjMapGridValueY
+				(
+					ProjMapGrid.DstPoints,
 					i,
 					j+1
 				);
 
 				for(int q=0;q<4;q++)
 				{
-					x[q]=myL+myW*x[q];
-					y[q]=myB+myH*y[q];
+					xDst[q]=myL+myW*xDst[q];
+					yDst[q]=myB+myH*yDst[q];
 				}
 
 /*
 				LGL_DebugPrintf
 				(
 					"LB: %.2f, %.2f\n",
-					x[0],y[0]
+					xDst[0],yDst[0]
 				);
 				LGL_DebugPrintf
 				(
 					"RB: %.2f, %.2f\n",
-					x[1],y[1]
+					xDst[1],yDst[1]
 				);
 				LGL_DebugPrintf
 				(
 					"RT: %.2f, %.2f\n",
-					x[2],y[2]
+					xDst[2],yDst[2]
 				);
 				LGL_DebugPrintf
 				(
 					"LT: %.2f, %.2f\n",
-					x[3],y[3]
+					xDst[3],yDst[3]
 				);
 */
 
 				mmi->DrawToScreen
 				(
-					x,
-					y,
+					xDst,
+					yDst,
+					xSrc,
+					ySrc,
 					1.0f,
 					1.0f,
 					1.0f,
 					1.0f,
-					1.0f,	//brightnessScalar
-					(i+0.0f)/(ProjMapGrid.GridW-1.0f),
-					(i+1.0f)/(ProjMapGrid.GridW-1.0f),
-					//(((ProjMapGrid.GridH-2.0f)-j)+0.0f)/(ProjMapGrid.GridH-1.0f),
-					//(((ProjMapGrid.GridH-2.0f)-j)+1.0f)/(ProjMapGrid.GridH-1.0f)
-					(j+0.0f)/(ProjMapGrid.GridH-1.0f),
-					(j+1.0f)/(ProjMapGrid.GridH-1.0f)
+					1.0f	//brightnessScalar
 				);
 			}
 		}
@@ -996,9 +1048,16 @@ DrawVisuals
 		if(LGL_GetActiveDisplay()==0)
 		{
 			ProjMapGrid.NextFrame();
-			if(LGL_KeyDown(LGL_KEY_LSHIFT))
+			if(LGL_KeyDown(PROJ_MAP_KEY))
 			{
 				ProjMapGrid.DrawSrcGrid();
+			}
+		}
+		else if(LGL_GetActiveDisplay()==1)
+		{
+			if(LGL_KeyDown(PROJ_MAP_KEY))
+			{
+				ProjMapGrid.DrawDstGrid();
 			}
 		}
 	}
