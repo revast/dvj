@@ -168,6 +168,15 @@ GetProjectorQuadrentResX();
 int
 GetProjectorQuadrentResY();
 
+bool
+GetProjMapSimple();
+
+int
+GetProjMapGridSideLengthX();
+
+int
+GetProjMapGridSideLengthY();
+
 float
 GetCachedVideoAveBitrateMBps();
 

@@ -3025,7 +3025,6 @@ NextFrame
 			{
 				FindAudioPathDone=false;
 				FoundAudioPathIsDir=false;
-				printf("Making a FindAudioPathThread (MODE = 1)\n");
 				FindAudioPathThread=LGL_ThreadCreate(findAudioPathThread,this);
 			}
 
@@ -3068,7 +3067,6 @@ NextFrame
 				ResetAllCachedData();
 
 				LGL_DrawLogWrite("!dvj::NewSound|%s|%i\n",FoundAudioPath,Which);
-printf("Loading '%s'\n",FoundAudioPath);
 				Sound=new LGL_Sound
 				(
 					FoundAudioPath,
@@ -3113,12 +3111,16 @@ printf("Loading '%s'\n",FoundAudioPath);
 			MetaDataFileToRam=new LGL_FileToRam(metaDataPath);
 		}
 
-		if(LoadAllCachedDataThread==NULL)
+		if
+		(
+			Sound &&
+			LoadAllCachedDataThread==NULL
+		)
 		{
 			LoadAllCachedDataDone=false;
 			LoadAllCachedDataThread = LGL_ThreadCreate(loadAllCachedDataThread,this);
 		}
-		
+
 		if
 		(
 			Sound &&
@@ -5387,7 +5389,6 @@ void
 TurntableObj::
 LoadMetaData(const char* data)
 {
-printf("LoadMetaData(): Alpha\n");
 	if(data==NULL)
 	{
 		return;
@@ -5557,11 +5558,21 @@ void
 TurntableObj::
 SaveWaveArrayData()
 {
+	if(EntireWaveArrayFillIndex!=ENTIRE_WAVE_ARRAY_COUNT)
+	{
+		return;
+	}
+
 	char waveArrayDataPath[1024];
 	sprintf(waveArrayDataPath,"%s/.dvj/cache/waveArrayData/%s.dvj-wavearraydata-%i.bin",LGL_GetHomeDir(),SoundName,ENTIRE_WAVE_ARRAY_COUNT);
 	long len = 3*ENTIRE_WAVE_ARRAY_COUNT*sizeof(float);
 	char* data = new char[len];
+	float* dataFloat = (float*)data;
+	memcpy(&dataFloat[ENTIRE_WAVE_ARRAY_COUNT*0],EntireWaveArrayMagnitudeAve,ENTIRE_WAVE_ARRAY_COUNT*sizeof(float));
+	memcpy(&dataFloat[ENTIRE_WAVE_ARRAY_COUNT*1],EntireWaveArrayMagnitudeMax,ENTIRE_WAVE_ARRAY_COUNT*sizeof(float));
+	memcpy(&dataFloat[ENTIRE_WAVE_ARRAY_COUNT*2],EntireWaveArrayFreqFactor,ENTIRE_WAVE_ARRAY_COUNT*sizeof(float));
 	LGL_WriteFileAsync(waveArrayDataPath,data,len);
+	delete data;
 
 	/*
 	FILE* fd=fopen(waveArrayDataPath,"wb");

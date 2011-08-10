@@ -103,6 +103,10 @@ CreateDefaultDVJRC
 		fprintf(fd,"#projectorQuadrentResX=0\n");
 		fprintf(fd,"#projectorQuadrentResY=0\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"#projMapSimple=1\n");
+		fprintf(fd,"#projMapGridSideLengthX=2\n");
+		fprintf(fd,"#projMapGridSideLengthY=2\n");
+		fprintf(fd,"\n");
 		fprintf(fd,"fpsMax=60\n");
 		fprintf(fd,"audioSamplePeriod=512\n");
 		fprintf(fd,"audioMaxLengthMinutes=20\n");
@@ -828,6 +832,35 @@ GetProjectorQuadrentResY()
 		resY=LGL_DisplayResolutionY(0)/2;
 	}
 	return(resY);
+}
+
+bool
+GetProjMapSimple()
+{
+	int simple=dvjrcConfigFile->read<int>("projMapSimple",1);
+	return(simple!=0);
+}
+
+int
+GetProjMapGridSideLengthX()
+{
+	int sideLength=dvjrcConfigFile->read<int>("projMapGridSideLengthX",2);
+	if(sideLength<=2)
+	{
+		sideLength=2;
+	}
+	return(sideLength);
+}
+
+int
+GetProjMapGridSideLengthY()
+{
+	int sideLength=dvjrcConfigFile->read<int>("projMapGridSideLengthY",2);
+	if(sideLength<=2)
+	{
+		sideLength=2;
+	}
+	return(sideLength);
 }
 
 int

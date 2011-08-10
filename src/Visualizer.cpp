@@ -1017,6 +1017,27 @@ DrawVisuals
 				);
 */
 
+				if(GetProjMapSimple())
+				{
+					for(int q=0;q<4;q++)
+					{
+						xDst[q]=xSrc[q];
+						yDst[q]=ySrc[q];
+					}
+
+					xSrc[0]=(i+0.0f)/(ProjMapGrid.GridW-1.0f);
+					ySrc[0]=(j+0.0f)/(ProjMapGrid.GridH-1.0f);
+
+					xSrc[1]=(i+1.0f)/(ProjMapGrid.GridW-1.0f);
+					ySrc[1]=(j+0.0f)/(ProjMapGrid.GridH-1.0f);
+
+					xSrc[2]=(i+1.0f)/(ProjMapGrid.GridW-1.0f);
+					ySrc[2]=(j+1.0f)/(ProjMapGrid.GridH-1.0f);
+
+					xSrc[3]=(i+0.0f)/(ProjMapGrid.GridW-1.0f);
+					ySrc[3]=(j+1.0f)/(ProjMapGrid.GridH-1.0f);
+				}
+
 				mmi->DrawToScreen
 				(
 					xDst,

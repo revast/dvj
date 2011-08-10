@@ -2071,7 +2071,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				{
 					break;
 				}
-			}	
+			}
 		}
 
 		if(entireWaveArrayFillIndex>0)

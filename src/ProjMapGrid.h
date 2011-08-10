@@ -39,8 +39,21 @@ public:
 	void			Construct();
 	void			Nullify();
 
+	void			Load();
+	void			Save();
+
 	void			SetWidth(int width);
 	void			SetHeight(int height);
+	void			InsertPoint
+				(
+					float	x,
+					float	y
+				);
+	void			DeletePoint
+				(
+					float	x,
+					float	y
+				);
 
 	void			NextFrame();
 
@@ -67,6 +80,11 @@ public:
 	int			SelectedIndexX;
 	int			SelectedIndexY;
 	int			SelectedDrag;
+	float			SelectedDstRadius;
+
+	char			LoadPath[2048];
+	char			SavePath[2048];
+	bool			Identity;
 };
 
 #endif	//_DVJ_VISUALIZER_H_

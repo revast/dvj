@@ -2444,11 +2444,6 @@ printf("\n");
 			LGL.WindowResolutionY[d],
 			windowFlags
 		);
-		
-printf("CreateWindow(%i): %i x %i\n",
-	d,
-	LGL.WindowResolutionX[d],
-	LGL.WindowResolutionY[d]);
 
 		if(LGL.WindowID[d]==0)
 		{
@@ -7255,6 +7250,7 @@ DrawToScreen
 	}
 }
 
+#if 0
 void
 LGL_Image::
 DrawToScreen
@@ -7291,13 +7287,13 @@ DrawToScreen
 	{
 		float xSrc2=xSrc[2];
 		float ySrc2=ySrc[2];
-		
+
 		float xSrc3=xSrc[3];
 		float ySrc3=ySrc[3];
-		
+
 		float xDst2=xDst[2];
 		float yDst2=yDst[2];
-		
+
 		float xDst3=xDst[3];
 		float yDst3=yDst[3];
 
@@ -7499,6 +7495,327 @@ DrawToScreen
 				yDst[v]
 			);
 */
+		}
+	}
+	glEnd();
+
+	if(YUV_Available())
+	{
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+		glDisable(GL_TEXTURE_LGL);
+
+		gl2ActiveTexture(GL_TEXTURE1_ARB);
+		glDisable(GL_TEXTURE_LGL);
+
+		gl2ActiveTexture(GL_TEXTURE2_ARB);
+		glDisable(GL_TEXTURE_LGL);
+
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+	}
+	else
+	{
+		if(TextureGLRect)
+		{
+			glDisable(GL_TEXTURE_RECTANGLE_ARB);
+		}
+		else
+		{
+			glDisable(GL_TEXTURE_LGL);
+		}
+	}
+
+	glDisable(GL_BLEND);
+
+	if(enableShader)
+	{
+		shader->Disable();
+	}
+}
+#endif
+
+void
+LGL_Image::
+DrawToScreen
+(
+	float	xDst[4],
+	float	yDst[4],
+	float	xSrc[4],
+	float	ySrc[4],
+	float	r,
+	float	g,
+	float	b,
+	float	a,
+	float	brightnessScalar,
+	float	rgbSpatializerScalar
+)
+{
+#ifdef	LGL_NO_GRAPHICS
+	return;
+#endif	//LGL_NO_GRAPHICS
+
+	if(InvertY)
+	{
+		//TODO
+		//printf("DrawToScreen(src,dst): InvertY not respected\n");
+	}
+
+	//xy[4]
+	//0: LT
+	//1: RT
+	//2: RB
+	//3: LB
+
+	//xy[9]
+	//0: CC
+	//1: LT
+	//2: CT
+	//3: RT
+	//4: RC
+	//5: RB
+	//6: CB
+	//7: LB
+	//8: LC
+
+	float x2Dst[9];
+	float y2Dst[9];
+	float x2Src[9];
+	float y2Src[9];
+
+	int imgW=ImgW;
+	int imgH=ImgH;
+	int texW=TexW;
+	int texH=TexH;
+
+	if(YUV_Available())
+	{
+		imgW=YUV_ImgW;
+		imgH=YUV_ImgH;
+		texW=YUV_TexW;
+		texH=YUV_TexH;
+	}
+
+	float imgTexW=(float)imgW/(float)texW;
+	float imgTexH=(float)imgH/(float)texH;
+
+	if(TextureGLRect)
+	{
+		imgTexW=imgW;
+		imgTexH=imgH;
+	}
+
+	//0: CC
+	x2Dst[0]=0.25f*(xDst[0]+xDst[1]+xDst[2]+xDst[3]);
+	y2Dst[0]=0.25f*(yDst[0]+yDst[1]+yDst[2]+yDst[3]);
+	x2Src[0]=0.25f*(xSrc[0]+xSrc[1]+xSrc[2]+xSrc[3]);
+	y2Src[0]=0.25f*(ySrc[0]+ySrc[1]+ySrc[2]+ySrc[3]);
+	//1: LT
+	x2Dst[1]=xDst[0];
+	y2Dst[1]=yDst[0];
+	x2Src[1]=xSrc[0];
+	y2Src[1]=ySrc[0];
+	//2: CT
+	x2Dst[2]=0.5f*(xDst[0]+xDst[1]);
+	y2Dst[2]=0.5f*(yDst[0]+yDst[1]);
+	x2Src[2]=0.5f*(xSrc[0]+xSrc[1]);
+	y2Src[2]=0.5f*(ySrc[0]+ySrc[1]);
+	//3: RT
+	x2Dst[3]=xDst[1];
+	y2Dst[3]=yDst[1];
+	x2Src[3]=xSrc[1];
+	y2Src[3]=ySrc[1];
+	//4: RC
+	x2Dst[4]=0.5f*(xDst[1]+xDst[2]);
+	y2Dst[4]=0.5f*(yDst[1]+yDst[2]);
+	x2Src[4]=0.5f*(xSrc[1]+xSrc[2]);
+	y2Src[4]=0.5f*(ySrc[1]+ySrc[2]);
+	//5: RB
+	x2Dst[5]=xDst[2];
+	y2Dst[5]=yDst[2];
+	x2Src[5]=xSrc[2];
+	y2Src[5]=ySrc[2];
+	//6: CB
+	x2Dst[6]=0.5f*(xDst[2]+xDst[3]);
+	y2Dst[6]=0.5f*(yDst[2]+yDst[3]);
+	x2Src[6]=0.5f*(xSrc[2]+xSrc[3]);
+	y2Src[6]=0.5f*(ySrc[2]+ySrc[3]);
+	//7: LB
+	x2Dst[7]=xDst[3];
+	y2Dst[7]=yDst[3];
+	x2Src[7]=xSrc[3];
+	y2Src[7]=ySrc[3];
+	//8: LC
+	x2Dst[8]=0.5f*(xDst[3]+xDst[0]);
+	y2Dst[8]=0.5f*(yDst[3]+yDst[0]);
+	x2Src[8]=0.5f*(xSrc[3]+xSrc[0]);
+	y2Src[8]=0.5f*(ySrc[3]+ySrc[0]);
+
+	lgl_glScreenify2D();
+
+	if(r<0) r=0;
+	if(g<0) g=0;
+	if(b<0) b=0;
+	if(a<0) a=0;
+
+	if(r>1) r=1;
+	if(g>1) g=1;
+	if(b>1) b=1;
+	if(a>1) a=1;
+
+	//Prepare RGB vs YUV (Alpha)
+
+	GLuint textureGL=TextureGL;
+	bool alphaChannel=AlphaChannel;
+	LGL_Shader* shader=&ImageShader;
+	bool enableShader=true;//brightnessScalar!=1.0f;
+	if(YUV_Available())
+	{
+		textureGL=YUV_TextureGL[0];
+		alphaChannel=false;
+		imgW=YUV_ImgW;
+		imgH=YUV_ImgH;
+		texW=YUV_TexW;
+		texH=YUV_TexH;
+		shader=&YUV_ImageShader;
+		enableShader=true;
+	}
+
+	//Prepare RGB vs YUV (Omega)
+
+	/*
+	if(TextureGLRect)
+	{
+		enableShader=false;
+	}
+	*/
+
+	if(enableShader)
+	{
+		shader->Enable();
+		shader->SetUniformAttributeFloat
+		(
+			"brightnessScalar",
+			brightnessScalar
+		);
+		shader->SetUniformAttributeFloat
+		(
+			"rgbSpatializerScalar",
+			rgbSpatializerScalar
+		);
+	}
+
+	if(textureGL==0)
+	{
+		LoadSurfaceToTexture(LinearInterpolation);
+	}
+
+	//Draw
+
+	glColor4f(r,g,b,a);
+	if(alphaChannel==true || a<1)
+	{
+		glEnable(GL_BLEND);
+	}
+	else
+	{
+		glDisable(GL_BLEND);
+	}
+
+	//Activate appropriate textures
+	if(YUV_Available())
+	{
+		gl2ActiveTexture(GL_TEXTURE0_ARB);
+		glEnable(GL_TEXTURE_LGL);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[0]);
+
+		gl2ActiveTexture(GL_TEXTURE1_ARB);
+		glEnable(GL_TEXTURE_LGL);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[1]);
+
+		gl2ActiveTexture(GL_TEXTURE2_ARB);
+		glEnable(GL_TEXTURE_LGL);
+		glBindTexture(GL_TEXTURE_LGL,YUV_TextureGL[2]);
+		
+		shader->SetUniformAttributeInt
+		(
+			"myTextureY",
+			0
+		);
+		shader->SetUniformAttributeInt
+		(
+			"myTextureU",
+			1
+		);
+		shader->SetUniformAttributeInt
+		(
+			"myTextureV",
+			2
+		);
+	}
+	else
+	{
+		if(TextureGLRect)
+		{
+			//gl2ActiveTexture(GL_TEXTURE0_ARB);
+			glDisable(GL_TEXTURE_LGL);
+			glEnable(GL_TEXTURE_RECTANGLE_ARB);
+			glBindTexture(GL_TEXTURE_RECTANGLE_ARB,textureGL);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		}
+		else
+		{
+			gl2ActiveTexture(GL_TEXTURE0_ARB);
+			glEnable(GL_TEXTURE_LGL);
+			glBindTexture(GL_TEXTURE_LGL,textureGL);
+		}
+	}
+
+	glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
+	glBegin(GL_TRIANGLE_FAN);
+	{
+		glNormal3f(0,0,-1);
+		float d=0;
+//#ifdef	LGL_LINUX
+//FIXME: FrameBufferImage UGLY fudge factor, due to lousy nVidia Drivers
+		if(LGL.FrameBufferTextureGlitchFix)
+		{
+			d=-0.05/LGL.WindowResolutionX[LGL.DisplayNow];
+		}
+//#endif	//LGL_LINUX
+
+		for(int v=0;v<10;v++)
+		{
+			bool last=(v==9);
+			if(last)
+			{
+				v=1;
+			}
+			if(YUV_Available())
+			{
+				for(int c=0;c<3;c++)
+				{
+					GLenum target;
+					if(c==0) target = GL_TEXTURE0_ARB;
+					else if(c==1) target = GL_TEXTURE1_ARB;
+					else/*if(c==2)*/ target = GL_TEXTURE2_ARB;
+					glMultiTexCoord2d
+					(
+						target,
+						x2Src[v]*imgTexW,
+						y2Src[v]*imgTexH
+					);
+				}
+			}
+			else
+			{
+				glTexCoord2d
+				(
+					x2Src[v]*imgTexW,
+					y2Src[v]*imgTexH
+				);
+			}
+			glVertex2d(x2Dst[v],y2Dst[v]);
+			if(last) break;
 		}
 	}
 	glEnd();
@@ -28247,7 +28564,7 @@ Thread_Load()
 {
 	if(GetPath()==NULL)
 	{
-		printf("FTR: NULL Path\n");
+		//printf("FTR: NULL Path\n");
 		Status=-1;
 		return;
 	}
@@ -28273,7 +28590,7 @@ Thread_Load()
 	}
 	else
 	{
-		printf("FTR: Failed to open path '%s' (%s)\n",GetPath(),LGL_FileExists(Path) ? "File exists" : "File doesn't exist");
+		//printf("FTR: Failed to open path '%s' (%s)\n",GetPath(),LGL_FileExists(Path) ? "File exists" : "File doesn't exist");
 		Status=-1;
 		return;
 	}
@@ -29886,7 +30203,7 @@ lgl_WriteFileAsyncThread
 	{
 		unsigned int workItemSize = 0;
 		lgl_WriteFileAsyncWorkItem* wi = NULL;
-		
+
 		{
 			if(LGL.WriteFileAsyncWorkItemListNewSize>0)
 			{
@@ -29927,13 +30244,14 @@ lgl_WriteFileAsyncThread
 				}
 			}
 		}
-		
+
 		if(wi)
 		{
 			wi->Write();
 			delete wi;
 		}
 		
+		LGL.WriteFileAsyncWorkItemListSize=workItemSize;
 		if(LGL.Running==false && workItemSize==0)
 		{
 			return(0);
@@ -29967,6 +30285,7 @@ LGL_WriteFileAsync
 	{
 		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.WriteFileAsyncWorkItemListNewSemaphore);
 		LGL.WriteFileAsyncWorkItemListNew.push_back(wi);
+		LGL.WriteFileAsyncWorkItemListNewSize++;
 	}
 }
 
@@ -33772,18 +34091,6 @@ lgl_AudioOutCallbackGenerator
 					stream16rec[encodeChannels*l+3]=(Sint16)LGL_Clamp(-32767,stream16rec[encodeChannels*l+3]+tempStreamRecBR[l]*LGL.RecordVolume,32767);
 				}
 
-				if(lgl_AudioSwapOutputStreams)
-				{
-					Sint16 frontL=stream16[4*l+0];
-					Sint16 frontR=stream16[4*l+1];
-					Sint16 backL=stream16[4*l+2];
-					Sint16 backR=stream16[4*l+3];
-					stream16[4*l+0]=backL;
-					stream16[4*l+1]=backR;
-					stream16[4*l+2]=frontL;
-					stream16[4*l+3]=frontR;
-				}
-
 				if(LGL.AudioBufferPos+l<1024)
 				{
 					LGL.AudioBufferLBack[LGL.AudioBufferPos+l]+=(tempStreamFL[l]/32767.0f);
@@ -33803,6 +34110,23 @@ lgl_AudioOutCallbackGenerator
 			//sc->LGLSound->UnlockBuffer();
 			//Below line can cause this thread to yield.
 			//sc->LGLSound->UnlockBufferForReading(101);
+		}
+	}
+
+	if(lgl_AudioSwapOutputStreams)
+	{
+		int top=2*LGL_SAMPLESIZE;
+		int max=top/2;
+		for(int l=0;l<max;l++)
+		{
+			Sint16 frontL=stream16[4*l+0];
+			Sint16 frontR=stream16[4*l+1];
+			Sint16 backL=stream16[4*l+2];
+			Sint16 backR=stream16[4*l+3];
+			stream16[4*l+0]=backL;
+			stream16[4*l+1]=backR;
+			stream16[4*l+2]=frontL;
+			stream16[4*l+3]=frontR;
 		}
 	}
 

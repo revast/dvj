@@ -2118,7 +2118,6 @@ ProcessMessage
 	const IpEndpointName&		remoteEndpoint
 )
 {
-printf("PM\n");
 	//See if we have a new client!
 	char hostStr[2048];
 	remoteEndpoint.AddressAsString(hostStr);
