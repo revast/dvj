@@ -23,6 +23,8 @@
 
 #include "ProjMapGrid.h"
 
+#include "Config.h"
+
 #include <string.h>
 
 ProjMapGridObj::
@@ -34,8 +36,17 @@ ProjMapGridObj()
 	DstPoints=NULL;
 	SelectedIndexX=-1;
 	SelectedIndexY=-1;
-	SetWidth(4);
-	SetHeight(4);
+	SetWidth(GetProjMapGridSideLengthX());
+	SetHeight(GetProjMapGridSideLengthY());
+	SelectedDstRadius=0.0f;
+
+	sprintf(LoadPath,"%s/.dvj/projMapLoad.txt",LGL_GetHomeDir());
+	sprintf(SavePath,"%s/.dvj/projMapSave.txt",LGL_GetHomeDir());
+	if(LGL_FileExists(SavePath))
+	{
+		LGL_FileDirMove(SavePath,LoadPath);
+	}
+	Identity=true;
 
 #if 0
 	for(int x=0;x<GridW;x++)
@@ -135,6 +146,53 @@ Nullify()
 
 void
 ProjMapGridObj::
+Load()
+{
+	if(FILE* fd=fopen(LoadPath,"r"))
+	{
+		const int bufLen=2048;
+		char buf[bufLen];
+
+		fgets(buf,bufLen,fd);
+		GridW=atoi(buf);
+		fgets(buf,bufLen,fd);
+		GridH=atoi(buf);
+		for(int a=0;a<GridW*GridH*2;a++)
+		{
+			fgets(buf,bufLen,fd);
+			SrcPoints[a]=atof(buf);
+			fgets(buf,bufLen,fd);
+			DstPoints[a]=atof(buf);
+		}
+		fclose(fd);
+		Identity=false;
+	}
+}
+
+void
+ProjMapGridObj::
+Save()
+{
+	if(Identity)
+	{
+		return;
+	}
+
+	if(FILE* fd=fopen(SavePath,"w"))
+	{
+		fprintf(fd,"%i\n",GridW);
+		fprintf(fd,"%i\n",GridH);
+		for(int a=0;a<GridW*GridH*2;a++)
+		{
+			fprintf(fd,"%f\n",SrcPoints[a]);
+			fprintf(fd,"%f\n",DstPoints[a]);
+		}
+		fclose(fd);
+	}
+}
+
+void
+ProjMapGridObj::
 SetWidth
 (
 	int	width
@@ -165,16 +223,646 @@ SetHeight
 	Construct();
 }
 
+float
+getLineSlope
+(
+	float	p1x,
+	float	p1y,
+	float	p2x,
+	float	p2y
+)
+{
+	if(p2x==p1x)
+	{
+		printf("getLineSlope(): Warning! Slope will be infinite\n");
+	}
+	return
+	(
+		(p2y-p1y) /
+		(p2x-p1x)
+	);
+}
+
+float
+getLineOffset
+(
+	float	p1x,
+	float	p1y,
+	float	p2x,
+	float	p2y
+)
+{
+	float slope = getLineSlope
+	(
+		p1x,
+		p1y,
+		p2x,
+		p2y
+	);
+
+	float offset = p1y - p1x * slope;
+	return(offset);
+}
+
+bool
+getPointRightOfLine
+(
+	float	x,
+	float	y,
+	float	slope,
+	float	offset
+)
+{
+	if(slope==0)
+	{
+		printf("getPointRightOfLine: Warning! Dividing by zero...\n");
+	}
+	float lineValX = (y - offset) / slope;
+	return(x>lineValX);
+}
+
+bool
+getPointAboveLine
+(
+	float	x,
+	float	y,
+	float	slope,
+	float	offset
+)
+{
+	float lineValY = slope * x + offset;
+	return(y>lineValY);
+}
+
+bool
+getPointRightOfLine
+(
+	float	x,
+	float	y,
+	float	l1x,
+	float	l1y,
+	float	l2x,
+	float	l2y
+)
+{
+	if(l1x==l2x)
+	{
+		return(x>l1x);
+	}
+
+	float slope = getLineSlope
+	(
+		l1x,
+		l1y,
+		l2x,
+		l2y
+	);
+	float offset = getLineOffset
+	(
+		l1x,
+		l1y,
+		l2x,
+		l2y
+	);
+
+	return
+	(
+		getPointRightOfLine
+		(
+			x,
+			y,
+			slope,
+			offset
+		)
+	);
+}
+
+bool
+getPointAboveLine
+(
+	float	x,
+	float	y,
+	float	l1x,
+	float	l1y,
+	float	l2x,
+	float	l2y
+)
+{
+	if(l1x==l2x)
+	{
+		return(y>l1y);
+	}
+
+	float slope = getLineSlope
+	(
+		l1x,
+		l1y,
+		l2x,
+		l2y
+	);
+	float offset = getLineOffset
+	(
+		l1x,
+		l1y,
+		l2x,
+		l2y
+	);
+
+	return
+	(
+		getPointAboveLine
+		(
+			x,
+			y,
+			slope,
+			offset
+		)
+	);
+}
+
+bool
+getPointInsideQuad
+(
+	float	x,
+	float	y,
+	float	lbx,
+	float	lby,
+	float	rbx,
+	float	rby,
+	float	ltx,
+	float	lty,
+	float	rtx,
+	float	rty
+)
+{
+	//Point is left of left?
+	if
+	(
+		getPointRightOfLine
+		(
+			x,y,
+			lbx,
+			lby,
+			ltx,
+			lty
+		)==false
+	)
+	{
+		return(false);
+	}
+	
+	//Point is right of right?
+	if
+	(
+		getPointRightOfLine
+		(
+			x,y,
+			rbx,
+			rby,
+			rtx,
+			rty
+		)
+	)
+	{
+		return(false);
+	}
+
+	//Point is below bottom?
+	if
+	(
+		getPointAboveLine
+		(
+			x,y,
+			lbx,
+			lby,
+			rbx,
+			rby
+		)==false
+	)
+	{
+		return(false);
+	}
+	
+	//Point is above top?
+	if
+	(
+		getPointAboveLine
+		(
+			x,y,
+			ltx,
+			lty,
+			rtx,
+			rty
+		)
+	)
+	{
+		return(false);
+	}
+
+	return(true);
+}
+
+void
+ProjMapGridObj::
+InsertPoint
+(
+	float	x,
+	float	y
+)
+{
+	//Find index at which to add the point
+	int indexX=-1;
+	int indexY=-1;
+
+	//See which quad the point is inside.
+	for(int a=0;a<GridW-1;a++)
+	{
+		for(int b=0;b<GridH-1;b++)
+		{
+			float lbx = GetProjMapGridValueX(SrcPoints,a+0,b+0);
+			float lby = GetProjMapGridValueY(SrcPoints,a+0,b+0);
+
+			float rbx = GetProjMapGridValueX(SrcPoints,a+1,b+0);
+			float rby = GetProjMapGridValueY(SrcPoints,a+1,b+0);
+
+			float ltx = GetProjMapGridValueX(SrcPoints,a+0,b+1);
+			float lty = GetProjMapGridValueY(SrcPoints,a+0,b+1);
+
+			float rtx = GetProjMapGridValueX(SrcPoints,a+1,b+1);
+			float rty = GetProjMapGridValueY(SrcPoints,a+1,b+1);
+
+			if
+			(
+				getPointInsideQuad
+				(
+					x,
+					y,
+					lbx,
+					lby,
+					rbx,
+					rby,
+					ltx,
+					lty,
+					rtx,
+					rty
+				)
+			)
+			{
+				indexX=a+1;
+				indexY=b+1;
+				break;
+			}
+		}
+	}
+
+	//Fallback method
+	if
+	(
+		indexX==-1 ||
+		indexY==-1
+	)
+	{
+		float closestDistSq=9999.0f;
+		for(int a=0;a<GridW;a++)
+		{
+			for(int b=0;b<GridH;b++)
+			{
+				float nowX = GetProjMapGridValueX(SrcPoints,a,b);
+				float nowY = GetProjMapGridValueY(SrcPoints,a,b);
+				if
+				(
+					x<nowX &&
+					y<nowY
+				)
+				{
+					float distSq = powf(x-nowX,2) + powf(y-nowY,2);
+					if(distSq<closestDistSq)
+					{
+						indexX=a;
+						indexY=b;
+						closestDistSq=distSq;
+					}
+				}
+			}
+		}
+	}
+
+	//Failsafe
+	if(indexX==-1) indexX=0;
+	if(indexY==-1) indexY=0;
+
+	//Yoink SrcPoints and DstPoints
+
+	float* oldSrcPoints=SrcPoints;
+	float* oldDstPoints=DstPoints;
+	SrcPoints=NULL;
+	DstPoints=NULL;
+
+	//Call SetWidth() and SetHeight()
+	
+	int gridWOld=GridW;
+	int gridHOld=GridH;
+	int gridWNew=GridW+1;
+	int gridHNew=GridH+1;
+
+	SetWidth(gridWNew);
+	SetHeight(gridHNew);
+
+
+
+	//Fill in new SrcPoints and DstPoints (1st pass: Copy over prior grid)
+
+	for(int a=0;a<GridW;a++)
+	{
+		for(int b=0;b<GridH;b++)
+		{
+			if
+			(
+				a==indexX &&
+				b==indexY
+			)
+			{
+				//The new point we're trying to add
+				//Do this on 2nd pass
+			}
+			else if(a==indexX)
+			{
+				//A new point in the same row as the point we're adding
+				//Do this on 2nd pass
+			}
+			else if(b==indexY)
+			{
+				//A new point in the same column as the point we're adding
+				//Do this on 2nd pass
+			}
+			else
+			{
+				int aSrc=a;
+				if(aSrc>=indexX)
+				{
+					aSrc--;
+					if(aSrc<0) aSrc=0;
+				}
+				int bSrc=b;
+				if(bSrc>=indexY)
+				{
+					bSrc--;
+					if(bSrc<0) bSrc=0;
+				}
+				GridW=gridWOld;
+				GridH=gridHOld;
+				float xSrcNew = 
+					GetProjMapGridValueX
+					(
+						oldSrcPoints,
+						aSrc,
+						bSrc
+					);
+				float ySrcNew =
+					GetProjMapGridValueY
+					(
+						oldSrcPoints,
+						aSrc,
+						bSrc
+					);
+/*
+				float xDstNew = 
+					GetProjMapGridValueX
+					(
+						oldDstPoints,
+						aSrc,
+						bSrc
+					);
+				float yDstNew =
+					GetProjMapGridValueY
+					(
+						oldDstPoints,
+						aSrc,
+						bSrc
+					);
+*/
+
+				GridW=gridWNew;
+				GridH=gridHNew;
+				SetProjMapGridValueX
+				(
+					SrcPoints,
+					a,
+					b,
+					xSrcNew
+				);
+				SetProjMapGridValueY
+				(
+					SrcPoints,
+					a,
+					b,
+					ySrcNew
+				);
+
+				/*
+				SetProjMapGridValueX
+				(
+					DstPoints,
+					a,
+					b,
+					xDstNew
+				);
+				SetProjMapGridValueY
+				(
+					DstPoints,
+					a,
+					b,
+					yDstNew
+				);
+				*/
+			}
+		}
+	}
+	
+	//Fill in new SrcPoints and DstPoints (2nd pass)
+
+	for(int a=0;a<GridW;a++)
+	{
+		for(int b=0;b<GridH;b++)
+		{
+			if
+			(
+				a==indexX &&
+				b==indexY
+			)
+			{
+				//The new point we're trying to add
+				float xSrcNew=x;
+				float ySrcNew=y;
+				SetProjMapGridValueX
+				(
+					SrcPoints,
+					a,
+					b,
+					xSrcNew
+				);
+				SetProjMapGridValueY
+				(
+					SrcPoints,
+					a,
+					b,
+					ySrcNew
+				);
+				/*
+				SetProjMapGridValueX
+				(
+					DstPoints,
+					a,
+					b,
+					x
+				);
+				SetProjMapGridValueY
+				(
+					DstPoints,
+					a,
+					b,
+					y
+				);
+				*/
+			}
+			else if(a==indexX)
+			{
+				//A new point in the same column as the point we're adding
+				float xSrcNew = 0.5f *
+				(
+					GetProjMapGridValueX
+					(
+						SrcPoints,
+						((a-1) >= 0) ? (a-1) : (a+1),
+						b
+					)+
+					GetProjMapGridValueX
+					(
+						SrcPoints,
+						((a+1) < GridW) ? (a+1) : (a-1),
+						b
+					)
+				);
+				float ySrcNew = 0.5f *
+				(
+					GetProjMapGridValueY
+					(
+						SrcPoints,
+						((a-1) >= 0) ? (a-1) : (a+1),
+						b
+					)+
+					GetProjMapGridValueY
+					(
+						SrcPoints,
+						((a+1) < GridW) ? (a+1) : (a-1),
+						b
+					)
+				);
+				SetProjMapGridValueX
+				(
+					SrcPoints,
+					a,
+					b,
+					xSrcNew
+				);
+				SetProjMapGridValueY
+				(
+					SrcPoints,
+					a,
+					b,
+					ySrcNew
+				);
+
+				//TODO: Dst
+			}
+			else if(b==indexY)
+			{
+				//A new point in the same row as the point we're adding
+				float xSrcNew = 0.5f *
+				(
+					GetProjMapGridValueX
+					(
+						SrcPoints,
+						a,
+						((b-1) >= 0) ? (b-1) : (b+1)
+					)+
+					GetProjMapGridValueX
+					(
+						SrcPoints,
+						a,
+						((b+1) < GridH) ? (b+1) : (b-1)
+					)
+				);
+				float ySrcNew = 0.5f *
+				(
+					GetProjMapGridValueY
+					(
+						SrcPoints,
+						a,
+						((b-1) >= 0) ? (b-1) : (b+1)
+					)+
+					GetProjMapGridValueY
+					(
+						SrcPoints,
+						a,
+						((b+1) < GridH) ? (b+1) : (b-1)
+					)
+				);
+				SetProjMapGridValueX
+				(
+					SrcPoints,
+					a,
+					b,
+					xSrcNew
+				);
+				SetProjMapGridValueY
+				(
+					SrcPoints,
+					a,
+					b,
+					ySrcNew
+				);
+
+				//TODO: DstPoints
+			}
+			else
+			{
+				//A point from the prior grid
+				//We did this in the 1st pass
+			}
+		}
+	}
+
+	//Cleanup yoinked arrays
+
+	delete oldSrcPoints;
+	delete oldDstPoints;
+}
+
 void
 ProjMapGridObj::
 NextFrame()
 {
 	if(LGL_KeyDown(PROJ_MAP_KEY)==false)
 	{
+		if(LGL_KeyRelease(PROJ_MAP_KEY))
+		{
+			Save();
+		}
 		SelectedIndexX=-1;
 		SelectedIndexY=-1;
 		SelectedDrag=false;
 		return;
+	}
+
+	if(LGL_KeyStroke(LGL_KEY_C))
+	{
+		Load();
+	}
+
+	if(LGL_KeyStroke(LGL_KEY_X))
+	{
+		InsertPoint(0.5f,0.5f);
 	}
 
 	int selectedIndexXOld=SelectedIndexX;
@@ -215,6 +903,24 @@ NextFrame()
 		SelectedIndexY!=-1
 	)
 	{
+		if
+		(
+			LGL_KeyDown(LGL_KEY_LSHIFT) ||
+			SelectedIndexX!=selectedIndexXOld ||
+			SelectedIndexY!=selectedIndexYOld
+		)
+		{
+			SelectedDstRadius=0.1f;
+		}
+		else
+		{
+			SelectedDstRadius = LGL_Max
+			(
+				0.005f,
+				SelectedDstRadius - LGL_SecondsSinceLastFrame()*0.35f
+			);
+		}
+
 		if(SelectedDrag)
 		{
 			float dxMult=1.0f;
@@ -325,12 +1031,75 @@ NextFrame()
 			);
 		}
 	}
+
+/*
+	for(int a=0;a<GridW;a++)
+	{
+		for(int b=0;b<GridH;b++)
+		{
+			SetProjMapGridValueX
+			(
+				DstPoints,
+				a,
+				b,
+				GetProjMapGridValueX
+				(
+					SrcPoints,
+					a,
+					b
+				)
+			);
+			SetProjMapGridValueY
+			(
+				DstPoints,
+				a,
+				b,
+				GetProjMapGridValueY
+				(
+					SrcPoints,
+					a,
+					b
+				)
+			);
+		}
+	}
+*/
 }
 
 void
 ProjMapGridObj::
 DrawSrcGrid()
 {
+	if(GetProjMapSimple())
+	{
+		float l=0.0f;
+		float r=1.0f;
+		float b=0.0f;
+		float t=1.0f;
+		GetVisualizer()->GetWindowARCoordsFromProjectorCoords
+		(
+			l,
+			b
+		);
+		GetVisualizer()->GetWindowARCoordsFromProjectorCoords
+		(
+			r,
+			t
+		);
+
+		LGL_DrawRectToScreen
+		(
+			l,
+			r,
+			b,
+			t,
+			0.0f,
+			0.0f,
+			0.0f,
+			1.0f
+		);
+	}
+
 	DrawGrid(SrcPoints);
 }
 
@@ -338,7 +1107,14 @@ void
 ProjMapGridObj::
 DrawDstGrid()
 {
-	DrawGrid(DstPoints);
+	if(GetProjMapSimple()==false)
+	{
+		DrawGrid(DstPoints);
+	}
+	else
+	{
+		DrawGrid(SrcPoints);
+	}
 }
 
 void
@@ -425,7 +1201,7 @@ DrawGrid
 		}
 	}
 
-	const float pointRad=0.005f;
+	const float pointRad=(LGL_GetActiveDisplay()==0) ? 0.005f : SelectedDstRadius;
 	float pointRadX=pointRad;
 	float pointRadY=pointRad*LGL_WindowAspectRatio();
 
@@ -442,7 +1218,9 @@ DrawGrid
 				mouseIndexY==y
 			)
 			{
-				float br = SelectedDrag ? 1.0f : 0.5f;
+				float brR = (SelectedDrag || LGL_GetActiveDisplay()!=0) ? LGL_RandFloat(0.5f,1.0f) : 0.5f;
+				float brG = (SelectedDrag || LGL_GetActiveDisplay()!=0) ? LGL_RandFloat(0.5f,1.0f) : 0.5f;
+				float brB = (SelectedDrag || LGL_GetActiveDisplay()!=0) ? LGL_RandFloat(0.5f,1.0f) : 0.5f;
 				if(SelectedDrag)
 				{
 					pointRadX*=1.5f;
@@ -458,13 +1236,25 @@ DrawGrid
 						p1Y
 					);
 				}
+
+				const float rectBorder=0.002f;
+
+				LGL_DrawRectToScreen
+				(
+					p1X-pointRadX-rectBorder,
+					p1X+pointRadX+rectBorder,
+					p1Y-pointRadY-rectBorder*2,
+					p1Y+pointRadY+rectBorder*2,
+					0.0f,0.0f,0.0f,1.0f
+				);
+
 				LGL_DrawRectToScreen
 				(
 					p1X-pointRadX,
 					p1X+pointRadX,
 					p1Y-pointRadY,
 					p1Y+pointRadY,
-					br,br,br,0.0f
+					brR,brG,brB,0.0f
 				);
 			}
 		}
@@ -528,6 +1318,7 @@ SetProjMapGridValueX
 	float	val
 )
 {
+	Identity=false;
 	if(grid==NULL)
 	{
 		return;
@@ -546,6 +1337,7 @@ SetProjMapGridValueY
 	float	val
 )
 {
+	Identity=false;
 	if(grid==NULL)
 	{
 		return;
