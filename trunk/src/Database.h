@@ -8,6 +8,7 @@
 #define	_DATABASE_H_
 
 #include <vector>
+#include "LGL.module/LGL.h"
 
 class DatabaseObj;
 

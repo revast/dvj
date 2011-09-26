@@ -47,19 +47,19 @@
 #define	strcasecmp	strcmpi
 #endif	//WIN32
 
-#include "SDL_opengl.h"
+#include "SDL/SDL_opengl.h"
 #ifndef	LGL_OSX
 #include <GL/gl.h>
 #include <GL/glext.h>
 //#define	GL_PIXEL_UNPACK_BUFFER GL_PIXEL_UNPACK_BUFFER_ARB
 #endif	//LGL_OSX
 
-#include <SDL.h>
-#include <SDL_main.h>
-#include <SDL_scancode.h>
-#include <SDL_compat.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_main.h>
+#include <SDL/SDL_scancode.h>
+#include <SDL/SDL_compat.h>
 
-#include <SDL_thread.h>
+#include <SDL/SDL_thread.h>
 #include <pthread.h>
 
 #include <fftw3.h>
@@ -1034,12 +1034,12 @@ const	char*		GetPathShort() const;
 	void		YUV_DeletePixelBufferObjects();
 	void		YUV_UpdateTexture
 			(
-				int w,
-				int h,
-				unsigned char* dataY,
-				unsigned char* dataU,
-				unsigned char* dataV,
-				const char* name="RAM Image"
+				int		w,
+				int		h,
+				unsigned char*	dataY,
+				unsigned char*	dataU,
+				unsigned char*	dataV,
+				const char*	name="RAM Image"
 			);
 
 	int		YUV_ImgW;

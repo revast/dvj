@@ -669,7 +669,7 @@ NextFrame
 		{
 			char* pushme=new char[strlen(txt)+1];
 			strcpy(pushme,txt);
-			for(int a=strlen(pushme)-1;a>=0;a--)
+			for(int a=(int)strlen(pushme)-1;a>=0;a--)
 			{
 				if(pushme[a]=='.')
 				{

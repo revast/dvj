@@ -26,6 +26,8 @@
 #include "Common.h"
 #include "Config.h"
 #include "Input.h"
+#include "InputMouse.h"
+#include "InputTester.h"
 #include "InputXponent.h"
 #include <string.h>
 #include <stdlib.h>
@@ -49,6 +51,14 @@ LGL_Timer TurntableObj::FileEverOpenedTimer;
 bool TurntableObj::SurroundMode=false;
 
 const char* audioExtension = "flac";
+
+void
+findCachedPath
+(
+	char*		foundPath,
+	const char*	srcPath,
+	const char*	extension
+);
 
 void
 findCachedPath
@@ -274,6 +284,13 @@ findVideoPath
 (
 	char*		foundPath,
 	const char*	srcPath
+);
+
+void
+findVideoPath
+(
+	char*		foundPath,
+	const char*	srcPath
 )
 {
 	findCachedPath(foundPath,srcPath,"mjpeg.avi");
@@ -284,10 +301,23 @@ findAudioPath
 (
 	char*		foundPath,
 	const char*	srcPath
+);
+
+void
+findAudioPath
+(
+	char*		foundPath,
+	const char*	srcPath
 )
 {
 	findCachedPath(foundPath,srcPath,audioExtension);
 }
+
+int
+videoEncoderThread
+(
+	void*	ptr
+);
 
 int
 videoEncoderThread
@@ -686,6 +716,12 @@ int
 loadAllCachedDataThread
 (
 	void*	ptr
+);
+
+int
+loadAllCachedDataThread
+(
+	void*	ptr
 )
 {
 	TurntableObj* tt = (TurntableObj*)ptr;
@@ -694,6 +730,12 @@ loadAllCachedDataThread
 
 	return(0);
 }
+
+int
+findAudioPathThread
+(
+	void*	ptr
+);
 
 int
 findAudioPathThread
@@ -1084,6 +1126,7 @@ NextFrame
 	//Debug
 
 	//Deal with low memory
+	if(0)
 	{
 		if(LGL_AudioJackXrun())
 		{
@@ -1320,7 +1363,7 @@ NextFrame
 			for(unsigned int a=0;a<fi.Size();a++)
 			{
 				const char* item=fi[a];
-				int len = strlen(item);
+				int len = (int)strlen(item);
 				if(len>0)
 				{
 					if(item[0]=='~')
@@ -4065,7 +4108,7 @@ DrawFrame
 	{
 		//File Selection
 
-		unsigned int fileNum=DatabaseFilteredEntries.size();
+		unsigned int fileNum=(unsigned int)DatabaseFilteredEntries.size();
 		const char* nameArray[5];
 		for(int a=0;a<5;a++)
 		{
@@ -4176,7 +4219,7 @@ DrawFrame
 		
 		char SoundNameSafe[2048];
 		strcpy(SoundNameSafe,SoundName);
-		int SoundNameSafeLen=strlen(SoundNameSafe);
+		int SoundNameSafeLen=(int)strlen(SoundNameSafe);
 		for(int s=0;s<SoundNameSafeLen;s++)
 		{
 			if(SoundNameSafe[s]=='%')
@@ -5461,7 +5504,7 @@ SaveMetaData()
 		SavePointSeconds[17]
 	);
 
-	LGL_WriteFileAsync(metaDataPath,data,strlen(data));
+	LGL_WriteFileAsync(metaDataPath,data,(int)strlen(data));
 
 	if(MetaDataSavedThisFrame)
 	{
@@ -5571,7 +5614,7 @@ SaveWaveArrayData()
 	memcpy(&dataFloat[ENTIRE_WAVE_ARRAY_COUNT*0],EntireWaveArrayMagnitudeAve,ENTIRE_WAVE_ARRAY_COUNT*sizeof(float));
 	memcpy(&dataFloat[ENTIRE_WAVE_ARRAY_COUNT*1],EntireWaveArrayMagnitudeMax,ENTIRE_WAVE_ARRAY_COUNT*sizeof(float));
 	memcpy(&dataFloat[ENTIRE_WAVE_ARRAY_COUNT*2],EntireWaveArrayFreqFactor,ENTIRE_WAVE_ARRAY_COUNT*sizeof(float));
-	LGL_WriteFileAsync(waveArrayDataPath,data,len);
+	LGL_WriteFileAsync(waveArrayDataPath,data,(int)len);
 	delete data;
 
 	/*
@@ -5659,7 +5702,7 @@ SaveCachedMetadata()
 	char data[2048];
 	sprintf(data,"%.3f\n%f\n",CachedLengthSeconds,Sound->GetVolumePeak());
 
-	long len = strlen(data);
+	int len = (int)strlen(data);
 	LGL_WriteFileAsync(cachedLengthPath,data,len);
 
 	/*

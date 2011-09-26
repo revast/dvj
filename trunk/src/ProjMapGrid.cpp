@@ -25,6 +25,8 @@
 
 #include "Config.h"
 
+#include "Visualizer.h"
+
 #include <string.h>
 
 ProjMapGridObj::
@@ -230,6 +232,15 @@ getLineSlope
 	float	p1y,
 	float	p2x,
 	float	p2y
+);
+
+float
+getLineSlope
+(
+	float	p1x,
+	float	p1y,
+	float	p2x,
+	float	p2y
 )
 {
 	if(p2x==p1x)
@@ -242,6 +253,15 @@ getLineSlope
 		(p2x-p1x)
 	);
 }
+
+float
+getLineOffset
+(
+	float	p1x,
+	float	p1y,
+	float	p2x,
+	float	p2y
+);
 
 float
 getLineOffset
@@ -271,6 +291,15 @@ getPointRightOfLine
 	float	y,
 	float	slope,
 	float	offset
+);
+
+bool
+getPointRightOfLine
+(
+	float	x,
+	float	y,
+	float	slope,
+	float	offset
 )
 {
 	if(slope==0)
@@ -288,11 +317,31 @@ getPointAboveLine
 	float	y,
 	float	slope,
 	float	offset
+);
+
+bool
+getPointAboveLine
+(
+	float	x,
+	float	y,
+	float	slope,
+	float	offset
 )
 {
 	float lineValY = slope * x + offset;
 	return(y>lineValY);
 }
+
+bool
+getPointRightOfLine
+(
+	float	x,
+	float	y,
+	float	l1x,
+	float	l1y,
+	float	l2x,
+	float	l2y
+);
 
 bool
 getPointRightOfLine
@@ -346,6 +395,17 @@ getPointAboveLine
 	float	l1y,
 	float	l2x,
 	float	l2y
+);
+
+bool
+getPointAboveLine
+(
+	float	x,
+	float	y,
+	float	l1x,
+	float	l1y,
+	float	l2x,
+	float	l2y
 )
 {
 	if(l1x==l2x)
@@ -379,6 +439,21 @@ getPointAboveLine
 		)
 	);
 }
+
+bool
+getPointInsideQuad
+(
+	float	x,
+	float	y,
+	float	lbx,
+	float	lby,
+	float	rbx,
+	float	rby,
+	float	ltx,
+	float	lty,
+	float	rtx,
+	float	rty
+);
 
 bool
 getPointInsideQuad
@@ -843,6 +918,7 @@ void
 ProjMapGridObj::
 NextFrame()
 {
+return;
 	if(LGL_KeyDown(PROJ_MAP_KEY)==false)
 	{
 		if(LGL_KeyRelease(PROJ_MAP_KEY))
@@ -1070,6 +1146,7 @@ void
 ProjMapGridObj::
 DrawSrcGrid()
 {
+return;
 	if(GetProjMapSimple())
 	{
 		float l=0.0f;
@@ -1107,6 +1184,7 @@ void
 ProjMapGridObj::
 DrawDstGrid()
 {
+return;
 	if(GetProjMapSimple()==false)
 	{
 		DrawGrid(DstPoints);
@@ -1116,6 +1194,155 @@ DrawDstGrid()
 		DrawGrid(SrcPoints);
 	}
 }
+
+/*
+void
+ProjMapGridObj::
+DrawMappedImage
+(
+	LGL_Image*	image,
+	float		left,
+	float		right,
+	float		bottom,
+	float		top
+)
+{
+	for(int i=0;i<GridW-1;i++)
+	{
+		for(int j=0;j<GridH-1;j++)
+		{
+			float xSrc[4];
+			float ySrc[4];
+			//LB
+			xSrc[0]=GetProjMapGridValueX
+			(
+				SrcPoints,
+				i,
+				j
+			);
+			ySrc[0]=GetProjMapGridValueY
+			(
+				SrcPoints,
+				i,
+				j
+			);
+			//RB
+			xSrc[1]=GetProjMapGridValueX
+			(
+				SrcPoints,
+				i+1,
+				j
+			);
+			ySrc[1]=GetProjMapGridValueY
+			(
+				SrcPoints,
+				i+1,
+				j
+			);
+			//RT
+			xSrc[2]=GetProjMapGridValueX
+			(
+				SrcPoints,
+				i+1,
+				j+1
+			);
+			ySrc[2]=GetProjMapGridValueY
+			(
+				SrcPoints,
+				i+1,
+				j+1
+			);
+			//LT
+			xSrc[3]=GetProjMapGridValueX
+			(
+				SrcPoints,
+				i,
+				j+1
+			);
+			ySrc[3]=GetProjMapGridValueY
+			(
+				SrcPoints,
+				i,
+				j+1
+			);
+
+			float xDst[4];
+			float yDst[4];
+			//LB
+			xDst[0]=GetProjMapGridValueX
+			(
+				DstPoints,
+				i,
+				j
+			);
+			yDst[0]=GetProjMapGridValueY
+			(
+				DstPoints,
+				i,
+				j
+			);
+			//RB
+			xDst[1]=GetProjMapGridValueX
+			(
+				DstPoints,
+				i+1,
+				j
+			);
+			yDst[1]=GetProjMapGridValueY
+			(
+				DstPoints,
+				i+1,
+				j
+			);
+			//RT
+			xDst[2]=GetProjMapGridValueX
+			(
+				DstPoints,
+				i+1,
+				j+1
+			);
+			yDst[2]=GetProjMapGridValueY
+			(
+				DstPoints,
+				i+1,
+				j+1
+			);
+			//LT
+			xDst[3]=GetProjMapGridValueX
+			(
+				DstPoints,
+				i,
+				j+1
+			);
+			yDst[3]=GetProjMapGridValueY
+			(
+				DstPoints,
+				i,
+				j+1
+			);
+
+			for(int q=0;q<4;q++)
+			{
+				xDst[q]=myL+myW*xDst[q];
+				yDst[q]=myB+myH*yDst[q];
+			}
+
+			mmi->DrawToScreen
+			(
+				xDst,
+				yDst,
+				xSrc,
+				ySrc,
+				1.0f,
+				1.0f,
+				1.0f,
+				1.0f,
+				1.0f	//brightnessScalar
+			);
+		}
+	}
+}
+*/
 
 void
 ProjMapGridObj::

@@ -126,6 +126,7 @@ static inline uint32 ToUInt32( const char *p )
 #endif
 }
 
+int64 ToInt64( const char *p );
 
 int64 ToInt64( const char *p )
 {
@@ -150,6 +151,7 @@ int64 ToInt64( const char *p )
 #endif
 }
 
+uint64 ToUInt64( const char *p );
 
 uint64 ToUInt64( const char *p )
 {

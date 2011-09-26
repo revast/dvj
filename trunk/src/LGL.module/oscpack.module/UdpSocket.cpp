@@ -208,7 +208,7 @@ public:
 		struct sockaddr_in fromAddr;
         socklen_t fromAddrLen = sizeof(fromAddr);
              	 
-        int result = recvfrom(socket_, data, size, 0,
+        int result = (int)recvfrom(socket_, data, size, 0,
                     (struct sockaddr *) &fromAddr, (socklen_t*)&fromAddrLen);
 		if( result < 0 )
 			return 0;
@@ -417,7 +417,7 @@ public:
 			
 				// 1000000 microseconds in a second
 				timeout.tv_sec = (long)(timeoutMs * .001);
-				timeout.tv_usec = (long)((timeoutMs - (timeout.tv_sec * 1000)) * 1000);
+				timeout.tv_usec = (int)((timeoutMs - (timeout.tv_sec * 1000)) * 1000);
 				timeoutPtr = &timeout;
 			}
 

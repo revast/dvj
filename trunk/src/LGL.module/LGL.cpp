@@ -102,7 +102,7 @@
 #ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.85f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(-0.5f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(0.5f)
 #define	LGL_PRIORITY_VIDEO_PRELOAD	(0.6f)
 #define	LGL_PRIORITY_VIDEO_READAHEAD	(0.65f)
 #define	LGL_PRIORITY_VIDEO_LOAD		(0.8f)
@@ -112,7 +112,7 @@
 #else
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(-0.5f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(0.5f)
 #define	LGL_PRIORITY_VIDEO_LOAD		(0.8f)
 #define	LGL_PRIORITY_AUDIO_DECODE	(0.8f)
 #define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f)
@@ -11816,7 +11816,7 @@ MaybeLoadImage()
 	return(frameRead);
 }
 
-#include <jpeglib.h>
+#include </opt/libjpeg-turbo/include/jpeglib.h>	//Using an explicit path to libjpeg-turbo
 #include <setjmp.h>
 
 struct my_error_mgr
@@ -12331,6 +12331,7 @@ MaybeDecodeImage
 	//If we read a frame, put it into our lgl_FrameBuffer
 	if(frameRead)
 	{
+		/*
 		if(SDL_ThreadID()==LGL.ThreadIDMain)
 		{
 			LGL_DebugPrintf("MAIN\n");
@@ -12339,6 +12340,7 @@ MaybeDecodeImage
 		{
 			LGL_DebugPrintf("THREAD\n");
 		}
+		*/
 
 		if(frameBuffer)
 		{

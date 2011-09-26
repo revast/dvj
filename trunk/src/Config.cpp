@@ -24,11 +24,19 @@
 #include "Config.h"
 #include "ConfigFile.h"
 
-#include "LGL.module/LGL.h"
-
 #include <string>
 
+#include "LGL.module/LGL.h"
+
+#include "Visualizer.h"
+
 using namespace std;
+
+void
+CreateDefaultDVJRC
+(
+	const char*	path
+);
 
 void
 CreateDotJackdrc();
@@ -968,6 +976,12 @@ int
 MapStringToSDLK
 (
 	const char* str
+);
+
+int
+MapStringToSDLK
+(
+	const char* str
 )
 {
 	MAP_STRING_TO_SDLK(LGL_KEY_UNKNOWN);
@@ -1561,7 +1575,7 @@ CreateDefaultKeyboardInput
 					if(const char* valueStr = dvjInputMap[a].KeyboardStr)
 					{
 						fprintf(fd,"%s",key);
-						int numSpaces = maxLength - strlen(key);
+						int numSpaces = maxLength - (int)strlen(key);
 						for(int b=0;b<numSpaces;b++)
 						{
 							fprintf(fd, " ");
@@ -1668,7 +1682,7 @@ CreateDefaultOscInput
 				)
 				{
 					fprintf(fd,"%s",keyStr);
-					int numSpaces = maxLength - strlen(keyStr);
+					int numSpaces = maxLength - (int)strlen(keyStr);
 					for(int b=0;b<numSpaces;b++)
 					{
 						fprintf(fd, " ");

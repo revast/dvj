@@ -25,6 +25,8 @@
 
 #include "Common.h"
 #include "Config.h"
+#include "FileInterface.h"
+#include "Turntable.h"
 
 #include <string.h>
 
@@ -843,7 +845,7 @@ DrawVisuals
 	}
 
 	//Mesh mapping!
-	if(LGL_GetActiveDisplay()!=0)
+	if(0 && LGL_GetActiveDisplay()!=0)
 	{
 		LGL_Image* mmi = MeshMapperImage[LGL_GetActiveDisplay()];
 		mmi->FrameBufferUpdate();
@@ -862,6 +864,7 @@ DrawVisuals
 		float myW=myR-myL;
 		float myH=myT-myB;
 
+		//TODO: This should be glClearBuffer()...
 		LGL_DrawRectToScreen
 		(
 			myL,
@@ -873,6 +876,8 @@ DrawVisuals
 			0.0f,
 			1.0f
 		);
+
+		//ProjMapGrid.DrawMappedImage(mmi);
 
 		for(int i=0;i<ProjMapGrid.GridW-1;i++)
 		{
@@ -993,29 +998,6 @@ DrawVisuals
 					xDst[q]=myL+myW*xDst[q];
 					yDst[q]=myB+myH*yDst[q];
 				}
-
-/*
-				LGL_DebugPrintf
-				(
-					"LB: %.2f, %.2f\n",
-					xDst[0],yDst[0]
-				);
-				LGL_DebugPrintf
-				(
-					"RB: %.2f, %.2f\n",
-					xDst[1],yDst[1]
-				);
-				LGL_DebugPrintf
-				(
-					"RT: %.2f, %.2f\n",
-					xDst[2],yDst[2]
-				);
-				LGL_DebugPrintf
-				(
-					"LT: %.2f, %.2f\n",
-					xDst[3],yDst[3]
-				);
-*/
 
 				if(GetProjMapSimple())
 				{
@@ -1578,7 +1560,7 @@ ForceVideoToBackOfRandomQueue
 			strcmp(pathShort,queue[queue.size()-1])!=0
 		)
 		{
-			for(int a=queue.size()-1;a>=0;a--)
+			for(int a=(int)queue.size()-1;a>=0;a--)
 			{
 				if(strcmp(pathShort,queue[a])==0)
 				{
@@ -1843,7 +1825,7 @@ SaveProjMapPrevCorners()
 		ProjMapOffsetY[3]
 	);
 
-	LGL_WriteFileAsync(ProjMapCornersPath,data,strlen(data));
+	LGL_WriteFileAsync(ProjMapCornersPath,data,(int)strlen(data));
 
 	/*
 	for(int a=0;a<4;a++)

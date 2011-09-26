@@ -23,6 +23,8 @@
 
 #include "FileInterface.h"
 
+#include <assert.h>
+
 FileInterfaceObj::
 FileInterfaceObj()
 {
@@ -219,7 +221,7 @@ unsigned int
 FileInterfaceObj::
 Size()	const
 {
-	return(Argv.size());
+	return((unsigned int)Argv.size());
 }
 
 char*
