@@ -193,8 +193,10 @@ void OutboundPacketStream::EndElement( char *endPtr )
 
         // then we store the element size in the slot, note that the element
         // size does not include the size slot, hence the - 4 below.
-        uint32 elementSize =
-                (endPtr - reinterpret_cast<char*>(elementSizePtr_)) - 4;
+        uint32 elementSize = (uint32)
+	(
+                (endPtr - reinterpret_cast<char*>(elementSizePtr_)) - 4
+	);
         FromUInt32( reinterpret_cast<char*>(elementSizePtr_), elementSize );
 
         // finally, we reset the element size ptr to the containing element
@@ -252,13 +254,13 @@ void OutboundPacketStream::Clear()
 
 unsigned int OutboundPacketStream::Capacity() const
 {
-    return end_ - data_;
+    return ((unsigned int)(end_ - data_));
 }
 
 
 unsigned int OutboundPacketStream::Size() const
 {
-    unsigned int result = argumentCurrent_ - data_;
+    unsigned int result = (unsigned int)(argumentCurrent_ - data_);
     if( IsMessageInProgress() ){
         // account for the length of the type tag string. the total type tag
         // includes an initial comma, plus at least one terminating \0
@@ -363,7 +365,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const MessageTerminator&
     if( !IsMessageInProgress() )
         throw MessageNotInProgressException();
 
-    int typeTagsCount = end_ - typeTagsCurrent_;
+    int typeTagsCount = (int)(end_ - typeTagsCurrent_);
 
     if( typeTagsCount ){
 
@@ -371,9 +373,9 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const MessageTerminator&
         memcpy( tempTypeTags, typeTagsCurrent_, typeTagsCount );
 
         // slot size includes comma and null terminator
-        int typeTagSlotSize = RoundUp4( typeTagsCount + 2 );
+        int typeTagSlotSize = (int)RoundUp4( typeTagsCount + 2 );
 
-        uint32 argumentsSize = argumentCurrent_ - messageCursor_;
+        uint32 argumentsSize = (uint32)(argumentCurrent_ - messageCursor_);
 
         memmove( messageCursor_ + typeTagSlotSize, messageCursor_, argumentsSize );
 
@@ -618,7 +620,7 @@ OutboundPacketStream& OutboundPacketStream::operator<<( const Blob& rhs )
     CheckForAvailableArgumentSpace( 4 + RoundUp4(rhs.size) );
 
     *(--typeTagsCurrent_) = BLOB_TYPE_TAG;
-    FromUInt32( argumentCurrent_, rhs.size );
+    FromUInt32( argumentCurrent_, (uint32)rhs.size );
     argumentCurrent_ += 4;
     
     memcpy( argumentCurrent_, rhs.data, rhs.size );

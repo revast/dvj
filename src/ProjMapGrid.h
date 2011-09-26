@@ -60,6 +60,15 @@ public:
 	void			DrawSrcGrid();
 	void			DrawDstGrid();
 
+	void			DrawMappedImage
+				(
+					LGL_Image*	image,
+					float		left,
+					float		right,
+					float		bottom,
+					float		top
+				);
+
 //private:
 
 	void			DrawGrid(float* points);

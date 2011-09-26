@@ -6,6 +6,7 @@
 
 #include "Database.h"
 
+#include "Common.h"
 #include "Config.h"
 #include "FileInterface.h"
 
@@ -218,8 +219,8 @@ MatchesFilter
 	//Dir
 	if(filter->Dir)
 	{
-		unsigned int filterLen = strlen(filter->Dir);
-		unsigned int entryLen = strlen(PathDir);
+		unsigned int filterLen = (unsigned int)strlen(filter->Dir);
+		unsigned int entryLen = (unsigned int)strlen(PathDir);
 		if(filterLen!=entryLen)
 		{
 			return(false);
@@ -272,7 +273,7 @@ MatchesFilter
 		}
 
 		bool match=true;
-		unsigned int wordCount=filterWordList.size();
+		unsigned int wordCount=(unsigned int)filterWordList.size();
 		for(unsigned int b=0;b<wordCount;b++)
 		{
 			if(strcasestr(PathShort,filterWordList[b])==NULL)
@@ -297,6 +298,12 @@ MatchesFilter
 
 
 //DatabaseObj
+
+int
+DatabaseRefreshThread
+(
+	void* ptr
+);
 
 int
 DatabaseRefreshThread

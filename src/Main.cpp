@@ -71,6 +71,8 @@ bool				eeepc=false;
 char				recordPath[2048];
 char				recordOldPath[2048];
 
+void InitializeGlobalsPreLGL();
+
 void InitializeGlobalsPreLGL()
 {
 	sprintf(recordPath,"%s/.dvj/record",LGL_GetHomeDir());
@@ -109,6 +111,8 @@ void InitializeGlobalsPreLGL()
 	}
 #endif	//LGL_LINUX
 }
+
+void InitializeGlobals();
 
 void InitializeGlobals()
 {
@@ -160,11 +164,17 @@ void InitializeGlobals()
 }
 
 void
+userExit();
+
+void
 userExit()
 {
 	delete Visualizer;
 	GetMixer().Cleanup();
 }
+
+void
+VerifyMusicDir();
 
 void
 VerifyMusicDir()
@@ -245,6 +255,8 @@ VerifyMusicDir()
 	}
 }
 
+void WarnVsync();
+
 void WarnVsync()
 {
 	printf("dvj: Error! OpenGL V-Sync must be enabled!\n");
@@ -291,6 +303,8 @@ void WarnVsync()
 //Core Functions
 
 bool mouseMotionEver=false;
+
+void NextFrame();
 
 void NextFrame()
 {
@@ -495,7 +509,9 @@ void NextFrame()
 	LGL_DrawLogWrite("dvj::OmniFader|%.3f\n",OmniFader);
 }
 
-void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f)
+void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent=0.0f);
+
+void DrawFrame(bool visualsQuadrent, float visualizerZoomOutPercent)
 {
 	if(ExitPrompt)
 	{
@@ -653,6 +669,9 @@ float SwapOutOtherProgramsPercent=0.0f;
 bool SwapOutOtherProgramsFinished=false;
 
 int
+SwapOutOtherPrograms(void* baka);
+
+int
 SwapOutOtherPrograms(void* baka)
 {
 	long int memDelta = 128;
@@ -707,6 +726,9 @@ SwapOutOtherPrograms(void* baka)
 	SwapOutOtherProgramsFinished=true;
 	return(0);
 }
+
+void
+WireMemory();
 
 void
 WireMemory()
@@ -878,6 +900,13 @@ int main(int argc, char** argv)
 
 	LGL_MouseVisible(false);
 	LGL_SetFPSMax(GetFPSMax());
+
+	if(LGL_DirectoryExists("Data")==false)
+	{
+		char dir[2048];
+		sprintf(dir,"%s/dvj",LGL_GetHomeDir());
+		chdir(dir);
+	}
 
 	VerifyMusicDir();
 

@@ -150,8 +150,7 @@ LGLLIBRARIES_W32	= -Llib/w32 -lmingw32 -lSDLmain -lSDL -lSDL_image -lSDL_net -lg
 #.PHONY: all basic lin lin-lib lin-bin osx osx-lib osx-bin w32 w32-lib w32-bin
 
 all: default
-#basic: Makefile.depend tags $(OBJDIR_ALL_SHORT)
-basic: tags $(OBJDIR_ALL_SHORT)
+basic: $(OBJDIR_ALL_SHORT)
 
 ifeq ($(CREATE_BINARY), 1)
 lin: lin-lib lin-bin
@@ -352,22 +351,6 @@ endif
 
 
 
-#BUILDING VIM TAGS
-
-ifeq ($(PLATFORM), MINGW32_NT-5.1)
-tags: $(SRC) $(HDR)
-#	echo "	Updating vim tags... (win32-native)"
-#	ctags *.cpp *.h
-else
-tags: $(SRC) $(HDR)
-	@echo "	$(PREFIX_BIN)		ctags		*.cpp *.mm *.h"
-	@ctags *.mm *.cpp *.h reference/*.h 2>/dev/null 1>/dev/null || @ctags *.cpp *.h reference/*.h 2>/dev/null 1>/dev/null || ctags *.cpp *.h 2>/dev/null 1>/dev/null || ctags *.cpp 2>/dev/null 1>/dev/null || ctags *.mm 2>/dev/null 1>/dev/null || touch tags
-endif
-
-
-
-
-
 #CLEAN MODULE DIRECTORIES
 
 .PHONY: %.module.clean %.module.spotless
@@ -405,14 +388,14 @@ endif
 
 ifeq ($(PLATFORM), MINGW32_NT-5.1)
 spotless: clean $(MODULE_DIRS_SPOTLESS)
-	rm -rf obj tags
+	rm -rf obj
 ifeq ($(CREATE_BINARY), 1)
 	rm -f $(TARGET_BIN_ALL)
 endif
 else
 spotless: clean $(MODULE_DIRS_SPOTLESS)
-	@echo "	$(PREFIX_BIN)		rm -rf		obj tags"
-	@rm -rf obj tags
+	@echo "	$(PREFIX_BIN)		rm -rf		obj"
+	@rm -rf obj
 ifeq ($(CREATE_BINARY), 1)
 	@echo "	$(PREFIX_BIN)		rm -f		$(TARGET_BIN_ALL)"
 	@rm -f $(TARGET_BIN_ALL)

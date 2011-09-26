@@ -23,6 +23,8 @@
 
 #include "OscElement.h"
 
+#include "InputOsc.h"
+
 #include "Config.h"
 
 OscElementObj::

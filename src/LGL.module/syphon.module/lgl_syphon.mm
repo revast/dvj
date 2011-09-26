@@ -9,7 +9,8 @@
 #import <Cocoa/Cocoa.h>
 #import "stdio.h"
 
-#import <Syphon.h>
+//#import <Syphon.h>
+#import "Syphon.framework/Headers/Syphon.h"
 
 SyphonClient*		syClient=NULL;
 SyphonServer*		syServer=NULL;

@@ -24,6 +24,9 @@
 #include "Common.h"
 #include "Config.h"
 
+#include "Visualizer.h"
+#include "InputMouse.h"
+
 #define	NEEDLE_DISTANCE_FROM_EDGES (0.0f)
 
 #define SAMPLE_RADIUS_MULTIPLIER (2.0f)
@@ -839,7 +842,7 @@ Turntable_DrawDirTree
 
 			char fileNowSafe[2048];
 			strcpy(fileNowSafe,fileNow);
-			const int fileNowSafeLen = strlen(fileNowSafe);
+			const int fileNowSafeLen = (int)strlen(fileNowSafe);
 			for(int s=0;s<fileNowSafeLen;s++)
 			{
 				if(fileNowSafe[s]=='%')
@@ -859,6 +862,20 @@ Turntable_DrawDirTree
 		}
 	}
 }
+
+void
+turntable_DrawBPMLines
+(
+	float	leftSample,
+	float	rightSample,
+	float	soundLengthSeconds,
+	float	bpmFirstBeatSeconds,
+	float	secondsPerBeat,
+	float	pointBottom,
+	float	pointTop,
+	float	wavLeft,
+	float	wavWidth
+);
 
 void
 turntable_DrawBPMLines
@@ -985,6 +1002,23 @@ DrawWarpPointLineOrRect
 	float		warmG,
 	float		warmB,
 	LGL_Image*	noiseImage256x64
+);
+
+void
+DrawWarpPointLineOrRect
+(
+	float		soundPositionSamples,
+	float		sampleRadiusMultiplier,
+	float		warpPointSecondsStart,
+	float		warpPointSecondsTrigger,
+	float		pointLeft,
+	float		pointWidth,
+	float		pointBottom,
+	float		pointTop,
+	float		warmR,
+	float		warmG,
+	float		warmB,
+	LGL_Image*	noiseImage256x64
 )
 {
 	//Draw warp line (or rect)!
@@ -1057,6 +1091,38 @@ Turntable_DrawWaveformZoomed
 	float		volumeMultiplierNow,
 	bool		rapidVolumeInvertSelf,
 	bool		lowRez
+);
+
+void
+Turntable_DrawWaveformZoomed
+(
+	LGL_Sound*	sound,
+	float		centerX,
+	float		viewportWidth,
+	long		pointResolution,
+	float		pointLeft,
+	float		pointWidth,
+	float		vertLeft,
+	float		vertRight,
+	long		sampleLeft,
+	long		sampleWidth,
+	long		sampleLeftBase,
+	double		deltaSample,
+	long		samplesPerLoopPeriod,
+	long		bpmFirstBeatCurrentMeasureSamples,
+	float		glitchSampleLeft,
+	float		glitchSampleRight,
+	bool		glitchLines,
+	float		pointBottom,
+	float		pointHeight,
+	float		pointTop,
+	int		pointsToDrawIndexBegin,
+	int		pointsToDrawIndexEnd,
+	float		needleDeltaL,
+	float		needleDeltaR,
+	float		volumeMultiplierNow,
+	bool		rapidVolumeInvertSelf,
+	bool		lowRez
 )
 {
 	float coolR;
@@ -1068,9 +1134,9 @@ Turntable_DrawWaveformZoomed
 	float warmB;
 	GetColorWarm(warmR,warmG,warmB);
 
-	for(int z=-pointResolution;z<pointResolution*2;z++)
+	for(long z=-pointResolution;z<pointResolution*2;z++)
 	{
-		int a=z+pointResolution;
+		long a=z+pointResolution;
 		float xPreview = pointLeft + z/(float)(pointResolution-2)*pointWidth;
 		if
 		(
@@ -1201,11 +1267,11 @@ Turntable_DrawWaveformZoomed
 		}
 		else if(xPreview < vertLeft)
 		{
-			pointsToDrawIndexBegin=a+2;
+			pointsToDrawIndexBegin=(int)a+2;
 		}
 		else if(xPreview > vertRight)
 		{
-			pointsToDrawIndexEnd=a-1;
+			pointsToDrawIndexEnd=(int)a-1;
 			break;
 		}
 	}
@@ -1576,7 +1642,7 @@ Turntable_DrawWaveform
 		//bool sampleLeftBaseIsOdd=(sampleLeftBase%(deltaSampleLong*2))!=0;
 
 		int pointsToDrawIndexBegin=0;
-		int pointsToDrawIndexEnd=pointResolution;
+		int pointsToDrawIndexEnd=(int)pointResolution;
 
 		float vertLeft = wavLeft-0.05f;
 		float vertRight= wavRight+0.05f;
@@ -2376,7 +2442,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 
 	char soundNameSafe[2048];
 	strcpy(soundNameSafe,soundName);
-	int soundNameSafeLen=strlen(soundNameSafe);
+	int soundNameSafeLen=(int)strlen(soundNameSafe);
 	for(int s=0;s<soundNameSafeLen;s++)
 	{
 		if(soundNameSafe[s]=='%')

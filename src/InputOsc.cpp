@@ -23,6 +23,8 @@
 
 #include "InputOsc.h"
 
+#include "Mixer.h"
+
 InputOscObj&
 GetInputOsc()
 {
