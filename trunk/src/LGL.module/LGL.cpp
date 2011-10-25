@@ -24,6 +24,9 @@
 //#define	LGL_NO_GRAPHICS
 
 #include "LGL.h"
+#ifdef	LGL_OSX
+#include "quicktime.module/lgl_quicktime.h"
+#endif
 
 #include <stdlib.h>
 #include <math.h>
@@ -10545,6 +10548,7 @@ Init()
 	BufferWidth=-1;
 	BufferHeight=-1;
 	SwsConvertContextBGRA=NULL;
+	QuicktimeMovie=NULL;
 
 	BufferYUV=NULL;
 	BufferYUVBytes=0;
@@ -10635,6 +10639,14 @@ UnloadVideo()
 		lgl_av_close_input_file(FormatContext);
 		//NOT necessary: lgl_av_freep(FormatContext);
 		FormatContext=NULL;
+	}
+
+	if(QuicktimeMovie)
+	{
+#ifdef	LGL_OSX
+		lgl_quicktime_close(QuicktimeMovie);
+#endif
+		QuicktimeMovie=NULL;
 	}
 
 	NextRequestedDecodeFrame=-1;
@@ -11643,6 +11655,13 @@ MaybeLoadVideo()
 
 		InvalidateAllFrameBuffers();
 
+#ifdef	LGL_OSX
+		QuicktimeMovie = lgl_quicktime_open
+		(
+			Path
+		);
+#endif
+
 		VideoOK=true;
 		break;
 	}
@@ -11850,6 +11869,23 @@ lgl_decode_jpeg
 	long		srcLen
 )
 {
+	/*
+	if(0)
+	{
+		bool ret = lgl_quicktime_decode_jpeg
+		(
+			dstData,
+			dstLen,
+			srcData,
+			srcLen
+		);
+		if(ret)
+		{
+			return(true);
+		}
+	}
+	*/
+
 	//Modified from example.c in libjpeg-turbo-1.1.1
 	
 	/* This struct contains the JPEG decompression parameters and pointers to
@@ -12219,7 +12255,22 @@ MaybeDecodeImage
 	const int useLibJpegTurbo=true;//(SDL_ThreadID()!=LGL.ThreadIDMain);
 	if(useLibJpegTurbo)
 	{
-		frameFinished=lgl_decode_jpeg(dst,bufferBytesNow,packet->data,(long)packet->size);
+		if(0 && QuicktimeMovie)
+		{
+			/*
+			frameFinished=lgl_quicktime_decode
+			(
+				QuicktimeMovie,
+				FrameNumberToSeconds(desiredFrameNum),
+				dst,
+				bufferBytesNow
+			);
+			*/
+		}
+		else
+		{
+			frameFinished=lgl_decode_jpeg(dst,bufferBytesNow,packet->data,(long)packet->size);
+		}
 	}
 	else
 	{
@@ -24891,7 +24942,11 @@ GetAddress()
 int
 LGL_SyphonServerCount()
 {
+#ifdef LGL_OSX
 	return(lgl_SyphonServerCount());
+#else
+	return(0);
+#endif
 }
 
 LGL_Image*
@@ -24900,6 +24955,7 @@ LGL_SyphonImage
 	int	serverIndex
 )
 {
+#ifdef LGL_OSX
 	if(LGL.SyphonImage==NULL)
 	{
 		LGL.SyphonImage = new LGL_Image("data/image/logo.png");
@@ -24923,11 +24979,15 @@ LGL_SyphonImage
 	LGL.SyphonImage->InvertY=true;
 
 	return(LGL.SyphonImage);
+#else
+	return(NULL);
+#endif
 }
 
 void
 LGL_SyphonPushImage(LGL_Image* img)
 {
+#ifdef LGL_OSX
 	lgl_SyphonPushImage
 	(
 		img->TextureGL,
@@ -24936,6 +24996,9 @@ LGL_SyphonPushImage(LGL_Image* img)
 		img->GetTexWidth(),
 		img->GetTexHeight()
 	);
+#else
+	//Do nothing
+#endif
 }
 
 
