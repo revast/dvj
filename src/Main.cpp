@@ -759,8 +759,19 @@ WireMemory()
 	}
 }
 
+//#include "LGL.module/quicktime.module/lgl_quicktime.h"
+
 int main(int argc, char** argv)
 {
+	//TEST
+	/*
+	if(0)
+	{
+		lgl_quicktimeTest();
+		exit(0);
+	}
+	*/
+
 	//Set working directory
 	char wd[2048];
 	strcpy(wd,argv[0]);
