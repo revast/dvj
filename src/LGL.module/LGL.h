@@ -1343,6 +1343,7 @@ private:
 	int			BufferWidth;
 	int			BufferHeight;
 	SwsContext*		SwsConvertContextBGRA;
+	void*			QuicktimeMovie;
 
 	unsigned char*		BufferYUV;
 	unsigned int		BufferYUVBytes;

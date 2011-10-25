@@ -1,6 +1,6 @@
 /*
  *
- * LGL_Syphon.h
+ * lgl_syphon.h
  *
  */
 
