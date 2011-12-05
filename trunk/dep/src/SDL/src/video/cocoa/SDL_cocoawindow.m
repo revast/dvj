@@ -35,26 +35,15 @@ static __inline__ void ConvertNSRect(NSRect *r)
     r->origin.y = CGDisplayPixelsHigh(kCGDirectMainDisplay) - r->origin.y - r->size.height;
 }
 
-//2010.12.19 - id: This is a cheesy HACK.
-//I only want to receive touch events for the 1st window.
-//So, I keep track of primaryListener.
-//Hopefully, SDL will fix the bugs I've reported soon.
-static Cocoa_WindowListener* primaryListener=NULL;
-static int primaryListenerCounter=0;
-
 @implementation Cocoa_WindowListener
 
 - (void)listen:(SDL_WindowData *)data
 {
-//2010.12.19 - id: This is a cheesy HACK.
-if(primaryListenerCounter<SDL_GetNumVideoDisplays())
-{
-    primaryListener=self;
-    primaryListenerCounter++;
-}
     NSNotificationCenter *center;
 
     _data = data;
+    //2011.12.04 - id: Necessary to combat zombie touches.
+    _touchId = NULL;
 
     center = [NSNotificationCenter defaultCenter];
 
@@ -243,6 +232,28 @@ if(primaryListenerCounter<SDL_GetNumVideoDisplays())
     SDL_Window *window = _data->window;
     NSPoint point;
 
+	//2011.12.04 - id: Necessary to combat zombie touches.
+	//If we have more than one touch, and the mouse moves, remove all but the most recent touch.
+	SDL_Touch* sdlTouch = SDL_GetTouch(_touchId);
+	if(sdlTouch)
+	{
+		if(sdlTouch->num_fingers>1)
+		{
+			for(int a=0;a < sdlTouch->num_fingers-0;a++)
+			{
+				printf("Killing touch!\n");
+				SDL_SendFingerDown
+				(
+					sdlTouch->id,
+					sdlTouch->fingers[a]->id,
+					false,
+					0,0,0
+				);
+			}
+		}
+	}
+
+
     point = [theEvent locationInWindow];
     point.y = window->h - point.y;
     if ( point.x < 0 || point.x >= window->w ||
@@ -311,12 +322,6 @@ if(primaryListenerCounter<SDL_GetNumVideoDisplays())
 - (void)handleTouches:(cocoaTouchType)type withEvent:(NSEvent *)event
 {
 
-//2010.12.19 - id: This is a cheesy HACK.
-if(self != primaryListener)
-{
-	return;
-}
-
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
     NSSet *touches = 0;
     NSEnumerator *enumerator;
@@ -327,8 +332,10 @@ if(self != primaryListener)
             touches = [event touchesMatchingPhase:NSTouchPhaseBegan inView:nil];
             break;
         case COCOA_TOUCH_UP:
-        case COCOA_TOUCH_CANCELLED:
             touches = [event touchesMatchingPhase:NSTouchPhaseEnded inView:nil];
+	    break;
+        case COCOA_TOUCH_CANCELLED:
+            touches = [event touchesMatchingPhase:NSTouchPhaseCancelled inView:nil];
             break;
         case COCOA_TOUCH_MOVE:
             touches = [event touchesMatchingPhase:NSTouchPhaseMoved inView:nil];
@@ -339,6 +346,8 @@ if(self != primaryListener)
     touch = (NSTouch*)[enumerator nextObject];
     while (touch) {
         SDL_TouchID touchId = (SDL_TouchID)[touch device];
+	//2011.12.04 - id: Necessary to combat zombie touches.
+	_touchId = touchId;
         if (!SDL_GetTouch(touchId)) {
             SDL_Touch touch;
 

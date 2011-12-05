@@ -20,6 +20,7 @@
     slouken@libsdl.org
 */
 #include "SDL_config.h"
+#include "../../events/SDL_touch_c.h"
 
 #ifndef _SDL_cocoawindow_h
 #define _SDL_cocoawindow_h
@@ -35,6 +36,8 @@ typedef struct SDL_WindowData SDL_WindowData;
 @interface Cocoa_WindowListener : NSResponder {
 #endif		
     SDL_WindowData *_data;
+    //2011.12.04 - id: Necessary to combat zombie touches.
+    SDL_TouchID _touchId;
 }
 
 -(void) listen:(SDL_WindowData *) data;
