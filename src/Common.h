@@ -94,25 +94,6 @@ Mixer_DrawLevels
 );
 
 void
-Turntable_DrawDirTree
-(
-	int		which,
-	float		time,
-	const char*	filterText,
-	const char*	path,
-	const char**	nameArray,
-	bool*		isDirBits,
-	bool*		loadableBits,
-	bool*		alreadyPlayedBits,
-	int		fileNum,
-	int		fileSelectInt,
-	float		viewPortBottom,
-	float		viewPortTop,
-	float		badFileFlash,
-	float*		inBPMList
-);
-
-void
 Turntable_DrawWaveform
 (
 	int		which,
@@ -148,6 +129,7 @@ Turntable_DrawWaveform
 	float*		savePointUnsetFlashPercent,
 	float		bpm,
 	float		bpmAdjusted,
+	const char*	bpmCandidate,
 	float		bpmFirstBeatSeconds,
 	float		eq0,
 	float		eq1,

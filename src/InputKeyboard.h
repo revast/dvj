@@ -95,6 +95,12 @@ virtual	float	WaveformSavePointShiftAll	(unsigned int target)	const;	//Shift all
 virtual	bool	WaveformSavePointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
 virtual	bool	WaveformSavePointJumpNow	(unsigned int target)	const;	//Jump to current save point
 virtual	bool	WaveformSavePointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
+virtual float	WaveformBPM			(unsigned int target)	const;	//Set the BPM
+virtual const char*
+		WaveformBPMCandidate		(unsigned int target)	const;	//Value we're composing for setting the BPM
+virtual void	WaveformClearBPMCandidate	(unsigned int target);		//Clear value we're composing for setting the BPM
+virtual void	WaveformHintBPMCandidate	(unsigned int target, float bpm);
+										//Hint for value when we start composing
 virtual	int	WaveformLoopMeasuresExponent	(unsigned int target)	const;	//Loop 2^n measures. If disabled, enable. Else, disable if equal.
 virtual	bool	WaveformQuantizationPeriodHalf	(unsigned int target)	const;	//Loop half as many measures
 virtual	bool	WaveformQuantizationPeriodDouble(unsigned int target)	const;	//Loop twice as many measures
@@ -122,6 +128,12 @@ private:
 
 	bool	WaveformLoopAllDebump;
 	bool	WaveformAudioInputToggleDebounce;
+	float	BPMValue;
+	const char*
+		BPMValueCandidate;
+	float	BPMValueHint;
+	LGL_InputBuffer
+		BPMInputBuffer;
 };
 
 #endif	//_INPUT_KEYBOARD_H_

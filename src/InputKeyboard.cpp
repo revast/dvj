@@ -29,6 +29,8 @@
 
 //Core
 
+#define	BPM_INPUT_KEY	LGL_KEY_COMMA
+
 void
 InputKeyboardObj::
 NextFrame()
@@ -53,6 +55,42 @@ NextFrame()
 	else if(WaveformLoopAll(TARGET_FOCUS))
 	{
 		WaveformLoopAllDebump=true;
+	}
+
+	if(LGL_KeyDown(BPM_INPUT_KEY))
+	{
+		if(LGL_KeyStroke(BPM_INPUT_KEY))
+		{
+			BPMInputBuffer.ClearBuffer();
+			BPMInputBuffer.GrabFocus();
+			BPMInputBuffer.AcceptFloat();
+			char tmpstr[1024];
+			if(BPMValueHint>0.0f)
+			{
+				sprintf(tmpstr,"%.2f",BPMValueHint);
+			}
+			else
+			{
+				tmpstr[0]='\0';
+			}
+			BPMInputBuffer.SetString(tmpstr);
+		}
+		BPMValueCandidate = BPMInputBuffer.GetString();
+		if(LGL_KeyStroke(LGL_KEY_RETURN))
+		{
+			BPMValue = BPMInputBuffer.GetFloat();
+		}
+		else
+		{
+			BPMValue = -1.0f;
+		}
+	}
+	else
+	{
+		BPMValue=-1.0f;
+		BPMValueCandidate=NULL;
+		BPMInputBuffer.ClearBuffer();
+		BPMInputBuffer.ReleaseFocus();
 	}
 }
 
@@ -138,7 +176,7 @@ FileScroll
 	unsigned int	target
 )	const
 {
-	const float RATE = 40.0f;
+	const float RATE = 200.0f;
 
 	float scroll = 0.0f;
 
@@ -221,6 +259,7 @@ WaveformEject
 	unsigned int	target
 )	const
 {
+	if(LGL_KeyDown(BPM_INPUT_KEY)) return(false);
 	if(target & TARGET_FOCUS)
 	{
 		return(LGL_KeyDown(GetInputKeyboardWaveformEjectKey()) ? 1 : 0);
@@ -238,6 +277,7 @@ WaveformPauseToggle
 	unsigned int	target
 )	const
 {
+	if(LGL_KeyDown(BPM_INPUT_KEY)) return(false);
 	if(target & TARGET_FOCUS)
 	{
 		return(LGL_KeyStroke(GetInputKeyboardWaveformPauseToggleKey()));
@@ -836,6 +876,69 @@ WaveformSavePointJumpAtMeasure
 	else
 	{
 		return(false);
+	}
+}
+
+float
+InputKeyboardObj::
+WaveformBPM
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(BPMValue);
+	}
+	else
+	{
+		return(-1.0f);
+	}
+}
+
+const char*
+InputKeyboardObj::
+WaveformBPMCandidate
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		if(BPMInputBuffer.HasFocus())
+		{
+			return(BPMValueCandidate);
+		}
+	}
+
+	return(NULL);
+}
+
+void
+InputKeyboardObj::
+WaveformClearBPMCandidate
+(
+	unsigned int	target
+)
+{
+	if(target & TARGET_FOCUS)
+	{
+		BPMInputBuffer.ClearBuffer();
+		BPMInputBuffer.ReleaseFocus();
+	}
+}
+
+void
+InputKeyboardObj::
+WaveformHintBPMCandidate
+(
+	unsigned int	target,
+	float		bpm
+)
+{
+	if(target & TARGET_FOCUS)
+	{
+		BPMValueHint=bpm;
 	}
 }
 

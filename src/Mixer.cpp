@@ -44,7 +44,14 @@ MixerObj()
 {
 	for(int a=0;a<2;a++)
 	{
-		Turntable[a]=new TurntableObj(0.025,0.975,0.25,0.50,&Database);
+		float bottom = 0.25f;
+		float top = 0.50f;
+		if(a==1)
+		{
+			bottom=0.0f;
+			top=0.25f;
+		}
+		Turntable[a]=new TurntableObj(0.025f,0.975f,bottom,top,&Database);
 		Turntable[a]->SetTurntableNumber(a);
 	}
 
@@ -80,7 +87,7 @@ MixerObj()
 	LowRez=false;
 	CanDisplayJackWarning=true;
 
-	SetViewportStatus(GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0),1.0f,0.5f,1.0f);
+	SetViewportStatus(0.0f,1.0f,0.5f,1.0f);
 }
 
 MixerObj::
@@ -279,45 +286,108 @@ NextFrame
 	if(syncTT!=-1)
 	{
 		//Sync BPM
-		Turntable[syncTT]->SetBPMAdjusted(Turntable[target]->GetBPMAdjusted());
+
+		float midiClockBPM = LGL_MidiClockBPM();
+		float midiClockPercentOfCurrentMeasure = LGL_MidiClockPercentOfCurrentMeasure();
 
 		if
 		(
-			Turntable[0]->GetPaused()==false &&
-			Turntable[1]->GetPaused()==false
+			midiClockBPM > 0 &&
+			midiClockPercentOfCurrentMeasure >= 0.0f
 		)
 		{
-			//Nudge toward sync
-			float bpmScalar = Turntable[target]->GetBPMAdjusted()/Turntable[syncTT]->GetBPMAdjusted();
-			float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f/bpmScalar,true);
-			float percentOfMeasureTarget = Turntable[target]->GetPercentOfCurrentMeasure(1.0f,true);
+			for(int t=0;t<2;t++)
+			{
+
+				if(!GetInput().WaveformSync(TARGET_FOCUS | ((Focus==0) ? TARGET_TOP : TARGET_BOTTOM)))
+				{
+					continue;
+				}
+
+				Turntable[t]->SetBPMAdjusted(midiClockBPM);
+
+				if(Turntable[t]->GetPaused()==false)
+				{
+					//Nudge toward sync
+					//float bpmScalar = Turntable[target]->GetBPMAdjusted()/Turntable[syncTT]->GetBPMAdjusted();
+					//float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f/bpmScalar,true);
+					float percentOfMeasureSelf = Turntable[t]->GetPercentOfCurrentMeasure(1.0f,true);
+					float percentOfMeasureTarget = midiClockPercentOfCurrentMeasure;
+					if
+					(
+						percentOfMeasureSelf >= 0 &&
+						percentOfMeasureTarget >= 0
+					)
+					{
+						float candidate1 = percentOfMeasureTarget - percentOfMeasureSelf;
+						float candidate2 = percentOfMeasureTarget - percentOfMeasureSelf + 1.0f;
+						float candidate3 = percentOfMeasureTarget - percentOfMeasureSelf - 1.0f;
+						float shortestDirection = (fabsf(candidate1) < fabsf(candidate2)) ? candidate1 : candidate2;
+						if(fabsf(candidate3) < fabsf(shortestDirection)) shortestDirection=candidate3;
+						if(fabsf(shortestDirection)>0.005f)
+						{
+							float nudgeAmount = LGL_Sign(shortestDirection)*0.32f;
+							if(fabsf(2*shortestDirection)<1.0f/8.0f)
+							{
+								float factor = fabsf(2*shortestDirection)*8.0f;
+								nudgeAmount = LGL_Sign(shortestDirection)*
+								(
+									powf(factor,2.0f-factor)*0.32f
+								);
+							}
+							Turntable[t]->SetMixerNudge(nudgeAmount);
+						}
+						else
+						{
+							Turntable[t]->SetMixerNudge(0.0f);
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			Turntable[syncTT]->SetBPMAdjusted(Turntable[target]->GetBPMAdjusted());
+
 			if
 			(
-				percentOfMeasureSelf >= 0 &&
-				percentOfMeasureTarget >= 0
+				Turntable[0]->GetPaused()==false &&
+				Turntable[1]->GetPaused()==false
 			)
 			{
-				float candidate1 = percentOfMeasureTarget - percentOfMeasureSelf;
-				float candidate2 = percentOfMeasureTarget - percentOfMeasureSelf + 1.0f;
-				float candidate3 = percentOfMeasureTarget - percentOfMeasureSelf - 1.0f;
-				float shortestDirection = (fabsf(candidate1) < fabsf(candidate2)) ? candidate1 : candidate2;
-				if(fabsf(candidate3) < fabsf(shortestDirection)) shortestDirection=candidate3;
-				if(fabsf(shortestDirection)>0.005f)
+				//Nudge toward sync
+				//float bpmScalar = Turntable[target]->GetBPMAdjusted()/Turntable[syncTT]->GetBPMAdjusted();
+				//float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f/bpmScalar,true);
+				float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f,true);
+				float percentOfMeasureTarget = Turntable[target]->GetPercentOfCurrentMeasure(1.0f,true);
+				if
+				(
+					percentOfMeasureSelf >= 0 &&
+					percentOfMeasureTarget >= 0
+				)
 				{
-					float nudgeAmount = LGL_Sign(shortestDirection)*0.32f;
-					if(fabsf(2*shortestDirection)<1.0f/8.0f)
+					float candidate1 = percentOfMeasureTarget - percentOfMeasureSelf;
+					float candidate2 = percentOfMeasureTarget - percentOfMeasureSelf + 1.0f;
+					float candidate3 = percentOfMeasureTarget - percentOfMeasureSelf - 1.0f;
+					float shortestDirection = (fabsf(candidate1) < fabsf(candidate2)) ? candidate1 : candidate2;
+					if(fabsf(candidate3) < fabsf(shortestDirection)) shortestDirection=candidate3;
+					if(fabsf(shortestDirection)>0.005f)
 					{
-						float factor = fabsf(2*shortestDirection)*8.0f;
-						nudgeAmount = LGL_Sign(shortestDirection)*
-						(
-							powf(factor,2.0f-factor)*0.32f
-						);
+						float nudgeAmount = LGL_Sign(shortestDirection)*0.32f;
+						if(fabsf(2*shortestDirection)<1.0f/8.0f)
+						{
+							float factor = fabsf(2*shortestDirection)*8.0f;
+							nudgeAmount = LGL_Sign(shortestDirection)*
+							(
+								powf(factor,2.0f-factor)*0.32f
+							);
+						}
+						Turntable[syncTT]->SetMixerNudge(nudgeAmount);
 					}
-					Turntable[syncTT]->SetMixerNudge(nudgeAmount);
-				}
-				else
-				{
-					Turntable[syncTT]->SetMixerNudge(0.0f);
+					else
+					{
+						Turntable[syncTT]->SetMixerNudge(0.0f);
+					}
 				}
 			}
 		}
@@ -327,7 +397,7 @@ NextFrame
 		Turntable[0]->SetMixerNudge(0.0f);
 		Turntable[1]->SetMixerNudge(0.0f);
 	}
-	
+
 	//Crossfade
 	if(LGL_AudioChannels()==2)
 	{
@@ -772,13 +842,18 @@ NextFrame
 		*/
 
 		//Set FreqSense videos
+		for(int a=0;a<2;a++)
 		{
-			float br0=Turntable[0]->GetFreqSenseBrightnessFinal();
-			float br1=Turntable[1]->GetFreqSenseBrightnessFinal();
-			TurntableObj* tt = (br0 >= br1) ? Turntable[0] : Turntable[1];
+			TurntableObj* tt = Turntable[a];
 
-			tt->GetVideoLo()->SetVideo(tt->GetVideoLoPath());
-			tt->GetVideoHi()->SetVideo(tt->GetVideoHiPath());
+			if(tt->GetVideoLo())
+			{
+				tt->GetVideoLo()->SetVideo(tt->GetVideoLoPath());
+			}
+			if(tt->GetVideoHi())
+			{
+				tt->GetVideoHi()->SetVideo(tt->GetVideoHiPath());
+			}
 		}
 
 		for(int i=0;i<2;i++)

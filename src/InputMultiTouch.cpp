@@ -165,6 +165,7 @@ FileScroll
 )	const
 {
 	float scroll=0.0f;
+	/*
 	if(target & TARGET_FOCUS)
 	{
 		if(GetInputMouse().GetHoverElement()==GUI_ELEMENT_NULL)
@@ -175,6 +176,7 @@ FileScroll
 			}
 		}
 	}
+	*/
 	return(scroll);
 }
 

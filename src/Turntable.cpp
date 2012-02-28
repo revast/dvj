@@ -22,6 +22,7 @@
  */
 
 #include "Turntable.h"
+
 #include "FileInterface.h"
 #include "Common.h"
 #include "Config.h"
@@ -29,6 +30,7 @@
 #include "InputMouse.h"
 #include "InputTester.h"
 #include "InputXponent.h"
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -42,8 +44,6 @@ int ENTIRE_WAVE_ARRAY_COUNT;
 
 int TurntableObj::Master=0;
 VisualizerObj* TurntableObj::Visualizer=NULL;
-LGL_VideoDecoder* TurntableObj::VideoLo=NULL;
-LGL_VideoDecoder* TurntableObj::VideoHi=NULL;
 LGL_Image* TurntableObj::NoiseImage[NOISE_IMAGE_COUNT_256_64];
 LGL_Image* TurntableObj::LoopImage=NULL;
 bool TurntableObj::FileEverOpened=false;
@@ -57,7 +57,9 @@ findCachedPath
 (
 	char*		foundPath,
 	const char*	srcPath,
-	const char*	extension
+	const char*	extension,
+	std::vector<const char*>*
+			searchList
 );
 
 void
@@ -65,9 +67,22 @@ findCachedPath
 (
 	char*		foundPath,
 	const char*	srcPath,
-	const char*	extension
+	const char*	extension,
+	std::vector<const char*>*
+			searchList
 )
 {
+	if(foundPath==NULL)
+	{
+		return;
+	}
+	foundPath[0]='\0';
+
+	if(srcPath==NULL)
+	{
+		return;
+	}
+
 	if(LGL_FileExtensionIsImage(srcPath))
 	{
 		if(GetDebugVideoCaching())
@@ -121,37 +136,19 @@ findCachedPath
 	}
 
 	sprintf(foundPath,"%s/%s.%s",soundSrcDir,soundName,extension);
-	if(LGL_FileExists(foundPath))
+	if(searchList)
 	{
-		//Found /home/id/mp3/hajnal.mov.mjpeg.avi
-		if(GetDebugVideoCaching())
-		{
-			printf("found: %s\n",foundPath);
-			LGL_DebugPrintf("found: %s\n",foundPath);
-		}
-		return;
+		const int neoSize = strlen(foundPath)+1;
+		char* neo = new char[neoSize];
+		strncpy(neo,foundPath,neoSize-1);
+		neo[neoSize-1]='\0';
+		searchList->push_back(neo);
 	}
 	else
 	{
-		if(GetDebugVideoCaching())
+		if(LGL_FileExists(foundPath))
 		{
-			printf("no exist: %s\n",foundPath);
-			LGL_DebugPrintf("no exist: %s\n",foundPath);
-		}
-	}
-
-	const char* dvjCacheDirName = GetDvjCacheDirName();
-
-	sprintf(foundPath,"%s/%s/%s.%s",soundSrcDir,dvjCacheDirName,soundName,extension);
-	if(LGL_FileExists(foundPath))
-	{
-		//Found /home/id/mp3/dvj_cache/hajnal.mov.mjpeg.avi
-		if(LGL_FirstFileMoreRecentlyModified(srcPath,foundPath))
-		{
-			LGL_FileDelete(foundPath);
-		}
-		else
-		{
+			//Found /home/id/mp3/hajnal.mov.mjpeg.avi
 			if(GetDebugVideoCaching())
 			{
 				printf("found: %s\n",foundPath);
@@ -159,27 +156,32 @@ findCachedPath
 			}
 			return;
 		}
-	}
-	else
-	{
-		if(GetDebugVideoCaching())
+		else
 		{
-			printf("no exist: %s\n",foundPath);
-			LGL_DebugPrintf("no exist: %s\n",foundPath);
+			if(GetDebugVideoCaching())
+			{
+				printf("no exist: %s\n",foundPath);
+				LGL_DebugPrintf("no exist: %s\n",foundPath);
+			}
 		}
 	}
 
-	if
-	(
-		strstr(srcPath,".mjpeg.avi") &&
-		strcmp(extension,"flac")==0
-	)
+	const char* dvjCacheDirName = GetDvjCacheDirName();
+
+	sprintf(foundPath,"%s/%s/%s.%s",soundSrcDir,dvjCacheDirName,soundName,extension);
+	if(searchList)
 	{
-		sprintf(foundPath,"%s/%s/%s",soundSrcDir,dvjCacheDirName,soundName);
-		sprintf(strstr(foundPath,".mjpeg.avi"),".%s",extension);
+		const int neoSize = strlen(foundPath)+1;
+		char* neo = new char[neoSize];
+		strncpy(neo,foundPath,neoSize-1);
+		neo[neoSize-1]='\0';
+		searchList->push_back(neo);
+	}
+	else
+	{
 		if(LGL_FileExists(foundPath))
 		{
-			//Found /home/id/mp3/dvj_cache/hajnal.mov.mjpeg.avi (for audio??)
+			//Found /home/id/mp3/dvj_cache/hajnal.mov.mjpeg.avi
 			if(LGL_FirstFileMoreRecentlyModified(srcPath,foundPath))
 			{
 				LGL_FileDelete(foundPath);
@@ -204,60 +206,66 @@ findCachedPath
 		}
 	}
 
-	sprintf(foundPath,"%s/.dvj/video/tracks/%s.%s",LGL_GetHomeDir(),soundName,extension);
-	if(LGL_FileExists(foundPath))
-	{
-		//Found /home/id/.dvj/video/tracks/hajnal.mov.mjpeg.avi
-		if(GetDebugVideoCaching())
-		{
-			printf("found: %s\n",foundPath);
-			LGL_DebugPrintf("found: %s\n",foundPath);
-		}
-		return;
-	}
-	else
-	{
-		if(GetDebugVideoCaching())
-		{
-			printf("no exist: %s\n",foundPath);
-			LGL_DebugPrintf("no exist: %s\n",foundPath);
-		}
-	}
-
 	if
 	(
 		strstr(srcPath,".mjpeg.avi") &&
 		strcmp(extension,"flac")==0
 	)
 	{
-		sprintf(foundPath,"%s/.dvj/video/tracks/%s",LGL_GetHomeDir(),soundName);
+		sprintf(foundPath,"%s/%s/%s",soundSrcDir,dvjCacheDirName,soundName);
 		sprintf(strstr(foundPath,".mjpeg.avi"),".%s",extension);
-		if(LGL_FileExists(foundPath))
+		if(searchList)
 		{
-			//Found /home/id/mp3/dvj/hajnal.mov.mjpeg.avi
-			if(GetDebugVideoCaching())
-			{
-				printf("found: %s",foundPath);
-				LGL_DebugPrintf("found: %s\n",foundPath);
-			}
-			return;
+			const int neoSize = strlen(foundPath)+1;
+			char* neo = new char[neoSize];
+			strncpy(neo,foundPath,neoSize-1);
+			neo[neoSize-1]='\0';
+			searchList->push_back(neo);
 		}
 		else
 		{
-			if(GetDebugVideoCaching())
+			if(LGL_FileExists(foundPath))
 			{
-				printf("no exist: %s",foundPath);
-				LGL_DebugPrintf("no exist: %s\n",foundPath);
+				//Found /home/id/mp3/dvj_cache/hajnal.mov.mjpeg.avi (for audio??)
+				if(LGL_FirstFileMoreRecentlyModified(srcPath,foundPath))
+				{
+					LGL_FileDelete(foundPath);
+				}
+				else
+				{
+					if(GetDebugVideoCaching())
+					{
+						printf("found: %s\n",foundPath);
+						LGL_DebugPrintf("found: %s\n",foundPath);
+					}
+					return;
+				}
+			}
+			else
+			{
+				if(GetDebugVideoCaching())
+				{
+					printf("no exist: %s\n",foundPath);
+					LGL_DebugPrintf("no exist: %s\n",foundPath);
+				}
 			}
 		}
 	}
 
-	strcpy(foundPath,srcPath);
-	if(strstr(extension,".mjpeg.avi"))
+	sprintf(foundPath,"%s/.dvj/video/tracks/%s.%s",LGL_GetHomeDir(),soundName,extension);
+	if(searchList)
+	{
+		const int neoSize = strlen(foundPath)+1;
+		char* neo = new char[neoSize];
+		strncpy(neo,foundPath,neoSize-1);
+		neo[neoSize-1]='\0';
+		searchList->push_back(neo);
+	}
+	else
 	{
 		if(LGL_FileExists(foundPath))
 		{
-			//Found /home/id/mp3/hajnal.mov
+			//Found /home/id/.dvj/video/tracks/hajnal.mov.mjpeg.avi
 			if(GetDebugVideoCaching())
 			{
 				printf("found: %s\n",foundPath);
@@ -271,6 +279,79 @@ findCachedPath
 			{
 				printf("no exist: %s\n",foundPath);
 				LGL_DebugPrintf("no exist: %s\n",foundPath);
+			}
+		}
+	}
+
+	if
+	(
+		strstr(srcPath,".mjpeg.avi") &&
+		strcmp(extension,"flac")==0
+	)
+	{
+		sprintf(foundPath,"%s/.dvj/video/tracks/%s",LGL_GetHomeDir(),soundName);
+		sprintf(strstr(foundPath,".mjpeg.avi"),".%s",extension);
+		if(searchList)
+		{
+			const int neoSize = strlen(foundPath)+1;
+			char* neo = new char[neoSize];
+			strncpy(neo,foundPath,neoSize-1);
+			neo[neoSize-1]='\0';
+			searchList->push_back(neo);
+		}
+		else
+		{
+			if(LGL_FileExists(foundPath))
+			{
+				//Found /home/id/mp3/dvj/hajnal.mov.mjpeg.avi
+				if(GetDebugVideoCaching())
+				{
+					printf("found: %s",foundPath);
+					LGL_DebugPrintf("found: %s\n",foundPath);
+				}
+				return;
+			}
+			else
+			{
+				if(GetDebugVideoCaching())
+				{
+					printf("no exist: %s",foundPath);
+					LGL_DebugPrintf("no exist: %s\n",foundPath);
+				}
+			}
+		}
+	}
+
+	strcpy(foundPath,srcPath);
+	if(strstr(extension,".mjpeg.avi"))
+	{
+		if(searchList)
+		{
+			const int neoSize = strlen(foundPath)+1;
+			char* neo = new char[neoSize];
+			strncpy(neo,foundPath,neoSize-1);
+			neo[neoSize-1]='\0';
+			searchList->push_back(neo);
+		}
+		else
+		{
+			if(LGL_FileExists(foundPath))
+			{
+				//Found /home/id/mp3/hajnal.mov
+				if(GetDebugVideoCaching())
+				{
+					printf("found: %s\n",foundPath);
+					LGL_DebugPrintf("found: %s\n",foundPath);
+				}
+				return;
+			}
+			else
+			{
+				if(GetDebugVideoCaching())
+				{
+					printf("no exist: %s\n",foundPath);
+					LGL_DebugPrintf("no exist: %s\n",foundPath);
+				}
 			}
 		}
 	}
@@ -293,7 +374,21 @@ findVideoPath
 	const char*	srcPath
 )
 {
-	findCachedPath(foundPath,srcPath,"mjpeg.avi");
+	printf("findVideoPath(): %s\n",srcPath);
+	findCachedPath(foundPath,srcPath,"mjpeg.avi",NULL);
+}
+
+std::vector<const char*>
+listVideoSearchPaths
+(
+	const char*	srcPath
+)
+{
+	std::vector<const char*> pathAttempts;
+	char foundPath[2048];
+	printf("listVideoSearchPaths(): %s\n",srcPath);
+	findCachedPath(foundPath,srcPath,"mjpeg.avi",&pathAttempts);
+	return(pathAttempts);
 }
 
 void
@@ -310,7 +405,7 @@ findAudioPath
 	const char*	srcPath
 )
 {
-	findCachedPath(foundPath,srcPath,audioExtension);
+	findCachedPath(foundPath,srcPath,audioExtension,NULL);
 }
 
 int
@@ -496,14 +591,15 @@ videoEncoderThread
 		//Video Encoding Loop
 		if(LGL_FileExists(encoderDst)==false || LGL_FileExists(encoderAudioDst)==false)
 		{
-if(LGL_FileExists(encoderDst)==false)
-{
-	sprintf(tt->VideoEncoderReason,"Video doesn't exist");
-}
-else if(LGL_FileExists(encoderAudioDst)==false)
-{
-	sprintf(tt->VideoEncoderReason,"Audio doesn't exist");
-}
+			if(LGL_FileExists(encoderDst)==false)
+			{
+				sprintf(tt->VideoEncoderReason,"Video doesn't exist");
+			}
+			else if(LGL_FileExists(encoderAudioDst)==false)
+			{
+				sprintf(tt->VideoEncoderReason,"Audio doesn't exist");
+			}
+
 			{
 				LGL_ScopeLock lock(__FILE__,__LINE__,tt->VideoEncoderSemaphore);
 				tt->VideoEncoder = new LGL_VideoEncoder
@@ -815,7 +911,9 @@ TurntableObj
 	float	left,	float	right,
 	float	bottom,	float	top,
 	DatabaseObj* database
-) :	VideoEncoderSemaphore("VideoEncoderSemaphore")
+) :
+	VideoEncoderSemaphore("VideoEncoderSemaphore"),
+	ListSelector(2)
 {
 	Mode=0;
 
@@ -858,8 +956,6 @@ TurntableObj
 	CenterY=.5f*(ViewportBottom+ViewportTop);
 
 	FilterTextMostRecent[0]='\0';
-
-	BadFileFlash=0.0f;
 
 	Channel=-1;
 	PauseMultiplier=0;
@@ -922,6 +1018,8 @@ TurntableObj
 	Video->SetReadAheadMB(16);
 	Video->SetReadAheadDelayMS(200);
 	Video->SetDecodeInThread(true);
+	VideoLo=NULL;
+	VideoHi=NULL;
 	if(VideoLo==NULL)
 	{
 		VideoLo=new LGL_VideoDecoder(NULL);
@@ -1004,6 +1102,7 @@ TurntableObj
 	strcpy(musicRoot,GetMusicRootPath());
 	DatabaseFilter.SetDir(musicRoot);
 	DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+	UpdateListSelector();
 
 	int dirCount=0;
 	int fileCount=0;
@@ -1019,20 +1118,7 @@ TurntableObj
 		}
 	}
 
-	FileTop=0;
-	if(dirCount<fileCount)
-	{
-		for(unsigned int a=0;a<DatabaseFilteredEntries.size();a++)
-		{
-			if(DatabaseFilteredEntries[a]->IsDir==false)
-			{
-				FileTop=a;
-				break;
-			}
-		}
-	}
-	FileSelectInt=FileTop;
-	FileSelectFloat=(float)FileTop;
+	//ListSelector TODO: Start at first non-dir row
 
 	VideoEncoderPercent=-1.0f;
 	VideoEncoderEtaSeconds=-1.0f;
@@ -1043,6 +1129,10 @@ TurntableObj
 	VideoEncoderBeginSignal=0;
 	VideoEncoderUnsupportedCodecTime=0.0f;
 	VideoEncoderUnsupportedCodecName[0]='\0';
+
+	ListSelector.SetWindowScope(ViewportLeft+ViewportHeight,ViewportRight,ViewportBottom,ViewportBottom+0.8f*ViewportHeight);
+	//ListSelector.SetWindowScope(ViewportLeft,ViewportRight,ViewportBottom,ViewportBottom+0.8f*ViewportHeight);
+	ListSelector.SetColLeftEdge(1,0.075f);
 }
 
 TurntableObj::
@@ -1155,12 +1245,13 @@ NextFrame
 		}
 	}
 
+	ListSelector.NextFrame();
+
 	if(LGL_KeyStroke(LGL_KEY_F8))
 	{
 		EncodeEveryTrack=!EncodeEveryTrack;
-		EncodeEveryTrackIndex=FileSelectInt;
+		EncodeEveryTrackIndex=ListSelector.GetHighlightedRow();
 	}
-
 
 	unsigned int target = GetTarget();
 	float candidate = 0.0f;
@@ -1311,8 +1402,6 @@ NextFrame
 			Mode0BackspaceTimer.Reset();
 		}
 
-		BadFileFlash=LGL_Max(0.0f,BadFileFlash-2.0f*LGL_SecondsSinceLastFrame());
-
 		if(Focus)
 		{
 			if(LGL_KeyStroke(LGL_KEY_ESCAPE))
@@ -1334,9 +1423,15 @@ NextFrame
 			FilterTextMostRecent[sizeof(FilterTextMostRecent)-1]='\0';
 
 			char oldSelection[2048];
-			if(FileSelectInt < (int)DatabaseFilteredEntries.size())
+			int fileSelectIndex = ListSelector.GetHighlightedRow();
+			if(fileSelectIndex < (int)DatabaseFilteredEntries.size())
 			{
-				strncpy(oldSelection,DatabaseFilteredEntries[FileSelectInt]->PathShort,sizeof(oldSelection));
+				strncpy
+				(
+					oldSelection,
+					DatabaseFilteredEntries[fileSelectIndex]->PathShort,
+					sizeof(oldSelection)
+				);
 			}
 			else
 			{
@@ -1420,10 +1515,7 @@ NextFrame
 
 			DatabaseFilter.SetPattern(pattern);
 			DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
-
-			FileTop=0;
-			FileSelectInt=0;
-			FileSelectFloat=0;
+			UpdateListSelector();
 
 			FileSelectToString(oldSelection);
 		}
@@ -1434,22 +1526,22 @@ NextFrame
 			DatabaseFilteredEntries.empty()==false
 		)
 		{
-			DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed=false;
+			DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->AlreadyPlayed=false;
 		}
 
 		int fileSelect = GetInput().FileSelect(target);
 		if(EncodeEveryTrack)
 		{
-			if(DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed)
+			if(DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->AlreadyPlayed)
 			{
-				if(FileSelectInt==EncodeEveryTrackIndex)
+				if(ListSelector.GetHighlightedRow()==EncodeEveryTrackIndex)
 				{
 					EncodeEveryTrackIndex++;
 				}
 			}
 			else
 			{
-				fileSelect = (EncodeEveryTrackIndex==FileSelectInt);
+				fileSelect = (EncodeEveryTrackIndex==ListSelector.GetHighlightedRow());
 			}
 		}
 		if
@@ -1462,8 +1554,9 @@ NextFrame
 			targetPath[0]='\0';
 			bool targetIsDir;
 
-			strcpy(targetPath,DatabaseFilteredEntries[FileSelectInt]->PathFull);
-			targetIsDir=DatabaseFilteredEntries[FileSelectInt]->IsDir;
+			int fileSelectIndex = ListSelector.GetHighlightedRow();
+			strcpy(targetPath,DatabaseFilteredEntries[fileSelectIndex]->PathFull);
+			targetIsDir=DatabaseFilteredEntries[fileSelectIndex]->IsDir;
 			bool targetPathIsDotDot = false;
 			if(strcmp(targetPath,"..")==0)
 			{
@@ -1481,7 +1574,7 @@ NextFrame
 				targetPath[0]!='\0'
 			)
 			{
-				strcpy(SoundSrcPathShort,DatabaseFilteredEntries[FileSelectInt]->PathShort);
+				strcpy(SoundSrcPathShort,DatabaseFilteredEntries[fileSelectIndex]->PathShort);
 				sprintf
 				(
 					 SoundSrcPath,
@@ -1528,10 +1621,8 @@ NextFrame
 				DatabaseFilter.SetDir(targetPath);
 				DatabaseFilter.SetPattern(FilterText.GetString());
 				DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+				UpdateListSelector();
 
-				FileTop=0;
-				FileSelectInt=0;
-				FileSelectFloat=0.0f;
 				FilterText.SetString();
 				NoiseFactor=1.0f;
 				WhiteFactor=1.0f;
@@ -1539,8 +1630,6 @@ NextFrame
 				if(targetPathIsDotDot)
 				{
 					FileSelectToString(oldDir);
-					FileTop-=2;
-					if(FileTop<0) FileTop=0;
 				}
 			}
 		}
@@ -1565,16 +1654,10 @@ NextFrame
 			}
 		}
 
-		int tmp=GetInput().FileIndexHighlight(target);
-		if(tmp!=-1)
-		{
-			FileSelectFloat=FileTop+tmp;
-			FileSelectInt=FileTop+tmp;
-		}
-
-		FileSelectFloat=
-			FileSelectInt +
-			GetInput().FileScroll(target);
+		ListSelector.ScrollHighlightedRow
+		(
+			GetInput().FileScroll(target)
+		);
 
 		if(EncodeEveryTrack)
 		{
@@ -1584,32 +1667,29 @@ NextFrame
 			}
 			else
 			{
-				FileSelectFloat=EncodeEveryTrackIndex;
+				ListSelector.SetHighlightedRow(EncodeEveryTrackIndex);
 			}
 		}
 
-		if(FileSelectFloat<0)
 		{
-			FileSelectFloat=0;
-		}
-		if(FileSelectFloat+0.5f >= DatabaseFilteredEntries.size()-1)
-		{
-			FileSelectFloat=DatabaseFilteredEntries.size()-1;
-		}
+			if(strcmp(Video->GetUserString(),DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->PathShort)!=0)
+			{
+				Video->SetUserString(DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->PathShort);
 
-		if(FileSelectInt != (int)floor(FileSelectFloat+.5f))
-		{
-			BadFileFlash=0.0f;
-			FileSelectInt=(int)floor(FileSelectFloat+.5f);
-		}
-	
-		if(FileSelectInt>=FileTop+4)
-		{
-			FileTop=FileSelectInt-4;
-		}
-		if(FileSelectInt<FileTop)
-		{
-			FileTop=FileSelectInt;
+				std::vector<const char*> pathAttempts = listVideoSearchPaths
+				(
+					DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->PathFull
+				);
+				Video->SetVideo(pathAttempts);
+				Video->SetTime(30.0f+LGL_RandFloat(0.0f,30.0f));
+				for(int a=0;a<pathAttempts.size();a++)
+				{
+					delete pathAttempts[a];
+				}
+				pathAttempts.clear();
+			}
+
+			Video->SetTime(Video->GetTime()+LGL_SecondsSinceLastFrame());
 		}
 	}
 	else if(Mode==1)
@@ -1622,9 +1702,9 @@ NextFrame
 			Sound->IsUnloadable()
 		)
 		{
-			DatabaseFilteredEntries[FileSelectInt]->Loadable=false;
+			DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->Loadable=false;
 		}
-		bool loadable=DatabaseFilteredEntries[FileSelectInt]->Loadable;
+		bool loadable=DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->Loadable;
 		if
 		(
 			loadable==false ||
@@ -1640,7 +1720,7 @@ NextFrame
 			}
 			Channel=-1;
 			Mode=3;
-			BadFileFlash=1.0f;
+			ListSelector.SetBadRowFlash();
 			if(LGL_VideoDecoder* dec = GetVideo())
 			{
 				LGL_DrawLogWrite("!dvj::DeleteVideo|%s\n",dec->GetPath());
@@ -2080,6 +2160,31 @@ NextFrame
 					}
 				}
 			}
+		}
+
+		//BPM
+		if(GetPaused())
+		{
+			GetInput().WaveformHintBPMCandidate(target,GetBPM());
+			float bpmSet = GetInput().WaveformBPM(target);
+			if(bpmSet>0.0f)
+			{
+				if(SavePointSeconds[0]==-1.0f)
+				{
+					SavePointSeconds[0]=Sound->GetPositionSeconds(Channel);
+				}
+
+				SavePointIndex=1;
+				float secondsPerBeat = 60.0f/bpmSet;
+				SavePointSeconds[1]=SavePointSeconds[0]+secondsPerBeat*16;
+				Sound->SetPositionSeconds(Channel,SavePointSeconds[1]);
+
+				SaveMetaData();
+			}
+		}
+		else
+		{
+			GetInput().WaveformClearBPMCandidate(target);
 		}
 
 		//Pitch
@@ -2912,10 +3017,7 @@ NextFrame
 			FilterText.SetString();
 			DatabaseFilter.SetPattern("");
 			DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
-
-			FileTop=0;
-			FileSelectInt=0;
-			FileSelectFloat=0;
+			UpdateListSelector();
 
 			FileSelectToString(oldSelection);
 
@@ -3052,11 +3154,6 @@ NextFrame
 	if(Mode==0)
 	{
 		//File Selection
-
-		if(Focus==false)
-		{
-			BadFileFlash=0.0f;
-		}
 	}
 	else if(Mode==1)
 	{
@@ -3083,22 +3180,11 @@ NextFrame
 					DatabaseFilter.SetDir(FoundAudioPath);
 					DatabaseFilter.SetPattern(FilterText.GetString());
 					DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+					UpdateListSelector();
 
-					FileTop=0;
-					FileSelectInt=0;
-					FileSelectFloat=0.0f;
 					FilterText.SetString();
 					NoiseFactor=1.0f;
 					WhiteFactor=1.0f;
-
-					/*
-					if(targetPathIsDotDot)
-					{
-						FileSelectToString(oldDir);
-						FileTop-=2;
-						if(FileTop<0) FileTop=0;
-					}
-					*/
 
 					Mode=3;
 					return;
@@ -3119,9 +3205,9 @@ NextFrame
 					SoundBufferLength
 				);
 				Sound->SetVolumePeak(CachedVolumePeak);
-				DatabaseFilteredEntries[FileSelectInt]->AlreadyPlayed=true;
+				DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->AlreadyPlayed=true;
 
-				DatabaseEntryNow=DatabaseFilteredEntries[FileSelectInt];
+				DatabaseEntryNow=DatabaseFilteredEntries[ListSelector.GetHighlightedRow()];
 				DecodeTimer.Reset();
 				SecondsLast=0.0f;
 				SecondsNow=0.0f;
@@ -4103,107 +4189,55 @@ DrawFrame
 			0.5f*r*localGlow,0.5f*g*localGlow,0.5f*b*localGlow,rectAlpha
 		);
 	}
-	
+
 	if(Mode==0)
 	{
-		//File Selection
-
-		unsigned int fileNum=(unsigned int)DatabaseFilteredEntries.size();
-		const char* nameArray[5];
-		for(int a=0;a<5;a++)
-		{
-			nameArray[a]="";
-		}
-		bool isDirBits[5];
-		bool loadableBits[5];
-		bool alreadyPlayedBits[5];
-		float bpm[5];
-		for(unsigned int a=(unsigned int)FileTop;a<(unsigned int)FileTop+5 && a<fileNum;a++)
-		{
-			nameArray[a-FileTop]=DatabaseFilteredEntries[a]->PathShort;
-			isDirBits[a-FileTop]=DatabaseFilteredEntries[a]->IsDir;
-			loadableBits[a-FileTop]=DatabaseFilteredEntries[a]->Loadable;
-			alreadyPlayedBits[a-FileTop]=DatabaseFilteredEntries[a]->AlreadyPlayed;
-			bpm[a-FileTop]=DatabaseFilteredEntries[a]->BPM;
-		}
-
-		char drawDirPath[2048];
-		if(strstr(DatabaseFilter.Dir,LGL_GetHomeDir()))
-		{
-#ifdef	LGL_OSX_BAKA
-			sprintf(drawDirPath,"%s/",&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())+1]));
-#else
-			sprintf(drawDirPath,"~%s/",&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())]));
-#endif
-		}
-		else
-		{
-			strcpy(drawDirPath,DatabaseFilter.Dir);
-		}
-
-		LGL_DrawLogWrite
+		ListSelector.SetBehindImage
 		(
-			//             01 02 03 04 05 06 07 08 09 10 11 12 13   14   15   16   17   18   19   20  21
-			"DirTreeDraw|%.3f|%s|%s|%s|%s|%s|%s|%s|%i|%i|%i|%i|%i|%.4f|%.4f|%.3f|%.2f|%.2f|%.2f|%.2f|%.2f\n",
-			LGL_SecondsSinceExecution()*Focus,		//01
-			FilterText.GetString(),				//02
-			drawDirPath,					//03
-			(fileNum>0)?nameArray[0]:"",			//04
-			(fileNum>1)?nameArray[1]:"",			//05
-			(fileNum>2)?nameArray[2]:"",			//06
-			(fileNum>3)?nameArray[3]:"",			//07
-			(fileNum>4)?nameArray[4]:"",			//08
-			(
-				(isDirBits[0]<<0) +			//09
-				(isDirBits[1]<<1) +
-				(isDirBits[2]<<2) +
-				(isDirBits[3]<<3) +
-				(isDirBits[4]<<4)
-			),
-			(
-				(loadableBits[0]<<0) +			//10
-				(loadableBits[1]<<1) +
-				(loadableBits[2]<<2) +
-				(loadableBits[3]<<3) +
-				(loadableBits[4]<<4)
-			),
-			(
-				(alreadyPlayedBits[0]<<0) +		//11
-				(alreadyPlayedBits[1]<<1) +
-				(alreadyPlayedBits[2]<<2) +
-				(alreadyPlayedBits[3]<<3) +
-				(alreadyPlayedBits[4]<<4)
-			),
-			fileNum-FileTop,				//12
-			FileSelectInt-FileTop,				//13
-			ViewportBottom,					//14
-			ViewportTop,					//15
-			BadFileFlash,					//16
-			bpm[0],						//17
-			bpm[1],						//18
-			bpm[2],						//19
-			bpm[3],						//20
-			bpm[4]						//21
+			NoiseImage[rand()%NOISE_IMAGE_COUNT_256_64]
 		);
-		LGL_DrawLogPause();
-		Turntable_DrawDirTree
-		(
-			Which,
-			LGL_SecondsSinceExecution()*Focus,
-			FilterText.GetString(),
-			drawDirPath,
-			nameArray,
-			isDirBits,
-			loadableBits,
-			alreadyPlayedBits,
-			fileNum-FileTop,
-			FileSelectInt-FileTop,
-			ViewportBottom,
-			ViewportTop,
-			BadFileFlash,
-			bpm
-		);
-		LGL_DrawLogPause(false);
+		ListSelector.Draw();
+
+		if(strstr(Video->GetPathShort(),DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->PathShort))
+		{
+			if(LGL_Image* image = Video->GetImage())
+			{
+				if(image->GetFrameNumber()!=-1)
+				{
+					Video->GetImage()->DrawToScreen
+					(
+						ViewportLeft,
+						ViewportLeft+ViewportHeight,
+						ViewportTop,
+						ViewportBottom
+					);
+				}
+			}
+		}
+
+		{
+			char drawDirPath[2048];
+			const char* title = FilterText.GetString();
+			if(title==NULL || title[0]=='\0')
+			{
+				if(strstr(DatabaseFilter.Dir,LGL_GetHomeDir()))
+				{
+					sprintf(drawDirPath,"~%s/",&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())]));
+				}
+				else
+				{
+					strcpy(drawDirPath,DatabaseFilter.Dir);
+				}
+				title=drawDirPath;
+			}
+			LGL_GetFont().DrawString
+			(
+				CenterX,ViewportBottom+.875f*ViewportHeight,.025f,
+				1,1,1,1,
+				true,.5f,
+				title
+			);
+		}
 	}
 	if(Mode==1)
 	{
@@ -4489,6 +4523,7 @@ DrawFrame
 			{
 				freqSensePathActiveMultiplier=0.5f;
 			}
+
 			Turntable_DrawWaveform
 			(
 				Which,
@@ -4524,6 +4559,7 @@ DrawFrame
 				SavePointUnsetFlashPercent,				//30
 				GetBPM(),						//31
 				GetBPMAdjusted(),					//32
+				GetInput().WaveformBPMCandidate(target),		//blah
 				GetBPMFirstBeatSeconds(),				//33
 				EQFinal[0],						//34
 				EQFinal[1],						//35
@@ -4798,14 +4834,8 @@ SetViewport
 	ViewportWidth=right-left;
 	ViewportHeight=top-bottom;
 
-	Left=left;
-	Right=right;
-	Bottom=bottom;
-	Top=top;
-	Width=right-left;
-	Height=top-bottom;
-	CenterX=Left+.5*Width;
-	CenterY=Bottom+.5*Height;
+	CenterX=ViewportLeft+0.5f*ViewportWidth;
+	CenterY=ViewportBottom+0.5f*ViewportHeight;
 }
 
 void
@@ -6046,6 +6076,95 @@ GetSurroundMode()
 	return(SurroundMode);
 }
 
+void
+TurntableObj::
+UpdateListSelector()
+{
+	ListSelector.Clear();
+
+	int rowNow=0;
+
+	for(int a=0;a<DatabaseFilteredEntries.size();a++)
+	{
+		if(DatabaseFilteredEntries[a]->IsDir)
+		{
+			ListSelector.SetCellColRowString
+			(
+				1,
+				rowNow,
+				DatabaseFilteredEntries[a]->PathShort
+			);
+			ListSelector.SetCellColRowStringRGB
+			(
+				1,
+				rowNow,
+				0.0f,
+				0.0f,
+				1.0f
+			);
+			ListSelector.GetCellColRow
+			(
+				1,
+				rowNow
+			)->UserData = DatabaseFilteredEntries[a];
+			rowNow++;
+		}
+	}
+
+	for(int a=0;a<DatabaseFilteredEntries.size();a++)
+	{
+		if(DatabaseFilteredEntries[a]->IsDir==false)
+		{
+			if(DatabaseFilteredEntries[a]->BPM>0)
+			{
+				ListSelector.SetCellColRowString
+				(
+					0,
+					rowNow,
+					"%.0f",
+					DatabaseFilteredEntries[a]->BPM
+				);
+			}
+			ListSelector.SetCellColRowString
+			(
+				1,
+				rowNow,
+				DatabaseFilteredEntries[a]->PathShort
+			);
+			ListSelector.GetCellColRow
+			(
+				1,
+				rowNow
+			)->UserData = DatabaseFilteredEntries[a];
+			if(DatabaseFilteredEntries[a]->Loadable==false)
+			{
+				ListSelector.SetCellColRowStringRGB
+				(
+					1,
+					rowNow,
+					1.0f,
+					0.0f,
+					0.0f
+				);
+			}
+			else if(DatabaseFilteredEntries[a]->AlreadyPlayed)
+			{
+				ListSelector.SetCellColRowStringRGB
+				(
+					1,
+					rowNow,
+					0.25f,
+					0.25f,
+					0.25f
+				);
+			}
+			rowNow++;
+		}
+	}
+
+	ListSelector.CenterHighlightedRow();
+}
+
 int
 TurntableObj::
 GetAspectRatioMode()
@@ -6465,15 +6584,8 @@ FileSelectToString
 	{
 		if(strcmp(DatabaseFilteredEntries[a]->PathShort,str)==0)
 		{
-			FileTop=(DatabaseFilteredEntries.size()>4) ? a : 0;
-			FileSelectInt=a;
-			FileSelectFloat=FileSelectInt;
-
-			if((unsigned int)FileTop>DatabaseFilteredEntries.size()-5)
-			{
-				FileTop=LGL_Max(0,DatabaseFilteredEntries.size()-5);
-			}
-
+			ListSelector.SetHighlightedRow(a);
+			ListSelector.CenterHighlightedRow();
 			break;
 		}
 	}

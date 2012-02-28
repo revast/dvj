@@ -83,6 +83,11 @@ float	InputWaveformSavePointShiftAll(unsigned int target);
 float	InputWaveformSavePointShiftAllHere(unsigned int target);
 float	InputWaveformSavePointJumpNow(unsigned int target);
 float	InputWaveformSavePointJumpAtMeasure(unsigned int target);
+float	InputWaveformBPM(unsigned int target);
+const char*
+	InputWaveformBPMCandidate(unsigned int target);
+void	InputWaveformClearBPMCanddiate(unsigned int target);
+void	InputWaveformHintBPMCanddiate(unsigned int target, float bpm);
 float	InputWaveformJumpToPercent(unsigned int target);
 float	InputWaveformLoopMeasuresExponent(unsigned int target);
 float	InputWaveformQuantizationPeriodHalf(unsigned int target);
@@ -238,6 +243,12 @@ virtual	float	WaveformSavePointShiftAll	(unsigned int target)	const;	//Shift all
 virtual	bool	WaveformSavePointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
 virtual	bool	WaveformSavePointJumpNow	(unsigned int target)	const;	//Jump to current save point
 virtual	bool	WaveformSavePointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
+virtual float	WaveformBPM			(unsigned int target)	const;	//Set the BPM
+virtual const char*
+		WaveformBPMCandidate		(unsigned int target)	const;	//Value we're composing for setting the BPM
+virtual void	WaveformClearBPMCandidate	(unsigned int target);		//Clear value we're composing for setting the BPM
+virtual void	WaveformHintBPMCandidate	(unsigned int target, float bpm);
+										//Hint for value when we start composing
 virtual float	WaveformJumpToPercent		(unsigned int target)	const;	//Jump to a percent of the track's duration
 virtual	int	WaveformLoopMeasuresExponent	(unsigned int target)	const;	//Loop 2^n measures. If disabled, enable. Else, disable if equal.
 virtual	bool	WaveformQuantizationPeriodHalf	(unsigned int target)	const;	//Loop half as many measures

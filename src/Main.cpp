@@ -121,12 +121,13 @@ void InitializeGlobals()
 	GetInput().AddChild(&GetInputMouse());
 	if
 	(
-		LGL_DisplayCount()==1 &&
+		//LGL_DisplayCount()==1 &&
 		GetDebugUseMultiTouchWithOneDisplay()
 	)
 	{
 		GetInput().AddChild(&GetInputMultiTouch());
 	}
+	//GetInput().AddChild(&GetInputMultiTouch());
 	GetInput().AddChild(&GetInputOsc());
 	GetInput().AddChild(&GetInputXponent());
 	GetInput().AddChild(new InputXsessionObj);
@@ -1047,12 +1048,12 @@ int main(int argc, char** argv)
 			}
 			else
 			{
+				float left=Visualizer->GetViewportVisualsL();
+				float right=Visualizer->GetViewportVisualsR();
+				float bottom=Visualizer->GetViewportVisualsB();
+				float top=Visualizer->GetViewportVisualsT();
 				Visualizer->SetViewportVisuals(0.0f,1.0f,0.0f,1.0f);
 				Visualizer->DrawVisuals(false,0.0f,GetMixer().GetTurntables());
-				float left=0.0f;
-				float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
-				float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
-				float top=1.0f;
 				Visualizer->SetViewportVisuals(left,right,bottom,top);
 			}
 			LGL_SwapBuffers(true,false);

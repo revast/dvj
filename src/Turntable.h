@@ -26,6 +26,7 @@
 
 #include "LGL.module/LGL.h"
 #include "Visualizer.h"
+#include "ListSelector.h"
 
 #include "Database.h"
 
@@ -198,13 +199,7 @@ private:
 	float				GrainStreamVolume;
 	float				GrainStreamVolumeVariance;
 	float				GrainStreamSpawnDelaySeconds;
-	
-	float				Left;
-	float				Right;
-	float				Bottom;
-	float				Top;
-	float				Width;
-	float				Height;
+
 	float				CenterX;
 	float				CenterY;
 
@@ -217,13 +212,8 @@ private:
 
 	LGL_InputBuffer			FilterText;
 	char				FilterTextMostRecent[1024];
-	int				FileTop;
-	int				FileSelectInt;
-	float				FileSelectFloat;
-	float				FileBPM[5];
 
 	LGL_Timer			DecodeTimer;
-	float				BadFileFlash;
 
 	int				Channel;
 	int				PauseMultiplier;		//0=Paused	1=Playing
@@ -304,8 +294,8 @@ static	VisualizerObj*			Visualizer;
 	std::vector<char*>		TrackListFileUpdates;
 
 	LGL_VideoDecoder*		Video;
-static	LGL_VideoDecoder*		VideoLo;
-static	LGL_VideoDecoder*		VideoHi;
+	LGL_VideoDecoder*		VideoLo;
+	LGL_VideoDecoder*		VideoHi;
 	char				VideoLoPath[2048];
 	char				VideoHiPath[2048];
 	char				VideoLoPathShort[2048];
@@ -396,6 +386,9 @@ static	bool				SurroundMode;
 								//2: Tile
 	bool				EncodeEveryTrack;
 	int				EncodeEveryTrackIndex;
+
+	dvjListSelector			ListSelector;
+	void				UpdateListSelector();
 
 public:
 
