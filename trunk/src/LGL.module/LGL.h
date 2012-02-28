@@ -1234,6 +1234,7 @@ public:
 	void			Init();
 	void			UnloadVideo();
 	void			SetVideo(const char* path);
+	void			SetVideo(std::vector<const char*> pathAttempts);
 	const char*		GetPath();
 	const char*		GetPathShort();
 	int			GetPathNum();
@@ -1269,6 +1270,9 @@ public:
 	bool			GetDecodeInThread();
 	void			SetDecodeInThread(bool decodeInThread=true);
 
+	void			SetUserString(const char* str);
+	const char*		GetUserString();
+
 	//Thread Functions
 
 	void			MaybeLoadVideo();
@@ -1283,7 +1287,11 @@ private:
 	char			Path[2048];
 	char			PathShort[2048];
 	char			PathNext[2048];
+	std::vector<const char*>
+				PathNextAttempts;
 	int			PathNum;
+
+	char			UserString[2048];
 
 	double			FPS;
 	double			FPSTimestamp;
@@ -1569,6 +1577,8 @@ const	char*		GetPathShort() const;
 
 	void		PrintMissingGlyphs(const char* string, ...);
 
+	int		GetHeightPixels();
+
 //private:
 
 	float		GetWidthChar
@@ -1630,7 +1640,7 @@ public:
 	
 	void		GrabFocus();
 	void		ReleaseFocus();
-	bool		HasFocus();
+	bool		HasFocus() const;
 
 	void		AcceptString();
 	void		AcceptInt();
@@ -2383,6 +2393,7 @@ int		LGL_MultiTouchFingerCount();
 int		LGL_MultiTouchFingerCountDelta();
 
 
+
 //Joystick (Playstation 2)
 
 #define		LGL_JOY_XAXIS		0
@@ -2567,6 +2578,9 @@ LGL_Wiimote& LGL_GetWiimote(int which);
 
 unsigned int	LGL_MidiDeviceCount();
 const char*	LGL_MidiDeviceName(unsigned int which);
+
+float		LGL_MidiClockBPM();
+float		LGL_MidiClockPercentOfCurrentMeasure();
 
 
 

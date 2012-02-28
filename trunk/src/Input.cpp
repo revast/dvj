@@ -81,6 +81,11 @@ float	InputWaveformSavePointShiftAll(unsigned int target) { return(GetInput().Wa
 float	InputWaveformSavePointShiftAllHere(unsigned int target) { return(GetInput().WaveformSavePointShiftAllHere(target)); }
 float	InputWaveformSavePointJumpNow(unsigned int target) { return(GetInput().WaveformSavePointJumpNow(target)); }
 float	InputWaveformSavePointJumpAtMeasure(unsigned int target) { return(GetInput().WaveformSavePointJumpAtMeasure(target)); }
+float	InputWaveformBPM(unsigned int target) { return(GetInput().WaveformBPM(target)); }
+const char*
+	InputWaveformBPMCandidate(unsigned int target) { return(GetInput().WaveformBPMCandidate(target)); }
+void	InputWaveformClearBPMCandidate(unsigned int target) { GetInput().WaveformClearBPMCandidate(target); }
+void	InputWaveformHintBPMCandidate(unsigned int target, float bpm) { GetInput().WaveformHintBPMCandidate(target,bpm); }
 float	InputWaveformJumpToPercent(unsigned int target) { return(GetInput().WaveformJumpToPercent(target)); }
 float	InputWaveformLoopMeasuresExponent(unsigned int target) { return(GetInput().WaveformLoopMeasuresExponent(target)); }
 float	InputWaveformQuantizationPeriodHalf(unsigned int target) { return(GetInput().WaveformQuantizationPeriodHalf(target)); }
@@ -1065,6 +1070,77 @@ WaveformSavePointJumpAtMeasure
 	}
 
 	return(jump);
+}
+
+float
+InputObj::
+WaveformBPM
+(
+	unsigned int	target
+)	const
+{
+	float bpm = -1.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		float val = Children[a]->WaveformBPM(target);
+		if(val != -1.0f)
+		{
+			bpm = val;
+			break;
+		}
+	}
+
+	return(bpm);
+}
+
+const char*
+InputObj::
+WaveformBPMCandidate
+(
+	unsigned int	target
+)	const
+{
+	const char* str = NULL;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		const char* neoStr = Children[a]->WaveformBPMCandidate(target);
+		if(neoStr)
+		{
+			str = neoStr;
+			break;
+		}
+	}
+
+	return(str);
+}
+
+void
+InputObj::
+WaveformClearBPMCandidate
+(
+	unsigned int	target
+)
+{
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		Children[a]->WaveformClearBPMCandidate(target);
+	}
+}
+
+void
+InputObj::
+WaveformHintBPMCandidate
+(
+	unsigned int	target,
+	float		bpm
+)
+{
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		Children[a]->WaveformHintBPMCandidate(target,bpm);
+	}
 }
 
 float

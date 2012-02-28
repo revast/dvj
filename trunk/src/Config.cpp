@@ -820,26 +820,18 @@ GetColorWarm
 	b=colorWarmB;
 }
 
-int
-GetProjectorQuadrentResX()
+float
+GetProjectorQuadrentDefaultAspectRatioX()
 {
-	int resX=dvjrcConfigFile->read<int>("projectorQuadrentResX",0);
-	if(resX<=0)
-	{
-		resX=LGL_DisplayResolutionX(0);
-	}
-	return(resX);
+	float aspX=dvjrcConfigFile->read<float>("projectorQuadrentDefaultAspectRatioX",0);
+	return(aspX);
 }
 
-int
-GetProjectorQuadrentResY()
+float
+GetProjectorQuadrentDefaultAspectRatioY()
 {
-	int resY=dvjrcConfigFile->read<int>("projectorQuadrentResY",0);
-	if(resY<=0)
-	{
-		resY=LGL_DisplayResolutionY(0)/2;
-	}
-	return(resY);
+	float aspY=dvjrcConfigFile->read<float>("projectorQuadrentDefaultAspectRatioY",0);
+	return(aspY);
 }
 
 bool

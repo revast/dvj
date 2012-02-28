@@ -2234,10 +2234,12 @@ printf("\n");
 #endif	//LGL_OSX
 #endif	//LGL_LINUX
 
+		/*
 		if(1 || LGL.AudioUsingJack==false)
 		{
 			LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
 		}
+		*/
 		printf("\n\nLGL JACK Initialization: ALPHA\n");
 		printf("---\n");
 		bool jackInitOK = LGL_JackInit();
@@ -2447,6 +2449,7 @@ printf("\n");
 			LGL.WindowResolutionY[d],
 			windowFlags
 		);
+		//printf("WindowID[%i]: %x\n",d,LGL.WindowID[d]);
 
 		if(LGL.WindowID[d]==0)
 		{
@@ -6724,10 +6727,10 @@ LGL_Image
 	
 	if
 	(
-		left<0		|| left>=1 ||
-		right<=0	|| right>1 ||
-		bottom<0	|| bottom>=1 ||
-		top<=0		|| top>1 ||
+		!(left>=0	&& left<=1) ||
+		!(right>=0	&& right<=1) ||
+		!(bottom>=0	&& bottom<=1) ||
+		!(top>=0	&& top<=1) ||
 		left>=right	|| bottom>=top
 	)
 	{
@@ -6737,6 +6740,7 @@ LGL_Image
 			"(left, right), (bottom ,top) = (%.2f, %.2f), (%.2f, %.2f)\n",
 			left,right,bottom,top
 		);
+		LGL_Assertf(false,("Bad image size!"));
 		LGL_Exit();
 	}
 	
@@ -10495,6 +10499,12 @@ LGL_VideoDecoder::
 		delete FrameBufferList[a];
 	}
 
+	for(int a=0;a<PathNextAttempts.size();a++)
+	{
+		delete PathNextAttempts[a];
+	}
+	PathNextAttempts.clear();
+
 	//TODO: Doesn't this leak BufferRGB / BufferYUV...? YES, but only upon quitting dvj.
 }
 
@@ -10506,6 +10516,8 @@ Init()
 	PathShort[0]='\0';
 	PathNext[0]='\0';
 	PathNum=0;
+
+	UserString[0]='\0';
 
 	FPS=0.0f;
 	FPSTimestamp=0.0;
@@ -10667,6 +10679,7 @@ SetVideo
 	{
 		path="NULL";
 	}
+
 	if(strcmp(Path,path)!=0)
 	{
 		LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
@@ -10675,6 +10688,66 @@ SetVideo
 			Image->SetFrameNumber(-1);
 		}
 		strcpy(PathNext,path);
+
+		for(int a=0;a<PathNextAttempts.size();a++)
+		{
+			delete PathNextAttempts[a];
+		}
+		PathNextAttempts.clear();
+	}
+}
+
+void
+LGL_VideoDecoder::
+SetVideo
+(
+	std::vector<const char*>	pathAttempts
+)
+{
+	if(pathAttempts.size()==0)
+	{
+		SetVideo(NULL);
+		return;
+	}
+	else if(pathAttempts.size()==1)
+	{
+		SetVideo(pathAttempts[0]);
+		return;
+	}
+	else
+	{
+		if(strcmp(Path,pathAttempts[0])==0)
+		{
+			return;
+		}
+
+		LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
+		if(Image)
+		{
+			Image->SetFrameNumber(-1);
+		}
+
+		for(int a=0;a<PathNextAttempts.size();a++)
+		{
+			delete PathNextAttempts[a];
+		}
+		PathNextAttempts.clear();
+
+		for(int a=0;a<pathAttempts.size();a++)
+		{
+			if
+			(
+				pathAttempts[a] &&
+				pathAttempts[a][0] != '\0'
+			)
+			{
+				const int neoSize = strlen(pathAttempts[a])+1;
+				char* neo = new char[neoSize];
+				strncpy(neo,pathAttempts[a],neoSize-1);
+				neo[neoSize-1]='\0';
+				PathNextAttempts.push_back(neo);
+			}
+		}
 	}
 }
 
@@ -10706,6 +10779,13 @@ SetTime
 	double	seconds
 )
 {
+	long ms = seconds*1000;
+	if(LengthSeconds>0)
+	{
+		ms = ms % (long)(LengthSeconds*1000);
+	}
+	seconds = ms/1000.0f;
+
 	TimeSecondsPrev=TimeSeconds;
 	TimeSeconds=seconds;
 }
@@ -11430,10 +11510,44 @@ SetDecodeInThread
 
 void
 LGL_VideoDecoder::
+SetUserString
+(
+	const char*	str
+)
+{
+	if(str)
+	{
+		strncpy(UserString,str,sizeof(UserString)-1);
+		UserString[sizeof(UserString)-1]='\0';
+	}
+}
+
+const char*
+LGL_VideoDecoder::
+GetUserString()
+{
+	return(UserString);
+}
+
+void
+LGL_VideoDecoder::
 MaybeLoadVideo()
 {
 	if(PathNext[0]=='\0')
 	{
+		LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
+		if(PathNextAttempts.size()!=0)
+		{
+			strncpy(PathNext,PathNextAttempts[0],sizeof(PathNext)-1);
+			PathNext[sizeof(PathNext)-1]='\0';
+
+			PathNextAttempts.erase
+			(
+				(std::vector<const char*>::iterator)
+				(&PathNextAttempts[0])
+			);
+		}
+
 		return;
 	}
 
@@ -11541,6 +11655,17 @@ MaybeLoadVideo()
 
 		// Get a pointer to the codec context for the video stream
 		CodecContext=fc->streams[VideoStreamIndex]->codec;
+		if
+		(
+			!CodecContext->codec_id == CODEC_ID_MJPEG &&
+			!CodecContext->codec_id == CODEC_ID_MJPEGB &&
+			!CodecContext->codec_id == CODEC_ID_LJPEG
+		)
+		{
+			printf("LGL_VideoDecoder::MaybeLoadVideo(): Video isn't mjpeg: '%s'\n",Path);
+			return;
+		}
+
 		FormatContext=fc;	//Only set this once fc is fully initialized
 
 		// Find the decoder for the video stream
@@ -12655,6 +12780,7 @@ double
 LGL_VideoDecoder::
 FrameNumberToSeconds(long frameNumber)
 {
+	//frameNumber = frameNumber % (long)(LengthSeconds * FPS);
 	return(frameNumber/FPS);
 }
 
@@ -12665,7 +12791,9 @@ SecondsToFrameNumber
 	double	seconds
 )
 {
-	return(seconds*FPS);
+	long ret = seconds * FPS;
+	//ret = ret % (long)(LengthSeconds * FPS);
+	return(ret);
 }
 
 long
@@ -14965,10 +15093,13 @@ const	char	*string,
 	return(0.0f);
 #endif	//LGL_NO_GRAPHICS
 
-	LGL_Assert(string!=NULL);
+	if(string==NULL)
+	{
+		return(0.0f);
+	}
 
 	//Process the formatted part of the string
-	char tmpstr[2048];
+	char tmpstr[1024*8];
 	va_list args;
 	va_start(args,string);
 	vsprintf(tmpstr,string,args);
@@ -15320,6 +15451,13 @@ return;	//Actually, don't do this...
 	}
 }
 
+int
+LGL_Font::
+GetHeightPixels()
+{
+	return(Glyph[32]->GetHeight());
+}
+
 float
 LGL_Font::
 GetWidthChar
@@ -15541,7 +15679,7 @@ ReleaseFocus()
 
 bool
 LGL_InputBuffer::
-HasFocus()
+HasFocus()	const
 {
 	return(Focus);
 }
@@ -20898,8 +21036,11 @@ LGL_ProcessInput()
 	LGL.MultiTouchRotate=0.0f;
 	LGL.MultiTouchPinch=0.0f;
 	LGL.MultiTouchFingerCountDelta=0;
+	/*
+	//This never seems to happen
 	if(SDL_Touch* touch = SDL_GetTouch(LGL.MultiTouchID))
 	{
+printf("touch focus: %x\n",touch->focus);
 		LGL.MultiTouchFingerCount=touch->num_fingers;
 		LGL.MultiTouchFingerCountDelta=LGL.MultiTouchFingerCount-multiTouchFingerCountPrev;
 		if
@@ -20914,6 +21055,7 @@ LGL_ProcessInput()
 			LGL.MultiTouchYFirst=LGL.MultiTouchY;
 		}
 	}
+	*/
 
 
 
@@ -21151,14 +21293,14 @@ LGL_ProcessInput()
 
 		if(event.type==SDL_MULTIGESTURE)
 		{
-/*
+			#if 0
 			if(SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID)!=SDL_GetWindowID(LGL.WindowID[0]))
 			{
-printf("Multitouch OUT: %i vs %i\n",SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID),SDL_GetWindowID(LGL.WindowID[0]));
+printf("Multitouch OUT: %x vs %x\n",SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID),SDL_GetWindowID(LGL.WindowID[0]));
 				//Only care about events for interface window
 				continue;
 			}
-*/
+			#endif
 
 			LGL.MultiTouchID=event.mgesture.touchId;
 			if(multiTouchXPrev!=-1.0f)
@@ -24544,6 +24686,29 @@ LGL_MidiDeviceName
 		assert(which<LGL_MidiDeviceCount());
 	}
 	return(LGL.MidiRtInDeviceNames[which]);
+}
+
+
+
+float
+LGL_MidiClockBPM()
+{
+	float ret=-1;
+	ret=120.0f;
+	return(ret);
+}
+
+float
+LGL_MidiClockPercentOfCurrentMeasure()
+{
+	float ret=-1;
+	float sec=LGL_SecondsSinceExecution();
+	while(sec>=2.0f)	//This is horrid
+	{
+		sec-=2.0f;
+	}
+	ret=sec/2.0f;
+	return(ret);
 }
 
 
@@ -31199,8 +31364,12 @@ LGL_Clamp
 	float upperbound
 )
 {
-	if(target<lowerbound) target=lowerbound;
+	if(lowerbound>upperbound)
+	{
+		printf("LGL_Clamp(): lower > upper: %.2f > %.2f\n",lowerbound,upperbound);
+	}
 	if(target>upperbound) target=upperbound;
+	if(target<lowerbound) target=lowerbound;
 	return(target);
 }
 
@@ -33073,7 +33242,7 @@ lgl_AudioOutCallbackGenerator
 
 			//Use Only One CPU
 			//LGL_ThreadSetCPUAffinity(1);
-			LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut");	//It's really that important!
+			//LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut");	//It's really that important!
 
 			soundRealtimePrioritySet=true;
 		}

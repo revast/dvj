@@ -51,17 +51,48 @@ VisualizerObj()
 {
 	BlueScreenOfDeath=new LGL_Image("data/image/bsod.png");
 
-	float resX=LGL_DisplayResolutionX(0);
-	float center = resX/2.0f;
-	float left=LGL_Max(0.0f,(center-0.5f*resX)/resX);
-	float right=LGL_Min(1.0f,(center+0.5f*resX)/resX);
-	//float right=LGL_Min(1.0f,GetProjectorQuadrentResX()/(float)LGL_DisplayResolutionX(0));
-	float bottom=LGL_Max(0.5f,1.0f-GetProjectorQuadrentResY()/(float)LGL_DisplayResolutionY(0));
+	float left=0.0f;
+	float right=1.0f;
+	float bottom=0.5f;
 	float top=1.0f;
 
 	if(LGL_DisplayCount()==1)
 	{
+		float aspX=GetProjectorQuadrentDefaultAspectRatioX();
+		float aspY=GetProjectorQuadrentDefaultAspectRatioY();
+
+		if
+		(
+			aspX > 0.0f &&
+			aspY > 0.0f
+		)
+		{
+			float pixelsH = 0.5f*LGL_WindowResolutionY();
+			float pixelsW = pixelsH * (aspX/aspY);
+
+			left = 0.5f-0.5f*(pixelsW/LGL_WindowResolutionX());
+			right = 0.5f+0.5f*(pixelsW/LGL_WindowResolutionX());
+
+			//Shrink both if too wide
+			if(left<0)
+			{
+				float scale = 0.5f/fabsf(0.5f-left);
+				left=0.0f;
+				right=1.0f;
+				bottom=LGL_Max(0.5f,0.75f-0.25f*scale);
+				top=LGL_Min(1.0f,0.75f+0.25f*scale);
+			}
+		}
+	}
+
+	SetViewportVisuals(left,right,bottom,top);
+
+	if(LGL_DisplayCount()==1)
+	{
 		SyphonPusher=new LGL_Image(left,right,bottom,top);
+		printf("Pusher Res: %i x %i\n",
+			SyphonPusher->GetWidth(),
+			SyphonPusher->GetHeight());
 	}
 	else
 	{
@@ -108,8 +139,6 @@ VisualizerObj()
 		left = 0.5f - (0.5f * (projAR/targetAR));
 		right = 0.5f + (0.5f * (projAR/targetAR));
 	}
-
-	SetViewportVisuals(left,right,bottom,top);
 
 	FullScreen=false;
 
@@ -305,18 +334,18 @@ NextFrame
 	float freqFactor;
 
 	//See if we should time-jump in any of our vids
-	for(int a=0;a<2;a++)
+	for(int t=0;t<2;t++)
 	{
-		LGL_VideoDecoder* vidL=tts[0]->GetVideoLo();
-		LGL_VideoDecoder* vidH=tts[0]->GetVideoHi();
-		LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
-		if(vid)
+		for(int v=0;v<2;v++)
 		{
-			float oldFreqBrightness = LGL_Max(vid->StoredBrightness[0],vid->StoredBrightness[1]);
-			float neoFreqBrightness = 0.0f;
-			bool vidPlaying=false;
-			for(int t=0;t<2;t++)
+			LGL_VideoDecoder* vidL=tts[t]->GetVideoLo();
+			LGL_VideoDecoder* vidH=tts[t]->GetVideoHi();
+			LGL_VideoDecoder* vid = (v==0) ? vidL : vidH;
+			if(vid)
 			{
+				float oldFreqBrightness = LGL_Max(vid->StoredBrightness[0],vid->StoredBrightness[1]);
+				float neoFreqBrightness = 0.0f;
+				bool vidPlaying=false;
 				if
 				(
 					tts[t]->GetFinalSpeed()!=0.0f &&
@@ -331,85 +360,85 @@ NextFrame
 					neoFreqBrightness=LGL_Max(neoFreqBrightness,curFreqBrightness);
 					vidPlaying=true;
 				}
-			}
 
-			if
-			(
-				GetTestFreqSenseTime()==false &&
-				vidPlaying &&
-				oldFreqBrightness>0.0f &&
-				neoFreqBrightness==0.0f
-			)
-			{
-				float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
-				if(min<0.0f) min=0.0f;
-				float max=vid->GetLengthSeconds()-10.0f;
-				if(max<0.0f) max=vid->GetLengthSeconds();
-				
-				if(vid->GetPreloadEnabled())
-				{
-					float pct = vid->GetPreloadPercent();
-					max=vid->GetLengthSeconds()*pct;
-					if(max>60.0f) max-=10.0f;
-				}
-
-				/*
-				float cand = LGL_Clamp
+				if
 				(
-					min,
-					LGL_RandFloat(-10.0f,10.0f)+tts[t]->GetSoundPositionPercent()*vid->GetLengthSeconds()-10.0f,
-					max
-				);
-				vid->SetTime(cand);
-				*/
-
-				vid->SetTime(LGL_RandFloat(min,max));
-			}
-			else if
-			(
-				GetTestFreqSenseTime() &&
-				oldFreqBrightness==0.0f &&
-				neoFreqBrightness>0.0f
-			)
-			{
-				float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
-				if(min<0.0f) min=0.0f;
-				float max=vid->GetLengthSeconds()-10.0f;
-				if(max<0.0f) max=vid->GetLengthSeconds();
-
-				if(vid->GetPreloadEnabled())
+					GetTestFreqSenseTime()==false &&
+					vidPlaying &&
+					oldFreqBrightness>0.0f &&
+					neoFreqBrightness==0.0f
+				)
 				{
-					float pct = vid->GetPreloadPercent();
-					max=vid->GetLengthSeconds()*pct;
-					if(max>60.0f) max-=10.0f;
-				}
-
-				vid->SetTime(max*neoFreqBrightness);
-			}
-			else if(neoFreqBrightness>0.0f)
-			{
-				float speedFactor=
-					(vid==vidL) ? 1.0f : 4.0f;
-				float timeNew=vid->GetTime()+speedFactor*(1.0f/60.0f);
-
-				if(vid->GetPreloadEnabled())
-				{
-					float pct = vid->GetPreloadPercent();
-					if(timeNew+1.0f >= vid->GetLengthSeconds()*pct)
+					float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+					if(min<0.0f) min=0.0f;
+					float max=vid->GetLengthSeconds()-10.0f;
+					if(max<0.0f) max=vid->GetLengthSeconds();
+					
+					if(vid->GetPreloadEnabled())
 					{
-						timeNew*=LGL_RandFloat(0.1f,0.5f);
+						float pct = vid->GetPreloadPercent();
+						max=vid->GetLengthSeconds()*pct;
+						if(max>60.0f) max-=10.0f;
 					}
+
+					/*
+					float cand = LGL_Clamp
+					(
+						min,
+						LGL_RandFloat(-10.0f,10.0f)+tts[t]->GetSoundPositionPercent()*vid->GetLengthSeconds()-10.0f,
+						max
+					);
+					vid->SetTime(cand);
+					*/
+
+					vid->SetTime(LGL_RandFloat(min,max));
 				}
-				vid->SetTime(timeNew);
+				else if
+				(
+					GetTestFreqSenseTime() &&
+					oldFreqBrightness==0.0f &&
+					neoFreqBrightness>0.0f
+				)
+				{
+					float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+					if(min<0.0f) min=0.0f;
+					float max=vid->GetLengthSeconds()-10.0f;
+					if(max<0.0f) max=vid->GetLengthSeconds();
 
-				/*
-				float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
-				if(min<0.0f) min=0.0f;
-				float max=vid->GetLengthSeconds()-10.0f;
-				if(max<0.0f) max=vid->GetLengthSeconds();
+					if(vid->GetPreloadEnabled())
+					{
+						float pct = vid->GetPreloadPercent();
+						max=vid->GetLengthSeconds()*pct;
+						if(max>60.0f) max-=10.0f;
+					}
 
-				vid->SetTime(max*neoFreqBrightness);
-				*/
+					vid->SetTime(max*neoFreqBrightness);
+				}
+				else if(neoFreqBrightness>0.0f)
+				{
+					float speedFactor=
+						(vid==vidL) ? 1.0f : 4.0f;
+					float timeNew=vid->GetTime()+speedFactor*(1.0f/60.0f);
+
+					if(vid->GetPreloadEnabled())
+					{
+						float pct = vid->GetPreloadPercent();
+						if(timeNew+1.0f >= vid->GetLengthSeconds()*pct)
+						{
+							timeNew*=LGL_RandFloat(0.1f,0.5f);
+						}
+					}
+					vid->SetTime(timeNew);
+
+					/*
+					float min=LGL_Min(10.0f,vid->GetLengthSeconds()-5.0f);
+					if(min<0.0f) min=0.0f;
+					float max=vid->GetLengthSeconds()-10.0f;
+					if(max<0.0f) max=vid->GetLengthSeconds();
+
+					vid->SetTime(max*neoFreqBrightness);
+					*/
+				}
 			}
 		}
 	}
@@ -2554,7 +2583,6 @@ DrawVideos
 							alpha,
 							br
 						);
-//LGL_DebugPrintf("br: %.2f\n",br);
 					}
 				}
 			}

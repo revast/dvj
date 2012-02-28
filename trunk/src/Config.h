@@ -162,11 +162,11 @@ GetDVJSessionTracklistPath();
 const char*
 GetDVJSessionDrawLogPath();
 
-int
-GetProjectorQuadrentResX();
+float
+GetProjectorQuadrentDefaultAspectRatioX();
 
-int
-GetProjectorQuadrentResY();
+float
+GetProjectorQuadrentDefaultAspectRatioY();
 
 bool
 GetProjMapSimple();

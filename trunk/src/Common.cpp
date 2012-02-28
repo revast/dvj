@@ -694,176 +694,6 @@ Mixer_DrawLevels
 }
 
 void
-Turntable_DrawDirTree
-(
-	int		which,
-	float		time,
-	const char*	filterText,
-	const char*	path,
-	const char**	nameArray,
-	bool*		isDirBits,
-	bool*		loadableBits,
-	bool*		alreadyPlayedBits,
-	int		fileNum,
-	int		fileSelectInt,
-	float		viewportBottom,
-	float		viewportTop,
-	float		badFileFlash,
-	float*		inBPMList
-)
-{
-	if(filterText==NULL)
-	{
-		filterText="";
-	}
-	if(path==NULL)
-	{
-		path="";
-	}
-	if(nameArray==NULL)
-	{
-		return;
-	}
-
-	float coolR;
-	float coolG;
-	float coolB;
-	GetColorCool(coolR,coolG,coolB);
-
-	float glow = GetGlowFromTime(time);
-	float centerX = 0.5f;
-	float viewportLeft = 0.025f;
-	float viewportRight = 0.975f;
-	float viewportWidth = viewportRight - viewportLeft;
-	float viewportHeight = viewportTop - viewportBottom;
-	LGL_GetFont().DrawString
-	(
-		centerX,viewportBottom+.875*viewportHeight,.025,
-		1,1,1,1,
-		true,.5,
-		filterText[0]=='\0' ?
-		path :
-		filterText
-	);
-
-	for
-	(
-		int b=0;
-		b<5 && b<fileNum;
-		b++
-	)
-	{
-		const char* fileNow=nameArray[b];
-		if(fileNow==NULL)
-		{
-			continue;
-		}
-		
-		float R=1.0f;
-		float G=1.0f;
-		float B=1.0f;
-		if(loadableBits[b]==false)
-		{
-			R=1.0f;
-			G=0.0f;
-			B=0.0f;
-		}
-		else if(isDirBits[b])
-		{
-			R=0.0f;
-			G=0.0f;
-			B=1.0f;
-		}
-		else if(alreadyPlayedBits[b])
-		{
-			R=0.25f;
-			G=0.25f;
-			B=0.25f;
-		}
-
-		if(strlen(fileNow)>0)
-		{
-			float rectLeft=viewportLeft;
-			float rectRight=viewportRight;
-			float rectBottom=viewportTop-(.1f+(b+1)/6.25f+.02f)*viewportHeight;
-			float rectTop=viewportTop-(.1f+(b+1)/6.25f+.02f)*viewportHeight+viewportHeight/15.0f+.04f*viewportHeight;
-
-			if
-			(
-				LGL_MouseX()>=rectLeft &&
-				LGL_MouseX()<=rectRight &&
-				LGL_MouseY()>=rectBottom &&
-				LGL_MouseY()<=rectTop
-			)
-			{
-				if(LGL_MouseMotion())
-				{
-					GetInputMouse().SetFileIndexHighlightNext(b);
-				}
-			}
-
-			if(b==fileSelectInt)
-			{
-				float R=
-					(0.0f+badFileFlash) +
-					(1.0f-badFileFlash) * coolR * 0.6f * glow;
-				float G=(1.0f-badFileFlash) * coolG * 0.6f * glow;
-				float B=(1.0f-badFileFlash) * coolB * 0.6f * glow;
-				float A=.5f;
-				LGL_DrawRectToScreen
-				(
-					rectLeft,rectRight,
-					rectBottom,rectTop,
-					R,G,B,A
-				);
-			}
-
-			float stringY=viewportTop-0.1f*viewportHeight-(viewportHeight*((b+1)/6.25f-0.035f));
-
-			float bpm = inBPMList[b];
-			if(bpm>0)
-			{
-				LGL_GetFont().DrawString
-				(
-					viewportLeft+0.01f*viewportWidth,
-					stringY-0.5f*viewportHeight/15.0f,
-					viewportHeight/15.0f,
-					R,G,B,1,
-					false,0,
-					"%.0f",
-					bpm
-				);
-			}
-
-			float fontHeight=viewportHeight/15.0f;
-			float fontWidth=LGL_GetFont().GetWidthString(fontHeight,fileNow);
-			float fontWidthMax=viewportWidth*0.9f;
-			fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
-
-			char fileNowSafe[2048];
-			strcpy(fileNowSafe,fileNow);
-			const int fileNowSafeLen = (int)strlen(fileNowSafe);
-			for(int s=0;s<fileNowSafeLen;s++)
-			{
-				if(fileNowSafe[s]=='%')
-				{
-					fileNowSafe[s]=' ';
-				}
-			}
-			LGL_GetFont().DrawString
-			(
-				viewportLeft+(.025f+0.05f)*viewportWidth,
-				stringY-0.5f*fontHeight,
-				fontHeight,
-				R,G,B,1,
-				false,0,
-				fileNowSafe
-			);
-		}
-	}
-}
-
-void
 turntable_DrawBPMLines
 (
 	float	leftSample,
@@ -1365,6 +1195,7 @@ Turntable_DrawWaveform
 	float*		savePointUnsetFlashPercent,
 	float		bpm,
 	float		bpmAdjusted,
+	const char*	bpmCandidate,
 	float		bpmFirstBeatSeconds,
 	float		eq0,
 	float		eq1,
@@ -2675,6 +2506,33 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 			}
 		}
 		
+		if(bpmCandidate>0)
+		{
+			/*
+			LGL_GetFont().DrawString
+			(
+				//viewportLeft+.02f*viewportWidth,
+				bpmPitchL,
+				viewportBottom+.80f*viewportHeight,
+				0.05f*viewportHeight,
+				1,1,1,1,
+				false,.5f,
+				"BPM:"
+			);
+			*/
+			LGL_GetFont().DrawString
+			(
+				//viewportLeft+.125f*viewportWidth,
+				0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.06f-0.0095f,
+				viewportBottom+.90f*viewportHeight,
+				0.05f*viewportHeight,
+				1,1,1,1,
+				false,.5f,
+				"%s",
+				bpmCandidate
+			);
+		}
+		
 		float pbFloat=
 			(1.0f-grainStreamCrossfader) * pitchBend +
 			(0.0f+grainStreamCrossfader) * grainStreamPitch;
@@ -2742,7 +2600,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				loopL,loopR,
 				loopB,loopT,
 				0,
-				lb,lb,lb,1.0f
+				lb,lb,lb,0.0f
 			);
 
 			if
