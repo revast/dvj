@@ -1686,6 +1686,7 @@ NextFrame
 				(
 					DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->PathFull
 				);
+				Video->InvalidateAllFrameBuffers();
 				Video->SetVideo(pathAttempts);
 				Video->SetTime(30.0f+LGL_RandFloat(0.0f,30.0f));
 				for(int a=0;a<pathAttempts.size();a++)
@@ -4218,13 +4219,16 @@ DrawFrame
 			{
 				if(image->GetFrameNumber()>0)
 				{
-					Video->GetImage()->DrawToScreen
-					(
-						ViewportLeft,
-						ViewportLeft+ViewportHeight,
-						ViewportTop,
-						ViewportBottom
-					);
+					if(strstr(image->GetVideoPath(),Video->GetPathShort()))
+					{
+						Video->GetImage()->DrawToScreen
+						(
+							ViewportLeft,
+							ViewportLeft+ViewportHeight,
+							ViewportTop,
+							ViewportBottom
+						);
+					}
 				}
 			}
 		}
