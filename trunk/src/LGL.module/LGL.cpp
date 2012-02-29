@@ -10748,6 +10748,9 @@ SetVideo
 				PathNextAttempts.push_back(neo);
 			}
 		}
+		char* neo = new char[16];
+		strcpy(neo,"NULL");
+		PathNextAttempts.push_back(neo);
 	}
 }
 
@@ -11787,6 +11790,16 @@ MaybeLoadVideo()
 		);
 #endif
 
+		//This can invalidate calls to SetVideo() that occur while loading video... Hmm.
+		{
+			LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
+			for(int a=0;a<PathNextAttempts.size();a++)
+			{
+				delete PathNextAttempts[a];
+			}
+			PathNextAttempts.clear();
+		}
+
 		VideoOK=true;
 		break;
 	}
@@ -12533,13 +12546,6 @@ MaybeDecodeImage
 					frameBuffer->GetFrameNumber()
 				);
 				*/
-				frameBuffer->UnlockBufferRGB
-				(
-					path,
-					BufferWidth,
-					BufferHeight,
-					frameBuffer->GetFrameNumber()
-				);
 			}
 			else
 			{
@@ -12563,6 +12569,15 @@ MaybeDecodeImage
 	{
 		printf("Frame FAIL 2!!\n");
 	}
+
+	frameBuffer->UnlockBufferRGB
+	(
+		path,
+		BufferWidth,
+		BufferHeight,
+		frameBuffer->GetFrameNumber()
+	);
+	dst=NULL;
 
 	//Free the packet that was allocated by lgl_av_read_frame
 	{
@@ -20206,7 +20221,7 @@ LoadToMemory()
 		}
 	    
 		int cyclesNow=0;
-		int cyclesMax=64;
+		int cyclesMax=256;//64;
 		int delayMS=1;
 
 		//Don't be tempted to make this a member variable... Alignment issues!

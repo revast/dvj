@@ -3017,6 +3017,7 @@ NextFrame
 			{
 				Video->InvalidateAllFrameBuffers();
 				Video->SetVideo(NULL);
+				Video->SetUserString("NULL");
 			}
 			Mode=0;
 			FilterTextMostRecent[0]='\0';
@@ -3379,11 +3380,13 @@ NextFrame
 			VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
 
 			//Load Video if possible
+			/*
 			if(Video)
 			{
 				Video->InvalidateAllFrameBuffers();
 				Video->SetVideo(NULL);
 			}
+			*/
 			SelectNewVideo();
 
 			if(VideoFileExists)
