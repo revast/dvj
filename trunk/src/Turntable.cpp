@@ -3379,6 +3379,11 @@ NextFrame
 			VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
 
 			//Load Video if possible
+			if(Video)
+			{
+				Video->InvalidateAllFrameBuffers();
+				Video->SetVideo(NULL);
+			}
 			SelectNewVideo();
 
 			if(VideoFileExists)
