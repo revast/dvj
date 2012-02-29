@@ -111,6 +111,14 @@ findCachedPath
 			printf("found: srcPath has .mjpeg.avi extension\n");
 			LGL_DebugPrintf("found: srcPath has .mjpeg.avi extension\n");
 		}
+		if(searchList)
+		{
+			const int neoSize = strlen(foundPath)+1;
+			char* neo = new char[neoSize];
+			strncpy(neo,foundPath,neoSize-1);
+			neo[neoSize-1]='\0';
+			searchList->push_back(neo);
+		}
 		return;
 	}
 
@@ -374,7 +382,6 @@ findVideoPath
 	const char*	srcPath
 )
 {
-	printf("findVideoPath(): %s\n",srcPath);
 	findCachedPath(foundPath,srcPath,"mjpeg.avi",NULL);
 }
 
@@ -386,7 +393,6 @@ listVideoSearchPaths
 {
 	std::vector<const char*> pathAttempts;
 	char foundPath[2048];
-	printf("listVideoSearchPaths(): %s\n",srcPath);
 	findCachedPath(foundPath,srcPath,"mjpeg.avi",&pathAttempts);
 	return(pathAttempts);
 }
@@ -4202,7 +4208,7 @@ DrawFrame
 		{
 			if(LGL_Image* image = Video->GetImage())
 			{
-				if(image->GetFrameNumber()!=-1)
+				if(image->GetFrameNumber()>0)
 				{
 					Video->GetImage()->DrawToScreen
 					(
