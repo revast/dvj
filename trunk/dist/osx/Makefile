@@ -2,7 +2,7 @@ default: all
 
 .PHONY: all
 
-SRC_DVJ		= ../../dvj.osx
+SRC_DVJ		= ../../dvj
 SRC_GLSL	= ../../data/glsl
 MACOS_DVJ	= root.dvj/dvj.app/Contents/MacOS
 MACOS_ZTRON	= root.ztron/ZEBBLERTRON.app/Contents/MacOS
