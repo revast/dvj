@@ -1,3 +1,10 @@
+PRE-INSTALL NOTES:
+
+* You may need to install autoconf from gnu.org, as Apple seemingly no longer distributes this with xcode. Pretty painless.
+* Make symlinks to clang and clang++ in /usr/local/bin/, for gcc and g++.
+
+
+
 Install in this order:
 
 jpeg
@@ -17,10 +24,4 @@ Syphon.framework
 
 nasm
 libjpeg-turbo
-
-
-
-NOTES:
-
-* You may need to install autoconf from gnu.org, as Apple seemingly no longer distributes this with xcode. Pretty painless.
 
