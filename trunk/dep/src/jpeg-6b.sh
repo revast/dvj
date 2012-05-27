@@ -5,6 +5,7 @@
 cd jpeg-6b
 ./configure.dvj
 make
+sudo mkdir -p /usr/local/man/man1
 sudo make install
 cd ..
 
