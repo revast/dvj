@@ -1,8 +1,7 @@
 function pause {
-	read -p "Press any key to continue..."
+	read -p "Press return to continue..."
 }
 
-pause
 ./jpeg-6b.sh
 pause
 ./libpng-1.2.46.sh
