@@ -18,3 +18,9 @@ Syphon.framework
 nasm
 libjpeg-turbo
 
+
+
+NOTES:
+
+* You may need to install autoconf from gnu.org, as Apple seemingly no longer distributes this with xcode. Pretty painless.
+
