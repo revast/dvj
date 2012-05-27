@@ -26,4 +26,6 @@ pause
 pause
 ./libjpeg-turbo-1.1.1.sh
 pause
+./Syphon.framework.sh
+pause
 
