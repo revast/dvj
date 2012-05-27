@@ -30,6 +30,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <cmath>
 #include <time.h>	//Purely for random# seeding
 #include <string.h>
 #include <ctype.h>	//isapha(), ispunct(), etc
@@ -102,6 +103,12 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include <pthread.h>
+//#include <AvailabilityMacros.h>
+//#include <CoreAudio/CoreAudioTypes.h>
+//#include <CoreAudioTypes.h>
+#include <CoreAudio/HostTime.h>
+
 #ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.85f)
@@ -122,9 +129,50 @@
 #define	LGL_PRIORITY_OSC		(0.85f)
 #endif
 
-#define LGL_EQ_SAMPLES_FFT	(512)
+#define	LGL_MULTITOUCH_INACTIVE (9999.9f)
+
 #define LGL_SAMPLESIZE		(256)
 unsigned int LGL_SAMPLESIZE_SDL;
+
+int lgl_SetRealtime
+(
+	//int	period,/	//int 	computation,
+	//int	constraint
+)
+{
+	//return(false);
+	//printf("Realtime: Alpha\n");
+	float HZ = AudioGetHostClockFrequency();
+
+	struct thread_time_constraint_policy ttcpolicy;
+	int ret;
+	thread_port_t threadport = pthread_mach_thread_np(pthread_self());
+
+	ttcpolicy.period=HZ/(44100/(float)LGL_SAMPLESIZE_SDL); // HZ/160
+	ttcpolicy.computation=ttcpolicy.period*0.15f; //computation; // HZ/3300;
+	ttcpolicy.constraint=ttcpolicy.period; // HZ/2200;
+	ttcpolicy.preemptible=0;
+
+	if
+	(
+		(
+			ret=thread_policy_set
+			(
+				threadport,
+				THREAD_TIME_CONSTRAINT_POLICY,
+				(thread_policy_t)&ttcpolicy,
+				THREAD_TIME_CONSTRAINT_POLICY_COUNT
+			)
+		) != KERN_SUCCESS
+	)
+	{
+		printf("Realtime: FAIL\n");
+		return(0);
+	}
+
+	printf("Realtime: GO!\n");
+	return(1);
+}
 
 bool lgl_sdl_initialized=false;
 bool lgl_lgl_initialized=false;
@@ -146,6 +194,7 @@ int fft_elementCount=LGL_EQ_SAMPLES_FFT;
 
 #define SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES (1)
 #define SAMPLE_RATE_CONVERTER_BUFFER_SAMPLES_EDGE (0)
+#define	EQ_VU_LEN (10)
 
 typedef struct
 {
@@ -230,6 +279,10 @@ typedef struct
 	int			SampleRateConverterBufferValidSamples;
 	long			SampleRateConverterBufferConsumedSamples;
 	int			SampleRateConverterBufferCurrentSamplesIndex;
+
+	float			EQ_VU_L[EQ_VU_LEN];
+	float			EQ_VU_M[EQ_VU_LEN];
+	float			EQ_VU_H[EQ_VU_LEN];
 } LGL_SoundChannel;
 
 #define	LGL_SOUND_CHANNEL_NUMBER	32
@@ -456,6 +509,12 @@ typedef struct
 	LGL_MidiDevice*		Xsession;
 	LGL_MidiDevice*		TriggerFinger;
 	LGL_MidiDevice*		JP8k;
+	LGL_MidiDevice*		MidiClock;
+
+	long			MidiClockCounter;
+	float			MidiClockBPM;
+	double			MidiClockTimestamp;
+	double			MidiClockTimestampAccum;
 
 	//VidCam
 	
@@ -567,6 +626,8 @@ typedef struct
 	int			WriteFileAsyncWorkItemListNewSize;
 	LGL_Semaphore*		WriteFileAsyncWorkItemListNewSemaphore;
 	SDL_Thread*		WriteFileAsyncThread;
+
+	LGL_Timer		MainThreadBlockDetectorTimer;
 	
 	//lgl_PathIsAliasCacher	PathIsAliasCacher;
 } LGL_State;
@@ -779,8 +840,8 @@ lgl_AudioOutCallbackJack
 		assert(out_fr);
 		for(unsigned int a=0;a<nframes;a++)
 		{
-			out_fl[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+0]/(float)((1<<16)-1);
-			out_fr[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+1]/(float)((1<<16)-1);
+			out_fl[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+0]/(float)((1<<15)-1);
+			out_fr[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+1]/(float)((1<<15)-1);
 		}
 	}
 	if(LGL.AudioSpec->channels==4)
@@ -791,8 +852,8 @@ lgl_AudioOutCallbackJack
 		assert(out_br);
 		for(unsigned int a=0;a<nframes;a++)
 		{
-			out_bl[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+2]/(float)((1<<16)-1);
-			out_br[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+3]/(float)((1<<16)-1);
+			out_bl[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+2]/(float)((1<<15)-1);
+			out_br[a]=jack_output_buffer16[a*LGL.AudioSpec->channels+3]/(float)((1<<15)-1);
 		}
 	}
 
@@ -846,13 +907,13 @@ lgl_AudioShutdownCallbackJack
 void lgl_ClearAudioChannel
 (
 	int a,
-	LGL_Sound* requiredPtr=NULL
+	LGL_Sound* soundPtr=NULL
 )
 {
 	if
 	(
-		requiredPtr==NULL ||
-		requiredPtr==LGL.SoundChannel[a].LGLSound
+		soundPtr==NULL ||
+		soundPtr==LGL.SoundChannel[a].LGLSound
 	)
 	{
 		LGL.SoundChannel[a].ClearMe=true;
@@ -1250,6 +1311,13 @@ LGL_JackInit()
 		//Our JACK drivers live inside our App Bundle
 		setenv("JACK_DRIVER_DIR","lib/jack",1);
 	}
+	
+	/*
+	if(LGL_GetXponent()==false)
+	{
+		return(false);
+	}
+	*/
 
 	//Open a client connection to the JACK server
 	const char* client_name = "dvj";
@@ -1432,7 +1500,7 @@ LGL_JackInit()
 	return(true);
 }
 
-int lgl_MidiInit2();
+int lgl_MidiInit();
 
 LGL_Semaphore&
 lgl_get_av_semaphore()
@@ -1977,12 +2045,12 @@ LGL_Init
 	}
 
 	LGL.MultiTouchID=0;
-	LGL.MultiTouchX=-1.0f;
-	LGL.MultiTouchY=-1.0f;
+	LGL.MultiTouchX=LGL_MULTITOUCH_INACTIVE;
+	LGL.MultiTouchY=LGL_MULTITOUCH_INACTIVE;
 	LGL.MultiTouchDX=0.0f;
 	LGL.MultiTouchDY=0.0f;
-	LGL.MultiTouchXFirst=-1.0f;
-	LGL.MultiTouchYFirst=-1.0f;
+	LGL.MultiTouchXFirst=LGL_MULTITOUCH_INACTIVE;
+	LGL.MultiTouchYFirst=LGL_MULTITOUCH_INACTIVE;
 	LGL.MultiTouchRotate=0.0f;
 	LGL.MultiTouchPinch=0.0f;
 	LGL.MultiTouchFingerCount=0;
@@ -2234,12 +2302,11 @@ printf("\n");
 #endif	//LGL_OSX
 #endif	//LGL_LINUX
 
-		/*
 		if(1 || LGL.AudioUsingJack==false)
 		{
-			LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
+			//LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
+			lgl_SetRealtime();
 		}
-		*/
 		printf("\n\nLGL JACK Initialization: ALPHA\n");
 		printf("---\n");
 		bool jackInitOK = LGL_JackInit();
@@ -2361,11 +2428,6 @@ printf("\n");
 				assert(LGL.AudioStreamListSemaphore);
 
 				SDL_PauseAudio(0);
-/*
-				char cmd[2048];
-				sprintf(cmd,"chrt -p %i `pgrep pulseaudio`",(int)(LGL_PRIORITY_AUDIO_OUT*99));
-				system(cmd);
-*/
 			}
 			else
 			{
@@ -2666,7 +2728,7 @@ printf("\n");
 
 	//M-Audio MIDI Devices
 
-	lgl_MidiInit2();
+	lgl_MidiInit();
 	
 	//VidCam
 
@@ -3653,6 +3715,7 @@ LGL_FFT
 		printf("HEY!!! %i vs %i\n",fft_elementCount,elementCount);
 		assert(fft_elementCount==elementCount);
 	}
+	elementCount=fft_elementCount;
 	if(direction==1)
 	{
 		fftwf_complex* fft_array_forward = (threadID==0) ? fft_array_main_forward : fft_array_callback_forward;
@@ -4453,6 +4516,7 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 		LGL.DisplayNow=0;	//Fake out
 		lgl_EndFrame();
 		LGL.DisplayNow=activeDisplayPrev;
+		LGL.MainThreadBlockDetectorTimer.Reset();
 	}
 }
 
@@ -8231,7 +8295,7 @@ UpdateTexture
 	if(data==NULL)
 	{
 		//LGL_Assertf(data!=NULL,("LGL_Image::UpdateTexture(): NULL data! WTF!\n"));
-		printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
+		//printf("LGL_Image::UpdateTexture(): NULL data! WTF!\n");
 		return;
 	}
 	LinearInterpolation=inLinearInterpolation;
@@ -9879,6 +9943,7 @@ lgl_FrameBuffer() :
 	PacketSemaphore("Packet Semaphore"),
 	BufferSemaphore("Buffer Semaphore")
 {
+	VideoPath[0]='\0';
 	Ready=false;
 	Buffer=NULL;
 	BufferBytes=0;
@@ -10217,6 +10282,7 @@ void
 lgl_FrameBuffer::
 Invalidate()
 {
+	VideoPath[0]='\0';
 	Ready=false;
 	FrameNumber=-1;
 }
@@ -11783,7 +11849,7 @@ MaybeLoadVideo()
 
 		InvalidateAllFrameBuffers();
 
-#ifdef	LGL_OSX
+#ifdef	LGL_OSX_NONONO
 		QuicktimeMovie = lgl_quicktime_open
 		(
 			Path
@@ -11947,7 +12013,8 @@ MaybeLoadImage()
 		}
 		else
 		{
-			printf("Couldn't obtain an invalid framebuffer (A)\n");
+			LGL_DebugPrintf("Couldn't obtain an invalid framebuffer (A)\n");
+			LGL_DelayMS(50);
 		}
 	}
 	else
@@ -12618,10 +12685,12 @@ void
 LGL_VideoDecoder::
 MaybeInvalidateBuffers()
 {
+	/*
 	if(VideoOK==false)
 	{
 		return;
 	}
+	*/
 
 	char path[2048];
 	{
@@ -13281,7 +13350,17 @@ GetInvalidFrameBuffer()
 		}
 	}
 
-	printf("Couldn't find invalid framebuffer!!\n");
+	LGL_DebugPrintf("Couldn't find an invalid framebuffer!! (%i)\n",FrameBufferList.size());
+	if(FILE* baka = fopen("/Users/id/debug.txt","w"))
+	{
+		for(unsigned int a=0;a<FrameBufferList.size();a++)
+		{
+			fprintf(baka,"buf[%i]: Loaded? %i\n",a,FrameBufferList[a]->IsLoaded());
+
+		}
+
+		fclose(baka);
+	}
 
 	return(NULL);
 }
@@ -14415,7 +14494,11 @@ GetImage()
 		{
 			return(Image);
 		}
-		if(DstFrameYUV->quality==1)
+		if
+		(
+			DstFrameYUV &&
+			DstFrameYUV->quality==1
+		)
 		{
 			lgl_sws_scale
 			(
@@ -16037,7 +16120,7 @@ LGL_INTERNAL_ProcessInput()
 			)
 		)
 		{
-			printf("LGL_InputBuffer::ProcessInput(): Warning! User-entered character '%c' dropped, as it's not in LGL_Font... (%i)\n",LGL_KeyStream()[a],LGL_KeyStream()[a]);
+			//printf("LGL_InputBuffer::ProcessInput(): Warning! User-entered character '%c' dropped, as it's not in LGL_Font... (%i)\n",LGL_KeyStream()[a],LGL_KeyStream()[a]);
 		}
 	}
 }
@@ -16130,14 +16213,14 @@ LGL_AddAudioStream
 LGL_AudioDSP::
 LGL_AudioDSP() : FreqResponseNextSemaphore("AudioDSP FreqResponseNext")
 {
-	for(int a=0;a<2048;a++)
+	for(int a=0;a<LGL_EQ_SAMPLES_FFT*4;a++)
 	{
 		CarryOverLeft[a]=0;
 		CarryOverRight[a]=0;
 	}
 
-	float initialFreqResponse[513];
-	for(int a=0;a<=512;a++)
+	float initialFreqResponse[LGL_EQ_SAMPLES_FFT+1];
+	for(int a=0;a<=LGL_EQ_SAMPLES_FFT;a++)
 	{
 		initialFreqResponse[a]=1.0f;
 	}
@@ -16159,6 +16242,9 @@ ProcessLeft
 	const
 	float*		input,
 	float*		output,
+	float&		eq_vu_l,
+	float&		eq_vu_m,
+	float&		eq_vu_h,
 	unsigned long	samples
 )
 {
@@ -16171,6 +16257,9 @@ ProcessLeft
 		input,
 		output,
 		CarryOverLeft,
+		eq_vu_l,
+		eq_vu_m,
+		eq_vu_h,
 		samples
 	);
 }
@@ -16182,6 +16271,9 @@ ProcessRight
 	const
 	float*		input,
 	float*		output,
+	float&		eq_vu_l,
+	float&		eq_vu_m,
+	float&		eq_vu_h,
 	unsigned long	samples
 )
 {
@@ -16194,6 +16286,9 @@ ProcessRight
 		input,
 		output,
 		CarryOverRight,
+		eq_vu_l,
+		eq_vu_m,
+		eq_vu_h,
 		samples
 	);
 }
@@ -16210,9 +16305,15 @@ ProcessStereo
 	const
 	float*		input,
 	float*		output,
+	float&		eq_vu_l,
+	float&		eq_vu_m,
+	float&		eq_vu_h,
 	unsigned long	samples
 )
 {
+	eq_vu_l=0.0f;
+	eq_vu_m=0.0f;
+	eq_vu_h=0.0f;
 	assert(samples==LGL_SAMPLESIZE);
 	if(samples/2==0)
 	{
@@ -16225,21 +16326,25 @@ ProcessStereo
 		inputR[a/2]=input[a+1];
 	}
 
-#if 1
-	ProcessLeft(inputL,outputL,samples);
-	ProcessRight(inputR,outputR,samples);
-#else
-	ProcessChannelStereo
-	(
-		inputL,
-		inputR,
-		outputL,
-		outputR,
-		CarryOverLeft,
-		CarryOverRight,
-		samples
-	);
-#endif
+	float l_eq_vu_l=0.0f;
+	float l_eq_vu_m=0.0f;
+	float l_eq_vu_h=0.0f;
+	ProcessLeft(inputL,outputL,
+		l_eq_vu_l,
+		l_eq_vu_m,
+		l_eq_vu_h,
+		samples);
+	float r_eq_vu_l=0.0f;
+	float r_eq_vu_m=0.0f;
+	float r_eq_vu_h=0.0f;
+	ProcessRight(inputR,outputR,
+		r_eq_vu_l,
+		r_eq_vu_m,
+		r_eq_vu_h,
+		samples);
+	eq_vu_l = LGL_Max(l_eq_vu_l,r_eq_vu_l);
+	eq_vu_m = LGL_Max(l_eq_vu_m,r_eq_vu_m);
+	eq_vu_h = LGL_Max(l_eq_vu_h,r_eq_vu_h);
 
 	for(unsigned long a=0;a<samples*2;a+=2)
 	{
@@ -16270,32 +16375,21 @@ SetFreqResponse
 	//Convert our Polar freqResponseArrayOf513 to Rectangular
 	unsigned int samplesMaxFFT = LGL_EQ_SAMPLES_FFT;
 	const unsigned int samplesMaxFFTHalf=samplesMaxFFT/2;
-	const unsigned int lgSamplesMaxFFT=(unsigned int)(logf(samplesMaxFFT)/logf(2.0f));
+	const unsigned int lgSamplesMaxFFT=(unsigned int)floorf(0.5f+logf(samplesMaxFFT)/logf(2.0f));
 
 	float freqResponseDesiredReal[samplesMaxFFT];
 	float freqResponseDesiredImaginary[samplesMaxFFT];
 	bzero(freqResponseDesiredReal,samplesMaxFFT*sizeof(float));
 	bzero(freqResponseDesiredImaginary,samplesMaxFFT*sizeof(float));
-	for(unsigned int a=0;a<513;a++)
-	{
-		freqResponseDesiredReal[(int)(a*(samplesMaxFFTHalf/512.0f))]+=freqResponseArrayOf513[a];
-		freqResponseDesiredImaginary[(int)(a*(samplesMaxFFTHalf/512.0f))]+=freqResponseArrayOf513[a];
-	}
 	for(unsigned int a=0;a<=samplesMaxFFTHalf;a++)
 	{
-		freqResponseDesiredReal[a]*=samplesMaxFFTHalf/512.0f;
-		freqResponseDesiredImaginary[a]*=samplesMaxFFTHalf/512.0f;
+		int index = (int)LGL_Min(512,floorf(a*(512.0f/samplesMaxFFTHalf)));
+		freqResponseDesiredReal[a]=freqResponseArrayOf513[index];
+		freqResponseDesiredImaginary[a]=freqResponseArrayOf513[index];
 	}
-	/*
-	for(unsigned int a=0;a<=samplesMaxFFTHalf;a++)
-	{
-		freqResponseDesiredReal[a]=freqResponseArrayOf513[a];
-		freqResponseDesiredImaginary[a]=freqResponseArrayOf513[a];
-	}
-	*/
 
 	//Enforce symmetry for negative frequencies
-	for(unsigned int a=1;a<=samplesMaxFFTHalf;a++)
+	for(unsigned int a=0;a<=samplesMaxFFTHalf;a++)
 	{
 		freqResponseDesiredReal[samplesMaxFFTHalf+a]=freqResponseDesiredReal[samplesMaxFFTHalf-a];
 		freqResponseDesiredImaginary[samplesMaxFFTHalf+a]=-freqResponseDesiredImaginary[samplesMaxFFTHalf-a];
@@ -16318,29 +16412,65 @@ SetFreqResponse
 	memcpy(impulseResponseReal,impulseResponseAliasedReal,samplesMaxFFT*sizeof(float));
 	memcpy(impulseResponseImaginary,impulseResponseAliasedImaginary,samplesMaxFFT*sizeof(float));
 
-	//Right-Shift by kernelSamplesHalf, apply Blackman window, add trailing zeros
-	const unsigned int kernelSamples=samplesMaxFFTHalf;
-	const unsigned int kernelSamplesHalf=kernelSamples/2;
+	//Create impulse response filter kernel
+	//Right-Shift by kernelSamplesHalf, apply Blackman window, add trailing zeros. Peak is centered at x=25%.
+	const unsigned int samplesMaxFFTHalfHalf=samplesMaxFFTHalf/2;
 	float temp[samplesMaxFFT];
+	/*
 	for(unsigned int a=0;a<samplesMaxFFT;a++)
 	{
-		int index=a-kernelSamplesHalf;
+		int index=a-samplesMaxFFTHalfHalf;
 		if(index<0)
 		{
 			index+=samplesMaxFFT;
 		}
+		int diff = 0;
 		temp[a]=impulseResponseReal[index]*
 			(
-				(a<kernelSamples) ?
-				(0.42f - 0.5f*cosf(2*LGL_PI*a/(float)(kernelSamples-1)) + .08f*cosf(4*LGL_PI*a/(float)(kernelSamples-1))) :
+				//(1 || a<samplesMaxFFTHalf) ?
+				(a<samplesMaxFFTHalf) ?
+				//(0.54f - 0.46f*cosf(2*LGL_PI*a/(float)(samplesMaxFFTHalf+diff))) :	//Hamming
+				(0.42f - 0.5f*cosf(2*LGL_PI*a/(float)(samplesMaxFFTHalf+diff)) + 0.08f*cosf(4*LGL_PI*a/(float)(samplesMaxFFTHalf+diff))) :	//Blackman
 				0
 			);
 	}
 	memcpy(impulseResponseReal,temp,samplesMaxFFT*sizeof(float));
+	*/
+
+	//Shift signal samplesMaxFFTHalfHalf samples to right
+	for(unsigned int a=0;a<samplesMaxFFT;a++)
+	{
+		int index=a+samplesMaxFFTHalfHalf;
+		if(index>=samplesMaxFFT)
+		{
+			index-=samplesMaxFFT;
+		}
+		temp[index] = impulseResponseReal[a];
+	}
+	memcpy(impulseResponseReal,temp,samplesMaxFFT*sizeof(float));
+
+	for(unsigned int a=0;a<samplesMaxFFT;a++)
+	{
+		if(a<=samplesMaxFFTHalf)
+		{
+			impulseResponseReal[a]=impulseResponseReal[a]*
+				(0.42f - 0.5f*cosf(2*LGL_PI*a/(float)samplesMaxFFTHalf) + 0.08f*cosf(4*LGL_PI*a/(float)samplesMaxFFTHalf));	//Blackman
+		}
+		else
+		{
+			impulseResponseReal[a]=0.0f;
+		}
+	}
+
+	//Doesn't seem to matter which of these two I do...
+#if 0
+	memcpy(impulseResponseImaginary,temp,samplesMaxFFT*sizeof(float));
+#else
 	for(unsigned int a=0;a<samplesMaxFFT;a++)
 	{
 		impulseResponseImaginary[a]=0;
 	}
+#endif
 
 	//FFT back to freq domain
 	float freqResponseActualReal[samplesMaxFFT];
@@ -16358,9 +16488,21 @@ SetFreqResponse
 
 	{
 		LGL_ScopeLock lock(__FILE__,__LINE__,FreqResponseNextSemaphore);
-		memcpy(FreqResponseNextReal,freqResponseActualReal,1024*sizeof(float));
-		memcpy(FreqResponseNextImaginary,freqResponseActualImaginary,1024*sizeof(float));
+		memcpy(FreqResponseNextReal,freqResponseActualReal,LGL_EQ_SAMPLES_FFT*2*sizeof(float));
+		memcpy(FreqResponseNextImaginary,freqResponseActualImaginary,LGL_EQ_SAMPLES_FFT*2*sizeof(float));
 		FreqResponseNextAvailable=true;
+	}
+
+	if(0)
+	{
+		for(int a=0;a<samplesMaxFFT;a++)
+		{
+			printf("Freq Response[%i]: %.2f\t\t%.2f\n",
+				a,
+				freqResponseActualReal[a],
+				freqResponseActualImaginary[a]
+			);
+		}
 	}
 }
 
@@ -16372,21 +16514,24 @@ ProcessChannel
 	float*		userInput,
 	float*		userOutput,
 	float*		carryOver,
+	float&		eq_vu_l,
+	float&		eq_vu_m,
+	float&		eq_vu_h,
 	unsigned long	samples
 )
 {
 	if(FreqResponseNextAvailable)
 	{
 		{
-			memcpy(FreqResponseReal,FreqResponseNextReal,1024*sizeof(float));
-			memcpy(FreqResponseImaginary,FreqResponseNextImaginary,1024*sizeof(float));
+			memcpy(FreqResponseReal,FreqResponseNextReal,LGL_EQ_SAMPLES_FFT*2*sizeof(float));
+			memcpy(FreqResponseImaginary,FreqResponseNextImaginary,LGL_EQ_SAMPLES_FFT*2*sizeof(float));
 			FreqResponseNextAvailable=false;
 		}
 	}
 
 	const unsigned int samplesMaxFFT = LGL_EQ_SAMPLES_FFT;
 	const unsigned int samplesMaxFFTHalf=samplesMaxFFT/2;
-	const unsigned int lgSamplesMaxFFT=(unsigned int)(logf(samplesMaxFFT)/logf(2.0f));
+	const unsigned int lgSamplesMaxFFT=(unsigned int)floorf(0.5f+logf(samplesMaxFFT)/logf(2.0f));
 
 	//Prepare our filter kernel (The EQ filter multiplied by userInput in the frequency domain)
 
@@ -16395,6 +16540,20 @@ ProcessChannel
 	float filterKernelImaginary[samplesMaxFFT];
 	memcpy(filterKernelReal,FreqResponseReal,samplesMaxFFT*sizeof(float));
 	memcpy(filterKernelImaginary,FreqResponseImaginary,samplesMaxFFT*sizeof(float));
+
+	float maxResponseReal=0.0f;
+	float maxResponseImaginary=0.0f;
+	for(int a=0;a<samplesMaxFFT;a++)
+	{
+		if(filterKernelReal[a]>maxResponseReal)
+		{
+			maxResponseReal=filterKernelReal[a];
+		}
+		if(filterKernelImaginary[a]>maxResponseImaginary)
+		{
+			maxResponseImaginary=filterKernelImaginary[a];
+		}
+	}
 
 	for(unsigned long sampleStart=0;sampleStart<samples;sampleStart+=samplesMaxFFTHalf)
 	{
@@ -16408,7 +16567,8 @@ ProcessChannel
 		for(unsigned int a=0;a<sampleCount;a++)
 		{
 			fftInputReal[a]=userInput[sampleStart+a];
-			fftInputImaginary[a]=0;
+			//fftInputImaginary[a]=0;
+			fftInputImaginary[a]=fftInputReal[a];
 		}
 		for(unsigned int a=sampleCount;a<samplesMaxFFT;a++)
 		{
@@ -16434,11 +16594,34 @@ ProcessChannel
 				fftInputReal[a]*filterKernelReal[a]-
 				fftInputImaginary[a]*filterKernelImaginary[a];
 			float imaginary=
-				fftInputImaginary[a]*filterKernelReal[a]+
-				fftInputReal[a]*filterKernelImaginary[a];
+				fftInputReal[a]*filterKernelImaginary[a]+
+				fftInputImaginary[a]*filterKernelReal[a];
 			fftInputReal[a]=real;
 			fftInputImaginary[a]=imaginary;
 		}
+
+		eq_vu_l=0.0f;
+		eq_vu_m=0.0f;
+		eq_vu_h=0.0f;
+		int factor = (LGL_EQ_SAMPLES_FFT/(2*512));
+		for(unsigned int a=0;a<LGL_EQ_LOWMID*factor;a++)
+		{
+			eq_vu_l+=fabsf(fftInputReal[a])+fabsf(fftInputImaginary[a]);
+		}
+		for(unsigned int a=LGL_EQ_LOWMID*factor;a<LGL_EQ_MIDHIGH*factor;a++)
+		{
+			eq_vu_m+=fabsf(fftInputReal[a])+fabsf(fftInputImaginary[a]);
+		}
+		for(unsigned int a=LGL_EQ_MIDHIGH*factor;a<samplesMaxFFT;a++)
+		{
+			eq_vu_h+=fabsf(fftInputReal[a])+fabsf(fftInputImaginary[a]);
+		}
+		const int fudgeLow=4;
+		eq_vu_l/=(LGL_EQ_LOWMID-0.0f)*32767.0f*factor*fudgeLow;
+		const int fudgeMid=4;
+		eq_vu_m/=(LGL_EQ_MIDHIGH-LGL_EQ_LOWMID)*32767.0f*factor*fudgeMid;
+		const float fudgeHigh=0.5f;
+		eq_vu_h/=(samplesMaxFFT-LGL_EQ_MIDHIGH)*32767.0f*factor*fudgeHigh;
 
 		//(back) To the time domain!!
 		LGL_FFT
@@ -16451,7 +16634,7 @@ ProcessChannel
 		);
 
 		//Determine DC so we may cancel it out
-		float dc=fftInputReal[0];
+		float dc=0;//fftInputReal[0];
 
 		//Write to userOutput
 		for(unsigned int a=0;a<sampleCount;a++)
@@ -16465,25 +16648,27 @@ ProcessChannel
 		}
 
 		//Write to carryOver
-		float carryOverNew[2048];
-		for(unsigned int a=0;a<2048;a++)
+		const int carryOverSize = LGL_EQ_SAMPLES_FFT*4;
+		float carryOverNew[carryOverSize];
+		for(unsigned int a=0;a<carryOverSize;a++)
 		{
 			carryOverNew[a]=
 				(
-					(a+sampleCount<2048) ?
+					(a+sampleCount<carryOverSize) ?
 					carryOver[a+sampleCount] :
 					0
 				) +
 				(
 					(a+sampleCount<samplesMaxFFT) ?
-					fftInputReal[a+sampleCount]-dc :
+					(fftInputReal[a+sampleCount]-dc) :
 					0
 				);
 		}
-		memcpy(carryOver,carryOverNew,2048*sizeof(float));
+		memcpy(carryOver,carryOverNew,carryOverSize*sizeof(float));
 	}
 }
 
+/*
 void
 LGL_AudioDSP::
 ProcessChannelStereo
@@ -16619,6 +16804,7 @@ ProcessChannelStereo
 		}
 	}
 }
+*/
 
 LGL_AudioGrain::
 LGL_AudioGrain()
@@ -18626,19 +18812,6 @@ void
 LGL_Sound::
 PrepareForDeleteThreadFunc()
 {
-	//Signal we want the sound cleared in all active channels
-	for(int a=0;a<LGL_SOUND_CHANNEL_NUMBER;a++)
-	{
-		if
-		(
-			LGL.SoundChannel[a].Occupied==true &&
-			LGL.SoundChannel[a].Buffer==Buffer
-		)
-		{
-			lgl_ClearAudioChannel(a,this);
-		}
-	}
-
 	if(LGL.AudioAvailable)
 	{
 		//Wait until the sound is actually stopped in all active channels
@@ -18653,6 +18826,7 @@ PrepareForDeleteThreadFunc()
 					LGL.SoundChannel[a].Buffer==Buffer
 				)
 				{
+					lgl_ClearAudioChannel(a,this);
 					ok=false;
 					break;
 				}
@@ -19264,6 +19438,7 @@ GetPositionSeconds
 if(channel<0)
 {
 	printf("LGL_Sound::GetPositionSeconds(): WARNING! channel < 0\n");
+	assert(false);
 	return(0.0f);
 }
 	//if(LGL.AudioAvailable==false) return(0);
@@ -19475,6 +19650,21 @@ DivergeRecallPop
 	return(true);
 }
 
+long
+LGL_Sound::
+GetDivergeRecallSampleCount
+(
+	int	channel
+)
+{
+	if(channel<0)
+	{
+		printf("LGL_Sound::GetDivergeRecallCount(): WARNING! channel < 0\n");
+		return(false);
+	}
+	return(LGL.SoundChannel[channel].DivergeSamples - LGL.SoundChannel[channel].PositionSamplesNow);
+}
+
 int
 LGL_Sound::
 GetDivergeRecallCount
@@ -19548,14 +19738,16 @@ if(channel<0)
 	return(false);
 }
 
-	if(LGL.SoundChannel[channel].WarpPointLock==false)
+	LGL_SoundChannel* sc=&LGL.SoundChannel[channel];
+	if(sc->WarpPointLock==false)
 	{
-		LGL.SoundChannel[channel].WarpPointSecondsAlpha=-1.0f;
-		LGL.SoundChannel[channel].WarpPointSecondsOmega=-1.0f;
-		LGL.SoundChannel[channel].WarpPointLoop=false;
+		sc->WarpPointSecondsAlpha=-1.0f;
+		sc->WarpPointSecondsOmega=-1.0f;
+		sc->WarpPointLoop=false;
+		return(true);
 	}
 
-	return(true);
+	return(false);
 }
 
 bool
@@ -19574,15 +19766,20 @@ if(channel<0)
 	printf("LGL_Sound::SetWarpPoint(3): WARNING! channel < 0\n");
 	return(false);
 }
-	if(LGL.SoundChannel[channel].WarpPointLock==false)
+	LGL_SoundChannel* sc=&LGL.SoundChannel[channel];
+	if(sc->WarpPointLock==false)
 	{
-		LGL.SoundChannel[channel].WarpPointSecondsAlpha=alphaSeconds;
-		LGL.SoundChannel[channel].WarpPointSecondsOmega=omegaSeconds;
-		LGL.SoundChannel[channel].WarpPointLoop=loop;
-		LGL.SoundChannel[channel].WarpPointLock=lock;
+		if(sc->PositionSamplesNow <= alphaSeconds*sc->Hz)
+		{
+			sc->WarpPointSecondsAlpha=alphaSeconds;
+			sc->WarpPointSecondsOmega=omegaSeconds;
+			sc->WarpPointLoop=loop;
+			sc->WarpPointLock=lock;
+			return(true);
+		}
 	}
 
-	return(true);
+	return(false);
 }
 
 float
@@ -19657,12 +19854,99 @@ GetVU
 	int	channel
 )	const
 {
-if(channel<0)
-{
-	printf("LGL_Sound::GetVU(): WARNING! channel < 0\n");
-	return(0);
-}
+	if(channel<0)
+	{
+		printf("LGL_Sound::GetVU(): WARNING! channel < 0\n");
+		return(0);
+	}
 	return(LGL.SoundChannel[channel].VU);
+}
+
+float
+LGL_Sound::
+GetEQVUL
+(
+	int	channel
+)	const
+{
+	if(channel<0)
+	{
+		printf("LGL_Sound::GetEQVUL(): WARNING! channel < 0\n");
+		return(0);
+	}
+
+	float ave=0.0f;
+	float max=0.0f;
+	for(int a=0;a<EQ_VU_LEN;a++)
+	{
+		float val=LGL.SoundChannel[channel].EQ_VU_L[a];
+		ave+=val;
+		if(val>max)
+		{
+			max=val;
+		}
+	}
+	ave/=EQ_VU_LEN;
+	return(ave);
+	//return(max);
+}
+
+float
+LGL_Sound::
+GetEQVUM
+(
+	int	channel
+)	const
+{
+	if(channel<0)
+	{
+		printf("LGL_Sound::GetEQVUM(): WARNING! channel < 0\n");
+		return(0);
+	}
+
+	float ave=0.0f;
+	float max=0.0f;
+	for(int a=0;a<EQ_VU_LEN;a++)
+	{
+		float val=LGL.SoundChannel[channel].EQ_VU_M[a];
+		ave+=val;
+		if(val>max)
+		{
+			max=val;
+		}
+	}
+	ave/=EQ_VU_LEN;
+	return(ave);
+	//return(max);
+}
+
+float
+LGL_Sound::
+GetEQVUH
+(
+	int	channel
+)	const
+{
+	if(channel<0)
+	{
+		printf("LGL_Sound::GetEQVUL(): WARNING! channel < 0\n");
+		return(0);
+	}
+
+	float ave=0.0f;
+	float max=0.0f;
+	for(int a=0;a<EQ_VU_LEN;a++)
+	{
+		float val=LGL.SoundChannel[channel].EQ_VU_H[a];
+		ave+=val;
+		if(val>max)
+		{
+			max=val;
+		}
+	}
+	ave/=EQ_VU_LEN;
+	return(ave);
+	//return(max);
 }
 
 float
@@ -21055,7 +21339,7 @@ LGL_ProcessInput()
 	//This never seems to happen
 	if(SDL_Touch* touch = SDL_GetTouch(LGL.MultiTouchID))
 	{
-printf("touch focus: %x\n",touch->focus);
+	printf("touch focus: %x\n",touch->focus);
 		LGL.MultiTouchFingerCount=touch->num_fingers;
 		LGL.MultiTouchFingerCountDelta=LGL.MultiTouchFingerCount-multiTouchFingerCountPrev;
 		if
@@ -21128,8 +21412,7 @@ printf("touch focus: %x\n",touch->focus);
 
 			if(event.key.keysym.sym != 0)
 			{
-//printf("KeyDown: %i (%i, %i)\n",event.key.keysym.sym, LGL_KEY_RALT);
-				LGL.KeyStroke[event.key.keysym.sym]=LGL.KeyDown[event.key.keysym.sym]==false;
+				LGL.KeyStroke[event.key.keysym.sym]=(LGL.KeyDown[event.key.keysym.sym]==false);
 				LGL.KeyDown[event.key.keysym.sym]=true;
 				if(LGL.KeyStroke[event.key.keysym.sym])
 				{
@@ -21300,10 +21583,10 @@ printf("touch focus: %x\n",touch->focus);
 		}
 		if(deltaFinger)
 		{
-			LGL.MultiTouchX=-1.0f;
-			LGL.MultiTouchY=-1.0f;
-			multiTouchXPrev=-1.0f;
-			multiTouchYPrev=-1.0f;
+			LGL.MultiTouchX=LGL_MULTITOUCH_INACTIVE;
+			LGL.MultiTouchY=LGL_MULTITOUCH_INACTIVE;
+			multiTouchXPrev=LGL_MULTITOUCH_INACTIVE;
+			multiTouchYPrev=LGL_MULTITOUCH_INACTIVE;
 		}
 
 		if(event.type==SDL_MULTIGESTURE)
@@ -21311,21 +21594,21 @@ printf("touch focus: %x\n",touch->focus);
 			#if 0
 			if(SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID)!=SDL_GetWindowID(LGL.WindowID[0]))
 			{
-printf("Multitouch OUT: %x vs %x\n",SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID),SDL_GetWindowID(LGL.WindowID[0]));
+			printf("Multitouch OUT: %x vs %x\n",SDL_GetWindowID((SDL_WindowID)event.mgesture.windowID),SDL_GetWindowID(LGL.WindowID[0]));
 				//Only care about events for interface window
 				continue;
 			}
 			#endif
 
 			LGL.MultiTouchID=event.mgesture.touchId;
-			if(multiTouchXPrev!=-1.0f)
+			if(multiTouchXPrev!=LGL_MULTITOUCH_INACTIVE)
 			{
 				LGL.MultiTouchDX=event.mgesture.x-multiTouchXPrev;
 				LGL.MultiTouchDY=(1.0f-event.mgesture.y)-multiTouchYPrev;
 			}
 			LGL.MultiTouchX=event.mgesture.x;
 			LGL.MultiTouchY=(1.0f-event.mgesture.y);
-			if(multiTouchXPrev==-1.0f)
+			if(multiTouchXPrev==LGL_MULTITOUCH_INACTIVE)
 			{
 				LGL.MultiTouchXFirst=LGL.MultiTouchX;
 				LGL.MultiTouchYFirst=LGL.MultiTouchY;
@@ -22880,6 +23163,30 @@ LGL_KeyDown
 			LGL_KeyDown(LGL_KEY_RSHIFT)
 		);
 	}
+	if(key==LGL_KEY_QUESTION)
+	{
+		return
+		(
+			LGL_KeyDown(LGL_KEY_SLASH) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)
+		);
+	}
+	if(key==LGL_KEY_LESS)
+	{
+		return
+		(
+			LGL_KeyDown(LGL_KEY_COMMA) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)
+		);
+	}
+	if(key==LGL_KEY_GREATER)
+	{
+		return
+		(
+			LGL_KeyDown(LGL_KEY_PERIOD) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)
+		);
+	}
 
 	return(LGL.KeyDown[key]);
 }
@@ -22891,13 +23198,37 @@ LGL_KeyStroke
 )
 {
 	if(lgl_KeySanityCheck(key)==false) return(false);
-	
+
 	if(key==LGL_KEY_SHIFT)
 	{
 		return
 		(
 			LGL_KeyStroke(LGL_KEY_LSHIFT) ||
 			LGL_KeyStroke(LGL_KEY_RSHIFT)
+		);
+	}
+	if(key==LGL_KEY_QUESTION)
+	{
+		return
+		(
+			LGL_KeyStroke(LGL_KEY_SLASH) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)
+		);
+	}
+	if(key==LGL_KEY_LESS)
+	{
+		return
+		(
+			LGL_KeyStroke(LGL_KEY_COMMA) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)
+		);
+	}
+	if(key==LGL_KEY_GREATER)
+	{
+		return
+		(
+			LGL_KeyStroke(LGL_KEY_PERIOD) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)
 		);
 	}
 
@@ -22920,6 +23251,60 @@ LGL_KeyRelease
 			LGL_KeyRelease(LGL_KEY_RSHIFT)
 		);
 	}
+	if(key==LGL_KEY_QUESTION)
+	{
+		return
+		(
+			(
+				LGL_KeyRelease(LGL_KEY_SLASH) &&
+				LGL_KeyRelease(LGL_KEY_SHIFT)
+			) ||
+			(
+				LGL_KeyRelease(LGL_KEY_SLASH) &&
+				LGL_KeyDown(LGL_KEY_SHIFT)
+			) ||
+			(
+				LGL_KeyDown(LGL_KEY_SLASH) &&
+				LGL_KeyRelease(LGL_KEY_SHIFT)
+			)
+		);
+	}
+	if(key==LGL_KEY_LESS)
+	{
+		return
+		(
+			(
+				LGL_KeyRelease(LGL_KEY_COMMA) &&
+				LGL_KeyRelease(LGL_KEY_SHIFT)
+			) ||
+			(
+				LGL_KeyRelease(LGL_KEY_COMMA) &&
+				LGL_KeyDown(LGL_KEY_SHIFT)
+			) ||
+			(
+				LGL_KeyDown(LGL_KEY_COMMA) &&
+				LGL_KeyRelease(LGL_KEY_SHIFT)
+			)
+		);
+	}
+	if(key==LGL_KEY_GREATER)
+	{
+		return
+		(
+			(
+				LGL_KeyRelease(LGL_KEY_PERIOD) &&
+				LGL_KeyRelease(LGL_KEY_SHIFT)
+			) ||
+			(
+				LGL_KeyRelease(LGL_KEY_PERIOD) &&
+				LGL_KeyDown(LGL_KEY_SHIFT)
+			) ||
+			(
+				LGL_KeyDown(LGL_KEY_PERIOD) &&
+				LGL_KeyRelease(LGL_KEY_SHIFT)
+			)
+		);
+	}
 
 	return(LGL.KeyRelease[key]);
 }
@@ -22940,6 +23325,17 @@ LGL_KeyTimer
 			(
 				LGL_KeyTimer(LGL_KEY_LSHIFT),
 				LGL_KeyTimer(LGL_KEY_RSHIFT)
+			)
+		);
+	}
+	if(key==LGL_KEY_QUESTION)
+	{
+		return
+		(
+			LGL_Min
+			(
+				LGL_KeyTimer(LGL_KEY_SHIFT),
+				LGL_KeyTimer(LGL_KEY_SLASH)
 			)
 		);
 	}
@@ -23154,12 +23550,28 @@ LGL_MultiTouchDY2()
 float
 LGL_MultiTouchDXTotal()
 {
+	if
+	(
+		LGL.MultiTouchX==LGL_MULTITOUCH_INACTIVE ||
+		LGL.MultiTouchXFirst==LGL_MULTITOUCH_INACTIVE
+	)
+	{
+		return(0.0f);
+	}
 	return(LGL.MultiTouchX-LGL.MultiTouchXFirst);
 }
 
 float
 LGL_MultiTouchDYTotal()
 {
+	if
+	(
+		LGL.MultiTouchY==LGL_MULTITOUCH_INACTIVE ||
+		LGL.MultiTouchYFirst==LGL_MULTITOUCH_INACTIVE
+	)
+	{
+		return(0.0f);
+	}
 	return(LGL.MultiTouchY-LGL.MultiTouchYFirst);
 }
 
@@ -24314,20 +24726,27 @@ LGL_GetWiimote
 
 //MIDI
 
-int lgl_MidiInit2()
+int lgl_MidiInit()
 {
 	LGL.Xponent=NULL;
 	LGL.Xsession=NULL;
 	LGL.TriggerFinger=NULL;
 	LGL.JP8k=NULL;
+	LGL.MidiClock=NULL;
+	
+	LGL.MidiClockCounter=0;
+	LGL.MidiClockBPM=0.0f;
+	LGL.MidiClockTimestamp=0.0f;
+	LGL.MidiClockTimestampAccum=0.0f;
 
 	try
 	{
 		LGL.MidiRtIn = new RtMidiIn();
+	//	LGL.MidiRtIn->ignoreTypes(false,false,false);
 	}
 	catch(RtError& error)
 	{
-		printf("lgl_MidiInit2(): Error!\n");
+		printf("lgl_MidiInit(): Error!\n");
 		error.printMessage();
 		return(-1);
 	}
@@ -24338,6 +24757,7 @@ int lgl_MidiInit2()
 		{
 			//Make a new RtMidiIn
 			RtMidiIn* midiRtIn = new RtMidiIn();
+	//		midiRtIn->ignoreTypes(false,false,false);
 
 			//Get the name
 			std::string str = midiRtIn->getPortName(a);
@@ -24347,12 +24767,13 @@ int lgl_MidiInit2()
 
 			//Open the port
 			midiRtIn->openPort(a);
+			midiRtIn->ignoreTypes(false,false,false);
 
 			LGL.MidiRtInDevice.push_back(midiRtIn);
 		}
 		catch(RtError &error)
 		{
-			printf("lgl_MidiInit2(): Error!\n");
+			printf("lgl_MidiInit(): Error!\n");
 			error.printMessage();
 			return(-1);
 		}
@@ -24410,6 +24831,11 @@ int lgl_MidiInit2()
 			LGL.JP8k = new LGL_MidiDevice;
 			LGL.JP8k->DeviceID = a;
 		}
+		else if(strstr(LGL_MidiDeviceName(a),"Network"))
+		{
+			LGL.MidiClock = new LGL_MidiDevice;
+			LGL.MidiClock->DeviceID=a;
+		}
 		else
 		{
 			printf("Unsupported MIDI Device: '%s'\n",LGL_MidiDeviceName(a));
@@ -24444,13 +24870,20 @@ int lgl_MidiUpdate()
 		{
 			device = LGL.Xponent;
 		}
-		if
+		else if
 		(
 			strcmp(LGL_MidiDeviceName(a),"USB X-Session:0")==0 ||
 			strcmp(LGL_MidiDeviceName(a),"USB X-Session Port 1")==0
 		)
 		{
 			device = LGL.Xsession;
+		}
+		else if
+		(
+			strstr(LGL_MidiDeviceName(a),"Network")
+		)
+		{
+			device = LGL.MidiClock;
 		}
 
 		done=false;
@@ -24459,7 +24892,12 @@ int lgl_MidiUpdate()
 		while(done==false)
 		{
 			std::vector<unsigned char> message;
-			midiRtIn->getMessage(&message);
+			double timestampDelta = midiRtIn->getMessage(&message);
+			
+			if(device==LGL.MidiClock)
+			{
+				//printf("Clock Messages: %lu (%lu)\n",message.size(),(long unsigned)LGL.MidiClock);
+			}
 
 			if(message.size()==0)
 			{
@@ -24468,6 +24906,38 @@ int lgl_MidiUpdate()
 			if(device==NULL)
 			{
 				continue;
+			}
+
+			if(device==LGL.MidiClock)
+			{
+				for(unsigned int a=0;a<message.size();a++)
+				{
+					//printf("\tByte[%i] = %i\n",a,message[a]);
+					if(message[0]==248)
+					{
+						LGL.MidiClockCounter++;
+						LGL.MidiClockTimestampAccum+=timestampDelta;
+						const int ticksPerBeat=24;
+						const float beatsBetweenUpdates=0.5f;
+						if
+						(
+							(LGL.MidiClockCounter%((int)(ticksPerBeat*beatsBetweenUpdates)))==0 &&
+							LGL.MidiClockTimestampAccum!=0
+						)
+						{
+							LGL.MidiClockBPM = beatsBetweenUpdates*60.0f/(LGL.MidiClockTimestampAccum);
+							LGL.MidiClockBPM = floorf(LGL.MidiClockBPM+0.5f);
+							LGL.MidiClockTimestampAccum=0;
+						}
+						//LGL_DebugPrintf("BPM (%.2f)",LGL.MidiClockBPM);
+						//LGL_DebugPrintf("PCM (%.1f)",LGL_MidiClockPercentOfCurrentMeasure());
+					}
+					else
+					{
+						LGL.MidiClockBPM=0;
+						LGL.MidiClockCounter=0;
+					}
+				}
 			}
 
 			/*
@@ -24708,22 +25178,34 @@ LGL_MidiDeviceName
 float
 LGL_MidiClockBPM()
 {
-	float ret=-1;
-	ret=120.0f;
-	return(ret);
+	if
+	(
+		LGL.MidiClockCounter>0 &&
+		LGL.MidiClockCounter<999
+	)
+	{
+		return(LGL.MidiClockBPM);
+	}
+	else
+	{
+		return(0.0f);
+	}
 }
 
 float
-LGL_MidiClockPercentOfCurrentMeasure()
+LGL_MidiClockPercentOfCurrentMeasure(float measureMultiplier)
 {
-	float ret=-1;
-	float sec=LGL_SecondsSinceExecution();
-	while(sec>=2.0f)	//This is horrid
+	if(LGL.MidiClockCounter>0 && measureMultiplier>0)
 	{
-		sec-=2.0f;
+		float beat = LGL.MidiClockCounter/24.0f;
+		float measure = 0.25f*beat;
+		float percent = fmod(measure,measureMultiplier)/measureMultiplier;
+		return(percent);
 	}
-	ret=sec/2.0f;
-	return(ret);
+	else
+	{
+		return(-1.0f);
+	}
 }
 
 
@@ -33075,6 +33557,35 @@ GetGroup()
 
 
 
+int
+lgl_main_thread_block_detector_thread
+(
+	void*	baka
+)
+{
+	for(;;)
+	{
+		if(LGL.Running==false)
+		{
+			return(0);
+		}
+		if(LGL.MainThreadBlockDetectorTimer.SecondsSinceLastReset()>4.0f/60.0f)
+		{
+			printf("Main thread blocks too long!\n");
+			assert(false);
+		}
+		LGL_DelaySeconds(1.0f/60.f);
+	}
+}
+
+void
+LGL_SpawnMainThreadBlockDetector()
+{
+	LGL.MainThreadBlockDetectorTimer.Reset();
+	LGL_ThreadCreate(lgl_main_thread_block_detector_thread);
+}
+
+
 
 
 
@@ -33249,6 +33760,36 @@ lgl_AudioOutCallbackGenerator
 	int	len8
 )
 {
+	//Detect realtime status
+	if(0)
+	{
+		struct thread_time_constraint_policy ttcpolicy;
+		thread_port_t threadport = pthread_mach_thread_np(pthread_self());
+		thread_policy_flavor_t flavor = THREAD_TIME_CONSTRAINT_POLICY;
+		mach_msg_type_number_t count = THREAD_TIME_CONSTRAINT_POLICY_COUNT;
+		boolean_t get = false;
+		int ret=thread_policy_get
+		(
+			threadport,
+			flavor,
+			(thread_policy_t)&ttcpolicy,
+			&count,
+			&get
+		);
+		if(ret!=KERN_SUCCESS)
+		{
+			printf("Failed to get audio policy\n");
+		}
+		else
+		{
+			printf("period: %-4u\n",ttcpolicy.period);
+			printf("comput: %-4u\n",ttcpolicy.computation);
+			printf("constr: %-4u\n",ttcpolicy.constraint);
+			printf("preemp: %-4u\n",ttcpolicy.preemptible);
+		}
+		//lgl_SetRealtime();
+	}
+
 	if(1 || LGL.AudioUsingJack==false)
 	{
 		if(soundRealtimePrioritySet==false)
@@ -33258,6 +33799,7 @@ lgl_AudioOutCallbackGenerator
 			//Use Only One CPU
 			//LGL_ThreadSetCPUAffinity(1);
 			//LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut");	//It's really that important!
+			lgl_SetRealtime();
 
 			soundRealtimePrioritySet=true;
 		}
@@ -33315,6 +33857,15 @@ lgl_AudioOutCallbackGenerator
 
 		if
 		(
+			sc->Occupied &&
+			sc->ClearMe
+		)
+		{
+			lgl_ClearAudioChannelNow(b);
+		}
+
+		if
+		(
 			sc->Occupied==false ||
 			sc->Paused==true ||
 			sc->Buffer==NULL ||
@@ -33324,14 +33875,6 @@ lgl_AudioOutCallbackGenerator
 			continue;
 		}
 
-		if
-		(
-			sc->Occupied &&
-			sc->ClearMe
-		)
-		{
-			lgl_ClearAudioChannelNow(b);
-		}
 		if
 		(
 			sc->Occupied==false ||
@@ -33546,6 +34089,12 @@ lgl_AudioOutCallbackGenerator
 					sc->SampleRateConverterBufferStartSamples=0;
 					sc->SampleRateConverterBufferValidSamples=0;
 					sc->SampleRateConverterBufferCurrentSamplesIndex=0;
+					for(int a=0;a<EQ_VU_LEN;a++)
+					{
+						sc->EQ_VU_L[a]=0.0f;
+						sc->EQ_VU_M[a]=0.0f;
+						sc->EQ_VU_H[a]=0.0f;
+					}
 				}
 				else
 				{
@@ -34203,7 +34752,7 @@ lgl_AudioOutCallbackGenerator
 		float tempStreamDSPOutStereo[LGL_SAMPLESIZE*2];
 		for(int a=0;a<sc->Channels/2;a++)
 		{
-			if(sc->LGLAudioDSP[a])
+			if(!LGL_KeyDown(LGL_KEY_W) && sc->LGLAudioDSP[a])
 			{
 				//Stereo
 				float* streamL = (a!=0) ? tempStreamBL : tempStreamFL;
@@ -34215,12 +34764,34 @@ lgl_AudioOutCallbackGenerator
 					tempStreamDSPInStereo[s]=streamL[s/2];
 					tempStreamDSPInStereo[s+1]=streamR[s/2];
 				}
+
+				float eq_vu_l=0.0f;
+				float eq_vu_m=0.0f;
+				float eq_vu_h=0.0f;
+
 				sc->LGLAudioDSP[a]->ProcessStereo
 				(
 					tempStreamDSPInStereo,
 					tempStreamDSPOutStereo,
+					eq_vu_l,
+					eq_vu_m,
+					eq_vu_h,
 					LGL_SAMPLESIZE
 				);
+
+				//EQ VU
+				{
+					for(int a=0;a<EQ_VU_LEN-1;a++)
+					{
+						sc->EQ_VU_L[a]=sc->EQ_VU_L[a+1];
+						sc->EQ_VU_M[a]=sc->EQ_VU_M[a+1];
+						sc->EQ_VU_H[a]=sc->EQ_VU_H[a+1];
+					}
+					sc->EQ_VU_L[EQ_VU_LEN-1]=eq_vu_l;
+					sc->EQ_VU_M[EQ_VU_LEN-1]=eq_vu_m;
+					sc->EQ_VU_H[EQ_VU_LEN-1]=eq_vu_h;
+				}
+
 				for(unsigned int s=0;s<LGL_SAMPLESIZE*2;s+=2)
 				{
 					streamL[s/2]=LGL_Clamp(-32767.0f,tempStreamDSPOutStereo[s],32767.0f);

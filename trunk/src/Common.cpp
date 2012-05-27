@@ -180,6 +180,30 @@ GetGlowFromTime
 }
 
 void
+GetMarkerStringFromIndex
+(
+	char*		str,
+	int		index
+)
+{
+	if(str==NULL)
+	{
+		return;
+	}
+
+	index=LGL_Clamp(0,index,36);
+
+	if(index<=9)
+	{
+		sprintf(str,"%i",index);
+	}
+	else
+	{
+		sprintf(str,"%c",'A'+(((unsigned char)index)-10));
+	}
+}
+
+void
 Main_DrawGlowLines
 (
 	float	time,
@@ -701,6 +725,7 @@ turntable_DrawBPMLines
 	float	soundLengthSeconds,
 	float	bpmFirstBeatSeconds,
 	float	secondsPerBeat,
+	float	pitchbend,
 	float	pointBottom,
 	float	pointTop,
 	float	wavLeft,
@@ -715,6 +740,7 @@ turntable_DrawBPMLines
 	float	soundLengthSeconds,
 	float	bpmFirstBeatSeconds,
 	float	secondsPerBeat,
+	float	pitchbend,
 	float	pointBottom,
 	float	pointTop,
 	float	wavLeft,
@@ -723,6 +749,15 @@ turntable_DrawBPMLines
 {
 	float widthSample=rightSample-leftSample;
 	float pointHeight = pointTop-pointBottom;
+
+	while(pitchbend*60.0f/secondsPerBeat < 100)
+	{
+		secondsPerBeat/=2.0f;
+	}
+	while(pitchbend*60.0f/secondsPerBeat >= 200)
+	{
+		secondsPerBeat*=2.0f;
+	}
 
 	int whichBeat=1;
 	int whichMeasure=1;
@@ -790,6 +825,22 @@ turntable_DrawBPMLines
 			//float dashDelta=0.001f;
 			if(whichBeat==1)
 			{
+				int whichMeasureDraw = whichMeasure;
+				if(whichMeasureDraw<=0)
+				{
+					whichMeasureDraw+=2;
+					for(int a=0;a<1000;a++)
+					{
+						if(whichMeasureDraw<=0)
+						{
+							whichMeasureDraw+=16;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
 				LGL_GetFont().DrawString
 				(
 					wavLeft+wavWidth*bpmPointPercent+lDelta,
@@ -799,7 +850,18 @@ turntable_DrawBPMLines
 					false,
 					0.9f,
 					"%i",
-					whichMeasure
+					whichMeasureDraw
+				);
+				LGL_GetFont().DrawString
+				(
+					wavLeft+wavWidth*bpmPointPercent+lDelta,
+					pointBottom+0.9f*pointHeight-0.5f*fontHeight,
+					fontHeight,
+					1,1,1,1,
+					false,
+					0.9f,
+					"%i",
+					((whichMeasureDraw-1)%16)+1
 				);
 			}
 		}
@@ -1165,6 +1227,7 @@ Turntable_DrawWaveform
 	int		which,
 	LGL_Sound*	sound,
 	bool		loaded,
+	int		mode,
 	const char*	videoPathShort,
 	bool		glitch,
 	float		glitchBegin,
@@ -1172,7 +1235,7 @@ Turntable_DrawWaveform
 	double		soundPositionSamples,
 	double		soundLengthSamples,
 	float		soundSpeed,
-	float		pitchBend,
+	float		pitchbend,
 	float		grainStreamCrossfader,
 	float		grainStreamSourcePoint,
 	float		grainStreamLength,
@@ -1187,12 +1250,14 @@ Turntable_DrawWaveform
 	float		nudge,
 	float		joyAnalogueStatusLeftX,
 	float		time,
-	double*		savePointSeconds,
-	int		savePointIndex,
-	int		savePointIndexActual,
-	unsigned int	savePointSetBitfield,
-	float*		savePointUnsetNoisePercent,
-	float*		savePointUnsetFlashPercent,
+	double*		savepointSeconds,
+	double*		savepointBPMs,
+	int		savepointIndex,
+	int		savepointIndexActual,
+	unsigned int	savepointSetBitfield,
+	unsigned int	savepointSetBPMBitfield,
+	float*		savepointUnsetNoisePercent,
+	float*		savepointUnsetFlashPercent,
 	float		bpm,
 	float		bpmAdjusted,
 	const char*	bpmCandidate,
@@ -1200,6 +1265,22 @@ Turntable_DrawWaveform
 	float		eq0,
 	float		eq1,
 	float		eq2,
+	float		eqVuMe0,
+	float		eqVuMe1,
+	float		eqVuMe2,
+	float		eqVuOther0,
+	float		eqVuOther1,
+	float		eqVuOther2,
+	float		eqVuMePeak0,
+	float		eqVuMePeak1,
+	float		eqVuMePeak2,
+	float		eqVuOtherPeak0,
+	float		eqVuOtherPeak1,
+	float		eqVuOtherPeak2,
+	float		vu,
+	float		vuPeak,
+	float		otherVu,
+	float		otherVuPeak,
 	bool		lowRez,
 	int&		entireWaveArrayFillIndex,
 	int		entireWaveArrayCount,
@@ -1250,8 +1331,6 @@ Turntable_DrawWaveform
 	float warmB;
 	GetColorWarm(warmR,warmG,warmB);
 
-	float glow = GetGlowFromTime(time);
-
 	//Ensure our sound is sufficiently loaded
 	while(sound->GetLengthSamples() < soundLengthSamples)
 	{
@@ -1300,9 +1379,9 @@ Turntable_DrawWaveform
 	//Smooth Zooming Waveform Renderer
 
 	float zoom=4444.0f;
-	if(pitchBend!=0.0f)
+	if(pitchbend!=0.0f)
 	{
-		zoom=1.0f/pitchBend;
+		zoom=1.0f/pitchbend;
 	}
 
 	long pointResolution=256+1;
@@ -1337,22 +1416,6 @@ Turntable_DrawWaveform
 		pointBottom,
 		pointTop+0.01f
 	);
-
-	if
-	(
-		LGL_MouseX()>=wavLeft &&
-		LGL_MouseX()<=wavRight &&
-		LGL_MouseY()>=pointBottom &&
-		LGL_MouseY()<=pointTop
-	)
-	{
-		GetInputMouse().SetHoverElement(GUI_ELEMENT_WAVEFORM);
-		if(LGL_MouseStroke(LGL_MOUSE_LEFT))
-		{
-			GetInputMouse().SetDragTarget((which==0) ? TARGET_TOP : TARGET_BOTTOM);
-			GetInputMouse().SetDragElement(GUI_ELEMENT_WAVEFORM);
-		}
-	}
 
 	if(audioInputMode)
 	{
@@ -1414,8 +1477,8 @@ Turntable_DrawWaveform
 			float grightSample=glitchBegin+glitchLength;
 
 			float centerSample=soundPositionSamples;
-			float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
-			float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
+			float leftSample=centerSample-(64*512*pitchbend*sampleRadiusMultiplier);
+			float rightSample=centerSample+(64*512*pitchbend*sampleRadiusMultiplier);
 
 			if
 			(
@@ -1649,8 +1712,8 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 			float grightSample=glitchBegin+glitchLength;
 			
 			float centerSample=soundPositionSamples;
-			float leftSample=centerSample-(64*512*pitchBend*sampleRadiusMultiplier);
-			float rightSample=centerSample+(64*512*pitchBend*sampleRadiusMultiplier);
+			float leftSample=centerSample-(64*512*pitchbend*sampleRadiusMultiplier);
+			float rightSample=centerSample+(64*512*pitchbend*sampleRadiusMultiplier);
 
 			if(leftSample<0 || rightSample>soundLengthSamples)
 			{
@@ -1738,8 +1801,8 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		if(bpm>0)
 		{
 			float centerSample=soundPositionSamples;
-			float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
-			float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+			float leftSample=centerSample-64*512*pitchbend*SAMPLE_RADIUS_MULTIPLIER;
+			float rightSample=centerSample+64*512*pitchbend*SAMPLE_RADIUS_MULTIPLIER;
 			double secondsPerBeat=(60.0/bpm);
 
 			if(leftSample<0)
@@ -1756,6 +1819,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 						soundLengthSeconds,
 						bpmFirstBeatSeconds,
 						secondsPerBeat,
+						pitchbend,
 						pointBottom,
 						pointTop,
 						wavLeft,
@@ -1773,6 +1837,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 					soundLengthSeconds,
 					bpmFirstBeatSeconds,
 					secondsPerBeat,
+					pitchbend,
 					pointBottom,
 					pointTop,
 					wavLeft+prevWavWidth,
@@ -1793,6 +1858,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 						soundLengthSeconds,
 						bpmFirstBeatSeconds,
 						secondsPerBeat,
+						pitchbend,
 						pointBottom,
 						pointTop,
 						wavLeft,
@@ -1810,6 +1876,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 					soundLengthSeconds,
 					bpmFirstBeatSeconds,
 					secondsPerBeat,
+					pitchbend,
 					pointBottom,
 					pointTop,
 					wavLeft+prevWavWidth,
@@ -1826,6 +1893,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 					soundLengthSeconds,
 					bpmFirstBeatSeconds,
 					secondsPerBeat,
+					pitchbend,
 					pointBottom,
 					pointTop,
 					wavLeft,
@@ -1837,50 +1905,35 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		//Draw Save Points to large wave
 		for(int a=0;a<18;a++)
 		{
-			if(savePointSeconds[a]>=0.0f)
+			if(savepointSeconds[a]>=0.0f)
 			{
 				float centerSample=soundPositionSamples;
-				float leftSample=centerSample-64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
-				float rightSample=centerSample+64*512*pitchBend*SAMPLE_RADIUS_MULTIPLIER;
+				float leftSample=centerSample-64*512*pitchbend*SAMPLE_RADIUS_MULTIPLIER;
+				float rightSample=centerSample+64*512*pitchbend*SAMPLE_RADIUS_MULTIPLIER;
 				float widthSample=rightSample-leftSample;
 
-				long savePointSamples = (long)(savePointSeconds[a]*44100);
+				long savepointSamples = (long)(savepointSeconds[a]*44100);
 				if
 				(
-					savePointSamples >= leftSample-(44100/4) &&
-					savePointSamples <= rightSample+(44100/4)
+					savepointSamples >= leftSample-(44100/4) &&
+					savepointSamples <= rightSample+(44100/4)
 				)
 				{
-					float savePointPercent = (savePointSamples-leftSample)/(float)widthSample;
+					float savepointPercent = (savepointSamples-leftSample)/(float)widthSample;
 					LGL_DrawLineToScreen
 					(
-						wavLeft+wavWidth*savePointPercent,pointBottom+0.4f*pointHeight,
-						wavLeft+wavWidth*savePointPercent,pointBottom+0.6f*pointHeight,
+						wavLeft+wavWidth*savepointPercent,pointBottom+0.4f*pointHeight,
+						wavLeft+wavWidth*savepointPercent,pointBottom+0.6f*pointHeight,
 						1.0f,1.0f,1.0f,1.0f,
 						3
 					);
 					char str[4];
-					if(a==0)
-					{
-						strcpy(str,"[");
-					}
-					else if(a==1)
-					{
-						strcpy(str,"]");
-					}
-					else if(a<=11)
-					{
-						sprintf(str,"%i",a-2);
-					}
-					else
-					{
-						sprintf(str,"%c",'A'+(((unsigned char)a)-12));
-					}
+					GetMarkerStringFromIndex(str,a);
 					float fontHeight=0.10f*pointHeight;
 					float lDelta=0.02f;
 					LGL_GetFont().DrawString
 					(
-						wavLeft+wavWidth*savePointPercent-lDelta,
+						wavLeft+wavWidth*savepointPercent-lDelta,
 						pointBottom+0.5f*pointHeight-0.5f*fontHeight,
 						fontHeight,
 						1,1,1,1,
@@ -2157,17 +2210,18 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				//Draw Save Points to entire wave array
 				for(int a=0;a<18;a++)
 				{
-					if(savePointSeconds[a]>=0.0f)
+					if(savepointSeconds[a]>=0.0f)
 					{
-						long savePointSamples = (long)(savePointSeconds[a]*44100);
-						float savePointPercent = savePointSamples/(double)(cachedLengthSeconds*44100);
-						float bright=(a==savePointIndex)?1.0f:0.5f;
+						long savepointSamples = (long)(savepointSeconds[a]*44100);
+						float savepointPercent = savepointSamples/(double)(cachedLengthSeconds*44100);
+						savepointPercent=LGL_Clamp(0.002f,savepointPercent,0.998f);
+						float bright=(a==savepointIndex)?1.0f:0.5f;
 						LGL_DrawLineToScreen
 						(
-							viewportLeft+viewportWidth*savePointPercent,waveBottom,
-							viewportLeft+viewportWidth*savePointPercent,waveTop,
+							viewportLeft+viewportWidth*savepointPercent,waveBottom,
+							viewportLeft+viewportWidth*savepointPercent,waveTop,
 							bright,bright,bright,1.0f,
-							(a==savePointIndex)?3.0f:1.0f,
+							(a==savepointIndex)?3.0f:1.0f,
 							false
 						);
 					}
@@ -2313,6 +2367,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 
 	float fontHeight=0.05f*viewportHeight;
 	float fontWidth=LGL_GetFont().GetWidthString(fontHeight,tmpStr);
+	fontWidthMax=pointWidth;
 	fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
 
 	LGL_GetFont().DrawString
@@ -2324,7 +2379,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		true,.5f,
 		tmpStr
 	);
-
+	
 	//Draw FreqSense video names
 	if(freqSensePathBrightness>0.0f)
 	{
@@ -2333,6 +2388,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		{
 			const char* path = (v==0) ? freqSenseHighPathShort : freqSenseLowPathShort;
 			float h = (v==0) ? 0.65f : 0.35f;
+			fontHeight=0.05f*viewportHeight;
 			float fontHeight2=fontHeight;
 			float fontWidth=LGL_GetFont().GetWidthString(fontHeight2,path);
 			float fontWidthMax=viewportWidth*0.55f;
@@ -2417,18 +2473,12 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 	);
 	*/
 
-	float lft=0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.0075f;
-	float wth=(viewportWidth*0.25f)/16.0f;
-	float bot=viewportBottom+0.24f*viewportHeight;
-	float top=bot+0.075f*viewportHeight;
-	float spc=wth*0.75f;
-
 	if(audioInputMode==false)
 	{
 		float bpmPitchL = 0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f;
 		float bpmPitchR = 0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f+0.100f;
-		float bpmPitchB = viewportBottom+.70f*viewportHeight;
-		float bpmPitchT = viewportBottom+0.85f*viewportHeight;
+		float bpmPitchB = viewportBottom+0.80f*viewportHeight;
+		float bpmPitchT = viewportBottom+0.95f*viewportHeight;
 
 		if
 		(
@@ -2438,33 +2488,18 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 			LGL_MouseY()<=bpmPitchT+0.01f
 		)
 		{
-			GetInputMouse().SetHoverElement(GUI_ELEMENT_BPM_PITCH);
+			if(LGL_MouseY()>0.5f*(bpmPitchB+bpmPitchT))
+			{
+				GetInputMouse().SetHoverElement(GUI_ELEMENT_BPM);
+			}
+			else
+			{
+				GetInputMouse().SetHoverElement(GUI_ELEMENT_PITCH);
+			}
 		}
 
 		if(bpmAdjusted>0)
 		{
-			LGL_GetFont().DrawString
-			(
-				//viewportLeft+.02f*viewportWidth,
-				bpmPitchL,
-				viewportBottom+.80f*viewportHeight,
-				0.05f*viewportHeight,
-				1,1,1,1,
-				false,.5f,
-				"BPM:"
-			);
-			LGL_GetFont().DrawString
-			(
-				//viewportLeft+.125f*viewportWidth,
-				0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.06f-0.0095f,
-				viewportBottom+.80f*viewportHeight,
-				0.05f*viewportHeight,
-				1,1,1,1,
-				false,.5f,
-				"%.2f",
-				bpmAdjusted
-			);
-
 			if(0 && isMaster)
 			{
 				float masterBoxLeft=0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.006f;
@@ -2506,7 +2541,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 			}
 		}
 		
-		if(bpmCandidate>0)
+		if(bpmCandidate!=NULL)
 		{
 			/*
 			LGL_GetFont().DrawString
@@ -2520,6 +2555,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				"BPM:"
 			);
 			*/
+			/*
 			LGL_GetFont().DrawString
 			(
 				//viewportLeft+.125f*viewportWidth,
@@ -2531,60 +2567,44 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				"%s",
 				bpmCandidate
 			);
-		}
-		
-		float pbFloat=
-			(1.0f-grainStreamCrossfader) * pitchBend +
-			(0.0f+grainStreamCrossfader) * grainStreamPitch;
-			
-		float pbAbs=fabs((pbFloat-1)*100);
-		if(pbFloat>=1)
-		{
-			sprintf(tmpStr,"+%.2f",pbAbs);
-		}
-		else
-		{
-			sprintf(tmpStr,"-%.2f",pbAbs);
-		}
-		if(strstr(tmpStr,"0.00"))
-		{
-			strcpy(tmpStr,"+0.00");
+			*/
 		}
 
-		char tempNudge[1024];
-		if(nudge>0)
+		char bpmDrawMe[512];
+		if(bpm==-2.0f)
 		{
-			sprintf(tempNudge,"+%.1f",fabs((nudge)*100));
+			strcpy(bpmDrawMe,"NONE");
 		}
-		else if(nudge<0)
+		else if(bpm==-1.0f)
 		{
-			sprintf(tempNudge,"-%.1f",fabs((nudge)*100));
+			strcpy(bpmDrawMe,"UNDEF");
 		}
 		else
 		{
-			tempNudge[0]='\0';
+			sprintf(bpmDrawMe,"%.2f",bpmAdjusted);
+			if(bpmCandidate>0)
+			{
+				strcpy(bpmDrawMe,bpmCandidate);
+			}
 		}
-		LGL_GetFont().DrawString
+
+		Turntable_DrawBPMString
 		(
-			//viewportLeft+.02f*viewportWidth,
-			bpmPitchL,
-			bpmPitchB,
-			0.05f*viewportHeight,
-			1,1,1,1,
-			false,.5f,
-			"Pitch:"
+			viewportLeft,
+			viewportRight,
+			viewportBottom,
+			viewportTop,
+			bpmDrawMe
 		);
-		LGL_GetFont().DrawString
+
+		Turntable_DrawPitchbendString
 		(
-			//viewportLeft+.125f*viewportWidth,
-			0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.06f,
-			bpmPitchB,
-			0.05f*viewportHeight,
-			1,1,1,1,
-			false,.5f,
-			"%s%s",
-			tmpStr,
-			tempNudge
+			viewportLeft,
+			viewportRight,
+			viewportBottom,
+			viewportTop,
+			pitchbend,
+			nudge
 		);
 
 		float lb=warpPointSecondsStart>=0.0f ? 1.0f : 0.25f;
@@ -2700,9 +2720,9 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		float minutes=0.0f;
 		float seconds=0.0f;
 		/*
-		if(pitchBend>0.0f)
+		if(pitchbend>0.0f)
 		{
-			seconds=soundLengthSeconds/pitchBend;
+			seconds=soundLengthSeconds/pitchbend;
 			if(seconds>60*999) seconds=999;
 		}
 		while(seconds>60)
@@ -2754,7 +2774,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		*/
 		
 		minutes=0;
-		seconds=soundPositionSeconds/pitchBend;
+		seconds=soundPositionSeconds/pitchbend;
 		if(seconds>60*999) seconds=999;
 		while(seconds>60)
 		{
@@ -2822,7 +2842,10 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 
 		minutes=0;
 		seconds=((cachedLengthSeconds!=0.0f) ? cachedLengthSeconds : soundLengthSeconds) - soundPositionSeconds;
-		seconds/=pitchBend;
+		if(pitchbend!=0.0f)
+		{
+			seconds/=pitchbend;
+		}
 		while(seconds>60)
 		{
 			seconds-=60;
@@ -2899,7 +2922,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		/*
 		minutes=0;
 		seconds=soundLengthSeconds - soundPositionSeconds;
-		seconds/=pitchBend;
+		seconds/=pitchbend;
 		while(seconds>60)
 		{
 			seconds-=60;
@@ -2960,247 +2983,6 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 			"Save Points:"
 		);
 		*/
-
-		bool mySavePointSet[12];
-		for(int a=0;a<12;a++)
-		{
-			mySavePointSet[a]=savePointSetBitfield & (1<<a);
-		}
-
-		if
-		(
-			LGL_MouseX()>=lft &&
-			LGL_MouseX()<=lft+11*wth+spc &&
-			LGL_MouseY()>=bot &&
-			LGL_MouseY()<=top
-		)
-		{
-			GetInputMouse().SetHoverInSavePoints();
-		}
-
-		for(int i=0;i<12;i++)
-		{
-			int thickness;
-			float r;
-			float g;
-			float b;
-			if(i==savePointIndex)// || i==savePointIndexActual+1)
-			{
-				thickness=6;
-				r=LGL_Min(1.0f,warmR+0.1f*glow);
-				g=LGL_Min(1.0f,warmG+0.1f*glow);
-				b=LGL_Min(1.0f,warmB+0.1f*glow);
-			}
-			else
-			{
-				thickness=2;
-				r=coolR;
-				g=coolG;
-				b=coolB;
-			}
-
-			float myL=lft+i*wth;
-			float myR=lft+i*wth+spc;
-			float myB=bot;
-			float myT=top;
-
-			if
-			(
-				LGL_MouseX()>=myL &&
-				LGL_MouseX()<=myR &&
-				LGL_MouseY()>=myB-0.005f &&
-				LGL_MouseY()<=myT
-			)
-			{
-				DVJ_GuiElement target=GUI_ELEMENT_NULL;
-				if(i==0)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_BPM_ALPHA;
-				}
-				else if(i==1)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_BPM_OMEGA;
-				}
-				else if(i==2)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_0;
-				}
-				else if(i==3)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_1;
-				}
-				else if(i==4)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_2;
-				}
-				else if(i==5)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_3;
-				}
-				else if(i==6)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_4;
-				}
-				else if(i==7)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_5;
-				}
-				else if(i==8)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_6;
-				}
-				else if(i==9)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_7;
-				}
-				else if(i==10)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_8;
-				}
-				else if(i==11)
-				{
-					target=GUI_ELEMENT_SAVEPOINT_9;
-				}
-				GetInputMouse().SetHoverElement(target);
-				if(i==savePointIndex)
-				{
-					GetInputMouse().SetHoverOnSelectedSavePoint();
-				}
-			}
-
-			float pointsXY[10];
-			pointsXY[0]=myL;
-			pointsXY[1]=myB;
-			pointsXY[2]=myR;
-			pointsXY[3]=myB;
-			pointsXY[4]=myR;
-			pointsXY[5]=myT;
-			pointsXY[6]=myL;
-			pointsXY[7]=myT;
-			pointsXY[8]=myL;
-			pointsXY[9]=myB;
-			LGL_DrawLineStripToScreen
-			(
-				pointsXY,
-				5,
-				r,g,b,1,
-				thickness
-			);
-
-			/*
-			//Left
-			LGL_DrawLineToScreen
-			(
-				myL,myB,
-				myL,myT,
-				r,g,b,1,
-				thickness
-			);
-
-			//Right
-			LGL_DrawLineToScreen
-			(
-				myR,myB,
-				myR,myT,
-				r,g,b,1,
-				thickness
-			);
-
-			//Bottom
-			LGL_DrawLineToScreen
-			(
-				myL,myB,
-				myR,myB,
-				r,g,b,1,
-				thickness
-			);
-
-			//Top
-			LGL_DrawLineToScreen
-			(
-				myL,myT,
-				myR,myT,
-				r,g,b,1,
-				thickness
-			);
-			*/
-
-			float savePointSetScalar = mySavePointSet[i] ? 1.0f : 0.0f;
-
-			LGL_DrawRectToScreen
-			(
-				myL,myR,
-				myB,myT,
-				mySavePointSet[i]*coolR,
-				mySavePointSet[i]*coolG,
-				mySavePointSet[i]*coolB,
-				1
-			);
-			if(savePointUnsetNoisePercent[i]>0.0f)
-			{
-				noiseImage256x64->DrawToScreen
-				(
-					lft+i*wth,lft+i*wth+spc,
-					bot,top,
-					0,
-					savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],savePointUnsetNoisePercent[i],
-					1.0f,
-					0,1.0f/32.0f,
-					0,1.0f/8.0f
-				);
-			}
-			if(savePointUnsetFlashPercent[i]>0.0f)
-			{
-				LGL_DrawRectToScreen
-				(
-					lft+i*wth,lft+i*wth+spc,
-					bot,top,
-					savePointUnsetFlashPercent[i],savePointUnsetFlashPercent[i],savePointUnsetFlashPercent[i],0
-				);
-			}
-
-			if(1)//i!=0)
-			{
-				char str[4];
-
-				if(i==0)
-				{
-					strcpy(str,"[");
-				}
-				else if(i==1)
-				{
-					strcpy(str,"]");
-				}
-				/*
-				else if(i>=19)
-				{
-					strcpy(str,(i==19)?"?":"!");
-				}
-				*/
-				else if(i<=12)
-				{
-					sprintf(str,"%i",i-2);
-				}
-				else
-				{
-					sprintf(str,"%c",'A'+(((unsigned char)i)-13));
-				}
-
-				LGL_GetFont().DrawString
-				(
-					lft+i*wth+.6f*spc,
-					bot+0.25f*0.05f*viewportHeight,//+0.0275f*viewportHeight,
-					0.05f*viewportHeight,
-					0.25f+0.75f*savePointSetScalar,
-					0.25f+0.75f*savePointSetScalar,
-					0.25f+0.75f*savePointSetScalar,
-					1,
-					true,
-					0.75f,
-					str
-				);
-			}
-		}	
 	}
 
 	Turntable_DrawSliders
@@ -3213,6 +2995,22 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		eq0,
 		eq1,
 		eq2,
+		eqVuMe0,
+		eqVuMe1,
+		eqVuMe2,
+		eqVuOther0,
+		eqVuOther1,
+		eqVuOther2,
+		eqVuMePeak0,
+		eqVuMePeak1,
+		eqVuMePeak2,
+		eqVuOtherPeak0,
+		eqVuOtherPeak1,
+		eqVuOtherPeak2,
+		vu,
+		vuPeak,
+		otherVu,
+		otherVuPeak,
 		volumeMultiplierNow,
 		videoBrightness,
 		syphonBrightness,
@@ -3225,6 +3023,543 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		freqSenseLEDGroupFloat,
 		freqSenseLEDGroupInt
 	);
+
+	//Draw & update Savepoint list
+	Turntable_DrawSavepointSet
+	(
+		viewportLeft,
+		viewportRight,
+		viewportBottom,
+		viewportTop,
+		time,
+		savepointSeconds,
+		savepointBPMs,
+		savepointIndex,
+		savepointIndexActual,
+		savepointSetBitfield,
+		savepointSetBPMBitfield,
+		savepointUnsetNoisePercent,
+		savepointUnsetFlashPercent,
+		noiseImage256x64,
+		which,
+		mode,
+		pitchbend
+	);
+}
+
+void
+Turntable_DrawBPMString
+(
+	float		viewportLeft,
+	float		viewportRight,
+	float		viewportBottom,
+	float		viewportTop,
+	const char*	bpmString
+)
+{
+	float viewportWidth = viewportRight - viewportLeft;
+	float viewportHeight = viewportTop - viewportBottom;
+	float bpmPitchL = 0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f;
+	LGL_GetFont().DrawString
+	(
+		//viewportLeft+.02f*viewportWidth,
+		bpmPitchL,
+		viewportBottom+.90f*viewportHeight,
+		0.05f*viewportHeight,
+		1,1,1,1,
+		false,.5f,
+		"BPM:"
+	);
+	LGL_GetFont().DrawString
+	(
+		//viewportLeft+.125f*viewportWidth,
+		0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.06f-0.0095f,
+		viewportBottom+.90f*viewportHeight,
+		0.05f*viewportHeight,
+		1,1,1,1,
+		false,.5f,
+		"%s",
+		bpmString
+	);
+}
+
+void
+Turntable_DrawPitchbendString
+(
+	float	viewportLeft,
+	float	viewportRight,
+	float	viewportBottom,
+	float	viewportTop,
+	float	pitchbend,
+	float	nudge
+)
+{
+	float viewportWidth = viewportRight - viewportLeft;
+	float viewportHeight = viewportTop - viewportBottom;
+	float bpmPitchL = 0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.009f;
+	float bpmPitchB = viewportBottom+.80f*viewportHeight;
+
+	char tmpStr[2048];
+	float pbFloat=pitchbend;
+		//(1.0f-grainStreamCrossfader) * pitchbend +
+		//(0.0f+grainStreamCrossfader) * grainStreamPitch;
+		
+	float pbAbs=fabs((pbFloat-1)*100);
+	if(pbFloat>=1)
+	{
+		sprintf(tmpStr,"+%.2f",pbAbs);
+	}
+	else
+	{
+		sprintf(tmpStr,"-%.2f",pbAbs);
+	}
+	if(strstr(tmpStr,"0.00"))
+	{
+		strcpy(tmpStr,"+0.00");
+	}
+
+	char tempNudge[1024];
+	if(nudge>0)
+	{
+		sprintf(tempNudge,"+%.1f",fabs((nudge)*100));
+	}
+	else if(nudge<0)
+	{
+		sprintf(tempNudge,"-%.1f",fabs((nudge)*100));
+	}
+	else
+	{
+		tempNudge[0]='\0';
+	}
+	LGL_GetFont().DrawString
+	(
+		//viewportLeft+.02f*viewportWidth,
+		bpmPitchL,
+		bpmPitchB,
+		0.05f*viewportHeight,
+		1,1,1,1,
+		false,.5f,
+		"Pitch:"
+	);
+	LGL_GetFont().DrawString
+	(
+		//viewportLeft+.125f*viewportWidth,
+		0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.06f,
+		bpmPitchB,
+		0.05f*viewportHeight,
+		1,1,1,1,
+		false,.5f,
+		"%s%s",
+		tmpStr,
+		tempNudge
+	);
+}
+
+void
+Turntable_DrawSavepointSet
+(
+	float		viewportLeft,
+	float		viewportRight,
+	float		viewportBottom,
+	float		viewportTop,
+	float		time,
+	double*		savepointSeconds,
+	double*		savepointBPMs,
+	int		savepointIndex,
+	int		savepointIndexActual,
+	unsigned int	savepointSetBitfield,
+	unsigned int	savepointSetBPMBitfield,
+	float*		savepointUnsetNoisePercent,
+	float*		savepointUnsetFlashPercent,
+	LGL_Image*	noiseImage256x64,
+	int		which,
+	int		mode,
+	float		pitchbend
+)
+{
+	float viewportWidth = viewportRight - viewportLeft;
+	float viewportHeight = viewportTop - viewportBottom;
+
+	float lft=0.5f+0.5f*viewportWidth*WAVE_WIDTH_PERCENT+0.0075f;
+	float wth=(viewportWidth*0.25f)/16.0f;
+	float bot=viewportBottom+0.24f*viewportHeight;
+	float top=bot+0.075f*viewportHeight;
+	float spc=wth*0.75f;
+	//float glow = GetGlowFromTime(time);
+
+	bot+=viewportHeight*0.1f;
+	top+=viewportHeight*0.1f;
+
+	float coolR;
+	float coolG;
+	float coolB;
+	GetColorCool(coolR,coolG,coolB);
+	float warmR;
+	float warmG;
+	float warmB;
+	GetColorWarm(warmR,warmG,warmB);
+
+	bool mySavepointSet[12];
+	bool mySavepointSetBPM[12];
+	for(int a=0;a<12;a++)
+	{
+		mySavepointSet[a]=savepointSetBitfield & (1<<a);
+		mySavepointSetBPM[a]=savepointSetBPMBitfield & (1<<a);
+	}
+
+	if
+	(
+		LGL_MouseX()>=lft &&
+		LGL_MouseX()<=lft+11*wth+spc &&
+		LGL_MouseY()>=bot &&
+		LGL_MouseY()<=top
+	)
+	{
+		GetInputMouse().SetHoverInSavepoints();
+	}
+
+	for(int i=0;i<12;i++)
+	{
+		if
+		(
+			savepointSeconds[i]==-1.0f &&
+			mode!=2
+		)
+		{
+			break;
+		}
+
+		int thickness;
+		float r;
+		float g;
+		float b;
+		if(i==savepointIndex)// || i==savepointIndexActual+1)
+		{
+			thickness=6;
+			r=1.0f;//LGL_Min(1.0f,warmR+0.1f*glow);
+			g=1.0f;//LGL_Min(1.0f,warmG+0.1f*glow);
+			b=1.0f;//LGL_Min(1.0f,warmB+0.1f*glow);
+		}
+		else
+		{
+			thickness=2;
+			r=coolR;
+			g=coolG;
+			b=coolB;
+		}
+
+		float myL=lft+i*wth;
+		float myR=lft+i*wth+spc;
+		float myB=bot;
+		float myT=top;
+
+		if
+		(
+			LGL_MouseX()>=myL &&
+			LGL_MouseX()<=myR &&
+			LGL_MouseY()>=myB-0.005f &&
+			LGL_MouseY()<=myT
+		)
+		{
+			DVJ_GuiElement target=GUI_ELEMENT_NULL;
+			if(i==0)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_0;
+			}
+			else if(i==1)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_1;
+			}
+			else if(i==2)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_2;
+			}
+			else if(i==3)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_3;
+			}
+			else if(i==4)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_4;
+			}
+			else if(i==5)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_5;
+			}
+			else if(i==6)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_6;
+			}
+			else if(i==7)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_7;
+			}
+			else if(i==8)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_8;
+			}
+			else if(i==9)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_9;
+			}
+			else if(i==10)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_A;
+			}
+			else if(i==11)
+			{
+				target=GUI_ELEMENT_SAVEPOINT_B;
+			}
+			GetInputMouse().SetHoverElement(target);
+			GetInputMouse().SetDragTarget((which==0) ? TARGET_TOP : TARGET_BOTTOM);
+			if(i==savepointIndex)
+			{
+				GetInputMouse().SetHoverOnSelectedSavepoint();
+			}
+		}
+
+		float pointsXY[10];
+		pointsXY[0]=myL;
+		pointsXY[1]=myB;
+		pointsXY[2]=myR;
+		pointsXY[3]=myB;
+		pointsXY[4]=myR;
+		pointsXY[5]=myT;
+		pointsXY[6]=myL;
+		pointsXY[7]=myT;
+		pointsXY[8]=myL;
+		pointsXY[9]=myB;
+		LGL_DrawLineStripToScreen
+		(
+			pointsXY,
+			5,
+			r,g,b,1,
+			thickness
+		);
+
+		/*
+		//Left
+		LGL_DrawLineToScreen
+		(
+			myL,myB,
+			myL,myT,
+			r,g,b,1,
+			thickness
+		);
+
+		//Right
+		LGL_DrawLineToScreen
+		(
+			myR,myB,
+			myR,myT,
+			r,g,b,1,
+			thickness
+		);
+
+		//Bottom
+		LGL_DrawLineToScreen
+		(
+			myL,myB,
+			myR,myB,
+			r,g,b,1,
+			thickness
+		);
+
+		//Top
+		LGL_DrawLineToScreen
+		(
+			myL,myT,
+			myR,myT,
+			r,g,b,1,
+			thickness
+		);
+		*/
+
+		float colorR=0.0f;
+		float colorG=0.0f;
+		float colorB=0.0f;
+		if(mySavepointSet[i])
+		{
+			colorR=coolR;
+			colorG=coolG;
+			colorB=coolB;
+		}
+		if(mySavepointSetBPM[i])
+		{
+			colorR=warmR;
+			colorG=warmG;
+			colorB=warmB;
+		}
+
+		LGL_DrawRectToScreen
+		(
+			myL,myR,
+			myB,myT,
+			colorR,
+			colorG,
+			colorB,
+			1
+		);
+		if(savepointUnsetNoisePercent[i]>0.0f)
+		{
+			noiseImage256x64->DrawToScreen
+			(
+				lft+i*wth,lft+i*wth+spc,
+				bot,top,
+				0,
+				savepointUnsetNoisePercent[i],savepointUnsetNoisePercent[i],savepointUnsetNoisePercent[i],savepointUnsetNoisePercent[i],
+				1.0f,
+				0,1.0f/32.0f,
+				0,1.0f/8.0f
+			);
+		}
+		if(savepointUnsetFlashPercent[i]>0.0f)
+		{
+			LGL_DrawRectToScreen
+			(
+				lft+i*wth,lft+i*wth+spc,
+				bot,top,
+				savepointUnsetFlashPercent[i],savepointUnsetFlashPercent[i],savepointUnsetFlashPercent[i],0
+			);
+		}
+
+		if(1)//i!=0)
+		{
+			char str[4];
+			bool done=false;
+			if(savepointSeconds[i]!=-1.0f)
+			{
+				GetMarkerStringFromIndex(str,i);
+			}
+			else
+			{
+				strcpy(str,"+");
+				done=true;
+			}
+
+			float savepointSetScalar = (mySavepointSet[i] || str[0]=='+') ? 1.0f : 0.0f;
+
+			LGL_GetFont().DrawString
+			(
+				lft+i*wth+.6f*spc,
+				bot+0.25f*0.05f*viewportHeight,//+0.0275f*viewportHeight,
+				0.05f*viewportHeight,
+				0.25f+0.75f*savepointSetScalar,
+				0.25f+0.75f*savepointSetScalar,
+				0.25f+0.75f*savepointSetScalar,
+				1,
+				true,
+				0.75f,
+				str
+			);
+
+			if(done)
+			{
+				break;
+			}
+		}
+	}
+
+	//Draw current savepoint data
+
+	if(savepointSeconds[savepointIndex]!=-1.0f)
+	{
+		bot-=viewportHeight*0.09f;
+		top-=viewportHeight*0.09f;
+		
+		float minutes=0;
+		float seconds=savepointSeconds[savepointIndex];
+		char tmpStr[64];
+		if(pitchbend!=0.0f)
+		{
+			seconds/=pitchbend;
+		}
+		while(seconds>60)
+		{
+			seconds-=60;
+			minutes+=1;
+		}
+		if(minutes<10)
+		{
+			if(seconds<10)
+			{
+				//sprintf(tmpStr,"0%.0f:0%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				//sprintf(tmpStr,"0%.0f:%.2f",minutes,seconds);
+				sprintf(tmpStr,"%.0f:%.2f",minutes,seconds);
+			}
+		}
+		else
+		{
+			if(seconds<10)
+			{
+				sprintf(tmpStr,"%.0f:0%.2f",minutes,seconds);
+			}
+			else
+			{
+				sprintf(tmpStr,"%.0f:%.2f",minutes,seconds);
+			}
+		}
+
+		LGL_GetFont().DrawString
+		(
+			lft,
+			bot,
+			0.045f*viewportHeight,
+			1,1,1,1,
+			false,
+			0.75f,
+			"Pos: %s",
+			tmpStr
+		);
+
+		if(savepointBPMs[savepointIndex]==-2.0f)
+		{
+			sprintf(tmpStr,"BPM: NONE");
+		}
+		else if(savepointBPMs[savepointIndex]==-1.0f)
+		{
+			sprintf(tmpStr,"BPM: UNDEF");
+		}
+		else
+		{
+			sprintf(tmpStr,"BPM: %.2f",savepointBPMs[savepointIndex]);
+		}
+
+		const float fontHeight = 0.045f*viewportHeight;
+
+		LGL_GetFont().DrawString
+		(
+			lft+0.5f*(viewportRight-lft),
+			bot,
+			fontHeight,
+			1,1,1,1,
+			false,
+			0.75f,
+			tmpStr
+		);
+
+		if
+		(
+			LGL_MouseX() >= lft &&
+			LGL_MouseX() <= viewportRight &&
+			LGL_MouseY() >= bot - 0.5f*fontHeight &&
+			LGL_MouseY() <= top - 0.5f*fontHeight
+		)
+		{
+			if(LGL_MouseX() < lft+0.5f*(viewportRight-lft))
+			{
+				GetInputMouse().SetHoverElement(GUI_ELEMENT_SAVEPOINT_POS);
+			}
+			else
+			{
+				GetInputMouse().SetHoverElement(GUI_ELEMENT_SAVEPOINT_BPM);
+			}
+		}
+	}
 }
 
 void
@@ -3238,6 +3573,22 @@ Turntable_DrawSliders
 	float		eq0,
 	float		eq1,
 	float		eq2,
+	float		eqVuMe0,
+	float		eqVuMe1,
+	float		eqVuMe2,
+	float		eqVuOther0,
+	float		eqVuOther1,
+	float		eqVuOther2,
+	float		eqVuMePeak0,
+	float		eqVuMePeak1,
+	float		eqVuMePeak2,
+	float		eqVuOtherPeak0,
+	float		eqVuOtherPeak1,
+	float		eqVuOtherPeak2,
+	float		vu,
+	float		vuPeak,
+	float		otherVu,
+	float		otherVuPeak,
 	float		gain,
 	float		videoBrightness,
 	float		syphonBrightness,
@@ -3273,8 +3624,11 @@ Turntable_DrawSliders
 	
 	float sliderB=viewportBottom+(0.5f-0.075f/2.0f)*viewportHeight+spc*(-1);
 	float sliderT=viewportBottom+(0.5f+0.075f/2.0f)*viewportHeight+spc*(2.5f);
-
 	float textB=sliderB-0.075f*viewportHeight;
+
+	sliderB+=0.1f*viewportHeight;
+	sliderT+=0.1f*viewportHeight;
+	textB+=0.1f*viewportHeight;
 	
 	eq[0]=0.5f*eq0;
 	eq[1]=0.5f*eq1;
@@ -3284,25 +3638,22 @@ Turntable_DrawSliders
 	char letters[12];
 	LGL_Color letterColors[12];
 	float levels[12];
+	float levelsMe[12];
+	float levelsOther[12];
+	float levelsMePeak[12];
+	float levelsOtherPeak[12];
 
 	for(int l=0;l<12;l++)
 	{
 		guiElements[l]=GetFader(l);
+		letters[l]='0';
+		letterColors[l].SetRGBA(1.0f,0.0f,0.0f,1.0f);
+		levels[l]=0.0f;
+		levelsMe[l]=0.0f;
+		levelsOther[l]=0.0f;
+		levelsMePeak[l]=0.0f;
+		levelsOtherPeak[l]=0.0f;
 	}
-	/*
-	guiElements[0]=GUI_ELEMENT_EQ_LOW;
-	guiElements[1]=GUI_ELEMENT_EQ_MID;
-	guiElements[2]=GUI_ELEMENT_EQ_HIGH;
-	guiElements[3]=GUI_ELEMENT_EQ_GAIN;
-	guiElements[4]=GUI_ELEMENT_VIDEO;
-	guiElements[5]=GUI_ELEMENT_OSCILLOSCOPE;
-	guiElements[6]=GUI_ELEMENT_VIDEO_FREQSENSE;
-	guiElements[7]=GUI_ELEMENT_LED_FREQSENSE;
-	guiElements[8]=GUI_ELEMENT_LED_COLOR_LOW;
-	guiElements[9]=GUI_ELEMENT_LED_COLOR_HIGH;
-	guiElements[10]=GUI_ELEMENT_LED_COLOR_HIGH_WASH;
-	guiElements[11]=GUI_ELEMENT_LED_GROUP;
-	*/
 
 	for(int l=0;l<12;l++)
 	{
@@ -3313,21 +3664,37 @@ Turntable_DrawSliders
 		{
 			letters[l]='L';
 			levels[l]=eq[0];
+			levelsMe[l]=eqVuMe0;
+			levelsOther[l]=eqVuOther0;
+			levelsMePeak[l]=eqVuMePeak0;
+			levelsOtherPeak[l]=eqVuOtherPeak0;
 		}
 		if(guiElements[l]==GUI_ELEMENT_EQ_MID)
 		{
 			letters[l]='M';
 			levels[l]=eq[1];
+			levelsMe[l]=eqVuMe1;
+			levelsOther[l]=eqVuOther1;
+			levelsMePeak[l]=eqVuMePeak1;
+			levelsOtherPeak[l]=eqVuOtherPeak1;
 		}
 		if(guiElements[l]==GUI_ELEMENT_EQ_HIGH)
 		{
 			letters[l]='H';
 			levels[l]=eq[2];
+			levelsMe[l]=eqVuMe2;
+			levelsOther[l]=eqVuOther2;
+			levelsMePeak[l]=eqVuMePeak2;
+			levelsOtherPeak[l]=eqVuOtherPeak2;
 		}
 		if(guiElements[l]==GUI_ELEMENT_EQ_GAIN)
 		{
 			letters[l]='G';
 			levels[l]=LGL_Clamp(0.0f,gain*0.5f,1.0f);
+			levelsMe[l]=vu;
+			levelsOther[l]=otherVu;
+			levelsMePeak[l]=vuPeak;
+			levelsOtherPeak[l]=otherVuPeak;
 		}
 		if(guiElements[l]==GUI_ELEMENT_VIDEO)
 		{
@@ -3379,54 +3746,6 @@ Turntable_DrawSliders
 		}
 	}
 
-	/*
-	for(int l=0;l<12;l++)
-	{
-		letters[l]='\0';
-	}
-	letters[0]='L';
-	letters[1]='M';
-	letters[2]='H';
-	letters[3]='G';
-	letters[4]='V';
-	letters[5]='O';
-	letters[6]='F';
-	letters[7]='L';
-	letters[8]='c';
-	letters[9]='C';
-	letters[10]='W';
-	letters[11]='0'+freqSenseLEDGroupInt;
-	*/
-
-	/*
-	for(int l=0;l<12;l++)
-	{
-		letterColors[l].SetRGBA(1.0f,1.0f,1.0f,1.0f);
-	}
-	letterColors[8]=GetColorFromScalar(freqSenseLEDColorScalarLow);
-	letterColors[9]=GetColorFromScalar(freqSenseLEDColorScalarHigh);
-	letterColors[10]=GetColorFromScalar(freqSenseLEDColorScalarHigh);
-	*/
-
-	/*
-	for(int l=0;l<12;l++)
-	{
-		levels[l]=0.0f;
-	}
-	levels[0]=eq[0];
-	levels[1]=eq[1];
-	levels[2]=eq[2];
-	levels[3]=LGL_Clamp(0.0f,gain*0.5f,1.0f);
-	levels[4]=videoBrightness;
-	levels[5]=oscilloscopeBrightness;
-	levels[6]=freqSenseBrightness;
-	levels[7]=freqSenseLEDBrightness;
-	levels[8]=freqSenseLEDColorScalarLow;
-	levels[9]=freqSenseLEDColorScalarHigh;
-	levels[10]=freqSenseLEDBrightnessWash;
-	levels[11]=freqSenseLEDGroupFloat;
-	*/
-
 	for(int f=0;f<12;f++)
 	{
 		if(guiElements[f]==GUI_ELEMENT_NULL)
@@ -3436,6 +3755,7 @@ Turntable_DrawSliders
 
 		float sliderL=lft+f*wth;
 		float sliderR=sliderL+spc;
+		float sliderW=sliderR-sliderL;
 
 		//Mouse Input
 		{
@@ -3528,6 +3848,66 @@ Turntable_DrawSliders
 			barB,
 			1
 		);
+		if(levelsMe[f]>0.0f)
+		{
+			bool over=levelsMe[f]>=1.0f;
+			LGL_DrawRectToScreen
+			(
+				sliderL,
+				sliderL+sliderW*0.25f,
+				sliderB,
+				sliderB+levelsMe[f]*(sliderT-sliderB),
+				1.0f,
+				over ? 0.0f : 1.0f,
+				over ? 0.0f : 1.0f,
+				1
+			);
+		}
+		if(levelsOther[f]>0.0f)
+		{
+			bool over=levelsOther[f]>=1.0f;
+			LGL_DrawRectToScreen
+			(
+				sliderR-sliderW*0.25f,
+				sliderR,
+				sliderB,
+				sliderB+levelsOther[f]*(sliderT-sliderB),
+				1.0f,
+				over ? 0.0f : 1.0f,
+				over ? 0.0f : 1.0f,
+				1
+			);
+		}
+		if(levelsMePeak[f]>0.0f)
+		{
+			bool over=levelsMePeak[f]>=1.0f;
+			LGL_DrawRectToScreen
+			(
+				sliderL,
+				sliderL+sliderW*0.25f,
+				sliderB+levelsMePeak[f]*(sliderT-sliderB),
+				sliderB+levelsMePeak[f]*(sliderT-sliderB)+0.003f,
+				1.0f,
+				over ? 0.0f : 1.0f,
+				over ? 0.0f : 1.0f,
+				1
+			);
+		}
+		if(levelsOtherPeak[f]>0.0f)
+		{
+			bool over=levelsOtherPeak[f]>=1.0f;
+			LGL_DrawRectToScreen
+			(
+				sliderR-sliderW*0.25f,
+				sliderR,
+				sliderB+levelsOtherPeak[f]*(sliderT-sliderB),
+				sliderB+levelsOtherPeak[f]*(sliderT-sliderB)+0.003f,
+				1.0f,
+				over ? 0.0f : 1.0f,
+				over ? 0.0f : 1.0f,
+				1
+			);
+		}
 
 		float pointsXY[10];
 		pointsXY[0]=sliderL;
@@ -3696,21 +4076,23 @@ GetFreqBrightness
 )
 {
 	float freqMag;
-	if(hi==false)
+	float freqMagLow;
+	float freqMagHi;
+	//Calculate Low
 	{
 		float minVol=0.2f;
 		float maxVol=0.5f;
 		float volMagNormalized=LGL_Clamp(0,(vol-minVol)/(maxVol-minVol),1);
 		float myFreqMag=1.0f-freqFactor;
 		float minFreqMag=0.35f;
-		freqMag=LGL_Clamp
+		freqMagLow=LGL_Clamp
 		(
 			0.0f,
 			volMagNormalized*(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
 			1.0f
 		);
 	}
-	else
+	//Calculate Hi
 	{
 		float minVol=0.25f;
 		float maxVol=0.5f;
@@ -3723,13 +4105,26 @@ GetFreqBrightness
 			(myFreqMag-minFreqMag)/(1.0f-minFreqMag),
 			1.0f
 		);
+		if(freqMag>0.0f)
+		{
+			freqMag=LGL_Max(freqMag,0.5f);
+		}
 		freqMag*=2.0f;
-		if(freqMag>1.0f)
+		if(freqMag>=1.0f)
 		{
 			freqMag*=freqMag;
 		}
 		freqMag/=2.0f;
 		freqMag*=volMagNormalized;
+		freqMagHi=freqMag;
+	}
+	if(hi==false)
+	{
+		freqMag=freqMagLow;
+	}
+	else
+	{
+		freqMag=freqMagHi;
 	}
 
 	float brightFactor=1.0f;

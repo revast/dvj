@@ -567,7 +567,7 @@ WaveformStutterSpeed
 
 bool
 InputTesterObj::
-WaveformSavePointPrev
+WaveformSavepointPrev
 (
 	unsigned int	target
 )	const
@@ -579,7 +579,7 @@ WaveformSavePointPrev
 
 bool
 InputTesterObj::
-WaveformSavePointNext
+WaveformSavepointNext
 (
 	unsigned int	target
 )	const
@@ -591,7 +591,7 @@ WaveformSavePointNext
 
 int
 InputTesterObj::
-WaveformSavePointPick
+WaveformSavepointPick
 (
 	unsigned int	target
 )	const
@@ -602,7 +602,7 @@ WaveformSavePointPick
 
 bool
 InputTesterObj::
-WaveformSavePointSet
+WaveformSavepointSet
 (
 	unsigned int	target
 )	const
@@ -613,7 +613,7 @@ WaveformSavePointSet
 
 float
 InputTesterObj::
-WaveformSavePointUnsetPercent
+WaveformSavepointUnsetPercent
 (
 	unsigned int	target
 )	const
@@ -624,7 +624,7 @@ WaveformSavePointUnsetPercent
 
 float
 InputTesterObj::
-WaveformSavePointShift
+WaveformSavepointShift
 (
 	unsigned int	target
 )	const
@@ -635,7 +635,7 @@ WaveformSavePointShift
 
 float
 InputTesterObj::
-WaveformSavePointShiftAll
+WaveformSavepointShiftAll
 (
 	unsigned int	target
 )	const
@@ -646,7 +646,7 @@ WaveformSavePointShiftAll
 
 bool
 InputTesterObj::
-WaveformSavePointShiftAllHere
+WaveformSavepointShiftAllHere
 (
 	unsigned int	target
 )	const
@@ -657,7 +657,7 @@ WaveformSavePointShiftAllHere
 
 bool
 InputTesterObj::
-WaveformSavePointJumpNow
+WaveformSavepointJumpNow
 (
 	unsigned int	target
 )	const
@@ -669,7 +669,7 @@ WaveformSavePointJumpNow
 
 bool
 InputTesterObj::
-WaveformSavePointJumpAtMeasure
+WaveformSavepointJumpAtMeasure
 (
 	unsigned int	target
 )	const

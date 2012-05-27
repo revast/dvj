@@ -70,7 +70,7 @@ MixerObj()
 	}
 
 	CrossfadeMiddle=1.0f;
-	CrossfadeSliderLeft=0.5f;
+	CrossfadeSliderLeft=1.0f;
 	CrossfadeSliderRight=0.5f;
 
 	Visualizer=NULL;
@@ -85,7 +85,7 @@ MixerObj()
 	VideoAdvancedLastFrame=0;
 
 	LowRez=false;
-	CanDisplayJackWarning=true;
+	CanDisplayJackWarning=true;//LGL_GetXponent()!=NULL;
 
 	SetViewportStatus(0.0f,1.0f,0.5f,1.0f);
 }
@@ -267,43 +267,80 @@ NextFrame
 	int syncTT = -1;
 	int target = -1;
 
+	float midiClockBPM = LGL_MidiClockBPM();
+	float midiClockPercentOfCurrentMeasure = LGL_MidiClockPercentOfCurrentMeasure();
+
+	if(midiClockBPM>0)
+	{
+		LGL_DebugPrintf("Midi BPM: %.0f\n",midiClockBPM);
+	}
+
+	//Maybe sync two TTs w/ BPMs...
 	if
 	(
 		Turntable[0]->GetBPM()>0 &&
 		Turntable[1]->GetBPM()>0
 	)
 	{
-		if(Turntable[Focus]->GetMode()==2)
+		if
+		(
+			Turntable[Focus]->GetMode()==2 &&
+			Turntable[1-Focus]->GetMode()==2 &&
+			(GetInput().WaveformSync(TARGET_FOCUS | ((Focus==0) ? TARGET_TOP : TARGET_BOTTOM)))
+		)
 		{
-			if(GetInput().WaveformSync(TARGET_FOCUS | ((Focus==0) ? TARGET_TOP : TARGET_BOTTOM)))
-			{
-				syncTT=Focus;
-				target=Focus?0:1;
-			}
+			syncTT=Focus;
+			target=Focus?0:1;
+		}
+		else if
+		(
+			Turntable[Focus]->GetMode()==0 &&
+			Turntable[1-Focus]->GetMode()==2
+		)
+		{
+			syncTT=Focus;
+			target=1-Focus;
 		}
 	}
 
-	if(syncTT!=-1)
+	//However, if we just tried to sync to an unopened TT, without a midi clock, restore pitchbend
+	if
+	(
+		midiClockBPM<=0 &&
+		Turntable[1-Focus]->GetMode()==0 &&
+		Turntable[Focus]->GetMode()==2 &&
+		(GetInput().WaveformSync(TARGET_FOCUS | ((Focus==0) ? TARGET_TOP : TARGET_BOTTOM)))
+	)
 	{
-		//Sync BPM
+		Turntable[Focus]->SetPitchbend(1.0f);
+		syncTT=-1;
+		target=-1;
+	}
 
-		float midiClockBPM = LGL_MidiClockBPM();
-		float midiClockPercentOfCurrentMeasure = LGL_MidiClockPercentOfCurrentMeasure();
+	bool didSync=false;
 
-		if
-		(
-			midiClockBPM > 0 &&
-			midiClockPercentOfCurrentMeasure >= 0.0f
-		)
+	//Sync to Midi Clock
+
+	if
+	(
+		midiClockBPM > 0 &&
+		midiClockPercentOfCurrentMeasure >= 0.0f
+	)
+	{
+		for(int t=0;t<2;t++)
 		{
-			for(int t=0;t<2;t++)
+			int query = (t==0) ? TARGET_TOP : TARGET_BOTTOM;
+			if(t==Focus) query |= TARGET_FOCUS;
+			bool sync = GetInput().WaveformSync(query);
+			if
+			(
+				(
+					Turntable[t]->GetMode()==0 &&
+					Turntable[t]->GetBPM()>0
+				) ||
+				sync
+			)
 			{
-
-				if(!GetInput().WaveformSync(TARGET_FOCUS | ((Focus==0) ? TARGET_TOP : TARGET_BOTTOM)))
-				{
-					continue;
-				}
-
 				Turntable[t]->SetBPMAdjusted(midiClockBPM);
 
 				if(Turntable[t]->GetPaused()==false)
@@ -341,58 +378,86 @@ NextFrame
 						{
 							Turntable[t]->SetMixerNudge(0.0f);
 						}
-					}
-				}
-			}
-		}
-		else
-		{
-			Turntable[syncTT]->SetBPMAdjusted(Turntable[target]->GetBPMAdjusted());
 
-			if
-			(
-				Turntable[0]->GetPaused()==false &&
-				Turntable[1]->GetPaused()==false
-			)
-			{
-				//Nudge toward sync
-				//float bpmScalar = Turntable[target]->GetBPMAdjusted()/Turntable[syncTT]->GetBPMAdjusted();
-				//float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f/bpmScalar,true);
-				float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f,true);
-				float percentOfMeasureTarget = Turntable[target]->GetPercentOfCurrentMeasure(1.0f,true);
-				if
-				(
-					percentOfMeasureSelf >= 0 &&
-					percentOfMeasureTarget >= 0
-				)
-				{
-					float candidate1 = percentOfMeasureTarget - percentOfMeasureSelf;
-					float candidate2 = percentOfMeasureTarget - percentOfMeasureSelf + 1.0f;
-					float candidate3 = percentOfMeasureTarget - percentOfMeasureSelf - 1.0f;
-					float shortestDirection = (fabsf(candidate1) < fabsf(candidate2)) ? candidate1 : candidate2;
-					if(fabsf(candidate3) < fabsf(shortestDirection)) shortestDirection=candidate3;
-					if(fabsf(shortestDirection)>0.005f)
-					{
-						float nudgeAmount = LGL_Sign(shortestDirection)*0.32f;
-						if(fabsf(2*shortestDirection)<1.0f/8.0f)
-						{
-							float factor = fabsf(2*shortestDirection)*8.0f;
-							nudgeAmount = LGL_Sign(shortestDirection)*
-							(
-								powf(factor,2.0f-factor)*0.32f
-							);
-						}
-						Turntable[syncTT]->SetMixerNudge(nudgeAmount);
-					}
-					else
-					{
-						Turntable[syncTT]->SetMixerNudge(0.0f);
+						didSync=true;
 					}
 				}
 			}
 		}
 	}
-	else
+
+	//Sync to other TT
+	if(syncTT!=-1 && didSync==false)
+	{
+		Turntable[syncTT]->SetBPMAdjusted(Turntable[target]->GetBPMAdjusted());
+
+		if
+		(
+			(
+				Turntable[0]->GetPaused()==false ||
+				Turntable[0]->GetMode()==0
+			) &&
+			(
+				Turntable[1]->GetPaused()==false ||
+				Turntable[1]->GetMode()==0
+			)
+		)
+		{
+			//Nudge toward sync
+			//float bpmScalar = Turntable[target]->GetBPMAdjusted()/Turntable[syncTT]->GetBPMAdjusted();
+			//float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f/bpmScalar,true);
+			float bestPitchbend = Turntable[target]->GetBPMAdjusted()/Turntable[syncTT]->GetBPM();
+			float bestMult=1.0f;
+			for(int a=0;a<3;a++)
+			{
+				float mult = powf(2.0f,a-1);
+				float candidate = Turntable[target]->GetBPMAdjusted(false)/(mult*Turntable[syncTT]->GetBPMAdjusted(false));
+				if(fabsf(1.0f-candidate)<fabsf(1.0f-bestPitchbend))
+				{
+					bestPitchbend=candidate;
+					bestMult=1.0f/mult;
+				}
+			}
+			float percentOfMeasureSelf = Turntable[syncTT]->GetPercentOfCurrentMeasure(1.0f,true);//bestMult,true);
+			float percentOfMeasureTarget = Turntable[target]->GetPercentOfCurrentMeasure(1.0f,true);
+			//LGL_DebugPrintf("PMS: %.2f\n",percentOfMeasureSelf);
+			//LGL_DebugPrintf("PMT: %.2f\n",percentOfMeasureTarget);
+			if
+			(
+				percentOfMeasureSelf >= 0 &&
+				percentOfMeasureTarget >= 0
+			)
+			{
+				float candidate1 = percentOfMeasureTarget - percentOfMeasureSelf;
+				float candidate2 = percentOfMeasureTarget - percentOfMeasureSelf + 1.0f;
+				float candidate3 = percentOfMeasureTarget - percentOfMeasureSelf - 1.0f;
+				float shortestDirection = (fabsf(candidate1) < fabsf(candidate2)) ? candidate1 : candidate2;
+				if(fabsf(candidate3) < fabsf(shortestDirection)) shortestDirection=candidate3;
+				if(fabsf(shortestDirection)>0.0005f)
+				{
+					float nudgeAmount = LGL_Sign(shortestDirection)*0.32f;
+					if(fabsf(2*shortestDirection)<1.0f/8.0f)
+					{
+						float factor = fabsf(2*shortestDirection)*8.0f;
+						nudgeAmount = LGL_Sign(shortestDirection)*LGL_Max
+						(
+							0.05f,
+							powf(factor,2.0f-factor)*0.32f
+						);
+					}
+					Turntable[syncTT]->SetMixerNudge(nudgeAmount);
+				}
+				else
+				{
+					Turntable[syncTT]->SetMixerNudge(0.0f);
+				}
+
+				didSync=true;
+			}
+		}
+	}
+	
+	if(didSync==false)
 	{
 		Turntable[0]->SetMixerNudge(0.0f);
 		Turntable[1]->SetMixerNudge(0.0f);
@@ -447,6 +512,10 @@ NextFrame
 		{
 			bpmMaster=adjusted;
 		}
+	}
+	if(midiClockBPM>0)
+	{
+		bpmMaster = midiClockBPM;
 	}
 	Turntable[0]->SetBPMMaster(bpmMaster);
 	Turntable[1]->SetBPMMaster(bpmMaster);
@@ -653,7 +722,7 @@ NextFrame
 		);
 
 		Turntable[which]->NextFrame(secondsElapsed);
-		if(const char* data = Turntable[which]->GetMetaDataSavedThisFrame())
+		if(const char* data = Turntable[which]->GetMetadataSavedThisFrame())
 		{
 			const char* pathShort=Turntable[which]->GetSoundPathShort();
 			if(pathShort)
@@ -667,7 +736,7 @@ NextFrame
 						strcmp(Turntable[a]->GetSoundPathShort(),pathShort)==0
 					)
 					{
-						Turntable[a]->LoadMetaData(data);
+						Turntable[a]->LoadMetadataNew(data);
 					}
 				}
 			}
@@ -858,7 +927,11 @@ NextFrame
 
 		for(int i=0;i<2;i++)
 		{
-			if(Turntable[i]->GetVideo())
+			if
+			(
+				Turntable[i]->GetMode()==2 &&
+				Turntable[i]->GetVideo()
+			)
 			{
 				const float OFFSET = 2.0f/60.0f;	//Combat lag associated with projector scaling
 				if(Turntable[i]->GetVideoBrightnessPreview()>0.0f)
@@ -886,10 +959,19 @@ DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent)
 		Turntable[a]->DrawFrame(glow,visualizerQuadrent,visualizerZoomOutPercent);
 	}
 
-	LGL_DrawLogWrite("MixF|%.2f|%.2f|%c|%.3f\n",CrossfadeSliderLeft,CrossfadeSliderRight,visualizerQuadrent?'T':'F',visualizerZoomOutPercent);
 	LGL_DrawLogPause();
 	if(LowRez==false)
 	{
+		bool tt_ok[2];
+		for(int a=0;a<2;a++)
+		{
+			tt_ok[a] =
+				Turntable[a]->GetPaused()==false &&
+				(
+					Turntable[a]->GetMode() !=0 ||
+					Turntable[a]->GetFocus()
+				);
+		}
 		Mixer_DrawGlowLinesTurntables
 		(
 			LGL_SecondsSinceExecution(),
@@ -897,8 +979,8 @@ DrawFrame(bool visualizerQuadrent, float visualizerZoomOutPercent)
 			CrossfadeSliderRight,
 			Turntable[1]->GetBeatThisFrame(),
 			Turntable[0]->GetBeatThisFrame(),
-			Turntable[1]->GetPaused() ? -1.0f : Turntable[1]->GetPercentOfCurrentMeasure(0.25f,true),
-			Turntable[0]->GetPaused() ? -1.0f : Turntable[0]->GetPercentOfCurrentMeasure(0.25f,true),
+			(tt_ok[1]==false) ? -1.0f : Turntable[1]->GetPercentOfCurrentMeasure(0.25f,true),
+			(tt_ok[0]==false) ? -1.0f : Turntable[0]->GetPercentOfCurrentMeasure(0.25f,true),
 			1.0f,
 			visualizerQuadrent,
 			visualizerZoomOutPercent
@@ -1240,15 +1322,17 @@ DrawStatus
 			);
 			bright=LGL_Min(1.0f,secondsTotal-5.0f);
 		}
+		/*
 		LGL_GetFont().DrawString
 		(
 			l+.025f*w,
 			b+.95f*h,
 			.015f,
-			bright,bright,bright,1.0f,
+			bright,bright,bright,bright,
 			false,.5f,
 			out
 		);
+		*/
 	}
 	else if(RecordingFailedTimer>0.0f)
 	{
@@ -1443,6 +1527,8 @@ DrawStatus
 		glow
 	);
 	*/
+	//Turntable[0]->DrawEQVUs();
+	//Turntable[1]->DrawEQVUs();
 
 	if
 	(

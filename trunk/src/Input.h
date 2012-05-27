@@ -73,16 +73,19 @@ float	InputWaveformRecordSpeed(unsigned int target);
 float	InputWaveformStutter(unsigned int target);
 float	InputWaveformStutterPitch(unsigned int target);
 float	InputWaveformStutterSpeed(unsigned int target);
-float	InputWaveformSavePointPrev(unsigned int target);
-float	InputWaveformSavePointNext(unsigned int target);
-float	InputWaveformSavePointPick(unsigned int target);
-float	InputWaveformSavePointSet(unsigned int target);
-float	InputWaveformSavePointUnsetPercent(unsigned int target);
-float	InputWaveformSavePointShift(unsigned int target);
-float	InputWaveformSavePointShiftAll(unsigned int target);
-float	InputWaveformSavePointShiftAllHere(unsigned int target);
-float	InputWaveformSavePointJumpNow(unsigned int target);
-float	InputWaveformSavePointJumpAtMeasure(unsigned int target);
+float	InputWaveformSavepointPrev(unsigned int target);
+float	InputWaveformSavepointNext(unsigned int target);
+float	InputWaveformSavepointPick(unsigned int target);
+float	InputWaveformSavepointSet(unsigned int target);
+float	InputWaveformSavepointSetBPMAtNeedle(unsigned int target);
+float	InputWaveformSavepointSetBPMUndef(unsigned int target);
+float	InputWaveformSavepointSetBPMNone(unsigned int target);
+float	InputWaveformSavepointUnsetPercent(unsigned int target);
+float	InputWaveformSavepointShift(unsigned int target);
+float	InputWaveformSavepointShiftAll(unsigned int target);
+float	InputWaveformSavepointShiftAllHere(unsigned int target);
+float	InputWaveformSavepointJumpNow(unsigned int target);
+float	InputWaveformSavepointJumpAtMeasure(unsigned int target);
 float	InputWaveformBPM(unsigned int target);
 const char*
 	InputWaveformBPMCandidate(unsigned int target);
@@ -129,6 +132,7 @@ float	InputWaveformPointerScratch(unsigned int target);
 typedef enum
 {
 	GUI_ELEMENT_NULL = 0,
+	GUI_ELEMENT_FILE_SELECT,
 	GUI_ELEMENT_WAVEFORM,
 	GUI_ELEMENT_ENTIRE_WAVEFORM,
 	GUI_ELEMENT_XFADER_LEFT,
@@ -146,8 +150,6 @@ typedef enum
 	GUI_ELEMENT_LED_COLOR_HIGH,
 	GUI_ELEMENT_LED_COLOR_HIGH_WASH,
 	GUI_ELEMENT_LED_GROUP,
-	GUI_ELEMENT_SAVEPOINT_BPM_ALPHA,
-	GUI_ELEMENT_SAVEPOINT_BPM_OMEGA,
 	GUI_ELEMENT_SAVEPOINT_0,
 	GUI_ELEMENT_SAVEPOINT_1,
 	GUI_ELEMENT_SAVEPOINT_2,
@@ -158,8 +160,13 @@ typedef enum
 	GUI_ELEMENT_SAVEPOINT_7,
 	GUI_ELEMENT_SAVEPOINT_8,
 	GUI_ELEMENT_SAVEPOINT_9,
+	GUI_ELEMENT_SAVEPOINT_A,
+	GUI_ELEMENT_SAVEPOINT_B,
+	GUI_ELEMENT_SAVEPOINT_POS,
+	GUI_ELEMENT_SAVEPOINT_BPM,
 	GUI_ELEMENT_LOOP_MEASURES,
-	GUI_ELEMENT_BPM_PITCH,
+	GUI_ELEMENT_BPM,
+	GUI_ELEMENT_PITCH,
 	GUI_ELEMENT_COUNT
 } DVJ_GuiElement;
 
@@ -233,16 +240,20 @@ virtual	float	WaveformRecordSpeed		(unsigned int target)	const;	//Velocity of sc
 virtual	bool	WaveformStutter			(unsigned int target)	const;	//Repeat a small segment of audio
 virtual	float	WaveformStutterPitch		(unsigned int target)	const;	//Pitch of the stutter
 virtual	float	WaveformStutterSpeed		(unsigned int target)	const;	//Speed / Length of the stutter
-virtual	bool	WaveformSavePointPrev		(unsigned int target)	const;	//Highlight previous save point
-virtual	bool	WaveformSavePointNext		(unsigned int target)	const;	//Highlight next save point
-virtual	int	WaveformSavePointPick		(unsigned int target)	const;	//Highlight a chosen save point
-virtual	bool	WaveformSavePointSet		(unsigned int target)	const;	//Lock a save point
-virtual	float	WaveformSavePointUnsetPercent	(unsigned int target)	const;	//Clear a save point
-virtual	float	WaveformSavePointShift		(unsigned int target)	const;	//Shift current save point X seconds
-virtual	float	WaveformSavePointShiftAll	(unsigned int target)	const;	//Shift all save points X seconds
-virtual	bool	WaveformSavePointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
-virtual	bool	WaveformSavePointJumpNow	(unsigned int target)	const;	//Jump to current save point
-virtual	bool	WaveformSavePointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
+virtual	bool	WaveformSavepointPrev		(unsigned int target)	const;	//Highlight previous save point
+virtual	bool	WaveformSavepointNext		(unsigned int target)	const;	//Highlight next save point
+virtual	int	WaveformSavepointPick		(unsigned int target)	const;	//Highlight a chosen save point
+virtual	bool	WaveformSavepointSet		(unsigned int target)	const;	//Lock a save point
+virtual	bool	WaveformSavepointSetBPMAtNeedle	(unsigned int target)	const;	//Lock a save point's BPM
+virtual	bool	WaveformSavepointSetBPMUndef	(unsigned int target)	const;	//Lock a save point's BPM as UNDEF
+virtual	bool	WaveformSavepointSetBPMNone	(unsigned int target)	const;	//Lock a save point's BPM as NONE
+virtual	float	WaveformSavepointUnsetPercent	(unsigned int target)	const;	//Clear a save point
+virtual	float	WaveformSavepointShift		(unsigned int target)	const;	//Shift current save point X seconds
+virtual	float	WaveformSavepointShiftAll	(unsigned int target)	const;	//Shift all save points X seconds
+virtual	bool	WaveformSavepointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
+virtual	float	WaveformSavepointShiftBPM	(unsigned int target)	const;	//Shift current save point's bpm X seconds
+virtual	bool	WaveformSavepointJumpNow	(unsigned int target)	const;	//Jump to current save point
+virtual	bool	WaveformSavepointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
 virtual float	WaveformBPM			(unsigned int target)	const;	//Set the BPM
 virtual const char*
 		WaveformBPMCandidate		(unsigned int target)	const;	//Value we're composing for setting the BPM

@@ -44,24 +44,24 @@ NextFrame()
 		if
 		(
 			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOCK) ||
-			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_PREV) ||
-			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_NEXT) ||
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PREV) ||
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_NEXT) ||
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_MINUS) ||
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PLUS)
 		)
 		{
-			WaveformSavePointUnsetTimerRight.Reset();
+			WaveformSavepointUnsetTimerRight.Reset();
 		}
 		if
 		(
 			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOCK) ||
-			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_PREV) ||
-			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_NEXT) ||
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_PREV) ||
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_NEXT) ||
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_MINUS) ||
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_PLUS)
 		)
 		{
-			WaveformSavePointUnsetTimerLeft.Reset();
+			WaveformSavepointUnsetTimerLeft.Reset();
 		}
 
 		if
@@ -126,6 +126,86 @@ NextFrame()
 		else if(WaveformLoopAll(TARGET_BOTTOM))
 		{
 			WaveformLoopAllDebumpRight=true;
+		}
+	}
+
+	//BPMAtNeedle Stuff
+	for(int t=0;t<2;t++)
+	{
+		bool held=false;
+		if(LGL_GetXponent())
+		{
+			if(t==0)
+			{
+				held =
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_PREV) &&
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_NEXT) &&
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOCK);
+			}
+			else
+			{
+				held =
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PREV) &&
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_NEXT) &&
+					LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOCK);
+			}
+		}
+
+		LGL_Timer& bpmAtNeedleTimer = BPMAtNeedleTimer[t];
+		int& bpmAtNeedleState = BPMAtNeedleState[t];
+
+		if(held)
+		{
+			if(bpmAtNeedleState==0)
+			{
+				//Not Pressed => Pressed
+
+				bpmAtNeedleTimer.Reset();
+				bpmAtNeedleState++;
+			}
+			else if (bpmAtNeedleState==1)
+			{
+				//BPM At Needle (1 Frame)
+
+				//This just works
+				bpmAtNeedleState++;
+			}
+			else if (bpmAtNeedleState==2)
+			{
+				//Waiting for BPM_UNDEF
+				if(bpmAtNeedleTimer.SecondsSinceLastReset()>=1.0f)
+				{
+					bpmAtNeedleState++;
+				}
+			}
+			else if (bpmAtNeedleState==3)
+			{
+				//BPM_UNDEF (1 Frame)
+
+				bpmAtNeedleState++;
+			}
+			else if (bpmAtNeedleState==4)
+			{
+				//Waiting for BPM_NONE
+				if(bpmAtNeedleTimer.SecondsSinceLastReset()>=2.0f)
+				{
+					bpmAtNeedleState++;
+				}
+			}
+			else if (bpmAtNeedleState==5)
+			{
+				//BPM_NONE (1 Frame)
+
+				bpmAtNeedleState++;
+			}
+			else if (bpmAtNeedleState==6)
+			{
+				//Waiting
+			}
+		}
+		else
+		{
+			bpmAtNeedleState=0;
 		}
 	}
 }
@@ -1358,7 +1438,7 @@ WaveformRecordSpeed
 
 bool
 InputXponentObj::
-WaveformSavePointPrev
+WaveformSavepointPrev
 (
 	unsigned int	target
 )	const
@@ -1388,7 +1468,7 @@ WaveformSavePointPrev
 
 bool
 InputXponentObj::
-WaveformSavePointNext
+WaveformSavepointNext
 (
 	unsigned int	target
 )	const
@@ -1418,7 +1498,7 @@ WaveformSavePointNext
 
 int
 InputXponentObj::
-WaveformSavePointPick
+WaveformSavepointPick
 (
 	unsigned int	target
 )	const
@@ -1478,7 +1558,7 @@ WaveformSavePointPick
 
 bool
 InputXponentObj::
-WaveformSavePointSet
+WaveformSavepointSet
 (
 	unsigned int	target
 )	const
@@ -1513,9 +1593,103 @@ WaveformSavePointSet
 	return(false);
 }
 
+bool
+InputXponentObj::
+WaveformSavepointSetBPMAtNeedle
+(
+	unsigned int	target
+)	const
+{
+	if(LGL_GetXponent())
+	{
+		if
+		(
+			(target & TARGET_BOTTOM) &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PREV) &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_NEXT) &&
+			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOCK)
+		)
+		{
+			return(true);
+		}
+		else if
+		(
+			(target & TARGET_TOP) &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_PREV) &&
+			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_NEXT) &&
+			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOCK)
+		)
+		{
+			return(true);
+		}
+	}
+
+	return(false);
+}
+
+bool
+InputXponentObj::
+WaveformSavepointSetBPMUndef
+(
+	unsigned int	target
+)	const
+{
+	if(LGL_GetXponent())
+	{
+		if
+		(
+			(target & TARGET_BOTTOM) &&
+			BPMAtNeedleState[1]==3
+		)
+		{
+			return(true);
+		}
+		else if
+		(
+			(target & TARGET_TOP) &&
+			BPMAtNeedleState[0]==3
+		)
+		{
+			return(true);
+		}
+	}
+
+	return(false);
+}
+
+bool
+InputXponentObj::
+WaveformSavepointSetBPMNone
+(
+	unsigned int	target
+)	const
+{
+	if(LGL_GetXponent())
+	{
+		if
+		(
+			(target & TARGET_BOTTOM) &&
+			BPMAtNeedleState[1]==5
+		)
+		{
+			return(true);
+		}
+		else if
+		(
+			(target & TARGET_TOP) &&
+			BPMAtNeedleState[0]==5
+		)
+		{
+			return(true);
+		}
+	}
+
+	return(false);
+}
+
 float
 InputXponentObj::
-WaveformSavePointUnsetPercent
+WaveformSavepointUnsetPercent
 (
 	unsigned int	target
 )	const
@@ -1530,7 +1704,7 @@ WaveformSavePointUnsetPercent
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_LOCK)
 		)
 		{
-			percent=LGL_Min(1.0f,2.0f*WaveformSavePointUnsetTimerRight.SecondsSinceLastReset());
+			percent=LGL_Min(1.0f,2.0f*WaveformSavepointUnsetTimerRight.SecondsSinceLastReset());
 		}
 		else if
 		(
@@ -1538,7 +1712,7 @@ WaveformSavePointUnsetPercent
 			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_LOCK)
 		)
 		{
-			percent=LGL_Min(1.0f,2.0f*WaveformSavePointUnsetTimerLeft.SecondsSinceLastReset());
+			percent=LGL_Min(1.0f,2.0f*WaveformSavepointUnsetTimerLeft.SecondsSinceLastReset());
 		}
 	}
 
@@ -1547,13 +1721,13 @@ WaveformSavePointUnsetPercent
 
 float
 InputXponentObj::
-WaveformSavePointShift
+WaveformSavepointShift
 (
 	unsigned int	target
 )	const
 {
-	const float SPEED = 0.025f;
-	float percent=0.0f;
+	/*
+	float amount=0.0f;
 
 	if(LGL_GetXponent())
 	{
@@ -1565,10 +1739,10 @@ WaveformSavePointShift
 				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_NEXT)
 			)
 			{
-				percent+=LGL_SecondsSinceLastFrame()*SPEED*
+				amount+=
 				(
-					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_MINUS) ? 1 : 0) -
-					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PLUS) ? 1 : 0)
+					(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_MINUS) ? -0.01f : 0) +
+					(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_PLUS) ? 0.01f : 0)
 				);
 			}
 		}
@@ -1580,12 +1754,52 @@ WaveformSavePointShift
 				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_NEXT)
 			)
 			{
-				percent+=LGL_SecondsSinceLastFrame()*SPEED*
+				amount+=
 				(
-					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_MINUS) ? 1 : 0) -
-					(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_PLUS) ? 1 : 0)
+					(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_MINUS) ? -0.01f : 0) +
+					(LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_PLUS) ? 0.01f : 0)
 				);
 			}
+		}
+	}
+
+	return(amount);
+	*/
+
+	const float SPEED = 0.1f;
+	float percent=0.0f;
+
+	if(LGL_GetXponent())
+	{
+		if
+		(
+			(target & TARGET_BOTTOM) &&
+			(
+				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PREV) ||
+				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_NEXT)
+			)
+		)
+		{
+			percent+=LGL_SecondsSinceLastFrame()*SPEED*
+			(
+				(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_MINUS) ? 1 : 0) -
+				(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PLUS) ? 1 : 0)
+			);
+		}
+		else if
+		(
+			(target & TARGET_TOP) &&
+			(
+				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PREV) ||
+				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_NEXT)
+			)
+		)
+		{
+			percent+=LGL_SecondsSinceLastFrame()*SPEED*
+			(
+				(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_MINUS) ? 1 : 0) -
+				(LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_PLUS) ? 1 : 0)
+			);
 		}
 	}
 
@@ -1594,12 +1808,32 @@ WaveformSavePointShift
 
 float
 InputXponentObj::
-WaveformSavePointShiftAll
+WaveformSavepointShiftAll
 (
 	unsigned int	target
 )	const
 {
-	const float SPEED = 0.025f;
+	return(0.0f);
+}
+
+bool
+InputXponentObj::
+WaveformSavepointShiftAllHere
+(
+	unsigned int	target
+)	const
+{
+	return(false);
+}
+
+float
+InputXponentObj::
+WaveformSavepointShiftBPM
+(
+	unsigned int	target
+)	const
+{
+	const float SPEED = 0.1f;
 	float percent=0.0f;
 
 	if(LGL_GetXponent())
@@ -1637,41 +1871,7 @@ WaveformSavePointShiftAll
 
 bool
 InputXponentObj::
-WaveformSavePointShiftAllHere
-(
-	unsigned int	target
-)	const
-{
-	if(LGL_GetXponent())
-	{
-		if
-		(
-			(target & TARGET_BOTTOM) &&
-			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PREV) &&
-			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_NEXT) &&
-			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_RIGHT_LOCK)
-		)
-		{
-			return(true);
-		}
-		else if
-		(
-			(target & TARGET_TOP) &&
-			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_PREV) &&
-			LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_NEXT) &&
-			LGL_GetXponent()->GetButtonStroke(LGL_XPONENT_BUTTON_LEFT_LOCK)
-		)
-		{
-			return(true);
-		}
-	}
-
-	return(false);
-}
-
-bool
-InputXponentObj::
-WaveformSavePointJumpAtMeasure
+WaveformSavepointJumpAtMeasure
 (
 	unsigned int	target
 )	const
@@ -1695,7 +1895,7 @@ WaveformSavePointJumpAtMeasure
 
 bool
 InputXponentObj::
-WaveformSavePointJumpNow
+WaveformSavepointJumpNow
 (
 	unsigned int	target
 )	const

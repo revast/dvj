@@ -92,6 +92,7 @@ typedef enum
 	WAVEFORM_SAVEPOINT_PREV,
 	WAVEFORM_SAVEPOINT_NEXT,
 	WAVEFORM_SAVEPOINT_SET,
+	WAVEFORM_SAVEPOINT_SET_BPM_HERE,
 	WAVEFORM_SAVEPOINT_SHIFT_BACKWARD,
 	WAVEFORM_SAVEPOINT_SHIFT_FORWARD,
 	WAVEFORM_SAVEPOINT_SHIFT_ALL_BACKWARD,
@@ -283,15 +284,16 @@ int	GetInputKeyboardWaveformSeekBackwardFastKey();
 int	GetInputKeyboardWaveformSeekForwardFastKey();
 int	GetInputKeyboardWaveformSeekBackwardSlowKey();
 int	GetInputKeyboardWaveformSeekForwardSlowKey();
-int	GetInputKeyboardWaveformSavePointPrevKey();
-int	GetInputKeyboardWaveformSavePointNextKey();
-int	GetInputKeyboardWaveformSavePointSetKey();
-int	GetInputKeyboardWaveformSavePointShiftBackwardKey();
-int	GetInputKeyboardWaveformSavePointShiftForwardKey();
-int	GetInputKeyboardWaveformSavePointShiftAllBackwardKey();
-int	GetInputKeyboardWaveformSavePointShiftAllForwardKey();
-int	GetInputKeyboardWaveformSavePointJumpNowKey();
-int	GetInputKeyboardWaveformSavePointJumpAtMeasureKey();
+int	GetInputKeyboardWaveformSavepointPrevKey();
+int	GetInputKeyboardWaveformSavepointNextKey();
+int	GetInputKeyboardWaveformSavepointSetKey();
+int	GetInputKeyboardWaveformSavepointSetBPMAtNeedleKey();
+int	GetInputKeyboardWaveformSavepointShiftBackwardKey();
+int	GetInputKeyboardWaveformSavepointShiftForwardKey();
+int	GetInputKeyboardWaveformSavepointShiftAllBackwardKey();
+int	GetInputKeyboardWaveformSavepointShiftAllForwardKey();
+int	GetInputKeyboardWaveformSavepointJumpNowKey();
+int	GetInputKeyboardWaveformSavepointJumpAtMeasureKey();
 int	GetInputKeyboardWaveformQuantizationPeriodHalfKey();
 int	GetInputKeyboardWaveformQuantizationPeriodDoubleKey();
 int	GetInputKeyboardWaveformStutterKey();
@@ -350,6 +352,9 @@ public:
 
 std::vector<LEDClient>
 GetLEDClientList();
+
+bool
+GetOldFileStructure();
 
 bool
 GetDebugVideoCaching();

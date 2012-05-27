@@ -68,6 +68,10 @@ public:
 				float	bottom,
 				float	top
 			);
+	float		GetWindowScopeLeft();
+	float		GetWindowScopeRight();
+	float		GetWindowScopeBottom();
+	float		GetWindowScopeTop();
 	void		SetColLeftEdge
 			(
 				int	col,
@@ -112,6 +116,9 @@ public:
 				int		col
 			);
 	*/
+
+	int		GetVisibleRowIndexTop();
+	int		GetVisibleRowIndexBottom();
 
 	void		NextFrame();
 	void		Draw();

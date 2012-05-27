@@ -145,6 +145,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"escDuringScanExits=1\n");
 		fprintf(fd,"audioSwapOutputStreams=0\n");
 		fprintf(fd,"debugVideoCaching=0\n");
+		fprintf(fd,"oldFileStructure=0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#Fader Options (Fader00-Fader11 valid):\n");
 		fprintf(fd,"#NULL\n");
@@ -260,7 +261,7 @@ void
 LoadKeyboardInput()
 {
 	char inputKeyboardTxt[2048];
-	sprintf(inputKeyboardTxt,"%s/input/keyboard.txt",dotDvj);
+	sprintf(inputKeyboardTxt,"%s/input/keyboard2.txt",dotDvj);
 
 	if(LGL_FileExists(inputKeyboardTxt)==false)
 	{
@@ -1123,7 +1124,7 @@ MapStringToSDLK
 	MAP_STRING_TO_SDLK(LGL_KEY_EURO);		//Some european keyboards
 	MAP_STRING_TO_SDLK(LGL_KEY_UNDO);		//Atari keyboard has Undo
 
-	printf("Warning! Invalid key defined in ~/.dvj/input/keyboard.txt: '%s'\n",str);
+	printf("Warning! Invalid key defined in ~/.dvj/input/keyboard2.txt: '%s'\n",str);
 
 	return(LGL_KEY_UNKNOWN);
 }
@@ -1469,23 +1470,25 @@ PrepareInputMap()
 	dvjInputMap[WAVEFORM_SCRATCH_SPEED].Set
 		("waveformScratchSpeed",		true,	"LGL_KEY_NONE",		"scratch/speed");
 	dvjInputMap[WAVEFORM_SAVEPOINT_PREV].Set
-		("waveformSavePointPrev",		true,	"LGL_KEY_F",		"save_point/prev");
+		("waveformSavepointPrev",		true,	"LGL_KEY_COMMA",	"save_point/prev");
 	dvjInputMap[WAVEFORM_SAVEPOINT_NEXT].Set
-		("waveformSavePointNext",		true,	"LGL_KEY_H",		"save_point/next");
+		("waveformSavepointNext",		true,	"LGL_KEY_PERIOD",	"save_point/next");
 	dvjInputMap[WAVEFORM_SAVEPOINT_SET].Set
-		("waveformSavePointSet",		true,	"LGL_KEY_G",		"save_point/set");
+		("waveformSavepointSet",		true,	"LGL_KEY_SLASH",	"save_point/set");
+	dvjInputMap[WAVEFORM_SAVEPOINT_SET_BPM_HERE].Set
+		("waveformSavepointSetBPMAtNeedle",	true,	"LGL_KEY_QUESTION",	"save_point/set_bpm_at_needle");
 	dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_BACKWARD].Set
-		("waveformSavePointShiftBackward",	true,	"LGL_KEY_R",		"save_point/shift/backward");
+		("waveformSavepointShiftBackward",	true,	"LGL_KEY_R",		"save_point/shift/backward");
 	dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_FORWARD].Set
-		("waveformSavePointShiftForward",	true,	"LGL_KEY_Y",		"save_point/shift/forward");
+		("waveformSavepointShiftForward",	true,	"LGL_KEY_Y",		"save_point/shift/forward");
 	dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_BACKWARD].Set
-		("waveformSavePointShiftAllBackward",	true,	"LGL_KEY_UNKNOWN",	"save_point/shift_all/backward");
+		("waveformSavepointShiftAllBackward",	true,	"LGL_KEY_UNKNOWN",	"save_point/shift_all/backward");
 	dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_FORWARD].Set
-		("waveformSavePointShiftAllForward",	true,	"LGL_KEY_UNKNOWN",	"save_point/shift_all/forward");
+		("waveformSavepointShiftAllForward",	true,	"LGL_KEY_UNKNOWN",	"save_point/shift_all/forward");
 	dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_NOW].Set
-		("waveformSavePointJumpNow",		true,	"LGL_KEY_T",		"save_point/jump/now");
+		("waveformSavepointJumpNow",		true,	"LGL_KEY_B",		"save_point/jump/now");
 	dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE].Set
-		("waveformSavePointJumpAtMeasure",	true,	"LGL_KEY_B",		"save_point/jump/at_measure");
+		("waveformSavepointJumpAtMeasure",	true,	"LGL_KEY_B",		"save_point/jump/at_measure");
 	dvjInputMap[WAVEFORM_QUANTIZATION_PERIOD_HALF].Set
 		("waveformQuantizationPeriodHalf",	true,	"LGL_KEY_J",		"quantization_period/half");
 	dvjInputMap[WAVEFORM_QUANTIZATION_PERIOD_DOUBLE].Set
@@ -1501,7 +1504,7 @@ PrepareInputMap()
 	dvjInputMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].Set
 		("waveformAutoDivergeThenRecall",	true,	"LGL_KEY_NONE",		"");
 	dvjInputMap[WAVEFORM_VIDEO_SELECT].Set
-		("waveformVideoSelect",			true,	"LGL_KEY_PERIOD",	"video_select");
+		("waveformVideoSelect",			true,	"LGL_KEY_NONE",		"video_select");
 	dvjInputMap[WAVEFORM_VIDEO_BRIGHTNESS].Set
 		("waveformVideoBrightness",		true,	"LGL_KEY_NONE",		"video_brightness");
 	dvjInputMap[WAVEFORM_VIDEO_FREQSENSE_BRIGHTNESS].Set
@@ -1523,7 +1526,7 @@ PrepareInputMap()
 	dvjInputMap[WAVEFORM_AUDIO_INPUT_TOGGLE].Set
 		("waveformAudioInputToggle",		true,	"LGL_KEY_F11",		"audio_input/toggle");
 	dvjInputMap[WAVEFORM_VIDEO_ASPECT_RATIO_NEXT].Set
-		("waveformVideoAspectRatioNext",	true,	"LGL_KEY_SLASH",	"video_aspect_ratio/next");
+		("waveformVideoAspectRatioNext",	true,	"LGL_KEY_BACKQUOTE",	"video_aspect_ratio/next");
 	dvjInputMap[WAVEFORM_SYNC].Set
 		("waveformSync",			true,	"LGL_KEY_BACKSLASH",	"sync");
 	dvjInputMap[FULL_SCREEN_TOGGLE].Set
@@ -1552,7 +1555,7 @@ CreateDefaultKeyboardInput
 	if(FILE* fd=fopen(path,"w"))
 	{
 		fprintf(fd,"#\n");
-		fprintf(fd,"# keyboard.txt\n");
+		fprintf(fd,"# keyboard2.txt\n");
 		fprintf(fd,"#\n");
 		fprintf(fd,"# For a list of all possible LGL_KEY_* values, see:\n");
 		fprintf(fd,"# TODO... Ask interim.descriptor@gmail.com, for now\n");
@@ -1778,23 +1781,25 @@ int GetInputKeyboardWaveformSeekForwardSlowKey()
 	{ return(dvjInputMap[WAVEFORM_SEEK_FORWARD_SLOW].KeyboardInt); }
 int GetInputKeyboardWaveformSeekForwardFastKey()
 	{ return(dvjInputMap[WAVEFORM_SEEK_FORWARD_FAST].KeyboardInt); }
-int GetInputKeyboardWaveformSavePointPrevKey()
+int GetInputKeyboardWaveformSavepointPrevKey()
 	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_PREV].KeyboardInt); }
-int GetInputKeyboardWaveformSavePointNextKey()
+int GetInputKeyboardWaveformSavepointNextKey()
 	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_NEXT].KeyboardInt); }
-int GetInputKeyboardWaveformSavePointSetKey()
+int GetInputKeyboardWaveformSavepointSetKey()
 	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SET].KeyboardInt); }
-int GetInputKeyboardWaveformSavePointShiftBackwardKey()
+int GetInputKeyboardWaveformSavepointSetBPMAtNeedleKey()
+	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SET_BPM_HERE].KeyboardInt); }
+int GetInputKeyboardWaveformSavepointShiftBackwardKey()
 	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_BACKWARD].KeyboardInt); }
-int GetInputKeyboardWaveformSavePointShiftForwardKey()
+int GetInputKeyboardWaveformSavepointShiftForwardKey()
 	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_FORWARD].KeyboardInt); }
-int GetInputKeyboardWaveformSavePointShiftAllBackwardKey()
+int GetInputKeyboardWaveformSavepointShiftAllBackwardKey()
 	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_BACKWARD].KeyboardInt); }
-int GetInputKeyboardWaveformSavePointShiftAllForwardKey()
+int GetInputKeyboardWaveformSavepointShiftAllForwardKey()
 	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_SHIFT_ALL_FORWARD].KeyboardInt); }
-int GetInputKeyboardWaveformSavePointJumpNowKey()
+int GetInputKeyboardWaveformSavepointJumpNowKey()
 	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_NOW].KeyboardInt); }
-int GetInputKeyboardWaveformSavePointJumpAtMeasureKey()
+int GetInputKeyboardWaveformSavepointJumpAtMeasureKey()
 	{ return(dvjInputMap[WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE].KeyboardInt); }
 int GetInputKeyboardWaveformQuantizationPeriodHalfKey()
 	{ return(dvjInputMap[WAVEFORM_QUANTIZATION_PERIOD_HALF].KeyboardInt); }
@@ -2070,6 +2075,13 @@ GetDebugVideoCaching()
 }
 
 bool
+GetOldFileStructure()
+{
+	int old=dvjrcConfigFile->read<int>("oldFileStructure",0);
+	return(old!=0);
+}
+
+bool
 GetDebugRecordHold()
 {
 	int debug=dvjrcConfigFile->read<int>("debugRecordHold",0);
@@ -2080,13 +2092,6 @@ bool
 GetTestFreqSenseTime()
 {
 	int debug=dvjrcConfigFile->read<int>("testFreqSenseTime",0);
-	return(debug!=0);
-}
-
-bool
-GetDebugUseMultiTouchWithOneDisplay()
-{
-	int debug=dvjrcConfigFile->read<int>("debugUseMultiTouchWithOneDisplay",0);
 	return(debug!=0);
 }
 

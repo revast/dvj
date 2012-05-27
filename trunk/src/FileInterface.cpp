@@ -96,7 +96,7 @@ ReadLine
 
 	//Grab a line from a file.
 	char buffer[1024];
-	fgets(buffer,1024,file);
+	fgets(buffer,1023,file);
 
 	//If we've read past the EOF, return false.
 	if
@@ -129,16 +129,16 @@ ReadLine
 	Clear();
 
 	//If our input is zero length, we're done.
-	if(strlen(line)==0)
+	if(line[0]=='\0')
 	{
 		return;
 	}
 
 	//Process the formatted part of the string
-	char str[1024];
+	char str[1024*16];
 	va_list args;
 	va_start(args,line);
-	vsprintf(str,line,args);
+	vsnprintf(str,sizeof(str)-1,line,args);
 	va_end(args);
 
 	//The first '\n' we find becomes our new '\0'.
@@ -149,6 +149,11 @@ ReadLine
 	}
 
 	//Copy the full line into Line.
+	if(Line)
+	{
+		delete Line;
+		Line=NULL;
+	}
 	Line=new char[strlen(str)+1];
 	strcpy(Line,str);
 
@@ -267,6 +272,11 @@ BuildLineFromArgv()
 		place=&(place[strlen(place)]);
 	}
 
+	if(Line)
+	{
+		delete Line;
+		Line=NULL;
+	}
 	Line=new char[strlen(temp)+1];
 	strcpy(Line,temp);
 }

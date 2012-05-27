@@ -29,7 +29,7 @@
 
 //Core
 
-#define	BPM_INPUT_KEY	LGL_KEY_COMMA
+#define	BPM_INPUT_KEY	LGL_KEY_BACKQUOTE
 
 void
 InputKeyboardObj::
@@ -37,11 +37,12 @@ NextFrame()
 {
 	if
 	(
-		LGL_KeyDown(GetInputKeyboardWaveformSavePointSetKey())==false ||
+		LGL_KeyDown(GetInputKeyboardWaveformSavepointSetKey())==false ||
+		LGL_KeyDown(LGL_KEY_SHIFT) ||
 		LGL_KeyDown(GetInputKeyboardFocusChangeKey())
 	)
 	{
-		WaveformSavePointUnsetTimer.Reset();
+		WaveformSavepointUnsetTimer.Reset();
 	}
 
 	if
@@ -91,6 +92,60 @@ NextFrame()
 		BPMValueCandidate=NULL;
 		BPMInputBuffer.ClearBuffer();
 		BPMInputBuffer.ReleaseFocus();
+	}
+
+	if(LGL_KeyDown(GetInputKeyboardWaveformSavepointSetBPMAtNeedleKey()))
+	{
+		if(BPMAtNeedleState==0)
+		{
+			//Not Pressed => Pressed
+
+			BPMAtNeedleTimer.Reset();
+			BPMAtNeedleState++;
+		}
+		else if (BPMAtNeedleState==1)
+		{
+			//BPM At Needle (1 Frame)
+
+			//This just works
+			BPMAtNeedleState++;
+		}
+		else if (BPMAtNeedleState==2)
+		{
+			//Waiting for BPM_UNDEF
+			if(BPMAtNeedleTimer.SecondsSinceLastReset()>=1.0f)
+			{
+				BPMAtNeedleState++;
+			}
+		}
+		else if (BPMAtNeedleState==3)
+		{
+			//BPM_UNDEF (1 Frame)
+
+			BPMAtNeedleState++;
+		}
+		else if (BPMAtNeedleState==4)
+		{
+			//Waiting for BPM_NONE
+			if(BPMAtNeedleTimer.SecondsSinceLastReset()>=2.0f)
+			{
+				BPMAtNeedleState++;
+			}
+		}
+		else if (BPMAtNeedleState==5)
+		{
+			//BPM_NONE (1 Frame)
+
+			BPMAtNeedleState++;
+		}
+		else if (BPMAtNeedleState==6)
+		{
+			//Waiting
+		}
+	}
+	else
+	{
+		BPMAtNeedleState=0;
 	}
 }
 
@@ -695,14 +750,18 @@ WaveformStutterSpeed
 
 bool
 InputKeyboardObj::
-WaveformSavePointPrev
+WaveformSavepointPrev
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointPrevKey()));
+		return
+		(
+			LGL_KeyStroke(GetInputKeyboardWaveformSavepointPrevKey()) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)==false
+		);
 	}
 	else
 	{
@@ -712,14 +771,19 @@ WaveformSavePointPrev
 
 bool
 InputKeyboardObj::
-WaveformSavePointNext
+WaveformSavepointNext
 (
 	unsigned int	target
 )	const
 {
+	if(LGL_KeyDown(BPM_INPUT_KEY)) return(false);
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointNextKey()));
+		return
+		(
+			LGL_KeyStroke(GetInputKeyboardWaveformSavepointNextKey()) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)==false
+		);
 	}
 	else
 	{
@@ -730,7 +794,7 @@ WaveformSavePointNext
 
 int
 InputKeyboardObj::
-WaveformSavePointPick
+WaveformSavepointPick
 (
 	unsigned int	target
 )	const
@@ -740,14 +804,69 @@ WaveformSavePointPick
 
 bool
 InputKeyboardObj::
-WaveformSavePointSet
+WaveformSavepointSet
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointSetKey()));
+		return
+		(
+			LGL_KeyStroke(GetInputKeyboardWaveformSavepointSetKey()) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)==false
+		);
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformSavepointSetBPMAtNeedle
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(LGL_KeyStroke(GetInputKeyboardWaveformSavepointSetBPMAtNeedleKey()));
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformSavepointSetBPMUndef
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(BPMAtNeedleState==3);
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputKeyboardObj::
+WaveformSavepointSetBPMNone
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		return(BPMAtNeedleState==5);
 	}
 	else
 	{
@@ -757,7 +876,7 @@ WaveformSavePointSet
 
 float
 InputKeyboardObj::
-WaveformSavePointUnsetPercent
+WaveformSavepointUnsetPercent
 (
 	unsigned int	target
 )	const
@@ -766,9 +885,9 @@ WaveformSavePointUnsetPercent
 
 	if(target & TARGET_FOCUS)
 	{
-		if(LGL_KeyDown(GetInputKeyboardWaveformSavePointSetKey()))
+		if(LGL_KeyDown(GetInputKeyboardWaveformSavepointSetKey()))
 		{
-			percent=LGL_Clamp(0.0f,2.0f*WaveformSavePointUnsetTimer.SecondsSinceLastReset(),1.0f);
+			percent=LGL_Clamp(0.0f,2.0f*WaveformSavepointUnsetTimer.SecondsSinceLastReset(),1.0f);
 		}
 	}
 	else
@@ -781,11 +900,12 @@ WaveformSavePointUnsetPercent
 
 float
 InputKeyboardObj::
-WaveformSavePointShift
+WaveformSavepointShift
 (
 	unsigned int	target
 )	const
 {
+	/*
 	const float SPEED = 0.025f;
 	float percent=0.0f;
 
@@ -793,17 +913,29 @@ WaveformSavePointShift
 	{
 		percent+=LGL_SecondsSinceLastFrame()*SPEED*
 		(
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftBackwardKey()) ? -1 : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftForwardKey()) ? 1 : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformSavepointShiftBackwardKey()) ? -1 : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformSavepointShiftForwardKey()) ? 1 : 0)
 		);
 	}
 
 	return(percent);
+	*/
+
+	float amount=0.0f;
+	
+	if((target & TARGET_FOCUS))
+	{
+		amount+=
+			(LGL_KeyStroke(GetInputKeyboardWaveformSavepointShiftBackwardKey()) ? -0.01f : 0) +
+			(LGL_KeyStroke(GetInputKeyboardWaveformSavepointShiftForwardKey()) ? 0.01f : 0);
+	}
+
+	return(amount);
 }
 
 float
 InputKeyboardObj::
-WaveformSavePointShiftAll
+WaveformSavepointShiftAll
 (
 	unsigned int	target
 )	const
@@ -815,8 +947,8 @@ WaveformSavePointShiftAll
 	{
 		percent+=LGL_SecondsSinceLastFrame()*SPEED*
 		(
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllBackwardKey()) ? -1 : 0) +
-			(LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftAllForwardKey()) ? 1 : 0)
+			(LGL_KeyDown(GetInputKeyboardWaveformSavepointShiftAllBackwardKey()) ? -1 : 0) +
+			(LGL_KeyDown(GetInputKeyboardWaveformSavepointShiftAllForwardKey()) ? 1 : 0)
 		);
 	}
 
@@ -825,7 +957,7 @@ WaveformSavePointShiftAll
 
 bool
 InputKeyboardObj::
-WaveformSavePointShiftAllHere
+WaveformSavepointShiftAllHere
 (
 	unsigned int	target
 )	const
@@ -834,9 +966,9 @@ WaveformSavePointShiftAllHere
 	{
 		return
 		(
-			LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftBackwardKey()) &&
-			LGL_KeyDown(GetInputKeyboardWaveformSavePointShiftForwardKey()) &&
-			LGL_KeyStroke(GetInputKeyboardWaveformSavePointSetKey())
+			LGL_KeyDown(GetInputKeyboardWaveformSavepointShiftBackwardKey()) &&
+			LGL_KeyDown(GetInputKeyboardWaveformSavepointShiftForwardKey()) &&
+			LGL_KeyStroke(GetInputKeyboardWaveformSavepointSetKey())
 		);
 	}
 	else
@@ -847,14 +979,24 @@ WaveformSavePointShiftAllHere
 
 bool
 InputKeyboardObj::
-WaveformSavePointJumpNow
+WaveformSavepointJumpNow
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointJumpNowKey()));
+		return
+		(
+			LGL_KeyStroke(GetInputKeyboardWaveformSavepointJumpNowKey()) &&
+			(
+				(
+					GetInputKeyboardWaveformSavepointJumpNowKey() !=
+					GetInputKeyboardWaveformSavepointJumpAtMeasureKey()
+				) ||
+				LGL_KeyDown(LGL_KEY_SHIFT)
+			)
+		);
 	}
 	else
 	{
@@ -864,14 +1006,24 @@ WaveformSavePointJumpNow
 
 bool
 InputKeyboardObj::
-WaveformSavePointJumpAtMeasure
+WaveformSavepointJumpAtMeasure
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyStroke(GetInputKeyboardWaveformSavePointJumpAtMeasureKey()));
+		return
+		(
+			LGL_KeyStroke(GetInputKeyboardWaveformSavepointJumpAtMeasureKey()) &&
+			(
+				(
+					GetInputKeyboardWaveformSavepointJumpNowKey() !=
+					GetInputKeyboardWaveformSavepointJumpAtMeasureKey()
+				) ||
+				LGL_KeyDown(LGL_KEY_SHIFT)==false
+			)
+		);
 	}
 	else
 	{

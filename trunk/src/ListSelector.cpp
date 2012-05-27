@@ -140,6 +140,34 @@ SetWindowScope
 	Top=top;
 }
 
+float
+dvjListSelector::
+GetWindowScopeLeft()
+{
+	return(Left);
+}
+
+float
+dvjListSelector::
+GetWindowScopeRight()
+{
+	return(Right);
+}
+
+float
+dvjListSelector::
+GetWindowScopeBottom()
+{
+	return(Bottom);
+}
+
+float
+dvjListSelector::
+GetWindowScopeTop()
+{
+	return(Top);
+}
+
 void
 dvjListSelector::
 SetColLeftEdge
@@ -340,11 +368,46 @@ HighlightNearest
 }
 */
 
+int
+dvjListSelector::
+GetVisibleRowIndexTop()
+{
+	const int begin = LGL_Max(0,floorf(CellsScrolled));
+	return(begin);
+}
+
+int
+dvjListSelector::
+GetVisibleRowIndexBottom()
+{
+	const int begin = LGL_Max(0,floorf(CellsScrolled));
+	const int end = LGL_Min(GetRowCount()-1,begin + ceilf(GetRowsDisplayed()));
+	return(end);
+}
+
 void
 dvjListSelector::
 NextFrame()
 {
 	const float highlightedRowPrev = HighlightedRow;
+
+	if
+	(
+		LGL_MultiTouchFingerCount()<2 &&
+		LGL_MouseMotion() &&
+		LGL_MouseX()>=Left &&
+		LGL_MouseX()<=Right &&
+		LGL_MouseY()>=Bottom &&
+		LGL_MouseY()<=Top
+	)
+	{
+		float offset = GetCellHeight()*0.25f;
+		HighlightedRow = CellsScrolled +
+			(
+				GetRowsDisplayed()*
+				((Top-(LGL_MouseY()+offset))/(Top-Bottom))
+			);
+	}
 
 	if
 	(
@@ -412,7 +475,7 @@ NextFrame()
 	}
 
 	const float percentPermittedOffscreen=0.75f;
-	float highlightedRowMin = floorf(CellsScrolled+percentPermittedOffscreen);
+	float highlightedRowMin = floorf(CellsScrolled+percentPermittedOffscreen)+1;
 	float highlightedRowMax = floorf(CellsScrolled-percentPermittedOffscreen+GetRowsDisplayed());
 
 	{
