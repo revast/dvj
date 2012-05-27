@@ -96,16 +96,16 @@ virtual	float	WaveformRecordSpeed		(unsigned int target)	const;	//Velocity of sc
 virtual	bool	WaveformStutter			(unsigned int target)	const;	//Repeat a small segment of audio
 virtual	float	WaveformStutterPitch		(unsigned int target)	const;	//Pitch of the stutter
 virtual	float	WaveformStutterSpeed		(unsigned int target)	const;	//Speed / Length of the stutter
-virtual	bool	WaveformSavePointPrev		(unsigned int target)	const;	//Highlight previous save point
-virtual	bool	WaveformSavePointNext		(unsigned int target)	const;	//Highlight next save point
-virtual	int	WaveformSavePointPick		(unsigned int target)	const;	//Highlight a chosen save point
-virtual	bool	WaveformSavePointSet		(unsigned int target)	const;	//Lock a save point
-virtual	float	WaveformSavePointUnsetPercent	(unsigned int target)	const;	//Clear a save point
-virtual	float	WaveformSavePointShift		(unsigned int target)	const;	//Shift current save point X seconds
-virtual	float	WaveformSavePointShiftAll	(unsigned int target)	const;	//Shift all save points X seconds
-virtual	bool	WaveformSavePointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
-virtual	bool	WaveformSavePointJumpNow	(unsigned int target)	const;	//Jump to current save point
-virtual	bool	WaveformSavePointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
+virtual	bool	WaveformSavepointPrev		(unsigned int target)	const;	//Highlight previous save point
+virtual	bool	WaveformSavepointNext		(unsigned int target)	const;	//Highlight next save point
+virtual	int	WaveformSavepointPick		(unsigned int target)	const;	//Highlight a chosen save point
+virtual	bool	WaveformSavepointSet		(unsigned int target)	const;	//Lock a save point
+virtual	float	WaveformSavepointUnsetPercent	(unsigned int target)	const;	//Clear a save point
+virtual	float	WaveformSavepointShift		(unsigned int target)	const;	//Shift current save point X seconds
+virtual	float	WaveformSavepointShiftAll	(unsigned int target)	const;	//Shift all save points X seconds
+virtual	bool	WaveformSavepointShiftAllHere	(unsigned int target)	const;	//Shift all save points so this is beat 1
+virtual	bool	WaveformSavepointJumpNow	(unsigned int target)	const;	//Jump to current save point
+virtual	bool	WaveformSavepointJumpAtMeasure	(unsigned int target)	const;	//Jump to current save point at the end of this measure
 virtual	int	WaveformLoopMeasuresExponent	(unsigned int target)	const;	//Loop 2^n measures. If disabled, enable. Else, disable if equal.
 virtual	bool	WaveformQuantizationPeriodHalf	(unsigned int target)	const;	//Loop half as many measures
 virtual	bool	WaveformQuantizationPeriodDouble(unsigned int target)	const;	//Loop twice as many measures
@@ -158,7 +158,7 @@ private:
 	float			OscMessageUnknownBrightness;
 	LGL_Semaphore		OscMessageUnknownSemaphore;
 
-	LGL_Timer		SavePointUnsetTimer[2];
+	LGL_Timer		SavepointUnsetTimer[2];
 
 	OscElementObj		FocusChangeOscElement;
 	OscElementObj		XfaderSpeakersOscElement;
@@ -189,15 +189,15 @@ private:
 	OscElementObj		WaveformVolumeSoloOscElement[2];
 	OscElementObj		WaveformSeekOscElement[2];
 	OscElementObj		WaveformScratchSpeedOscElement[2];
-	OscElementObj		WaveformSavePointPrevOscElement[2];
-	OscElementObj		WaveformSavePointNextOscElement[2];
-	OscElementObj		WaveformSavePointSetOscElement[2];
-	OscElementObj		WaveformSavePointShiftBackwardOscElement[2];
-	OscElementObj		WaveformSavePointShiftForwardOscElement[2];
-	OscElementObj		WaveformSavePointShiftAllBackwardOscElement[2];
-	OscElementObj		WaveformSavePointShiftAllForwardOscElement[2];
-	OscElementObj		WaveformSavePointJumpNowOscElement[2];
-	OscElementObj		WaveformSavePointJumpAtMeasureOscElement[2];
+	OscElementObj		WaveformSavepointPrevOscElement[2];
+	OscElementObj		WaveformSavepointNextOscElement[2];
+	OscElementObj		WaveformSavepointSetOscElement[2];
+	OscElementObj		WaveformSavepointShiftBackwardOscElement[2];
+	OscElementObj		WaveformSavepointShiftForwardOscElement[2];
+	OscElementObj		WaveformSavepointShiftAllBackwardOscElement[2];
+	OscElementObj		WaveformSavepointShiftAllForwardOscElement[2];
+	OscElementObj		WaveformSavepointJumpNowOscElement[2];
+	OscElementObj		WaveformSavepointJumpAtMeasureOscElement[2];
 	OscElementObj		WaveformQuantizationPeriodHalfOscElement[2];
 	OscElementObj		WaveformQuantizationPeriodDoubleOscElement[2];
 	OscElementObj		WaveformLoopToggleOscElement[2];

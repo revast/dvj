@@ -26,7 +26,6 @@
 
 #define	EIGHT_WAY (0)
 #define	POINTER_PARTICLES_PER_SECOND (250)
-#define	WAVE_WIDTH_PERCENT (0.60f)
 
 #include "LGL.module/LGL.h"
 
@@ -83,8 +82,8 @@ Mixer_DrawGlowLinesStatus
 void
 Mixer_DrawLevels
 (
-	float	viewPortBottom,
-	float	viewPortTop,
+	float	viewportBottom,
+	float	viewportTop,
 	float	leftBottomLevel,
 	float	leftTopLevel,
 	float	rightBottomLevel,
@@ -99,6 +98,7 @@ Turntable_DrawWaveform
 	int		which,
 	LGL_Sound*	sound,
 	bool		loaded,
+	int		mode,
 	const char*	videoPathShort,
 	bool		glitch,
 	float		glitchBegin,
@@ -106,27 +106,29 @@ Turntable_DrawWaveform
 	double		soundPositionSamples,
 	double		soundLengthSamples,
 	float		soundSpeed,
-	float		pitchBend,
+	float		pitchbend,
 	float		grainStreamCrossfader,
 	float		grainStreamSourcePoint,
 	float		grainStreamLength,
 	float		grainStreamPitch,
-	float		viewPortLeft,
-	float		viewPortRight,
-	float		viewPortBottom,
-	float		viewPortTop,
+	float		viewportLeft,
+	float		viewportRight,
+	float		viewportBottom,
+	float		viewportTop,
 	float		volumeMultiplierNow,
 	float		centerX,
 	bool		pause,
 	float		nudge,
 	float		joyAnalogueStatusLeftX,
 	float		time,
-	double*		savePointSeconds,
-	int		savePointIndex,
-	int		savePointIndexActual,
-	unsigned int	savePointSetBitfield,
-	float*		savePointUnsetNoisePercent,
-	float*		savePointUnsetFlashPercent,
+	double*		savepointSeconds,
+	double*		savepointBPMs,
+	int		savepointIndex,
+	int		savepointIndexActual,
+	unsigned int	savepointSetBitfield,
+	unsigned int	savepointSetBPMBitfield,
+	float*		savepointUnsetNoisePercent,
+	float*		savepointUnsetFlashPercent,
 	float		bpm,
 	float		bpmAdjusted,
 	const char*	bpmCandidate,
@@ -134,6 +136,22 @@ Turntable_DrawWaveform
 	float		eq0,
 	float		eq1,
 	float		eq2,
+	float		eqVuMe0,
+	float		eqVuMe1,
+	float		eqVuMe2,
+	float		eqVuOther0,
+	float		eqVuOther1,
+	float		eqVuOther2,
+	float		eqVuMePeak0,
+	float		eqVuMePeak1,
+	float		eqVuMePeak2,
+	float		eqVuOtherPeak0,
+	float		eqVuOtherPeak1,
+	float		eqVuOtherPeak2,
+	float		vu,
+	float		vuPeak,
+	float		otherVu,
+	float		otherVuPeak,
 	bool		lowRez,
 	int&		entireWaveArrayFillIndex,
 	int		entireWaveArrayCount,
@@ -175,16 +193,86 @@ Turntable_DrawWaveform
 );
 
 void
+Turntable_DrawBPMString
+(
+	float		viewportLeft,
+	float		viewportRight,
+	float		viewportBottom,
+	float		viewportTop,
+	const char*	bpmString
+);
+
+void
+Turntable_DrawPitchbendString
+(
+	float		viewportLeft,
+	float		viewportRight,
+	float		viewportBottom,
+	float		viewportTop,
+	float		pitchbend,
+	float		nudge
+);
+
+void
+Turntable_DrawPitchbendString
+(
+	float	viewportLeft,
+	float	viewportRight,
+	float	viewportBottom,
+	float	viewportTop,
+	float	pitchbend,
+	float	nudge
+);
+
+void
+Turntable_DrawSavepointSet
+(
+	float		viewportLeft,
+	float		viewportRight,
+	float		viewportBottom,
+	float		viewportTop,
+	float		time,
+	double*		savepointSeconds,
+	double*		savepointBPMs,
+	int		savepointIndex,
+	int		savepointIndexActual,
+	unsigned int	savepointSetBitfield,
+	unsigned int	savepointSetBPMBitfield,
+	float*		savepointUnsetNoisePercent,
+	float*		savepointUnsetFlashPercent,
+	LGL_Image*	noiseImage256x64,
+	int		which,
+	int		mode,
+	float		pitchbend
+);
+
+void
 Turntable_DrawSliders
 (
 	int		which,
-	float		viewPortLeft,
-	float		viewPortRight,
-	float		viewPortBottom,
-	float		viewPortTop,
+	float		viewportLeft,
+	float		viewportRight,
+	float		viewportBottom,
+	float		viewportTop,
 	float		eq0,
 	float		eq1,
 	float		eq2,
+	float		eqVuMe0,
+	float		eqVuMe1,
+	float		eqVuMe2,
+	float		eqVuOther0,
+	float		eqVuOther1,
+	float		eqVuOther2,
+	float		eqVuMePeak0,
+	float		eqVuMePeak1,
+	float		eqVuMePeak2,
+	float		eqVuOtherPeak0,
+	float		eqVuOtherPeak1,
+	float		eqVuOtherPeak2,
+	float		vu,
+	float		vuPeak,
+	float		otherVu,
+	float		otherVuPeak,
 	float		gain,
 	float		videoBrightness,
 	float		syphonBrightness,

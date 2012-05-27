@@ -45,10 +45,10 @@ InputMouseObj()
 	WaveformVideoSelectNext=false;
 	WaveformLoopToggleNow=false;
 	WaveformLoopToggleNext=false;
-	HoverOnSelectedSavePointNow=false;
-	HoverOnSelectedSavePointNext=false;
-	HoverInSavePointsNow=false;
-	HoverInSavePointsNext=false;
+	HoverOnSelectedSavepointNow=false;
+	HoverOnSelectedSavepointNext=false;
+	HoverInSavepointsNow=false;
+	HoverInSavepointsNext=false;
 	EntireWaveformScrubberLength=-1.0f;
 	EntireWaveformScrubberPosAlpha=-1.0f;
 	EntireWaveformScrubberSpeed=-1.0f;
@@ -91,17 +91,165 @@ NextFrame()
 	WaveformLoopToggleNow=WaveformLoopToggleNext;
 	WaveformLoopToggleNext=false;
 
-	HoverOnSelectedSavePointNow=HoverOnSelectedSavePointNext;
-	HoverOnSelectedSavePointNext=false;
+	HoverOnSelectedSavepointNow=HoverOnSelectedSavepointNext;
+	HoverOnSelectedSavepointNext=false;
 
-	HoverInSavePointsNow=HoverInSavePointsNext;
-	HoverInSavePointsNext=false;
+	HoverInSavepointsNow=HoverInSavepointsNext;
+	HoverInSavepointsNext=false;
 
 	EntireWaveformScrubberForceNow=EntireWaveformScrubberForceNext;
 	EntireWaveformScrubberForceNext=-1.0f;
 
 	HoverElement=HoverElementNext;
 	HoverElementNext=GUI_ELEMENT_NULL;
+
+	if(0)
+	{
+		if(HoverElement == GUI_ELEMENT_NULL)
+		{
+			//
+		}
+		else if(HoverElement == GUI_ELEMENT_FILE_SELECT)
+		{
+			LGL_DebugPrintf("Hover: FILE_SELECT");
+		}
+		else if(HoverElement == GUI_ELEMENT_WAVEFORM)
+		{
+			LGL_DebugPrintf("Hover: WAVEFORM");
+		}
+		else if(HoverElement == GUI_ELEMENT_ENTIRE_WAVEFORM)
+		{
+			LGL_DebugPrintf("Hover: ENTIRE_WAVEFORM");
+		}
+		else if(HoverElement == GUI_ELEMENT_XFADER_LEFT)
+		{
+			LGL_DebugPrintf("Hover: XFADER_LEFT");
+		}
+		else if(HoverElement == GUI_ELEMENT_XFADER_RIGHT)
+		{
+			LGL_DebugPrintf("Hover: XFADER_RIGHT");
+		}
+		else if(HoverElement == GUI_ELEMENT_EQ_LOW)
+		{
+			LGL_DebugPrintf("Hover: EQ_LOW");
+		}
+		else if(HoverElement == GUI_ELEMENT_EQ_MID)
+		{
+			LGL_DebugPrintf("Hover: EQ_MID");
+		}
+		else if(HoverElement == GUI_ELEMENT_EQ_HIGH)
+		{
+			LGL_DebugPrintf("Hover: EQ_HIGH");
+		}
+		else if(HoverElement == GUI_ELEMENT_EQ_GAIN)
+		{
+			LGL_DebugPrintf("Hover: EQ_GAIN");
+		}
+		else if(HoverElement == GUI_ELEMENT_VIDEO)
+		{
+			LGL_DebugPrintf("Hover: VIDEO");
+		}
+		else if(HoverElement == GUI_ELEMENT_VIDEO_FREQSENSE)
+		{
+			LGL_DebugPrintf("Hover: VIDEO_FREQSENSE");
+		}
+		else if(HoverElement == GUI_ELEMENT_SYPHON)
+		{
+			LGL_DebugPrintf("Hover: SYPHON");
+		}
+		else if(HoverElement == GUI_ELEMENT_OSCILLOSCOPE)
+		{
+			LGL_DebugPrintf("Hover: OSCILLOSCOPE");
+		}
+		else if(HoverElement == GUI_ELEMENT_LED_FREQSENSE)
+		{
+			LGL_DebugPrintf("Hover: LED_FREQSENSE");
+		}
+		else if(HoverElement == GUI_ELEMENT_LED_COLOR_LOW)
+		{
+			LGL_DebugPrintf("Hover: LED_COLOR_LOW");
+		}
+		else if(HoverElement == GUI_ELEMENT_LED_COLOR_HIGH)
+		{
+			LGL_DebugPrintf("Hover: LED_COLOR_HIGH");
+		}
+		else if(HoverElement == GUI_ELEMENT_LED_COLOR_HIGH_WASH)
+		{
+			LGL_DebugPrintf("Hover: LED_COLOR_HIGH_WASH");
+		}
+		else if(HoverElement == GUI_ELEMENT_LED_GROUP)
+		{
+			LGL_DebugPrintf("Hover: LED_GROUP");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_0)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_0");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_1)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_1");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_2)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_2");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_3)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_3");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_4)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_4");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_5)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_5");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_6)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_6");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_7)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_7");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_8)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_8");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_9)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_9");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_A)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_A");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_B)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_B");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_POS)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_POS");
+		}
+		else if(HoverElement == GUI_ELEMENT_SAVEPOINT_BPM)
+		{
+			LGL_DebugPrintf("Hover: SAVEPOINT_BPM");
+		}
+		else if(HoverElement == GUI_ELEMENT_LOOP_MEASURES)
+		{
+			LGL_DebugPrintf("Hover: LOOP_MEASURES");
+		}
+		else if(HoverElement == GUI_ELEMENT_BPM)
+		{
+			LGL_DebugPrintf("Hover: BPM");
+		}
+		else if(HoverElement == GUI_ELEMENT_PITCH)
+		{
+			LGL_DebugPrintf("Hover: PITCH");
+		}
+	}
 	
 	if(LGL_MouseRelease(LGL_MOUSE_LEFT))
 	{
@@ -621,7 +769,7 @@ WaveformStutterSpeed
 
 bool
 InputMouseObj::
-WaveformSavePointPrev
+WaveformSavepointPrev
 (
 	unsigned int	target
 )	const
@@ -632,7 +780,7 @@ WaveformSavePointPrev
 
 bool
 InputMouseObj::
-WaveformSavePointNext
+WaveformSavepointNext
 (
 	unsigned int	target
 )	const
@@ -643,7 +791,7 @@ WaveformSavePointNext
 
 int
 InputMouseObj::
-WaveformSavePointPick
+WaveformSavepointPick
 (
 	unsigned int	target
 )	const
@@ -653,15 +801,7 @@ WaveformSavePointPick
 	{
 		if(LGL_MouseStroke(LGL_MOUSE_LEFT))
 		{
-			if(HoverElement==GUI_ELEMENT_SAVEPOINT_BPM_ALPHA)
-			{
-				pick=-2;
-			}
-			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_BPM_OMEGA)
-			{
-				pick=-1;
-			}
-			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_0)
+			if(HoverElement==GUI_ELEMENT_SAVEPOINT_0)
 			{
 				pick=0;
 			}
@@ -701,6 +841,14 @@ WaveformSavePointPick
 			{
 				pick=9;
 			}
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_A)
+			{
+				pick=10;
+			}
+			else if(HoverElement==GUI_ELEMENT_SAVEPOINT_B)
+			{
+				pick=11;
+			}
 		}
 	}
 	return(pick);
@@ -708,7 +856,7 @@ WaveformSavePointPick
 
 bool
 InputMouseObj::
-WaveformSavePointSet
+WaveformSavepointSet
 (
 	unsigned int	target
 )	const
@@ -720,7 +868,7 @@ WaveformSavePointSet
 		{
 			if(LGL_MouseStroke(LGL_MOUSE_LEFT))
 			{
-				if(HoverOnSelectedSavePointNow)
+				if(HoverOnSelectedSavepointNow)
 				{
 					set=true;
 				}
@@ -732,7 +880,7 @@ WaveformSavePointSet
 
 float
 InputMouseObj::
-WaveformSavePointUnsetPercent
+WaveformSavepointUnsetPercent
 (
 	unsigned int	target
 )	const
@@ -744,7 +892,7 @@ WaveformSavePointUnsetPercent
 		{
 			if(LGL_MouseDown(LGL_MOUSE_LEFT))
 			{
-				if(HoverOnSelectedSavePointNow)
+				if(HoverOnSelectedSavepointNow)
 				{
 					percent = LGL_Clamp
 					(
@@ -765,7 +913,7 @@ WaveformSavePointUnsetPercent
 
 float
 InputMouseObj::
-WaveformSavePointShift
+WaveformSavepointShift
 (
 	unsigned int	target
 )	const
@@ -776,7 +924,7 @@ WaveformSavePointShift
 
 float
 InputMouseObj::
-WaveformSavePointShiftAll
+WaveformSavepointShiftAll
 (
 	unsigned int	target
 )	const
@@ -787,7 +935,7 @@ WaveformSavePointShiftAll
 
 bool
 InputMouseObj::
-WaveformSavePointShiftAllHere
+WaveformSavepointShiftAllHere
 (
 	unsigned int	target
 )	const
@@ -798,7 +946,7 @@ WaveformSavePointShiftAllHere
 
 bool
 InputMouseObj::
-WaveformSavePointJumpNow
+WaveformSavepointJumpNow
 (
 	unsigned int	target
 )	const
@@ -809,7 +957,7 @@ WaveformSavePointJumpNow
 
 bool
 InputMouseObj::
-WaveformSavePointJumpAtMeasure
+WaveformSavepointJumpAtMeasure
 (
 	unsigned int	target
 )	const
@@ -1176,7 +1324,11 @@ WaveformSync
 	bool sync=false;
 	if(target & DragTarget)
 	{
-		if(HoverElement == GUI_ELEMENT_BPM_PITCH)
+		if
+		(
+			HoverElement == GUI_ELEMENT_BPM ||
+			HoverElement == GUI_ELEMENT_PITCH
+		)
 		{
 			if(LGL_MouseDown(LGL_MOUSE_LEFT))
 			{
@@ -1267,30 +1419,30 @@ SetWaveformLoopToggleNext()
 
 bool
 InputMouseObj::
-GetHoverOnSelectedSavePoint()
+GetHoverOnSelectedSavepoint()
 {
-	return(HoverOnSelectedSavePointNow);
+	return(HoverOnSelectedSavepointNow);
 }
 
 void
 InputMouseObj::
-SetHoverOnSelectedSavePoint()
+SetHoverOnSelectedSavepoint()
 {
-	HoverOnSelectedSavePointNext=true;;
+	HoverOnSelectedSavepointNext=true;;
 }
 
 bool
 InputMouseObj::
-GetHoverInSavePoints()
+GetHoverInSavepoints()
 {
-	return(HoverInSavePointsNow);
+	return(HoverInSavepointsNow);
 }
 
 void
 InputMouseObj::
-SetHoverInSavePoints()
+SetHoverInSavepoints()
 {
-	HoverInSavePointsNext=true;;
+	HoverInSavepointsNext=true;;
 }
 
 void

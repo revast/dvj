@@ -33,6 +33,28 @@
 const int NOISE_IMAGE_COUNT_256_64 = 64;
 const int ENTIRE_WAVE_ARRAY_COUNT_MAX = 1920*2;
 
+const float WAVE_WIDTH_PERCENT = 0.60f;
+
+const int SAVEPOINT_NUM = 18;
+const int BPM_UNDEF = -1;
+const int BPM_NONE = -2;
+
+class SavepointObj
+{
+
+public:
+
+					SavepointObj();
+					~SavepointObj();
+
+	float				Seconds;
+	float				BPM;
+	float				UnsetNoisePercent;
+	float				UnsetFlashPercent;
+
+
+};
+
 class TurntableObj
 {
 
@@ -53,6 +75,8 @@ public:
 	void				DrawWave(float left, float right, float bottom, float top, float brightness, bool preview);
 	void				DrawSpectrum(float left, float right, float bottom, float top, float glow);
 	void				DrawWholeTrack(float left, float right, float bottom, float top, float glow);
+
+	TurntableObj*			GetOtherTT();
 
 	void				SetViewport
 					(
@@ -110,7 +134,7 @@ public:
 	bool				GetVideoSolo();
 	float				GetTimeSeconds(bool forceNonSmooth=false);
 	float				GetTimeSecondsPrev();
-	bool				GetFreqMetaData
+	bool				GetFreqMetadata
 					(
 						float&	volAve,
 						float&	volMax,
@@ -118,14 +142,14 @@ public:
 					);
 	float				GetVolumePeak();
 
-	bool				GetSavePointIndexAtNull() const;
-
-	void				GetMetaDataPath(char* dst);
-	void				GetCacheMetaDataPath(char* dst);
-	void				LoadMetaData();
-	void				LoadMetaData(const char* data);
-	void				SaveMetaData();
-	const char*			GetMetaDataSavedThisFrame() const;
+	void				GetMetadataPathOld(char* dst);
+	void				GetMetadataPathNew(char* dst);
+	void				GetCacheMetadataPath(char* dst);
+	void				LoadMetadataOld(const char* data);
+	void				LoadMetadataNew(const char* data);
+	void				SaveMetadataOld();
+	void				SaveMetadataNew();
+	const char*			GetMetadataSavedThisFrame() const;
 
 	void				ResetAllCachedData();
 	void				LoadAllCachedData();
@@ -139,6 +163,9 @@ public:
 
 const	char*				GetSoundPath();
 const	char*				GetSoundPathShort();
+const	char*				GetHighlightedPath();
+const	char*				GetHighlightedPathShort();
+const	char*				GetHighlightedNameDisplayed();
 
 	bool				GetPaused();
 	float				GetFinalSpeed();
@@ -150,6 +177,18 @@ const	char*				GetSoundPathShort();
 
 	void				SetLowRez(bool lowRez);
 
+	SavepointObj*			GetCurrentSavepoint();
+	float				GetCurrentSavepointSeconds();
+	float				GetCurrentSavepointBPM();
+	void				SortSavepoints();
+	bool				SavepointIndexAtPlus();
+	float				GetSecondsToSync();
+	float				GetSecondsToSyncToOtherTT();
+	float				GetSecondsToSyncToMidiClock();
+	void				DeriveSoundStrings();
+	void				CreateFindAudioPathThread();
+	void				AttemptToCreateSound();
+
 private:
 
 	float				ViewportLeft;
@@ -159,18 +198,31 @@ private:
 	float				ViewportWidth;
 	float				ViewportHeight;
 
+	float				WaveformLeft;
+	float				WaveformRight;
+	float				WaveformBottom;
+	float				WaveformTop;
+	float				WaveformWidth;
+	float				WaveformHeight;
+
 	bool				Focus;
+	bool				FocusPrev;
 
 	int				Mode;	//0=File Select
 						//1=Loading...
 						//2=Waveform
+	LGL_Timer			Mode0Timer;
 	LGL_Timer			Mode1Timer;
+	LGL_Timer			Mode2Timer;
 	LGL_Sound*			Sound;
-	char				SoundName[2048];
+public:
+	int				SoundSampleNow;
+private:
+	char				SoundName[2048];	//I want to factor this out
 public:
 	char				SoundSrcPath[2048];
 private:
-	char				SoundSrcPathShort[2048];
+	char				SoundSrcNameDisplayed[2048];
 	char				SoundSrcDir[2048];
 public:
 	char				FoundVideoPath[2048];
@@ -179,9 +231,12 @@ public:
 	bool				FindAudioPathDone;
 private:
 	SDL_Thread*			FindAudioPathThread;
+	SDL_Thread*			WarmMemoryThread;
+public:
+	int				WarmMemoryThreadTerminateSignal;
 	Uint8*				SoundBuffer;
 	unsigned long			SoundBufferLength;
-	unsigned long			SoundBufferCurrentPageIndex;
+private:
 	LGL_AudioGrainStream		GrainStream;
 	bool				GrainStreamActive;
 	float				GrainStreamActiveSeconds;
@@ -212,6 +267,7 @@ private:
 
 	LGL_InputBuffer			FilterText;
 	char				FilterTextMostRecent[1024];
+	int				FilterTextMostRecentBPM;
 
 	LGL_Timer			DecodeTimer;
 
@@ -266,14 +322,20 @@ private:
 	bool				LoopActive;
 	bool				LoopThenRecallActive;
 	bool				AutoDivergeRecallActive;
-	int				SavePointIndex;
-	double				SavePointSeconds[18];
-	char*				MetaDataSavedThisFrame;
-	LGL_FileToRam*			MetaDataFileToRam;
+	int				SavepointIndex;
+	std::vector<SavepointObj>	Savepoints;
+#if	USE_OLD_SAVEPOINTS
+	double				SavepointSeconds[SAVEPOINT_NUM];
+	float				SavepointUnsetNoisePercent[SAVEPOINT_NUM];
+	float				SavepointUnsetFlashPercent[SAVEPOINT_NUM];
+#endif
+	char*				MetadataSavedThisFrame;
+	LGL_FileToRam*			MetadataFileToRam;
+	std::vector<LGL_FileToRam*>	MetadataFileToRamDeathRow;
 	double				SmoothWaveformScrollingSample;
 	double				SmoothWaveformScrollingSampleRate;
-	float				SavePointUnsetNoisePercent[18];
-	float				SavePointUnsetFlashPercent[18];
+	double				SmoothWaveformScrollingSampleRateRemembered;
+	double				SmoothWaveformScrollingSampleExactUponDifferent;
 
 	void				Diverge();
 	void				Recall();
@@ -337,6 +399,14 @@ public:
 	float				GetEQLo();
 	float				GetEQMid();
 	float				GetEQHi();
+	float				GetEQVUL();
+	float				GetEQVUM();
+	float				GetEQVUH();
+	float				GetEQVUPeakL();
+	float				GetEQVUPeakM();
+	float				GetEQVUPeakH();
+	float				GetVU();
+	float				GetVUPeak();
 
 	bool				GetMaster();
 	void				SetMaster();
@@ -348,8 +418,6 @@ static	float				GetSecondsSinceFileEverOpened();
 
 private:
 
-	float				BPM;
-	bool				BPMRecalculationRequired;
 	float				BPMMaster;
 	double				SecondsLast;
 	double				SecondsNow;
@@ -357,6 +425,10 @@ private:
 	float				EQFinal[3];
 	float				EQKnob[3];
 	bool				EQKill[3];
+	float				EQPeak[3];
+	LGL_Timer			EQPeakDropTimer[3];
+	float				VUPeak;
+	LGL_Timer			VUPeakDropTimer;
 	float				FreqResponse[513];
 
 	float				WhiteFactor;
@@ -387,8 +459,12 @@ static	bool				SurroundMode;
 	bool				EncodeEveryTrack;
 	int				EncodeEveryTrackIndex;
 
+	char				DenyPreviewNameDisplayed[2048];
+
 	dvjListSelector			ListSelector;
 	void				UpdateListSelector();
+
+	bool				InputUnsetDebounce;
 
 public:
 
@@ -397,12 +473,15 @@ static	bool				GetSurroundMode();
 	void				SelectNewVideo(bool forceAmbient=false);
 	bool				BPMAvailable();
 	float				GetBPM();
-	float				GetBPMAdjusted();
+	float				GetBPMAdjusted(bool normalize=true);
+	float				GetBPMFromDeltaSeconds(float deltaSeconds);
 	float				GetBPMFirstBeatSeconds();
 	float				GetBPMFirstMeasureSeconds();
 	float				GetBPMLastMeasureSeconds();
+	float				GetBPMAnchorMeasureSeconds();
 	void				SetBPMAdjusted(float bpmAdjusted);
 	void				SetBPMMaster(float bpmMaster);
+	void				SetPitchbend(float pitchbend=1.0f);
 	bool				GetBeatThisFrame(float fractionOfBeat=1.0f);
 	double				GetPercentOfCurrentMeasure(float measureMultiplier=1.0f, bool recalculateSecondsNow=false);
 	double				GetBeginningOfCurrentMeasureSeconds(float measureMultiplier=1.0f, bool recalculateSecondsNow=false);
@@ -411,7 +490,7 @@ static	bool				GetSurroundMode();
 	bool				GetRhythmicSoloInvert();
 	void				SetRespondToRhythmicSoloInvert(int soloChannel);
 	void				BlankFilterTextIfMode0();
-	void				FileSelectToString(const char* str);
+	bool				ListSelectorToString(const char* str);
 	float				GetNoiseFactorVideo();
 	void				SetNoiseFactorVideo(float noiseFactor);
 

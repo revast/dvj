@@ -12,6 +12,8 @@
 
 #include "LGL.module/LGL.h"
 
+const char* iTunesMusicStr = "iTunes Music";
+
 //DatabaseFilterObj
 
 DatabaseFilterObj::
@@ -143,6 +145,18 @@ DatabaseEntryObj
 	PathDir[strlen(PathDir)-1]='\0';
 	pathShort[0]=tmp;
 
+	NameDisplayed=NULL;
+	if(strstr(PathFull,iTunesMusicStr))
+	{
+		DatabaseObj::GenerateiTunesNameDisplayed(PathFull,NameDisplayed);
+	}
+
+	if(NameDisplayed==NULL)
+	{
+		NameDisplayed = new char[strlen(PathShort)+1];
+		strcpy(NameDisplayed,PathShort);
+	}
+
 	BPM=bpm;
 	if(type!=LGL_FILETYPE_UNDEF)
 	{
@@ -172,6 +186,9 @@ DatabaseEntryObj::
 
 	delete PathShort;
 	PathShort=NULL;
+
+	delete NameDisplayed;
+	NameDisplayed=NULL;
 }
 
 bool
@@ -221,15 +238,32 @@ MatchesFilter
 	{
 		unsigned int filterLen = (unsigned int)strlen(filter->Dir);
 		unsigned int entryLen = (unsigned int)strlen(PathDir);
-		if(filterLen!=entryLen)
+		if(GetOldFileStructure())
 		{
-			return(false);
-		}
-		for(unsigned int a=0;a<entryLen;a++)
-		{
-			if(tolower(PathDir[a])!=tolower(filter->Dir[a]))
+			if(filterLen!=entryLen)
 			{
 				return(false);
+			}
+			for(unsigned int a=0;a<entryLen;a++)
+			{
+				if(tolower(PathDir[a])!=tolower(filter->Dir[a]))
+				{
+					return(false);
+				}
+			}
+		}
+		else
+		{
+			if(filterLen>entryLen)
+			{
+				return(false);
+			}
+			for(unsigned int a=0;a<filterLen;a++)
+			{
+				if(tolower(PathDir[a])!=tolower(filter->Dir[a]))
+				{
+					return(false);
+				}
 			}
 		}
 	}
@@ -276,7 +310,14 @@ MatchesFilter
 		unsigned int wordCount=(unsigned int)filterWordList.size();
 		for(unsigned int b=0;b<wordCount;b++)
 		{
+			/*
 			if(strcasestr(PathShort,filterWordList[b])==NULL)
+			{
+				match=false;
+				break;
+			}
+			*/
+			if(strcasestr(NameDisplayed,filterWordList[b])==NULL)
 			{
 				match=false;
 				break;
@@ -626,96 +667,160 @@ Refresh_Internal
 
 		float bpm=0;
 		const char* dirTreeGetFileName = dirTree.GetFileName(a);
-		char pathMeta[2048];
-		char pathMetaShort[2048];
-		sprintf(pathMetaShort,"%s.dvj-metadata.txt",dirTreeGetFileName);
-		sprintf(pathMeta,"%s/.dvj/metadata/%s",LGL_GetHomeDir(),pathMetaShort);
-
-		bool metaExists=false;
-		if(SkipMetadataHint==false)
+		char* nameDisplayediTunes=NULL;
+		if(strstr(path,iTunesMusicStr))
 		{
-			for(unsigned int m=0;m<MetadataEntryList.size();m++)
+			GenerateiTunesNameDisplayed(path,nameDisplayediTunes);
+			dirTreeGetFileName = nameDisplayediTunes;
+		}
+
+		//Look for new metadata
+		{
+			char pathMeta[2048];
+			char pathMetaShort[2048];
+			sprintf(pathMetaShort,"%s.savepoints.txt",dirTreeGetFileName);
+			sprintf(pathMeta,"%s/.dvj/metadata/%s",LGL_GetHomeDir(),pathMetaShort);
+
+			bool metaExists=false;
+			if(SkipMetadataHint==false)
 			{
-				if(strcmp(pathMetaShort,MetadataEntryList[m])==0)
+				//TODO: Make this more efficient
+				for(unsigned int m=0;m<MetadataEntryList.size();m++)
 				{
-					metaExists=true;
-					break;
+					if(strcmp(pathMetaShort,MetadataEntryList[m])==0)
+					{
+						metaExists=true;
+						break;
+					}
+				}
+			}
+
+			if(metaExists)//LGL_FileExists(pathMeta))
+			{
+				if(FILE* fd=fopen(pathMeta,"r"))
+				{
+					FileInterfaceObj fi;
+					for(;;)
+					{
+						fi.ReadLine(fd);
+						if(feof(fd))
+						{
+							break;
+						}
+						if(fi.Size()!=3)
+						{
+							continue;
+						}
+
+						if(strcasecmp(fi[0],"Savepoint")==0)
+						{
+							float tmpBPM = atof(fi[2]);
+							if(tmpBPM>0)
+							{
+								bpm=tmpBPM;
+								break;
+							}
+						}
+					}
+
+					fclose(fd);
+					fd=NULL;
 				}
 			}
 		}
 
-		if(metaExists)//LGL_FileExists(pathMeta))
+		//Look for old metadata
+		if(bpm==0)
 		{
-			LGL_Timer timer;
-			if(FILE* fd=fopen(pathMeta,"r"))
+			char pathMeta[2048];
+			char pathMetaShort[2048];
+			sprintf(pathMetaShort,"%s.dvj-metadata.txt",dirTreeGetFileName);
+			sprintf(pathMeta,"%s/.dvj/metadata/%s",LGL_GetHomeDir(),pathMetaShort);
+
+			bool metaExists=false;
+			if(SkipMetadataHint==false)
 			{
-				FileInterfaceObj fi;
-				float bpmStart=-1;
-				float bpmEnd=-1;
-				for(;;)
+				//TODO: Make this more efficient
+				for(unsigned int m=0;m<MetadataEntryList.size();m++)
 				{
-					fi.ReadLine(fd);
-					if(feof(fd))
+					if(strcmp(pathMetaShort,MetadataEntryList[m])==0)
 					{
+						metaExists=true;
 						break;
 					}
-					if(fi.Size()==0)
-					{
-						continue;
-					}
-					if
-					(
-						strcasecmp(fi[0],"HomePoints")==0 ||
-						strcasecmp(fi[0],"SavePoints")==0
-					)
-					{
-						if(fi.Size()!=19)
-						{
-							printf("DatbaseObj::LoadMetaData('%s'): Warning!\n",path);
-							printf("\tSavePoints has strange fi.size() of '%i' (Expecting 11)\n",fi.Size());
-						}
-						for(unsigned int a=0;a<fi.Size()-1 && a<2;a++)
-						{
-							if(a==0)
-							{
-								bpmStart=atof(fi[a+1]);
-							}
-							else if(a==1)
-							{
-								bpmEnd=atof(fi[a+1]);
-							}
-						}
-					}
 				}
-
-				if(bpmStart!=-1 && bpmEnd!=-1)
-				{
-					int bpmMin=100;
-					float p0=bpmStart;
-					float p1=bpmEnd;
-					float dp=p1-p0;
-					int measuresGuess=1;
-					float bpmGuess;
-					if(dp!=0)
-					{
-						for(int a=0;a<10;a++)
-						{
-							bpmGuess=(4*measuresGuess)/(dp/60.0f);
-							if(bpmGuess>=bpmMin)
-							{
-								bpm=bpmGuess;
-								break;
-							}
-							measuresGuess*=2;
-						}
-					}
-				}
-
-				fclose(fd);
-				fd=NULL;
 			}
 
-			if(timer.SecondsSinceLastReset()>0.5f) printf("Long fopen(): %.2f\n",timer.SecondsSinceLastReset());
+			if(metaExists)//LGL_FileExists(pathMeta))
+			{
+				if(FILE* fd=fopen(pathMeta,"r"))
+				{
+					FileInterfaceObj fi;
+					float bpmStart=-1;
+					float bpmEnd=-1;
+					for(;;)
+					{
+						fi.ReadLine(fd);
+						if(feof(fd))
+						{
+							break;
+						}
+						if(fi.Size()==0)
+						{
+							continue;
+						}
+						if
+						(
+							strcasecmp(fi[0],"HomePoints")==0 ||
+							strcasecmp(fi[0],"SavePoints")==0
+						)
+						{
+							if(fi.Size()!=19)
+							{
+								printf("DatbaseObj::LoadMetaData('%s'): Warning!\n",path);
+								printf("\tSavePoints has strange fi.size() of '%i' (Expecting 11)\n",fi.Size());
+							}
+							for(unsigned int a=0;a<fi.Size()-1 && a<2;a++)
+							{
+								if(a==0)
+								{
+									bpmStart=atof(fi[a+1]);
+								}
+								else if(a==1)
+								{
+									bpmEnd=atof(fi[a+1]);
+								}
+							}
+						}
+					}
+
+					if(bpmStart!=-1 && bpmEnd!=-1)
+					{
+						int bpmMin=100;
+						float p0=bpmStart;
+						float p1=bpmEnd;
+						float dp=p1-p0;
+						int measuresGuess=1;
+						float bpmGuess;
+						if(dp!=0)
+						{
+							for(int a=0;a<10;a++)
+							{
+								bpmGuess=(4*measuresGuess)/(dp/60.0f);
+								if(bpmGuess>=bpmMin)
+								{
+									bpm=bpmGuess;
+									break;
+								}
+								measuresGuess*=2;
+							}
+						}
+					}
+
+					fclose(fd);
+					fd=NULL;
+				}
+			}
 		}
 
 		DatabaseEntryObj* ent = new DatabaseEntryObj(path,bpm,LGL_FILETYPE_FILE);
@@ -733,6 +838,12 @@ Refresh_Internal
 		else
 		{
 			ThreadCompletionPercent=-1.0f;
+		}
+
+		if(nameDisplayediTunes)
+		{
+			delete nameDisplayediTunes;
+			nameDisplayediTunes=NULL;
 		}
 	}
 
@@ -836,6 +947,176 @@ ClearDatabaseEntryList()
 	}
 
 	DatabaseEntryList.clear();
+}
+
+void
+DatabaseObj::
+GenerateiTunesNameDisplayed
+(
+	const char* pathFull,
+	char*&	nameDisplayed
+)
+{
+	const char* pathShort = pathFull;
+	while(const char* slash = strchr(pathShort,'/'))
+	{
+		if(slash[1]!='\0')
+		{
+			pathShort=&(slash[1]);
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	if(strstr(pathFull,iTunesMusicStr)==NULL)
+	{
+		nameDisplayed = new char[strlen(pathShort)+1];
+		strcpy(nameDisplayed,pathShort);
+		return;
+	}
+
+	char* tmpAlpha;
+	char* tmpOmega;
+	char* artist=NULL;
+	char* album=NULL;
+	char* track=NULL;
+	char* name=NULL;
+	if((tmpAlpha = strstr(pathFull,iTunesMusicStr)))
+	{
+		//Found "iTunes Music"
+		tmpAlpha = strstr(tmpAlpha,"/");
+		if(tmpAlpha)
+		{
+			tmpAlpha = &(tmpAlpha[1]);
+			if((tmpOmega = strstr(tmpAlpha,"/")))
+			{
+				//Extract artist
+				tmpOmega[0]='\0';
+				artist = new char[strlen(tmpAlpha)+1];
+				strcpy(artist,tmpAlpha);
+				tmpOmega[0]='/';
+				tmpAlpha=&(tmpOmega[1]);
+
+				if(tmpAlpha[0])
+				{
+					//Extract album
+					if((tmpOmega = strstr(tmpAlpha,"/")))
+					{
+						tmpOmega[0]='\0';
+						album = new char[strlen(tmpAlpha)+1];
+						strcpy(album,tmpAlpha);
+						tmpOmega[0]='/';
+						tmpAlpha=&(tmpOmega[1]);
+
+						if(tmpAlpha[0])
+						{
+							//Extract track
+							if
+							(
+								tmpAlpha[0] >= '0' && tmpAlpha[0]<='9' &&
+								tmpAlpha[1] >= '0' && tmpAlpha[1]<='9' &&
+								tmpAlpha[2] == ' '
+							)
+							{
+								//"01 name"
+								track = new char[3];
+								track[0]=tmpAlpha[0];
+								track[1]=tmpAlpha[1];
+								track[2]='\0';
+								tmpAlpha=&(tmpAlpha[3]);
+							}
+							else if
+							(
+								tmpAlpha[0] >= '0' && tmpAlpha[0]<='9' &&
+								tmpAlpha[1] == '-' &&
+								tmpAlpha[2] >= '0' && tmpAlpha[0]<='9' &&
+								tmpAlpha[3] >= '0' && tmpAlpha[1]<='9' &&
+								tmpAlpha[4] == ' '
+							)
+							{
+								//"3-01 name"
+								track = new char[4];
+								track[0]=tmpAlpha[0];
+								track[1]=tmpAlpha[2];
+								track[2]=tmpAlpha[3];
+								track[3]='\0';
+								tmpAlpha = &(tmpAlpha[5]);
+							}
+							else
+							{
+								//track shall remain NULL
+							}
+
+							//Extract name
+							name = new char[strlen(tmpAlpha)+1];
+							strcpy(name,tmpAlpha);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if
+	(
+		artist &&
+		album &&
+		name
+	)
+	{
+		char tmpLong[2048];
+		if(track)
+		{
+			snprintf
+			(
+				tmpLong,
+				sizeof(tmpLong)-1,
+				"%s - %s (%s) - %s",
+				artist,
+				album,
+				track,
+				name
+			);
+		}
+		else
+		{
+			snprintf
+			(
+				tmpLong,
+				sizeof(tmpLong)-1,
+				"%s - %s - %s",
+				artist,
+				album,
+				name
+			);
+		}
+
+		nameDisplayed = new char[strlen(tmpLong)+1];
+		strcpy(nameDisplayed,tmpLong);
+	}
+
+	if(artist)
+	{
+		delete artist;
+		artist=NULL;
+	}
+	if(album)
+	{
+		delete album;
+		album=NULL;
+	}
+	if(track)
+	{
+		delete track;
+		track=NULL;
+	}
+	if(name)
+	{
+		delete name;
+		name=NULL;
+	}
 }
 
 

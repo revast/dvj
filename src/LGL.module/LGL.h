@@ -145,6 +145,7 @@ enum
 	LGL_KEY_CARET		= SDLK_CARET,
 	LGL_KEY_UNDERSCORE	= SDLK_UNDERSCORE,
 	LGL_KEY_BACKQUOTE	= SDLK_BACKQUOTE,
+	//LGL_KEY_TILDE		= '~',
 	LGL_KEY_A		= SDLK_a,
 	LGL_KEY_B		= SDLK_b,
 	LGL_KEY_C		= SDLK_c,
@@ -240,6 +241,11 @@ enum
 
 #define LGL_PI	3.1415926535
 #define LGL_DISPLAY_MAX	2
+
+#define LGL_EQ_SAMPLES_FFT	(1024*4)
+
+#define	LGL_EQ_LOWMID	(3)
+#define	LGL_EQ_MIDHIGH (16)
 
 //Endian macros for dealing with OSX's big-endian-ness (this'll be fun when they move to intel...)
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN
@@ -1799,9 +1805,21 @@ public:
 			LGL_AudioDSP();
 			~LGL_AudioDSP();
 	
-	void		ProcessLeft	(const float* input, float* output, unsigned long samples);
-	void		ProcessRight	(const float* input, float* output, unsigned long samples);
-	void		ProcessStereo	(const float* input, float* output, unsigned long samples);
+	void		ProcessLeft	(const float* input, float* output,
+					float&	eq_vu_l,
+					float&	eq_vu_m,
+					float&	eq_vu_h,
+					unsigned long samples);
+	void		ProcessRight	(const float* input, float* output,
+					float&	eq_vu_l,
+					float&	eq_vu_m,
+					float&	eq_vu_h,
+					unsigned long samples);
+	void		ProcessStereo	(const float* input, float* output,
+					float&	eq_vu_l,
+					float&	eq_vu_m,
+					float&	eq_vu_h,
+					unsigned long samples);
 
 	void		SetFreqResponse	(float*		freqResponseArrayOf513);
 
@@ -1813,9 +1831,13 @@ private:
 				float*		userInput,
 				float*		userOutput,
 				float*		carryOver,
+				float&		eq_vu_l,
+				float&		eq_vu_m,
+				float&		eq_vu_h,
 				unsigned long	samples
 			);
 
+/*
 	void		ProcessChannelStereo
 			(
 				const
@@ -1827,15 +1849,16 @@ private:
 				float*		carryOverR,
 				unsigned long	samples
 			);
+*/
 
-	float		CarryOverLeft[2048];
-	float		CarryOverRight[2048];
+	float		CarryOverLeft[LGL_EQ_SAMPLES_FFT*4];
+	float		CarryOverRight[LGL_EQ_SAMPLES_FFT*4];
 
-	float		FreqResponseReal[1024];
-	float		FreqResponseImaginary[1024];
+	float		FreqResponseReal[LGL_EQ_SAMPLES_FFT*2];
+	float		FreqResponseImaginary[LGL_EQ_SAMPLES_FFT*2];
 
-	float		FreqResponseNextReal[1024];
-	float		FreqResponseNextImaginary[1024];
+	float		FreqResponseNextReal[LGL_EQ_SAMPLES_FFT*2];
+	float		FreqResponseNextImaginary[LGL_EQ_SAMPLES_FFT*2];
 	bool		FreqResponseNextAvailable;
 	LGL_Semaphore	FreqResponseNextSemaphore;
 };
@@ -2205,6 +2228,7 @@ public:
 	//bool		SetDivergeRecallEnd(int channel);
 	bool		DivergeRecallPush(int channel, float speed=-1.0f);
 	bool		DivergeRecallPop(int channel, bool recall=true);
+	long		GetDivergeRecallSampleCount(int channel);
 	int		GetDivergeRecallCount(int channel);
 	bool		GetWarpPointIsSet(int channel);
 	bool		GetWarpPointIsLoop(int channel);
@@ -2219,6 +2243,9 @@ public:
 	int		GetRespondToRhythmicSoloInvertCurrentValue(int channel);
 
 	float		GetVU(int channel) const;
+	float		GetEQVUL(int channel) const;
+	float		GetEQVUM(int channel) const;
+	float		GetEQVUH(int channel) const;
 
 	float		GetLengthSeconds();
 	long		GetLengthSamples();
@@ -2263,8 +2290,8 @@ const	char*		GetPathShort() const;
 
 private:
 
-	char		Path[1024];
-	char		PathShort[1024];
+	char		Path[2048];
+	char		PathShort[2048];
 	Uint8*		Buffer;
 	unsigned long	BufferLength;
 	unsigned long	BufferLengthTotal;
@@ -2580,7 +2607,7 @@ unsigned int	LGL_MidiDeviceCount();
 const char*	LGL_MidiDeviceName(unsigned int which);
 
 float		LGL_MidiClockBPM();
-float		LGL_MidiClockPercentOfCurrentMeasure();
+float		LGL_MidiClockPercentOfCurrentMeasure(float measureMultiplier=1.0f);
 
 
 
@@ -3635,6 +3662,10 @@ private:
 	lgl_LEDHost*
 		LEDHost;
 };
+
+
+
+void LGL_SpawnMainThreadBlockDetector();
 
 
 

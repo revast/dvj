@@ -25,7 +25,7 @@
 
 #include "InputMouse.h"
 
-#define	KNOB_SCALAR	(4.0f)
+#define	KNOB_SCALAR	(8.0f)
 
 InputMultiTouchObj&
 GetInputMultiTouch()
@@ -285,7 +285,7 @@ WaveformPitchbendDelta
 		if
 		(
 			(
-				GetInputMouse().GetHoverElement()==GUI_ELEMENT_BPM_PITCH &&
+				GetInputMouse().GetHoverElement()==GUI_ELEMENT_PITCH &&
 				LGL_MultiTouchFingerCount()>=2
 			) ||
 			(
@@ -627,7 +627,7 @@ WaveformStutterSpeed
 
 bool
 InputMultiTouchObj::
-WaveformSavePointPrev
+WaveformSavepointPrev
 (
 	unsigned int	target
 )	const
@@ -638,7 +638,7 @@ WaveformSavePointPrev
 
 bool
 InputMultiTouchObj::
-WaveformSavePointNext
+WaveformSavepointNext
 (
 	unsigned int	target
 )	const
@@ -649,7 +649,7 @@ WaveformSavePointNext
 
 int
 InputMultiTouchObj::
-WaveformSavePointPick
+WaveformSavepointPick
 (
 	unsigned int	target
 )	const
@@ -660,7 +660,7 @@ WaveformSavePointPick
 
 bool
 InputMultiTouchObj::
-WaveformSavePointSet
+WaveformSavepointSet
 (
 	unsigned int	target
 )	const
@@ -671,7 +671,7 @@ WaveformSavePointSet
 
 float
 InputMultiTouchObj::
-WaveformSavePointUnsetPercent
+WaveformSavepointUnsetPercent
 (
 	unsigned int	target
 )	const
@@ -680,9 +680,11 @@ WaveformSavePointUnsetPercent
 	return(percent);
 }
 
+const float SHIFT_MULT=50.0f;
+
 float
 InputMultiTouchObj::
-WaveformSavePointShift
+WaveformSavepointShift
 (
 	unsigned int	target
 )	const
@@ -690,11 +692,20 @@ WaveformSavePointShift
 	float shift=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverOnSelectedSavePoint())
+		if//(GetInputMouse().GetHoverOnSelectedSavepoint())
+		(
+			GetInputMouse().GetHoverElement()==GUI_ELEMENT_SAVEPOINT_POS &&
+			LGL_MultiTouchFingerCount()>=2
+		)
 		{
 			if(LGL_MultiTouchFingerCount()==2)
 			{
-				shift=0.15f*LGL_MultiTouchDX2();
+				float mult = 0.1f;
+				if(LGL_KeyDown(LGL_KEY_SHIFT))
+				{
+					mult*=SHIFT_MULT;
+				}
+				shift=mult*LGL_MultiTouchDX2();
 			}
 		}
 	}
@@ -703,7 +714,7 @@ WaveformSavePointShift
 
 float
 InputMultiTouchObj::
-WaveformSavePointShiftAll
+WaveformSavepointShiftAll
 (
 	unsigned int	target
 )	const
@@ -711,11 +722,11 @@ WaveformSavePointShiftAll
 	float shift=0.0f;
 	if(target & TARGET_FOCUS)
 	{
-		if(GetInputMouse().GetHoverInSavePoints())
+		if(GetInputMouse().GetHoverInSavepoints())
 		{
 			if(LGL_MultiTouchFingerCount()==3)
 			{
-				shift=0.15f*LGL_MultiTouchDX2();
+				shift=0.15f*LGL_MultiTouchDY2();
 			}
 		}
 	}
@@ -724,7 +735,7 @@ WaveformSavePointShiftAll
 
 bool
 InputMultiTouchObj::
-WaveformSavePointShiftAllHere
+WaveformSavepointShiftAllHere
 (
 	unsigned int	target
 )	const
@@ -733,9 +744,39 @@ WaveformSavePointShiftAllHere
 	return(here);
 }
 
+float
+InputMultiTouchObj::
+WaveformSavepointShiftBPM
+(
+	unsigned int	target
+)	const
+{
+	float shift=0.0f;
+	if(target & TARGET_FOCUS)
+	{
+		if//(GetInputMouse().GetHoverOnSelectedSavepoint())
+		(
+			GetInputMouse().GetHoverElement()==GUI_ELEMENT_SAVEPOINT_BPM &&
+			LGL_MultiTouchFingerCount()>=2
+		)
+		{
+			if(LGL_MultiTouchFingerCount()==2)
+			{
+				float mult = 1.0f;
+				if(LGL_KeyDown(LGL_KEY_SHIFT))
+				{
+					mult*=SHIFT_MULT;
+				}
+				shift=mult*LGL_MultiTouchDX2();
+			}
+		}
+	}
+	return(shift);
+}
+
 bool
 InputMultiTouchObj::
-WaveformSavePointJumpNow
+WaveformSavepointJumpNow
 (
 	unsigned int	target
 )	const
@@ -746,7 +787,7 @@ WaveformSavePointJumpNow
 
 bool
 InputMultiTouchObj::
-WaveformSavePointJumpAtMeasure
+WaveformSavepointJumpAtMeasure
 (
 	unsigned int	target
 )	const

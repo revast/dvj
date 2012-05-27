@@ -593,70 +593,70 @@ InputOscObj(int port) :
 			}
 		}
 
-		//SavePointPrev
+		//SavepointPrev
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSavePointPrevOscElement[a],
+					WaveformSavepointPrevOscElement[a],
 					WAVEFORM_SAVEPOINT_PREV,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
 					1.0f,
 					0.0f,
-					InputWaveformSavePointPrev,
+					InputWaveformSavepointPrev,
 					false
 				);
 			}
 		}
 
-		//SavePointNext
+		//SavepointNext
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSavePointNextOscElement[a],
+					WaveformSavepointNextOscElement[a],
 					WAVEFORM_SAVEPOINT_NEXT,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
 					1.0f,
 					0.0f,
-					InputWaveformSavePointNext,
+					InputWaveformSavepointNext,
 					false
 				);
 			}
 		}
 
-		//SavePointSet
+		//SavepointSet
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSavePointSetOscElement[a],
+					WaveformSavepointSetOscElement[a],
 					WAVEFORM_SAVEPOINT_SET,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
 					1.0f,
 					0.0f,
-					InputWaveformSavePointSet,
+					InputWaveformSavepointSet,
 					true
 				);
 			}
 		}
 
-		//SavePointShiftBackward
+		//SavepointShiftBackward
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSavePointShiftBackwardOscElement[a],
+					WaveformSavepointShiftBackwardOscElement[a],
 					WAVEFORM_SAVEPOINT_SHIFT_BACKWARD,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
@@ -669,13 +669,13 @@ InputOscObj(int port) :
 			}
 		}
 
-		//SavePointShiftForward
+		//SavepointShiftForward
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSavePointShiftForwardOscElement[a],
+					WaveformSavepointShiftForwardOscElement[a],
 					WAVEFORM_SAVEPOINT_SHIFT_FORWARD,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
@@ -688,13 +688,13 @@ InputOscObj(int port) :
 			}
 		}
 
-		//SavePointShiftAllBackward
+		//SavepointShiftAllBackward
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSavePointShiftAllBackwardOscElement[a],
+					WaveformSavepointShiftAllBackwardOscElement[a],
 					WAVEFORM_SAVEPOINT_SHIFT_ALL_BACKWARD,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
@@ -707,13 +707,13 @@ InputOscObj(int port) :
 			}
 		}
 
-		//SavePointShiftAllForward
+		//SavepointShiftAllForward
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSavePointShiftAllForwardOscElement[a],
+					WaveformSavepointShiftAllForwardOscElement[a],
 					WAVEFORM_SAVEPOINT_SHIFT_ALL_FORWARD,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
@@ -726,39 +726,39 @@ InputOscObj(int port) :
 			}
 		}
 
-		//SavePointJumpNow
+		//SavepointJumpNow
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSavePointJumpNowOscElement[a],
+					WaveformSavepointJumpNowOscElement[a],
 					WAVEFORM_SAVEPOINT_JUMP_NOW,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
 					1.0f,
 					0.0f,
-					InputWaveformSavePointJumpNow,
+					InputWaveformSavepointJumpNow,
 					false
 				);
 			}
 		}
 
-		//SavePointJumpAtMeasure
+		//SavepointJumpAtMeasure
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformSavePointJumpAtMeasureOscElement[a],
+					WaveformSavepointJumpAtMeasureOscElement[a],
 					WAVEFORM_SAVEPOINT_JUMP_AT_MEASURE,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
 					1.0f,
 					0.0f,
-					InputWaveformSavePointJumpAtMeasure,
+					InputWaveformSavepointJumpAtMeasure,
 					false
 				);
 			}
@@ -1130,13 +1130,13 @@ NextFrame()
 		OscElementList[e]->SwapBackFront();
 	}
 
-	//Update SavePointSet/Unset
+	//Update SavepointSet/Unset
 	{
 		for(int a=0;a<2;a++)
 		{
-			if(WaveformSavePointSetOscElement[a].GetFloat()==0.0f)
+			if(WaveformSavepointSetOscElement[a].GetFloat()==0.0f)
 			{
-				SavePointUnsetTimer[a].Reset();
+				SavepointUnsetTimer[a].Reset();
 			}
 		}
 	}
@@ -1332,8 +1332,8 @@ FileScroll
 	scroll -= FileScrollPrevOscElement[GetIndexFromTarget(target)].GetFloat();
 	scroll += FileScrollNextOscElement[GetIndexFromTarget(target)].GetFloat();
 	scroll += WaveformRewindFF(target)/4.0f;
-	scroll -= WaveformSavePointPrev(target);
-	scroll += WaveformSavePointNext(target);
+	scroll -= WaveformSavepointPrev(target);
+	scroll += WaveformSavepointNext(target);
 	return(scroll);
 }
 
@@ -1707,29 +1707,29 @@ WaveformStutterSpeed
 
 bool
 InputOscObj::
-WaveformSavePointPrev
+WaveformSavepointPrev
 (
 	unsigned int	target
 )	const
 {
-	bool prev = WaveformSavePointPrevOscElement[GetIndexFromTarget(target)].GetFloat();
+	bool prev = WaveformSavepointPrevOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(prev);
 }
 
 bool
 InputOscObj::
-WaveformSavePointNext
+WaveformSavepointNext
 (
 	unsigned int	target
 )	const
 {
-	bool next = WaveformSavePointNextOscElement[GetIndexFromTarget(target)].GetFloat();
+	bool next = WaveformSavepointNextOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(next);
 }
 
 int
 InputOscObj::
-WaveformSavePointPick
+WaveformSavepointPick
 (
 	unsigned int	target
 )	const
@@ -1740,28 +1740,28 @@ WaveformSavePointPick
 
 bool
 InputOscObj::
-WaveformSavePointSet
+WaveformSavepointSet
 (
 	unsigned int	target
 )	const
 {
-	bool set = WaveformSavePointSetOscElement[GetIndexFromTarget(target)].GetFloat();
-	set &= WaveformSavePointSetOscElement[GetIndexFromTarget(target)].GetTweak();
+	bool set = WaveformSavepointSetOscElement[GetIndexFromTarget(target)].GetFloat();
+	set &= WaveformSavepointSetOscElement[GetIndexFromTarget(target)].GetTweak();
 	return(set);
 }
 
 float
 InputOscObj::
-WaveformSavePointUnsetPercent
+WaveformSavepointUnsetPercent
 (
 	unsigned int	target
 )	const
 {
 	float percent=0.0f;
 	
-	if(WaveformSavePointSetOscElement[GetIndexFromTarget(target)].GetFloat())
+	if(WaveformSavepointSetOscElement[GetIndexFromTarget(target)].GetFloat())
 	{
-		percent=LGL_Min(1.0f,SavePointUnsetTimer[GetIndexFromTarget(target)].SecondsSinceLastReset()*2.0f);
+		percent=LGL_Min(1.0f,SavepointUnsetTimer[GetIndexFromTarget(target)].SecondsSinceLastReset()*2.0f);
 	}
 
 	return(percent);
@@ -1769,35 +1769,35 @@ WaveformSavePointUnsetPercent
 
 float
 InputOscObj::
-WaveformSavePointShift
+WaveformSavepointShift
 (
 	unsigned int	target
 )	const
 {
 	const float SPEED = 0.025f * 1.0f/60.0f;
 	float shift = 0.0f;
-	shift -= SPEED * WaveformSavePointShiftBackwardOscElement[GetIndexFromTarget(target)].GetFloat();
-	shift += SPEED * WaveformSavePointShiftForwardOscElement[GetIndexFromTarget(target)].GetFloat();
+	shift -= SPEED * WaveformSavepointShiftBackwardOscElement[GetIndexFromTarget(target)].GetFloat();
+	shift += SPEED * WaveformSavepointShiftForwardOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(shift);
 }
 
 float
 InputOscObj::
-WaveformSavePointShiftAll
+WaveformSavepointShiftAll
 (
 	unsigned int	target
 )	const
 {
 	const float SPEED = 0.025f * 1.0f/60.0f;
 	float shift = 0.0f;
-	shift -= SPEED * WaveformSavePointShiftAllBackwardOscElement[GetIndexFromTarget(target)].GetFloat();
-	shift += SPEED * WaveformSavePointShiftAllForwardOscElement[GetIndexFromTarget(target)].GetFloat();
+	shift -= SPEED * WaveformSavepointShiftAllBackwardOscElement[GetIndexFromTarget(target)].GetFloat();
+	shift += SPEED * WaveformSavepointShiftAllForwardOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(shift);
 }
 
 bool
 InputOscObj::
-WaveformSavePointShiftAllHere
+WaveformSavepointShiftAllHere
 (
 	unsigned int	target
 )	const
@@ -1808,23 +1808,23 @@ WaveformSavePointShiftAllHere
 
 bool
 InputOscObj::
-WaveformSavePointJumpNow
+WaveformSavepointJumpNow
 (
 	unsigned int	target
 )	const
 {
-	bool jump = WaveformSavePointJumpNowOscElement[GetIndexFromTarget(target)].GetFloat();
+	bool jump = WaveformSavepointJumpNowOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(jump);
 }
 
 bool
 InputOscObj::
-WaveformSavePointJumpAtMeasure
+WaveformSavepointJumpAtMeasure
 (
 	unsigned int	target
 )	const
 {
-	bool jump = WaveformSavePointJumpAtMeasureOscElement[GetIndexFromTarget(target)].GetFloat();
+	bool jump = WaveformSavepointJumpAtMeasureOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(jump);
 }
 

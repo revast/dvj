@@ -58,6 +58,7 @@ public:
 	char*	PathFull;
 	char*	PathDir;
 	char*	PathShort;
+	char*	NameDisplayed;
 
 	float	BPM;
 	bool	IsDir;
@@ -92,6 +93,12 @@ public:
 	void	SetThreadCompletionPercent(float pct);
 	void	GetMostRecentFileScanned(char* dst);
 	void	SetMostRecentFileScanned(const char* src);
+	
+static	void	GenerateiTunesNameDisplayed
+		(
+			const char*	pathFull,
+			char*&		nameDisplayed
+		);
 
 private:
 	

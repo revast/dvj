@@ -71,16 +71,20 @@ float	InputWaveformRecordSpeed(unsigned int target) { return(GetInput().Waveform
 float	InputWaveformStutter(unsigned int target) { return(GetInput().WaveformStutter(target)); }
 float	InputWaveformStutterPitch(unsigned int target) { return(GetInput().WaveformStutterPitch(target)); }
 float	InputWaveformStutterSpeed(unsigned int target) { return(GetInput().WaveformStutterSpeed(target)); }
-float	InputWaveformSavePointPrev(unsigned int target) { return(GetInput().WaveformSavePointPrev(target)); }
-float	InputWaveformSavePointNext(unsigned int target) { return(GetInput().WaveformSavePointNext(target)); }
-float	InputWaveformSavePointPick(unsigned int target) { return(GetInput().WaveformSavePointPick(target)); }
-float	InputWaveformSavePointSet(unsigned int target) { return(GetInput().WaveformSavePointSet(target)); }
-float	InputWaveformSavePointUnsetPercent(unsigned int target) { return(GetInput().WaveformSavePointUnsetPercent(target)); }
-float	InputWaveformSavePointShift(unsigned int target) { return(GetInput().WaveformSavePointShift(target)); }
-float	InputWaveformSavePointShiftAll(unsigned int target) { return(GetInput().WaveformSavePointShiftAll(target)); }
-float	InputWaveformSavePointShiftAllHere(unsigned int target) { return(GetInput().WaveformSavePointShiftAllHere(target)); }
-float	InputWaveformSavePointJumpNow(unsigned int target) { return(GetInput().WaveformSavePointJumpNow(target)); }
-float	InputWaveformSavePointJumpAtMeasure(unsigned int target) { return(GetInput().WaveformSavePointJumpAtMeasure(target)); }
+float	InputWaveformSavepointPrev(unsigned int target) { return(GetInput().WaveformSavepointPrev(target)); }
+float	InputWaveformSavepointNext(unsigned int target) { return(GetInput().WaveformSavepointNext(target)); }
+float	InputWaveformSavepointPick(unsigned int target) { return(GetInput().WaveformSavepointPick(target)); }
+float	InputWaveformSavepointSet(unsigned int target) { return(GetInput().WaveformSavepointSet(target)); }
+float	InputWaveformSavepointSetBPMAtNeedle(unsigned int target) { return(GetInput().WaveformSavepointSetBPMAtNeedle(target)); }
+float	InputWaveformSavepointSetBPMUndef(unsigned int target) { return(GetInput().WaveformSavepointSetBPMUndef(target)); }
+float	InputWaveformSavepointSetBPMNone(unsigned int target) { return(GetInput().WaveformSavepointSetBPMNone(target)); }
+float	InputWaveformSavepointUnsetPercent(unsigned int target) { return(GetInput().WaveformSavepointUnsetPercent(target)); }
+float	InputWaveformSavepointShift(unsigned int target) { return(GetInput().WaveformSavepointShift(target)); }
+float	InputWaveformSavepointShiftAll(unsigned int target) { return(GetInput().WaveformSavepointShiftAll(target)); }
+float	InputWaveformSavepointShiftAllHere(unsigned int target) { return(GetInput().WaveformSavepointShiftAllHere(target)); }
+float	InputWaveformSavepointShiftBPM(unsigned int target) { return(GetInput().WaveformSavepointShiftBPM(target)); }
+float	InputWaveformSavepointJumpNow(unsigned int target) { return(GetInput().WaveformSavepointJumpNow(target)); }
+float	InputWaveformSavepointJumpAtMeasure(unsigned int target) { return(GetInput().WaveformSavepointJumpAtMeasure(target)); }
 float	InputWaveformBPM(unsigned int target) { return(GetInput().WaveformBPM(target)); }
 const char*
 	InputWaveformBPMCandidate(unsigned int target) { return(GetInput().WaveformBPMCandidate(target)); }
@@ -896,7 +900,7 @@ WaveformStutterSpeed
 
 bool
 InputObj::
-WaveformSavePointPrev
+WaveformSavepointPrev
 (
 	unsigned int	target
 )	const
@@ -905,7 +909,7 @@ WaveformSavePointPrev
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		prev|=Children[a]->WaveformSavePointPrev(target);
+		prev|=Children[a]->WaveformSavepointPrev(target);
 	}
 
 	return(prev);
@@ -913,7 +917,7 @@ WaveformSavePointPrev
 
 bool
 InputObj::
-WaveformSavePointNext
+WaveformSavepointNext
 (
 	unsigned int	target
 )	const
@@ -922,7 +926,7 @@ WaveformSavePointNext
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		next|=Children[a]->WaveformSavePointNext(target);
+		next|=Children[a]->WaveformSavepointNext(target);
 	}
 
 	return(next);
@@ -930,7 +934,7 @@ WaveformSavePointNext
 
 int
 InputObj::
-WaveformSavePointPick
+WaveformSavepointPick
 (
 	unsigned int	target
 )	const
@@ -939,7 +943,7 @@ WaveformSavePointPick
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		int candidate=Children[a]->WaveformSavePointPick(target);
+		int candidate=Children[a]->WaveformSavepointPick(target);
 		if(candidate!=-9999)
 		{
 			pick=candidate;
@@ -951,7 +955,7 @@ WaveformSavePointPick
 
 bool
 InputObj::
-WaveformSavePointSet
+WaveformSavepointSet
 (
 	unsigned int	target
 )	const
@@ -960,7 +964,58 @@ WaveformSavePointSet
 
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		set|=Children[a]->WaveformSavePointSet(target);
+		set|=Children[a]->WaveformSavepointSet(target);
+	}
+
+	return(set);
+}
+
+bool
+InputObj::
+WaveformSavepointSetBPMAtNeedle
+(
+	unsigned int	target
+)	const
+{
+	bool set=false;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		set|=Children[a]->WaveformSavepointSetBPMAtNeedle(target);
+	}
+
+	return(set);
+}
+
+bool
+InputObj::
+WaveformSavepointSetBPMUndef
+(
+	unsigned int	target
+)	const
+{
+	bool set=false;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		set|=Children[a]->WaveformSavepointSetBPMUndef(target);
+	}
+
+	return(set);
+}
+
+bool
+InputObj::
+WaveformSavepointSetBPMNone
+(
+	unsigned int	target
+)	const
+{
+	bool set=false;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		set|=Children[a]->WaveformSavepointSetBPMNone(target);
 	}
 
 	return(set);
@@ -968,7 +1023,7 @@ WaveformSavePointSet
 
 float
 InputObj::
-WaveformSavePointUnsetPercent
+WaveformSavepointUnsetPercent
 (
 	unsigned int	target
 )	const
@@ -977,7 +1032,7 @@ WaveformSavePointUnsetPercent
 
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		float candidate=Children[a]->WaveformSavePointUnsetPercent(target);
+		float candidate=Children[a]->WaveformSavepointUnsetPercent(target);
 		if(candidate>percent)
 		{
 			percent=candidate;
@@ -989,7 +1044,7 @@ WaveformSavePointUnsetPercent
 
 float
 InputObj::
-WaveformSavePointShift
+WaveformSavepointShift
 (
 	unsigned int	target
 )	const
@@ -998,7 +1053,7 @@ WaveformSavePointShift
 
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		shift+=Children[a]->WaveformSavePointShift(target);
+		shift+=Children[a]->WaveformSavepointShift(target);
 	}
 
 	return(shift);
@@ -1006,7 +1061,7 @@ WaveformSavePointShift
 
 float
 InputObj::
-WaveformSavePointShiftAll
+WaveformSavepointShiftAll
 (
 	unsigned int	target
 )	const
@@ -1015,7 +1070,7 @@ WaveformSavePointShiftAll
 
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		shift+=Children[a]->WaveformSavePointShiftAll(target);
+		shift+=Children[a]->WaveformSavepointShiftAll(target);
 	}
 
 	return(shift);
@@ -1023,7 +1078,7 @@ WaveformSavePointShiftAll
 
 bool
 InputObj::
-WaveformSavePointShiftAllHere
+WaveformSavepointShiftAllHere
 (
 	unsigned int	target
 )	const
@@ -1032,15 +1087,32 @@ WaveformSavePointShiftAllHere
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		here|=Children[a]->WaveformSavePointShiftAllHere(target);
+		here|=Children[a]->WaveformSavepointShiftAllHere(target);
 	}
 
 	return(here);
 }
 
+float
+InputObj::
+WaveformSavepointShiftBPM
+(
+	unsigned int	target
+)	const
+{
+	float shift=0.0f;
+
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		shift+=Children[a]->WaveformSavepointShiftBPM(target);
+	}
+
+	return(shift);
+}
+
 bool
 InputObj::
-WaveformSavePointJumpNow
+WaveformSavepointJumpNow
 (
 	unsigned int	target
 )	const
@@ -1049,7 +1121,7 @@ WaveformSavePointJumpNow
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		jump|=Children[a]->WaveformSavePointJumpNow(target);
+		jump|=Children[a]->WaveformSavepointJumpNow(target);
 	}
 
 	return(jump);
@@ -1057,7 +1129,7 @@ WaveformSavePointJumpNow
 
 bool
 InputObj::
-WaveformSavePointJumpAtMeasure
+WaveformSavepointJumpAtMeasure
 (
 	unsigned int	target
 )	const
@@ -1066,7 +1138,7 @@ WaveformSavePointJumpAtMeasure
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		jump|=Children[a]->WaveformSavePointJumpAtMeasure(target);
+		jump|=Children[a]->WaveformSavepointJumpAtMeasure(target);
 	}
 
 	return(jump);

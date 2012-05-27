@@ -352,7 +352,7 @@ NextFrame
 					tts[t]->GetFreqSenseBrightnessPreview()>0.0f
 				)
 				{
-					tts[t]->GetFreqMetaData(volAve,volMax,freqFactor);
+					tts[t]->GetFreqMetadata(volAve,volMax,freqFactor);
 					if(vid==vidH) volAve*=2;
 					
 					float curFreqBrightness=GetFreqBrightness((vid==vidH),freqFactor,volAve);
@@ -706,7 +706,7 @@ DrawVisuals
 			{
 				float volAve;
 				float volMax;
-				tts[t]->GetFreqMetaData(volAve,volMax,freqFactor[t]);
+				tts[t]->GetFreqMetadata(volAve,volMax,freqFactor[t]);
 				brLow[t] = GetFreqBrightness(false,freqFactor[t],volAve);
 				brHigh[t] = GetFreqBrightness(true,freqFactor[t],volAve);
 			}
@@ -2280,7 +2280,7 @@ DrawVideos
 							float volAve;
 							float volMax;
 							float freqFactor;
-							tt->GetFreqMetaData(volAve,volMax,freqFactor);
+							tt->GetFreqMetadata(volAve,volMax,freqFactor);
 							volAve = LGL_Min(1.0f,volAve*2.0f);
 							LGL_DebugPrintf("volAve: %.2f\n",volAve);
 							LGL_DebugPrintf("volMax: %.2f\n",volMax);
@@ -2480,7 +2480,7 @@ DrawVideos
 		float volAve;
 		float volMax;
 		float freqFactor;
-		tt->GetFreqMetaData(volAve,volMax,freqFactor);
+		tt->GetFreqMetadata(volAve,volMax,freqFactor);
 		volAve = LGL_Min(1.0f,volAve*2.0f);
 
 		for(int a=0;a<2;a++)
@@ -2492,7 +2492,7 @@ DrawVideos
 				float multFreq = (vid==vidL) ? tt->GetEQLo() : tt->GetEQHi();
 				float myFreqFactor=freqFactor;
 				float br = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
-				if(vid==vidL) br*=4;	//FIXME: Ben / Zebbler hack... Shouldn't be this way!!
+				//if(vid==vidL) br*=4;	//FIXME: Ben / Zebbler hack... Shouldn't be this way!!
 				br*=vid->StoredBrightness[tt->GetWhich()]*freqSenseBright;
 
 				LGL_Image* image = vid->GetImage();//LGL_SecondsSinceLastFrame()<1.0f/30.0f);//EIGHT_WAY ? !preview : preview);
