@@ -5732,7 +5732,7 @@ VertCompile
 
 		LGL_Exit();
 	}
-	
+
 	fclose(file);
 	return(true);
 }
@@ -6612,7 +6612,7 @@ LGL_Image
 	PixelBufferObjectSize=0;
 
 	FrameBufferImage=false;
-	InvertY=false;
+	InvertY=true;//false;
 
 	if(loadToGLTexture)
 	{
@@ -7029,7 +7029,7 @@ DrawToScreen
 	return;
 #endif	//LGL_NO_GRAPHICS
 
-	bool invertY = InvertY || (LGL_ShaderInUse()==false);
+	bool invertY = InvertY;
 
 	if(invertY)
 	{
