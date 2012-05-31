@@ -5616,6 +5616,12 @@ LGL_ShaderAvailableFrag()
 	);
 }
 
+bool
+LGL_ShaderInUse()
+{
+	return(LGL.ShaderProgramCurrent>0);
+}
+
 LGL_Shader::
 LGL_Shader
 (
@@ -6974,6 +6980,8 @@ DrawToScreen
 		d=-0.05/LGL.WindowResolutionX[LGL.DisplayNow];
 	}
 //#endif	//LGL_LINUX
+
+	
 	x[0]=left+d;
 	y[0]=top;
 	x[1]=right+d;
@@ -7021,7 +7029,9 @@ DrawToScreen
 	return;
 #endif	//LGL_NO_GRAPHICS
 
-	if(InvertY)
+	bool invertY = InvertY || (LGL_ShaderInUse()==false);
+
+	if(invertY)
 	{
 		float tmp=bottomsubimage;
 		bottomsubimage=topsubimage;

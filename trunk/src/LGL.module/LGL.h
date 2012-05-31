@@ -835,6 +835,7 @@ bool		LGL_ShaderAvailableFrag();
 void		LGL_ShaderUseVert(char* inFileVert);
 void		LGL_ShaderUseFrag(char* inFileFrag);
 void		LGL_ShaderUseVertFrag(char* inFileVert, char* inFileFrag);
+bool		LGL_ShaderInUse();
 
 class LGL_Image
 {
