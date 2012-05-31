@@ -22,6 +22,7 @@ main
 
 	for(;;)
 	{
+		LGL_ProcessInput();
 		LGL_DrawFPSGraph();
 		LGL_SwapBuffers();
 	}
