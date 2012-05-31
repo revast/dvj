@@ -15,7 +15,8 @@ main
 {
 	LGL_Init
 	(
-		640,480,
+		LGL_DisplayResolutionX()-100,
+		LGL_DisplayResolutionY()-100,
 		2,
 		"testFrameRate"
 	);
@@ -23,7 +24,10 @@ main
 	for(;;)
 	{
 		LGL_ProcessInput();
+
 		LGL_DrawFPSGraph();
+		LGL_DebugPrintf("Hello World\n");
+
 		LGL_SwapBuffers();
 	}
 }
