@@ -15,8 +15,8 @@ main
 {
 	LGL_Init
 	(
-		LGL_DisplayResolutionX()-100,
-		LGL_DisplayResolutionY()-100,
+		9999,
+		9999,
 		2,
 		"testFrameRate"
 	);
