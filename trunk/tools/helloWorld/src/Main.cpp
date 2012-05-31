@@ -21,7 +21,7 @@ main
 		"testFrameRate"
 	);
 
-	LGL_Image img("data/image/logo.png");
+	LGL_Image img("data/image/fftw_wisdom.png");
 
 	for(;;)
 	{
