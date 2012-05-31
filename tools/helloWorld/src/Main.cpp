@@ -21,10 +21,13 @@ main
 		"testFrameRate"
 	);
 
+	LGL_Image img("data/image/logo.png");
+
 	for(;;)
 	{
 		LGL_ProcessInput();
 
+		img.DrawToScreen();
 		LGL_DrawFPSGraph();
 		LGL_DebugPrintf("Hello World\n");
 
