@@ -767,7 +767,7 @@ WaveformSavepointShiftBPM
 				{
 					mult*=SHIFT_MULT;
 				}
-				shift=mult*LGL_MultiTouchDX2();
+				shift=mult*LGL_MultiTouchDY2();
 			}
 		}
 	}

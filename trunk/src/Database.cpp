@@ -12,7 +12,7 @@
 
 #include "LGL.module/LGL.h"
 
-const char* iTunesMusicStr = "iTunes Music";
+const char* iTunesMusicStr = "iTunes";
 
 //DatabaseFilterObj
 
@@ -985,7 +985,7 @@ GenerateiTunesNameDisplayed
 	char* name=NULL;
 	if((tmpAlpha = strstr(pathFull,iTunesMusicStr)))
 	{
-		//Found "iTunes Music"
+		//Found "iTunes"
 		tmpAlpha = strstr(tmpAlpha,"/");
 		if(tmpAlpha)
 		{
