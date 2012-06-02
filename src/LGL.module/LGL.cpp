@@ -13649,7 +13649,7 @@ LGL_VideoEncoder
 		DstCodecContext->codec_id=DstCodec->id;
 		DstCodecContext->codec_type=CODEC_TYPE_VIDEO;
 		DstCodecContext->bit_rate=BitrateMaxMBps*1024*1024*8;
-		DstCodecContext->bit_rate_tolerance=DstCodecContext->bit_rate/8;	//Allow for some variance
+		DstCodecContext->bit_rate_tolerance=0;//DstCodecContext->bit_rate/8;	//Allow for some variance
 		DstCodecContext->flags|=0;	//No flags seems helpful to add.
 		DstCodecContext->me_method = 1;
 		DstCodecContext->sample_aspect_ratio=DstStream->sample_aspect_ratio;
