@@ -69,6 +69,9 @@ char dvjSessionFlacPath[2048];
 char dvjSessionTracklistPath[2048];
 char dvjSessionDrawLogPath[2048];
 
+const char*
+GetITunesMusicPath();
+
 void
 ConfigInit()
 {
@@ -83,6 +86,52 @@ ConfigInit()
 	LoadMusicRootPath();
 	LoadKeyboardInput();
 	LoadOscInput();
+	GetITunesMusicPath();
+}
+
+char* iTunesMusicPath=NULL;
+
+const char*
+GetITunesMusicPath()
+{
+	if(iTunesMusicPath==NULL)
+	{
+		for(int a=0;a<2;a++)
+		{
+			char tmp[2048];
+			if(a==0)
+			{
+				sprintf(tmp,"%s/Music/iTunes/iTunes Music",LGL_GetHomeDir());
+			}
+			else if(a==1)
+			{
+				sprintf(tmp,"%s/Music/iTunes/iTunes Media/Music",LGL_GetHomeDir());
+			}
+
+			if(LGL_DirectoryExists(tmp))
+			{
+				iTunesMusicPath = new char[strlen(tmp)+1];
+				strcpy(iTunesMusicPath,tmp);
+				break;
+			}
+		}
+
+#ifdef	LGL_OSX
+		LoadMusicRootPath();
+		char dvjMusicRootITunes[2048];
+		sprintf(dvjMusicRootITunes,"%s/iTunes",musicRootPath);
+		if(LGL_DirectoryExists(dvjMusicRootITunes)==false)
+		{
+			char iTunesPath[2048];
+			strcpy(iTunesPath,iTunesMusicPath);
+			char cmd[2048];
+			sprintf(cmd,"ln -s '%s' '%s'",iTunesPath,dvjMusicRootITunes);
+			system(cmd);
+		}
+#endif	//LGL_OSX
+	}
+
+	return(iTunesMusicPath);
 }
 
 void
@@ -224,15 +273,7 @@ LoadDVJRC()
 void
 LoadMusicRootPath()
 {
-	sprintf(musicRootPath,"%s/Music/iTunes/iTunes Music",LGL_GetHomeDir());
-	if(LGL_DirectoryExists(musicRootPath)==false)
-	{
-		sprintf(musicRootPath,"%s/Music",LGL_GetHomeDir());
-	}
-	if(LGL_DirectoryExists(musicRootPath)==false)
-	{
-		sprintf(musicRootPath,"%s",LGL_GetHomeDir());
-	}
+	sprintf(musicRootPath,"%s/Music",LGL_GetHomeDir());
 
 	if(FILE* fd=fopen(GetMusicRootConfigFilePath(),"r"))
 	{
@@ -473,19 +514,6 @@ CreateDotDVJTree()
 	{
 		LGL_DirectoryCreate(dvjMusicRootDVJTutorials);
 	}
-
-#ifdef	LGL_OSX
-	char dvjMusicRootITunes[2048];
-	sprintf(dvjMusicRootITunes,"%s/iTunes",dvjMusicRoot);
-	if(LGL_DirectoryExists(dvjMusicRootITunes)==false)
-	{
-		char iTunesPath[2048];
-		sprintf(iTunesPath,"%s/Music/iTunes/iTunes Music",LGL_GetHomeDir());
-		char cmd[2048];
-		sprintf(cmd,"ln -s '%s' '%s'",iTunesPath,dvjMusicRootITunes);
-		system(cmd);
-	}
-#endif	//LGL_OSX
 	
 	char dvjRecord[2048];
 	sprintf(dvjRecord,"%s/record",dotDvj);
