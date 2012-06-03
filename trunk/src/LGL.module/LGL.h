@@ -88,6 +88,7 @@
 #include <list>
 #include <map>
 #include <algorithm>
+#include <sys/mman.h>
 
 extern "C"
 {
