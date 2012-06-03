@@ -148,8 +148,9 @@ int lgl_SetRealtime
 	int ret;
 	thread_port_t threadport = pthread_mach_thread_np(pthread_self());
 
-	ttcpolicy.period=HZ/(44100/(float)LGL_SAMPLESIZE_SDL); // HZ/160
-	ttcpolicy.computation=ttcpolicy.period*0.15f; //computation; // HZ/3300;
+	const float fudge=2.3f;
+	ttcpolicy.period=(HZ/(44100/(float)LGL_SAMPLESIZE_SDL))/fudge; // HZ/160
+	ttcpolicy.computation=(ttcpolicy.period*0.15f); //computation; // HZ/3300;
 	ttcpolicy.constraint=ttcpolicy.period; // HZ/2200;
 	ttcpolicy.preemptible=0;
 
@@ -2305,7 +2306,7 @@ printf("\n");
 		if(1 || LGL.AudioUsingJack==false)
 		{
 			//LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut / JACK");
-			lgl_SetRealtime();
+			//lgl_SetRealtime();
 		}
 		printf("\n\nLGL JACK Initialization: ALPHA\n");
 		printf("---\n");
@@ -33776,7 +33777,7 @@ lgl_AudioOutCallbackGenerator
 )
 {
 	//Detect realtime status
-	if(0)
+	if(LGL_KeyStroke(LGL_KEY_T))
 	{
 		struct thread_time_constraint_policy ttcpolicy;
 		thread_port_t threadport = pthread_mach_thread_np(pthread_self());
@@ -33802,7 +33803,7 @@ lgl_AudioOutCallbackGenerator
 			printf("constr: %-4u\n",ttcpolicy.constraint);
 			printf("preemp: %-4u\n",ttcpolicy.preemptible);
 		}
-		//lgl_SetRealtime();
+		lgl_SetRealtime();
 	}
 
 	if(1 || LGL.AudioUsingJack==false)
