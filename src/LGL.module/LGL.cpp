@@ -148,10 +148,16 @@ int lgl_SetRealtime
 	int ret;
 	thread_port_t threadport = pthread_mach_thread_np(pthread_self());
 
-	const float fudge=2.3f;
-	ttcpolicy.period=(HZ/(44100/(float)LGL_SAMPLESIZE_SDL))/fudge; // HZ/160
+	/*
+	ttcpolicy.period=(HZ/(44100/(float)LGL_SAMPLESIZE_SDL)); // HZ/160
 	ttcpolicy.computation=(ttcpolicy.period*0.15f); //computation; // HZ/3300;
 	ttcpolicy.constraint=ttcpolicy.period; // HZ/2200;
+	ttcpolicy.preemptible=0;
+	*/
+
+	ttcpolicy.period=1.0f*HZ/(44100.0f/LGL_SAMPLESIZE_SDL); // HZ/160
+	ttcpolicy.computation=(ttcpolicy.period*0.9f); //computation; // HZ/3300;
+	ttcpolicy.constraint=ttcpolicy.period*0.9f; // HZ/2200;
 	ttcpolicy.preemptible=0;
 
 	if
@@ -360,6 +366,7 @@ typedef struct
 	int			MasterWindowResolutionY;
 
 	SDL_threadID		ThreadIDMain;
+	SDL_threadID		ThreadIDAudio;
 	SDL_threadID		ThreadIDWatch;
 
 	float			DisplayViewportLeft[LGL_DISPLAY_MAX];
@@ -2253,6 +2260,8 @@ printf("\n");
 	);
 
 	//Audio
+
+	LGL.ThreadIDAudio = NULL;
 
 	LGL.AudioEncoderPath[0]='\0';
 	LGL.AudioEncoder=NULL;
@@ -21205,7 +21214,9 @@ LGL_RecordDVJToFileStart
 	const char*	path,
 	bool		surroundMode
 )
-{	
+{
+	return;
+
 	if(LGL.AudioEncoder==NULL)
 	{
 		//Actually start recording
@@ -32899,6 +32910,16 @@ Lock
 	{
 		mainBlocked=true;
 	}
+	bool audioBlocked=false;
+	if
+	(
+		SDL_ThreadID() == LGL.ThreadIDAudio &&
+		IsLocked() &&
+		timeoutSeconds!=0.0f
+	)
+	{
+		audioBlocked=true;
+	}
 
 	bool ret=false;
 	if(timeoutSeconds==0.0f)
@@ -32930,7 +32951,12 @@ Lock
 		printf("Main thread blocks on semaphore!\n");
 		printMore=true;
 	}
-	else if(timer.SecondsSinceLastReset()>1.0f)
+	if(audioBlocked)
+	{
+		printf("Audio thread blocks on semaphore!\n");
+		printMore=true;
+	}
+	if(timer.SecondsSinceLastReset()>1.0f)
 	{
 		printf("Long lock!\n");
 		printMore=true;
@@ -33777,7 +33803,7 @@ lgl_AudioOutCallbackGenerator
 )
 {
 	//Detect realtime status
-	if(LGL_KeyStroke(LGL_KEY_T))
+	if(0 && LGL_KeyStroke(LGL_KEY_T))
 	{
 		struct thread_time_constraint_policy ttcpolicy;
 		thread_port_t threadport = pthread_mach_thread_np(pthread_self());
@@ -33816,6 +33842,7 @@ lgl_AudioOutCallbackGenerator
 			//LGL_ThreadSetCPUAffinity(1);
 			//LGL_ThreadSetPriority(LGL_PRIORITY_AUDIO_OUT,"AudioOut");	//It's really that important!
 			lgl_SetRealtime();
+			LGL.ThreadIDAudio = SDL_ThreadID();
 
 			soundRealtimePrioritySet=true;
 		}
