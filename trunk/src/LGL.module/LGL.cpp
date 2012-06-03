@@ -824,7 +824,7 @@ int lgl_AudioInCallbackJack(void *udata, Uint8 *stream, int len8)
 	}
 	else
 	{
-		assert(false);
+		printf("Strange AudioInCallbackJack len: %i\n",len8);
 	}
 
 	return(0);
