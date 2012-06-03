@@ -175,8 +175,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"preloadFreqSenseMaxMB=0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#3.2 MBps is highest quality for 1920x480@30fps.\n");
-		fprintf(fd,"#Generated files may be larger.\n");
-		fprintf(fd,"cachedVideoAveBitrateMBps=3.2\n");
+		fprintf(fd,"cachedVideoConstBitrateMBps=1.25\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"visualBrightnessAtCenter=1.0\n");
 		fprintf(fd,"\n");
@@ -774,14 +773,14 @@ GetDVJSessionDrawLogPath()
 }
 
 float
-GetCachedVideoAveBitrateMBps()
+GetCachedVideoConstBitrateMBps()
 {
 	return
 	(
 		LGL_Clamp
 		(
 			0.1f,
-			dvjrcConfigFile->read<float>("cachedVideoAveBitrateMBps",3.2f),
+			dvjrcConfigFile->read<float>("cachedVideoConstBitrateMBps",1.25f),
 			10.0f
 		)
 	);

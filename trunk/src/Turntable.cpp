@@ -619,6 +619,8 @@ videoEncoderThread
 				sprintf(tt->VideoEncoderReason,"Audio doesn't exist");
 			}
 
+			LGL_VideoEncoder::SetBitrateMaxMBps(GetCachedVideoConstBitrateMBps());
+
 			{
 				LGL_ScopeLock lock(__FILE__,__LINE__,tt->VideoEncoderSemaphore);
 				tt->VideoEncoder = new LGL_VideoEncoder
@@ -630,7 +632,6 @@ videoEncoderThread
 			}
 
 			LGL_VideoEncoder* encoder = tt->VideoEncoder;
-			encoder->SetBitrateMaxMBps(GetCachedVideoAveBitrateMBps());
 			encoder->SetEncodeAudio(LGL_FileExists(encoderAudioDst)==false);
 			encoder->SetEncodeVideo(LGL_FileExists(encoderDst)==false);
 			if

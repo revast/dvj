@@ -179,7 +179,7 @@ int
 GetProjMapGridSideLengthY();
 
 float
-GetCachedVideoAveBitrateMBps();
+GetCachedVideoConstBitrateMBps();
 
 float
 GetVisualBrightnessAtCenter();
