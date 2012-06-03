@@ -796,6 +796,7 @@ lgl_AudioOutCallbackJackXrun
 
 Uint8 lgl_AudioInCallbackJackBuf[4096];
 int lgl_AudioInCallbackJackBufPos=0;
+bool lgl_AudioInCallbackErrorReported=false;
 
 int lgl_AudioInCallbackJack(void *udata, Uint8 *stream, int len8)
 {
@@ -824,7 +825,11 @@ int lgl_AudioInCallbackJack(void *udata, Uint8 *stream, int len8)
 	}
 	else
 	{
-		printf("Strange AudioInCallbackJack len: %i\n",len8);
+		if(lgl_AudioInCallbackErrorReported==false)
+		{
+			printf("Strange AudioInCallbackJack len: %i... Not processing AudioIn!\n",len8);
+			lgl_AudioInCallbackErrorReported=true;
+		}
 	}
 
 	return(0);
