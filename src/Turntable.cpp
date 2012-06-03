@@ -1005,6 +1005,7 @@ TurntableObj
 	//SoundBufferLength=(unsigned long)(1024*1024*200*(1.0/0.987875));	//20 minutes
 	SoundBuffer=(Uint8*)malloc(SoundBufferLength);
 	bzero(SoundBuffer,SoundBufferLength);	//Not necessary, but used for testing
+	mlock(SoundBuffer,SoundBufferLength);
 	SoundSampleNow=0;
 
 	//This is disabled because it was causing semaphore locks in LGL's audio update loop, which I believe was skipping the audio
