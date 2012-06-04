@@ -3129,6 +3129,11 @@ LGL_DelayMS
 	float	ms
 )
 {
+	if(LGL.Running==false)
+	{
+		return;
+	}
+
 	if(ms<=0)
 	{
 		LGL_Delay();
@@ -10500,11 +10505,22 @@ lgl_video_decoder_readahead_thread
 	for(;;)
 	{
 		dec->MaybeReadAhead();
+
+		float delayCumulativeMS=0.0f;
+		while(delayCumulativeMS < dec->GetReadAheadDelayMS())
+		{
+			const float delta=LGL_Min(50.0f,dec->GetReadAheadDelayMS());
+			LGL_DelayMS(delta);
+			delayCumulativeMS+=delta;
+			if(dec->GetThreadTerminate())
+			{
+				break;
+			}
+		}
 		if(dec->GetThreadTerminate())
 		{
 			break;
 		}
-		LGL_DelayMS(dec->GetReadAheadDelayMS());
 	}
 
 	return(0);
@@ -10956,6 +10972,7 @@ GetImage
 					true,
 					"Empty LGL_VideoDecoder"
 				);
+//LGL_DebugPrintf("SFN 1\n");
 				Image->SetFrameNumber(-1);
 			}
 		}
@@ -10976,11 +10993,13 @@ GetImage
 			true,
 			"Empty LGL_VideoDecoder"
 		);
+//LGL_DebugPrintf("SFN 2\n");
 		Image->SetFrameNumber(-1);
 	}
 
 	if(strcmp(Path,"NULL")==0)
 	{
+//LGL_DebugPrintf("SFN 3\n");
 		Image->SetFrameNumber(-1);
 		return(Image);
 	}
@@ -11004,6 +11023,7 @@ GetImage
 	}
 	if(strcmp(Image->GetVideoPath(),path)!=0)
 	{
+//LGL_DebugPrintf("SFN 4 (%s vs %s)\n",Image->GetVideoPath(),path);
 		Image->SetFrameNumber(-1);
 	}
 
@@ -11085,6 +11105,7 @@ GetImage
 		BufferHeight<0
 	)
 	{
+//LGL_DebugPrintf("SFN 5\n");
 		Image->SetFrameNumber(-1);
 		return(Image);
 	}
