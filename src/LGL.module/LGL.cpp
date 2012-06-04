@@ -25212,8 +25212,7 @@ LGL_MidiClockBPM()
 {
 	if
 	(
-		LGL.MidiClockCounter>0 &&
-		LGL.MidiClockCounter<999
+		LGL.MidiClockCounter>0
 	)
 	{
 		return(LGL.MidiClockBPM);
