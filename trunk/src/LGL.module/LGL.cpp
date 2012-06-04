@@ -12748,7 +12748,7 @@ MaybeInvalidateBuffers()
 	{
 		if
 		(
-			//list[a]->GetFrameNumber()==-1 ||
+			list[a]->GetFrameNumber()==-1 ||
 			strcmp(list[a]->GetVideoPath(),path)!=0 ||
 			(
 				fabsf(frameNumberNow-list[a]->GetFrameNumber())				> subtractRadius &&
