@@ -165,7 +165,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"#projMapGridSideLengthY=2\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"fpsMax=60\n");
-		fprintf(fd,"audioSamplePeriod=512\n");
+		fprintf(fd,"#audioSamplePeriod=512\n");
 		fprintf(fd,"audioMaxLengthMinutes=20\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"drawTurntablePreviews=1\n");
@@ -901,7 +901,7 @@ GetFPSMax()
 int
 GetAudioSamplePeriod()
 {
-	int period=LGL_Clamp(32,dvjrcConfigFile->read<int>("audioSamplePeriod",512),2048);
+	int period=LGL_Clamp(32,dvjrcConfigFile->read<int>("audioSamplePeriod",(LGL_CPUCount() >= 8) ? 512 : 2048),2048);
 	return(period);
 }
 
