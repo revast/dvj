@@ -970,6 +970,29 @@ warmMemoryThread
 	return(0);
 }
 
+int
+updateDatabaseFilterThread
+(
+	void*	ptr
+);
+
+int
+updateDatabaseFilterThread
+(
+	void*	ptr
+)
+{
+	TurntableObj* tt = (TurntableObj*)ptr;
+
+	tt->DatabaseFilteredEntriesNext=tt->Database->GetEntryListFromFilter
+	(
+		&(tt->UpdateFilterListDatabaseFilterNow),
+		&(tt->UpdateFilterListAbortSignal)
+	);
+	tt->DatabaseFilteredEntriesNextReady=true;
+
+	return(0);
+}
 
 
 
@@ -1029,6 +1052,8 @@ TurntableObj
 
 	CenterX=.5f*(ViewportLeft+ViewportRight);
 	CenterY=.5f*(ViewportBottom+ViewportTop);
+
+	DatabaseFilteredEntriesNextReady=false;
 
 	FilterTextMostRecent[0]='\0';
 	FilterTextMostRecentBPM=-1;
@@ -1177,8 +1202,15 @@ TurntableObj
 	LowRez=false;
 	LoadAllCachedDataThread=NULL;
 	FindAudioPathThread=NULL;
-	WarmMemoryThreadTerminateSignal=0;
 	WarmMemoryThread=LGL_ThreadCreate(warmMemoryThread,this);
+	UpdateFilterListViaThread=true;
+	UpdateFilterListThread=NULL;
+	UpdateFilterListDatabaseFilterNext.SetBPMCenter(-9999.0f);
+	UpdateFilterListAbortSignal=false;
+	UpdateFilterListResetHighlightedRow=false;
+	UpdateFilterListDesiredSelection[0]='\0';
+	WarmMemoryThreadTerminateSignal=0;
+	UpdateFilterListThreadTerminateSignal=0;
 	AspectRatioMode=0;
 	EncodeEveryTrack=0;
 	EncodeEveryTrackIndex=0;
@@ -1291,6 +1323,13 @@ TurntableObj::
 		WarmMemoryThread=NULL;
 	}
 
+	if(UpdateFilterListThread)
+	{
+		UpdateFilterListThreadTerminateSignal=1;
+		LGL_ThreadWait(UpdateFilterListThread);
+		UpdateFilterListThread=NULL;
+	}
+
 	if(Sound)
 	{
 		Sound->PrepareForDelete();
@@ -1364,6 +1403,8 @@ NextFrame
 			}
 		}
 	}
+
+	UpdateDatabaseFilterFn();
 
 	if(Sound && Channel>=0)
 	{
@@ -1926,13 +1967,17 @@ NextFrame
 			}
 
 			DatabaseFilter.SetPattern(pattern);
-			DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
-			UpdateListSelector();
-			bool ok = ListSelectorToString(oldSelection);
-			if(ok==false)
+
+			//Filter text changed!
+			if(UpdateFilterListViaThread)
 			{
-				ListSelector.SetHighlightedRow(0);
-				ListSelector.CenterHighlightedRow();
+				DatabaseFilter.Assign(UpdateFilterListDatabaseFilterNext);
+				UpdateFilterListResetHighlightedRow=false;
+				UpdateFilterListDesiredSelection[0]='\0';
+			}
+			else
+			{
+				GetEntryListFromFilterDance(oldSelection);
 			}
 		}
 
@@ -2075,8 +2120,18 @@ NextFrame
 
 				DatabaseFilter.SetDir(targetPath);
 				DatabaseFilter.SetPattern(FilterText.GetString());
-				DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
-				UpdateListSelector();
+
+				//Changing Directories!
+				if(UpdateFilterListViaThread)
+				{
+					DatabaseFilter.Assign(UpdateFilterListDatabaseFilterNext);
+					UpdateFilterListResetHighlightedRow=true;
+					UpdateFilterListDesiredSelection[0]='\0';
+				}
+				else
+				{
+					GetEntryListFromFilterDance(NULL);
+				}
 
 				FilterText.SetString();
 				NoiseFactor=1.0f;
@@ -3791,13 +3846,17 @@ NextFrame
 			FilterText.SetString();
 			FilterTextMostRecentBPM = (int)floorf(BPMMaster+0.5f);
 			DatabaseFilter.SetPattern("");
-			DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
-			UpdateListSelector();
-			bool ok = ListSelectorToString(oldSelection);
-			if(ok==false)
+
+			//Going back to Mode 0 from Mode 3
+			if(UpdateFilterListViaThread)
 			{
-				ListSelector.SetHighlightedRow(0);
-				ListSelector.CenterHighlightedRow();
+				DatabaseFilter.Assign(UpdateFilterListDatabaseFilterNext);
+				UpdateFilterListResetHighlightedRow=false;
+				strncpy(UpdateFilterListDesiredSelection,oldSelection,sizeof(UpdateFilterListDesiredSelection)-1);
+			}
+			else
+			{
+				GetEntryListFromFilterDance(oldSelection);
 			}
 
 			for(int a=0;a<Savepoints.size();a++)
@@ -5077,7 +5136,7 @@ DrawFrame
 		{
 			if(LGL_Image* image = Video->GetImage())
 			{
-				if(image->GetFrameNumber()>0)
+				if(image->GetFrameNumber()>=0)
 				{
 					if(strstr(image->GetVideoPath(),Video->GetPathShort()))
 					{
@@ -7126,9 +7185,10 @@ GetSecondsToSyncToOtherTT()
 		}
 		Pitchbend = best;
 		SetBPMAdjusted(otherBPMAdjusted);
+		//targetSeconds /= LGL_Max(0.01f,Pitchbend);
 		targetSeconds += 
 			//(LGL_AudioCallbackSamples()/(1.0f*LGL_AudioRate())) +
-			Pitchbend*
+			Pitchbend/(LGL_Max(otherTT->GetFinalSpeed(),0.01f)) *
 			(
 				otherTT->GetTimeSeconds() -
 				otherTT->GetBeginningOfCurrentMeasureSeconds(measureGranularity)
@@ -7304,8 +7364,17 @@ AttemptToCreateSound()
 
 				DatabaseFilter.SetDir(FoundAudioPath);
 				DatabaseFilter.SetPattern(FilterText.GetString());
-				DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
-				UpdateListSelector();
+
+				//Just tried to create an audio track
+				if(UpdateFilterListViaThread)
+				{
+					DatabaseFilter.Assign(UpdateFilterListDatabaseFilterNext);
+					UpdateFilterListResetHighlightedRow=false;
+				}
+				else
+				{
+					GetEntryListFromFilterDance(NULL);
+				}
 
 				FilterText.SetString();
 				NoiseFactor=1.0f;
@@ -7358,6 +7427,88 @@ AttemptToCreateSound()
 				Video->InvalidateAllFrameBuffers();
 			}
 			*/
+		}
+	}
+}
+
+void
+TurntableObj::
+UpdateDatabaseFilterFn()
+{
+	/*
+	if(UpdateFilterListThread)
+	{
+		NoiseFactor=LGL_Max(NoiseFactor,UpdateFilterListTimer.SecondsSinceLastReset()*4.0f);
+	}
+	*/
+
+	//See if any old threads are complete
+	if(DatabaseFilteredEntriesNextReady)
+	{
+		LGL_ThreadWait(UpdateFilterListThread);
+		UpdateFilterListThread=NULL;
+
+		if(UpdateFilterListAbortSignal==false)
+		{
+			DatabaseFilteredEntries=DatabaseFilteredEntriesNext;
+			DatabaseFilteredEntriesNext.clear();
+			UpdateListSelector();
+			if(UpdateFilterListResetHighlightedRow)
+			{
+				ListSelector.SetHighlightedRow(1);
+			}
+			else if(UpdateFilterListDesiredSelection[0]!='\0')
+			{
+				bool ok = ListSelectorToString(UpdateFilterListDesiredSelection);
+				if(ok==false)
+				{
+					ListSelector.SetHighlightedRow(0);
+					ListSelector.CenterHighlightedRow();
+				}
+				UpdateFilterListDesiredSelection[0]='\0';
+			}
+		}
+
+		UpdateFilterListDatabaseFilterNow.SetBPMCenter(-9999.0f);
+		DatabaseFilteredEntriesNextReady=false;
+	}
+
+	//See if we should start a new thread
+	if(UpdateFilterListDatabaseFilterNext.GetBPMCenter()!=-9999.0f)
+	{
+		if(UpdateFilterListThread)
+		{
+			UpdateFilterListAbortSignal=true;
+		}
+		else
+		{
+			UpdateFilterListDatabaseFilterNext.Assign(UpdateFilterListDatabaseFilterNow);
+			UpdateFilterListDatabaseFilterNext.SetBPMCenter(-9999.0f);
+
+			UpdateFilterListAbortSignal=false;
+			UpdateFilterListThread=LGL_ThreadCreate(updateDatabaseFilterThread,this);
+			UpdateFilterListTimer.Reset();
+		}
+	}
+}
+
+void
+TurntableObj::
+GetEntryListFromFilterDance
+(
+	const char*	oldSelection
+)
+{
+	DatabaseFilteredEntries=Database->GetEntryListFromFilter(&DatabaseFilter);
+	UpdateListSelector();
+
+	if(oldSelection)
+	{
+		bool ok = ListSelectorToString(oldSelection);
+		if(ok==false)
+		{
+			ListSelector.SetHighlightedRow(0);
+			ListSelector.CenterHighlightedRow();
 		}
 	}
 }
@@ -8232,6 +8383,13 @@ SetPitchbend
 )
 {
 	Pitchbend=pitchbend;
+}
+
+float
+TurntableObj::
+GetPitchbend()
+{
+	return(Pitchbend);
 }
 
 bool
