@@ -232,8 +232,21 @@ public:
 private:
 	SDL_Thread*			FindAudioPathThread;
 	SDL_Thread*			WarmMemoryThread;
+
+	bool				UpdateFilterListViaThread;
+	SDL_Thread*			UpdateFilterListThread;
+	LGL_Timer			UpdateFilterListTimer;
+	DatabaseFilterObj		UpdateFilterListDatabaseFilterNext;
+	bool				UpdateFilterListResetHighlightedRow;
+	char				UpdateFilterListDesiredSelection[2048];
+	void				UpdateDatabaseFilterFn();
+	void				GetEntryListFromFilterDance(const char* oldSelection=NULL);
 public:
+	DatabaseFilterObj		UpdateFilterListDatabaseFilterNow;
+	bool				UpdateFilterListAbortSignal;
+
 	int				WarmMemoryThreadTerminateSignal;
+	int				UpdateFilterListThreadTerminateSignal;
 	Uint8*				SoundBuffer;
 	unsigned long			SoundBufferLength;
 private:
@@ -263,6 +276,10 @@ public:
 private:
 	DatabaseFilterObj		DatabaseFilter;
 	std::vector<DatabaseEntryObj*>	DatabaseFilteredEntries;
+public:
+	std::vector<DatabaseEntryObj*>	DatabaseFilteredEntriesNext;
+	bool				DatabaseFilteredEntriesNextReady;
+private:
 	DatabaseEntryObj*		DatabaseEntryNow;
 
 	LGL_InputBuffer			FilterText;
@@ -482,6 +499,7 @@ static	bool				GetSurroundMode();
 	void				SetBPMAdjusted(float bpmAdjusted);
 	void				SetBPMMaster(float bpmMaster);
 	void				SetPitchbend(float pitchbend=1.0f);
+	float				GetPitchbend();
 	bool				GetBeatThisFrame(float fractionOfBeat=1.0f);
 	double				GetPercentOfCurrentMeasure(float measureMultiplier=1.0f, bool recalculateSecondsNow=false);
 	double				GetBeginningOfCurrentMeasureSeconds(float measureMultiplier=1.0f, bool recalculateSecondsNow=false);

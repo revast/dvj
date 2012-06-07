@@ -72,6 +72,13 @@ SetDir
 	}
 }
 
+const char*
+DatabaseFilterObj::
+GetPattern()
+{
+	return(Pattern ? Pattern : "");
+}
+
 void
 DatabaseFilterObj::
 SetPattern
@@ -95,6 +102,13 @@ SetPattern
 	}
 }
 
+float
+DatabaseFilterObj::
+GetBPMCenter()
+{
+	return(BPMCenter);
+}
+
 void
 DatabaseFilterObj::
 SetBPMCenter
@@ -105,6 +119,13 @@ SetBPMCenter
 	BPMCenter=bpmCenter;
 }
 
+float
+DatabaseFilterObj::
+GetBPMRange()
+{
+	return(BPMRange);
+}
+
 void
 DatabaseFilterObj::
 SetBPMRange
@@ -113,6 +134,19 @@ SetBPMRange
 )
 {
 	BPMRange=bpmRange;
+}
+
+void
+DatabaseFilterObj::
+Assign
+(
+	DatabaseFilterObj&	dst
+)
+{
+	dst.SetDir(GetDir());
+	dst.SetPattern(GetPattern());
+	dst.SetBPMCenter(GetBPMCenter());
+	dst.SetBPMRange(GetBPMRange());
 }
 
 
@@ -238,7 +272,7 @@ MatchesFilter
 	{
 		unsigned int filterLen = (unsigned int)strlen(filter->Dir);
 		unsigned int entryLen = (unsigned int)strlen(PathDir);
-		if(GetOldFileStructure())
+		if(GetOldFileStructure() || IsDir)
 		{
 			if(filterLen!=entryLen)
 			{
@@ -404,7 +438,8 @@ std::vector<DatabaseEntryObj*>
 DatabaseObj::
 GetEntryListFromFilter
 (
-	DatabaseFilterObj*	filter
+	DatabaseFilterObj*	filter,
+	bool*			abortSignal
 )
 {
 	std::vector<DatabaseEntryObj*> list;
@@ -429,6 +464,11 @@ GetEntryListFromFilter
 		{
 			list.push_back(DatabaseEntryList[a]);
 		}
+		if(abortSignal && (*abortSignal))
+		{
+			std::vector<DatabaseEntryObj*> empty;
+			return(empty);
+		}
 	}
 
 	//Then files
@@ -441,6 +481,11 @@ GetEntryListFromFilter
 		)
 		{
 			list.push_back(DatabaseEntryList[a]);
+		}
+		if(abortSignal && (*abortSignal))
+		{
+			std::vector<DatabaseEntryObj*> empty;
+			return(empty);
 		}
 	}
 

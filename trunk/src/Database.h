@@ -22,10 +22,15 @@ public:
 
 	const char*	GetDir();
 	void		SetDir(const char* dir);
+	const char*	GetPattern();
 	void		SetPattern(const char* pattern);
 
+	float		GetBPMCenter();
 	void		SetBPMCenter(float bpmCenter);
+	float		GetBPMRange();
 	void		SetBPMRange(float bpmRange);
+
+	void		Assign(DatabaseFilterObj& dst);
 
 //private:
 
@@ -75,7 +80,11 @@ public:
 		~DatabaseObj();
 	
 	std::vector<DatabaseEntryObj*>
-		GetEntryListFromFilter(DatabaseFilterObj* filter);
+		GetEntryListFromFilter
+		(
+			DatabaseFilterObj* filter,
+			bool*	abortSignal=NULL
+		);
 	
 	void	Refresh(const char* subdirPath=NULL, bool drawLoadScreen=false);
 	void	Refresh_Internal(const char* subdirPath=NULL, bool recursing=false);

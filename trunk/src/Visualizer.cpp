@@ -2167,6 +2167,8 @@ DrawVideos
 				}
 			}
 
+			//LGL_DebugPrintf("VisImg: %i (%i)\n",image?1:0,image?image->GetFrameNumber():-9);
+
 			if
 			(
 				image!=NULL &&
@@ -2210,13 +2212,16 @@ DrawVideos
 						{
 							//Respect Image AR
 
-							GetProjectorARCoordsFromViewportCoords
-							(
-								myL,
-								myR,
-								myB,
-								myT
-							);
+							if(preview==false)
+							{
+								GetProjectorARCoordsFromViewportCoords
+								(
+									myL,
+									myR,
+									myB,
+									myT
+								);
+							}
 
 							GetImageARCoordsFromViewportCoords
 							(
@@ -2436,7 +2441,7 @@ DrawVideos
 				}
 				tt->SetNoiseFactorVideo(noiseFactorVideo);
 
-		noiseFactorVideo=0.0f;
+				noiseFactorVideo=0.0f;
 				if(noiseFactorVideo>0.0f)
 				{
 					int which = LGL_RandInt(0,NOISE_IMAGE_COUNT_128_128-1);
