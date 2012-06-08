@@ -953,7 +953,7 @@ void lgl_ClearAudioChannelNow
 	LGL.SoundChannel[a].DivergeSamples=0;
 	LGL.SoundChannel[a].DivergeSpeed=1.0f;
 	LGL.SoundChannel[a].DivergeRecallNow=false;
-	LGL.SoundChannel[a].DivergeRecallSamples=0.0f;
+	LGL.SoundChannel[a].DivergeRecallSamples=-1.0f;
 	LGL.SoundChannel[a].WarpPointSecondsAlpha=-1.0f;
 	LGL.SoundChannel[a].WarpPointSecondsOmega=-1.0f;
 	LGL.SoundChannel[a].WarpPointLoop=false;
@@ -19656,12 +19656,21 @@ DivergeRecallPush
 		return(false);
 	}
 
-	if(LGL.SoundChannel[channel].DivergeCount==0)
+	LGL_SoundChannel* sc=&LGL.SoundChannel[channel];
+
+	if(sc->DivergeCount==0)
 	{
-		LGL.SoundChannel[channel].DivergeSpeed=(speed==-1.0f) ? LGL.SoundChannel[channel].SpeedDesired : speed;
-		LGL.SoundChannel[channel].DivergeSamples=LGL.SoundChannel[channel].PositionSamplesNow;
+		if(sc->DivergeRecallNow)
+		{
+			//
+		}
+		else
+		{
+			sc->DivergeSpeed=(speed==-1.0f) ? LGL.SoundChannel[channel].SpeedDesired : speed;
+			sc->DivergeSamples=LGL.SoundChannel[channel].PositionSamplesNow;
+		}
 	}
-	LGL.SoundChannel[channel].DivergeCount++;
+	sc->DivergeCount++;
 
 	return(true);
 }
@@ -34047,6 +34056,7 @@ lgl_AudioOutCallbackGenerator
 				sc->SampleRateConverterBufferStartSamples=sc->DivergeRecallSamples;
 				sc->SampleRateConverterBufferValidSamples=0;
 				sc->DivergeRecallNow=false;
+				sc->DivergeRecallSamples=-1.0f;
 			}
 
 			if(sc->DivergeCount>=1)
