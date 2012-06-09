@@ -2996,7 +2996,7 @@ NextFrame
 		}
 
 		//Glitch
-		if(GetInput().WaveformStutter(target))
+		if(0 && GetInput().WaveformStutter(target))	//DEPRECATED & INACTIVE
 		{
 			bool glitchDuoPrev=GlitchDuo;
 			GlitchDuo=true;
@@ -7543,8 +7543,11 @@ Recall()
 
 	//Change our speed instantly.
 	Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier*ReverseMultiplier,true);
-	Sound->SetWarpPoint(Channel);
 	Sound->DivergeRecallPop(Channel);
+	if(Sound->GetDivergeRecallCount(Channel)==0)
+	{
+		Sound->SetWarpPoint(Channel);
+	}
 
 	SmoothWaveformScrollingSample=Sound->GetPositionSamples(Channel);
 }
