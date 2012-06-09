@@ -13698,7 +13698,7 @@ LGL_VideoEncoder
 		DstCodecContext->bit_rate=BitrateMaxMBps*1024*1024*8;
 		DstCodecContext->rc_min_rate=BitrateMaxMBps*1024*1024*8;
 		DstCodecContext->rc_max_rate=BitrateMaxMBps*1024*1024*8;
-		DstCodecContext->rc_buffer_size=BitrateMaxMBps*1024*1024*8*64;
+		DstCodecContext->rc_buffer_size=BitrateMaxMBps*1024*1024*8*128;
 		DstCodecContext->bit_rate_tolerance=1000*1000*8;//DstCodecContext->bit_rate/16;	//Allow for some variance
 		DstCodecContext->qmin = 2;
 		DstCodecContext->qmax = 31;
