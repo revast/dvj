@@ -11209,7 +11209,10 @@ GetImage
 		FPSDisplayedMissCounter=0;
 		FPSDisplayedTimer.Reset();
 	}
-
+if(Image->GetFrameNumber()==-1)
+{
+//LGL_DebugPrintf("SFN 6\n");
+}
 	return(Image);
 }
 
@@ -12743,6 +12746,7 @@ MaybeInvalidateBuffers()
 		LGL_ScopeLock pathLock(__FILE__,__LINE__,PathSemaphore,0.0f);
 		if(pathLock.GetLockObtained()==false)
 		{
+			//LGL_DebugPrintf("MaybeInvalidateBuffers(): Return early");
 			return;
 		}
 		strcpy(path,Path);
@@ -13388,21 +13392,26 @@ GetInvalidFrameBuffer()
 	{
 		if
 		(
-			FrameBufferList[a]->IsLoaded()==false &&
-			FrameBufferList[a]->IsReady()==false
+			(
+				FrameBufferList[a]->IsLoaded()==false &&
+				FrameBufferList[a]->IsReady()==false
+			) ||
+			FrameBufferList[a]->GetFrameNumber()==-1
 		)
 		{
 			return(FrameBufferList[a]);
 		}
 	}
 
-	LGL_DebugPrintf("Couldn't find an invalid framebuffer!! (%i)\n",FrameBufferList.size());
-	if(FILE* baka = fopen("/Users/id/debug.txt","w"))
+	LGL_DebugPrintf("Couldn't find an invalid framebuffer!! (%i) (%s)\n",FrameBufferList.size(),Path);
+	if(0 && FILE* baka = fopen("/Users/id/debug.txt","w"))
 	{
 		for(unsigned int a=0;a<FrameBufferList.size();a++)
 		{
 			fprintf(baka,"buf[%i]: Loaded? %i\n",a,FrameBufferList[a]->IsLoaded());
-
+			fprintf(baka,"buf[%i]: Ready? %i\n",a,FrameBufferList[a]->IsReady());
+			fprintf(baka,"buf[%i]: Frame? %ld\n",a,FrameBufferList[a]->GetFrameNumber());
+			fprintf(baka,"buf[%i]: Path? %s\n",a,FrameBufferList[a]->GetVideoPath());
 		}
 
 		fclose(baka);

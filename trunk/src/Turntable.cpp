@@ -1371,6 +1371,7 @@ NextFrame
 			//LGL_DebugPrintf("Beg: %.2f\n",GetBeginningOfCurrentMeasureSeconds());
 			//LGL_DebugPrintf("PCM: %f\n",GetPercentOfCurrentMeasure());
 			//LGL_DebugPrintf("MLS: %.2f\n",GetMeasureLengthSeconds());
+			//LGL_DebugPrintf("Video: %s\n",Video ? Video->GetPath() : "NULL VIDEO");
 		}
 	}
 
@@ -4140,11 +4141,13 @@ NextFrame
 			VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
 
 			//Load Video if possible
+			/*
 			if(Video)
 			{
 				Video->InvalidateAllFrameBuffers();
 				Video->SetVideo(NULL);
 			}
+			*/
 			SelectNewVideo();
 
 			if(VideoFileExists)
