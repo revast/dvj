@@ -13404,7 +13404,8 @@ GetInvalidFrameBuffer()
 	}
 
 	LGL_DebugPrintf("Couldn't find an invalid framebuffer!! (%i) (%s)\n",FrameBufferList.size(),Path);
-	if(0 && FILE* baka = fopen("/Users/id/debug.txt","w"))
+	/*
+	if(FILE* baka = fopen("/Users/id/debug.txt","w"))
 	{
 		for(unsigned int a=0;a<FrameBufferList.size();a++)
 		{
@@ -13416,6 +13417,7 @@ GetInvalidFrameBuffer()
 
 		fclose(baka);
 	}
+	*/
 
 	return(NULL);
 }
