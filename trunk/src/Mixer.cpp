@@ -915,13 +915,16 @@ NextFrame
 		{
 			TurntableObj* tt = Turntable[a];
 
-			if(tt->GetVideoLo())
+			if(tt->GetMode()==2)
 			{
-				tt->GetVideoLo()->SetVideo(tt->GetVideoLoPath());
-			}
-			if(tt->GetVideoHi())
-			{
-				tt->GetVideoHi()->SetVideo(tt->GetVideoHiPath());
+				if(tt->GetVideoLo())
+				{
+					tt->GetVideoLo()->SetVideo(tt->GetVideoLoPath());
+				}
+				if(tt->GetVideoHi())
+				{
+					tt->GetVideoHi()->SetVideo(tt->GetVideoHiPath());
+				}
 			}
 		}
 

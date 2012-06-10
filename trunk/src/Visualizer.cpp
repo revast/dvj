@@ -2493,12 +2493,21 @@ DrawVideos
 			LGL_VideoDecoder* vid = (a==0) ? vidL : vidH;
 			if(vid)
 			{
-				float vol = LGL_Min(1,volAve*tt->GetGain());
+				float vol = LGL_Min(4.0f,volAve*tt->GetGain());
 				float multFreq = (vid==vidL) ? tt->GetEQLo() : tt->GetEQHi();
 				float myFreqFactor=freqFactor;
 				float br = GetFreqBrightness(a,myFreqFactor,vol)*multFreq;
-				//if(vid==vidL) br*=4;	//FIXME: Ben / Zebbler hack... Shouldn't be this way!!
+				if(vid==vidL) br*=4;
+				if(vid==vidL)
+				{
+					br*=GetFreqVideoBrightnessMultiplierLow();
+				}
+				else
+				{
+					br*=GetFreqVideoBrightnessMultiplierHigh();
+				}
 				br*=vid->StoredBrightness[tt->GetWhich()]*freqSenseBright;
+				//br*=tt->GetGain();
 
 				LGL_Image* image = vid->GetImage();//LGL_SecondsSinceLastFrame()<1.0f/30.0f);//EIGHT_WAY ? !preview : preview);
 				{

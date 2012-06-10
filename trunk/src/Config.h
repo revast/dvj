@@ -184,6 +184,12 @@ GetCachedVideoConstBitrateMBps();
 float
 GetVisualBrightnessAtCenter();
 
+float
+GetFreqVideoBrightnessMultiplierLow();
+
+float
+GetFreqVideoBrightnessMultiplierHigh();
+
 void
 GetColorCool
 (
