@@ -179,6 +179,9 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"visualBrightnessAtCenter=1.0\n");
 		fprintf(fd,"\n");
+		fprintf(fd,"freqVideoBrightnessMultiplierLow=0.5\n");
+		fprintf(fd,"freqVideoBrightnessMultiplierHigh=1.0\n");
+		fprintf(fd,"\n");
 		fprintf(fd,"colorCoolR=0.0\n");
 		fprintf(fd,"colorCoolG=0.0\n");
 		fprintf(fd,"colorCoolB=0.5\n");
@@ -795,6 +798,34 @@ GetVisualBrightnessAtCenter()
 		(
 			0.0f,
 			dvjrcConfigFile->read<float>("visualBrightnessAtCenter",1.0f),
+			1.0f
+		)
+	);
+}
+
+float
+GetFreqVideoBrightnessMultiplierLow()
+{
+	return
+	(
+		LGL_Clamp
+		(
+			0.0f,
+			dvjrcConfigFile->read<float>("freqVideoBrightnessMultiplierLow",0.25f),
+			1.0f
+		)
+	);
+}
+
+float
+GetFreqVideoBrightnessMultiplierHigh()
+{
+	return
+	(
+		LGL_Clamp
+		(
+			0.0f,
+			dvjrcConfigFile->read<float>("freqVideoBrightnessMultiplierHigh",1.0f),
 			1.0f
 		)
 	);

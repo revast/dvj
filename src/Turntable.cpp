@@ -1159,7 +1159,7 @@ TurntableObj
 	VideoBrightness=1.0f;
 	SyphonBrightness=0.0f;
 	OscilloscopeBrightness=0.0f;
-	FreqSenseBrightness=0.0f;
+	FreqSenseBrightness=1.0f;
 	FreqSensePathBrightness=0.0f;
 
 	FreqSenseLEDGroupFloat=0.0f;
@@ -1366,6 +1366,11 @@ NextFrame
 {
 	//Debug
 	{
+		if(Mode==0)
+		{
+			//LGL_DebugPrintf("VideoLo: %s\n",VideoLo ? VideoLo->GetPath() : "NULL Vid");
+			//LGL_DebugPrintf("VideoHi: %s\n",VideoHi ? VideoHi->GetPath() : "NULL Vid");
+		}
 		if(Mode==2)
 		{
 			//LGL_DebugPrintf("Beg: %.2f\n",GetBeginningOfCurrentMeasureSeconds());
@@ -1374,6 +1379,37 @@ NextFrame
 			//LGL_DebugPrintf("Video: %s\n",Video ? Video->GetPath() : "NULL VIDEO");
 		}
 	}
+
+	//Ensure FreqVideos are NULL when Mode Zero
+	/*
+	if(Mode==0)
+	{
+		for(int a=0;a<2;a++)
+		{
+			LGL_VideoDecoder* video = NULL;
+			if(a==0)
+			{
+				video=VideoLo;
+			}
+			else if(a==1)
+			{
+				video=VideoHi;
+			}
+
+			if
+			(
+				video &&
+				video->GetPath() &&
+				video->GetPath()[0]!='\0'
+			)
+			{
+				video->InvalidateAllFrameBuffers();
+				video->SetVideo(NULL);
+				video->SetUserString("NULL");
+			}
+		}
+	}
+	*/
 
 	//Deal with low memory
 	if(0)
@@ -3837,11 +3873,24 @@ NextFrame
 			DatabaseEntryNow=NULL;
 			VideoEncoderPathSrc[0]='\0';
 			VideoEncoderUnsupportedCodecTime=0.0f;
-			if(Video)
+			for(int a=0;a<3;a++)
 			{
-				Video->InvalidateAllFrameBuffers();
-				Video->SetVideo(NULL);
-				Video->SetUserString("NULL");
+				LGL_VideoDecoder* video = Video;
+				if(a==1)
+				{
+					video=VideoLo;
+				}
+				else if(a==2)
+				{
+					video=VideoHi;
+				}
+
+				if(video)
+				{
+					video->InvalidateAllFrameBuffers();
+					video->SetVideo(NULL);
+					video->SetUserString("NULL");
+				}
 			}
 			FilterTextMostRecent[0]='\0';
 			FilterText.SetString();
