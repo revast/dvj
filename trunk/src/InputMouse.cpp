@@ -41,8 +41,10 @@ InputMouseObj()
 	FileSelectNext=0;
 	WaveformVideoAspectRatioNextNow=false;
 	WaveformVideoAspectRatioNextNext=false;
-	WaveformVideoSelectNow=false;
-	WaveformVideoSelectNext=false;
+	WaveformVideoSelectLowNow=false;
+	WaveformVideoSelectLowNext=false;
+	WaveformVideoSelectHighNow=false;
+	WaveformVideoSelectHighNext=false;
 	WaveformLoopToggleNow=false;
 	WaveformLoopToggleNext=false;
 	HoverOnSelectedSavepointNow=false;
@@ -85,8 +87,11 @@ NextFrame()
 	WaveformVideoAspectRatioNextNow=WaveformVideoAspectRatioNextNext;
 	WaveformVideoAspectRatioNextNext=false;
 
-	WaveformVideoSelectNow=WaveformVideoSelectNext;
-	WaveformVideoSelectNext=false;
+	WaveformVideoSelectLowNow=WaveformVideoSelectLowNext;
+	WaveformVideoSelectLowNext=false;
+
+	WaveformVideoSelectHighNow=WaveformVideoSelectHighNext;
+	WaveformVideoSelectHighNext=false;
 	
 	WaveformLoopToggleNow=WaveformLoopToggleNext;
 	WaveformLoopToggleNext=false;
@@ -1098,14 +1103,31 @@ WaveformAutoDivergeRecall
 
 bool
 InputMouseObj::
-WaveformVideoSelect
+WaveformVideoSelectLow
 (
 	unsigned int	target
 )	const
 {
 	if(target & DragTarget)
 	{
-		return(WaveformVideoSelectNow);
+		return(WaveformVideoSelectLowNow);
+	}
+	else
+	{
+		return(false);
+	}
+}
+
+bool
+InputMouseObj::
+WaveformVideoSelectHigh
+(
+	unsigned int	target
+)	const
+{
+	if(target & DragTarget)
+	{
+		return(WaveformVideoSelectHighNow);
 	}
 	else
 	{
@@ -1405,9 +1427,16 @@ SetWaveformVideoAspectRatioNextNext()
 
 void
 InputMouseObj::
-SetWaveformVideoSelectNext()
+SetWaveformVideoSelectLowNext()
 {
-	WaveformVideoSelectNext=true;
+	WaveformVideoSelectLowNext=true;
+}
+
+void
+InputMouseObj::
+SetWaveformVideoSelectHighNext()
+{
+	WaveformVideoSelectHighNext=true;
 }
 
 void

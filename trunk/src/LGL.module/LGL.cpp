@@ -112,13 +112,13 @@
 #ifdef	LGL_OSX
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.85f)
-#define	LGL_PRIORITY_VIDEO_DECODE	(1.0f-0.5f)
-#define	LGL_PRIORITY_VIDEO_PRELOAD	(1.0f-0.6f)
-#define	LGL_PRIORITY_VIDEO_READAHEAD	(1.0f-0.65f)
-#define	LGL_PRIORITY_VIDEO_LOAD		(1.0f-0.8f)
-#define	LGL_PRIORITY_AUDIO_DECODE	(1.0f-0.7f)
-#define	LGL_PRIORITY_AUDIO_ENCODE	(1.0f-0.75f)
-#define	LGL_PRIORITY_OSC		(0.85f)
+#define	LGL_PRIORITY_VIDEO_DECODE	(0.5f-1.0f)
+#define	LGL_PRIORITY_VIDEO_PRELOAD	(0.6f-1.0f)
+#define	LGL_PRIORITY_VIDEO_READAHEAD	(0.65f-1.0f)
+#define	LGL_PRIORITY_VIDEO_LOAD		(0.8f-1.0f)
+#define	LGL_PRIORITY_AUDIO_DECODE	(0.7f-1.0f)
+#define	LGL_PRIORITY_AUDIO_ENCODE	(0.75f-1.0f)
+#define	LGL_PRIORITY_OSC		(0.85f-1.0f)
 #else
 #define	LGL_PRIORITY_AUDIO_OUT		(1.0f)
 #define	LGL_PRIORITY_MAIN		(0.9f)
@@ -140,7 +140,7 @@ int lgl_SetRealtime
 	//int	constraint
 )
 {
-	//return(false);
+	return(false);
 	//printf("Realtime: Alpha\n");
 	float HZ = AudioGetHostClockFrequency();
 
@@ -158,7 +158,7 @@ int lgl_SetRealtime
 	ttcpolicy.period=1.0f*HZ/(44100.0f/LGL_SAMPLESIZE_SDL); // HZ/160
 	ttcpolicy.computation=(ttcpolicy.period*0.9f); //computation; // HZ/3300;
 	ttcpolicy.constraint=ttcpolicy.period*0.9f; // HZ/2200;
-	ttcpolicy.preemptible=0;
+	ttcpolicy.preemptible=1;
 
 	if
 	(
@@ -2449,7 +2449,6 @@ printf("\n");
 				LGL.AudioAvailable=false;
 			}
 		}
-		LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
 	}
 
 	SDL_WM_SetCaption(inWindowTitle,inWindowTitle);
@@ -3055,6 +3054,7 @@ printf("\n");
 #endif	//LGL_NO_GRAPHICS
 
 	LGL_ThreadSetPriority(LGL_PRIORITY_MAIN,"Main");
+	LGL_ThreadSetPriorityForeground();
 
 	lgl_lgl_initialized=true;
 
@@ -10059,6 +10059,11 @@ SwapInNewBufferRGB
 			delete Buffer;
 		}
 		Buffer = new unsigned char[bufferRGBBytes];
+		int result=mlock(Buffer,bufferRGBBytes);
+		if(result!=0)
+		{
+			printf("lgl_FrameBuffer mlock() failed!\n");
+		}
 	}
 	//Buffer=bufferRGB;
 	memcpy(Buffer,bufferRGB,bufferRGBBytes);
@@ -10356,13 +10361,13 @@ lgl_video_decoder_decode_thread
 		bool imageDecoded=false;
 		if
 		(
-			LGL_FPS()>=50 &&
+			//LGL_FPS()>=50 &&
 			dec->GetDecodeInThread()
 		)
 		{
 			imageDecoded=dec->MaybeDecodeImage();
 		}
-		LGL_DelayMS(imageDecoded ? 5 : 10);
+		LGL_DelayMS(imageDecoded ? 1 : 2);
 	}
 
 	return(0);
@@ -10541,7 +10546,7 @@ lgl_video_decoder_load_thread
 	{
 		{
 			LGL_ScopeLock lock(__FILE__,__LINE__,sem);
-			for(int a=0;a<30;a++)
+			for(int a=0;a<1;a++)
 			{
 				if(dec->GetThreadTerminate())
 				{
@@ -11926,6 +11931,7 @@ MaybeReadAhead()
 {
 	if
 	(
+		1 ||
 		FormatContext==NULL ||
 		CodecContext==NULL ||
 		FrameNative==NULL ||
@@ -12288,7 +12294,8 @@ MaybeDecodeImage
 		FrameNative==NULL ||
 		FrameRGB==NULL ||
 		strcmp(Path,"NULL")==0 ||
-		VideoOK==false
+		VideoOK==false ||
+		SDL_ThreadID()==LGL.ThreadIDMain
 	)
 	{
 		return(false);
@@ -12308,6 +12315,9 @@ MaybeDecodeImage
 			}
 		}
 	}
+
+	static LGL_Semaphore sem("maybeDecodeImage",false);
+	LGL_ScopeLock lock(__FILE__,__LINE__,sem);
 
 	char path[2048];
 	{
@@ -13698,7 +13708,8 @@ LGL_VideoEncoder
 		DstCodecContext->bit_rate=BitrateMaxMBps*1024*1024*8;
 		DstCodecContext->rc_min_rate=BitrateMaxMBps*1024*1024*8;
 		DstCodecContext->rc_max_rate=BitrateMaxMBps*1024*1024*8;
-		DstCodecContext->rc_buffer_size=BitrateMaxMBps*1024*1024*8*128;
+		//DstCodecContext->rc_buffer_size=BitrateMaxMBps*1024*1024*8*128;
+
 		DstCodecContext->bit_rate_tolerance=1000*1000*8;//DstCodecContext->bit_rate/16;	//Allow for some variance
 		DstCodecContext->qmin = 2;
 		DstCodecContext->qmax = 31;
@@ -13715,6 +13726,9 @@ LGL_VideoEncoder
 		//DstCodecContext->pix_fmt = PIX_FMT_RGB32;
 		DstCodecContext->pix_fmt = PIX_FMT_YUVJ422P;
 		//DstCodecContext->pix_fmt = PIX_FMT_YUV420P;
+
+		DstCodecContext->rc_buffer_size = 2*DstCodecContext->bit_rate*((int64_t)DstCodecContext->time_base.num / (float)DstCodecContext->time_base.den);
+		printf("RCBufferSize: %i\n",DstCodecContext->rc_buffer_size);
 
 		//These don't seem to help...
 		DstCodecContext->qmin = 1;
@@ -16289,6 +16303,15 @@ LGL_AudioDSP() : FreqResponseNextSemaphore("AudioDSP FreqResponseNext")
 	SetFreqResponse(initialFreqResponse);
 
 	FreqResponseNextAvailable=false;
+
+	mlock(CarryOverLeft,sizeof(CarryOverLeft));
+	mlock(CarryOverRight,sizeof(CarryOverLeft));
+
+	mlock(FreqResponseReal,sizeof(CarryOverLeft));
+	mlock(FreqResponseImaginary,sizeof(CarryOverLeft));
+
+	mlock(FreqResponseNextReal,sizeof(CarryOverLeft));
+	mlock(FreqResponseNextImaginary,sizeof(CarryOverLeft));
 }
 
 LGL_AudioDSP::
@@ -32776,6 +32799,7 @@ LGL_ThreadSetPriority
 	const char*	threadName
 )
 {
+	return;
 #ifndef	LGL_OSX
 	//Linux version currently runs better without priorities... FIXME
 	//return;
@@ -32793,24 +32817,46 @@ LGL_ThreadSetPriority
 	ttcpolicy.preemptible=1;
 	*/
 
-	thread_precedence_policy_data_t prepolicy;
-	prepolicy.importance=(int)(31+priority*40);
-
-	int result=thread_policy_set
-	(
-		mach_thread_self(),
-		THREAD_PRECEDENCE_POLICY,
-		&(prepolicy.importance),
-		THREAD_PRECEDENCE_POLICY_COUNT
-	);
-
-	if(result!=KERN_SUCCESS)
+	if(priority>0)
 	{
-		printf("Couldn't set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
-	}
-	else
-	{
-		//printf("Set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
+		/*
+		thread_precedence_policy_data_t prepolicy;
+		prepolicy.importance=(int)(31+priority*40);
+
+		int result=thread_policy_set
+		(
+			mach_thread_self(),
+			THREAD_PRECEDENCE_POLICY,
+			&(prepolicy.importance),
+			THREAD_PRECEDENCE_POLICY_COUNT
+		);
+
+		if(result!=KERN_SUCCESS)
+		{
+			printf("Couldn't set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
+		}
+		else
+		{
+			//printf("Set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
+		}
+		*/
+
+		thread_standard_policy_data_t standardPolicy;
+		int result = thread_policy_set
+		(
+			mach_thread_self(),
+			THREAD_STANDARD_POLICY,
+			(thread_policy_t)(&standardPolicy),
+			THREAD_STANDARD_POLICY_COUNT
+		);
+		if(result!=KERN_SUCCESS)
+		{
+			printf("Couldn't set thread priority '%s'\n",threadName);
+		}
+		else
+		{
+			//printf("Set thread priority '%i' for '%s' (%.2f)\n",prepolicy.importance,threadName,priority);
+		}
 	}
 
 	/*
@@ -32886,6 +32932,32 @@ printf("sched_priority: %i (%i - %i)\n",schedParam.sched_priority,sched_get_prio
 		sched_setscheduler(0,SCHED_FIFO,&schedParam);
 	}
 #endif	//LGL_OSX
+}
+
+void
+LGL_ThreadSetPriorityForeground()
+{
+	return;
+	int ret;
+	struct task_category_policy tcatpolicy;
+
+	tcatpolicy.role = TASK_FOREGROUND_APPLICATION;
+
+	if
+	(
+		(
+			ret=task_policy_set
+			(
+				mach_task_self(),
+				TASK_CATEGORY_POLICY,
+				(thread_policy_t)&tcatpolicy,
+				TASK_CATEGORY_POLICY_COUNT
+			)
+		) != KERN_SUCCESS
+	)
+	{
+		printf("set_my_task_policy() failed.\n");
+	}
 }
 
 void
@@ -33848,7 +33920,7 @@ lgl_AudioOutCallbackGenerator
 )
 {
 	//Detect realtime status
-	if(0 && LGL_KeyStroke(LGL_KEY_T))
+	if(0)
 	{
 		struct thread_time_constraint_policy ttcpolicy;
 		thread_port_t threadport = pthread_mach_thread_np(pthread_self());
@@ -34841,7 +34913,7 @@ lgl_AudioOutCallbackGenerator
 		float tempStreamDSPOutStereo[LGL_SAMPLESIZE*2];
 		for(int a=0;a<sc->Channels/2;a++)
 		{
-			if(!LGL_KeyDown(LGL_KEY_W) && sc->LGLAudioDSP[a])
+			if(sc->LGLAudioDSP[a])
 			{
 				//Stereo
 				float* streamL = (a!=0) ? tempStreamBL : tempStreamFL;
@@ -35077,14 +35149,15 @@ void lgl_AudioInCallback(void *udata, Uint8 *stream, int len8)
 		streamStereo16[2*a+1]=stream16[a]+stream16[a+1];
 	}
 
-	LGL_AudioGrain* grain=new LGL_AudioGrain;
-	grain->SetWaveformFromMemory
-	(
-		streamStereo8,
-		len16		//LengthSamples
-	);
+	LGL_ScopeLock audioInSemaphoreLock(__FILE__,__LINE__,LGL.AudioInSemaphore,0.0f);
+	if(audioInSemaphoreLock.GetLockObtained())
 	{
-		LGL_ScopeLock lock(__FILE__,__LINE__,LGL.AudioInSemaphore);
+		LGL_AudioGrain* grain=new LGL_AudioGrain;
+		grain->SetWaveformFromMemory
+		(
+			streamStereo8,
+			len16		//LengthSamples
+		);
 		LGL.AudioInGrainListBack.push_back(grain);
 	}
 }

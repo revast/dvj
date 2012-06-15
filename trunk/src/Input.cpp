@@ -101,7 +101,8 @@ float	InputWaveformLoopToggle(unsigned int target) { return(GetInput().WaveformL
 float	InputWaveformLoopThenRecallActive(unsigned int target) { return(GetInput().WaveformLoopThenRecallActive(target)); }
 float	InputWaveformReverse(unsigned int target) { return(GetInput().WaveformReverse(target)); }
 float	InputWaveformAutoDivergeRecall(unsigned int target) { return(GetInput().WaveformAutoDivergeRecall(target)); }
-float	InputWaveformVideoSelect(unsigned int target) { return(GetInput().WaveformVideoSelect(target)); }
+float	InputWaveformVideoSelectLow(unsigned int target) { return(GetInput().WaveformVideoSelectLow(target)); }
+float	InputWaveformVideoSelectHigh(unsigned int target) { return(GetInput().WaveformVideoSelectHigh(target)); }
 float	InputWaveformVideoBrightness(unsigned int target) { return(GetInput().WaveformVideoBrightness(target)); }
 float	InputWaveformVideoBrightnessDelta(unsigned int target) { return(GetInput().WaveformVideoBrightnessDelta(target)); }
 float	InputWaveformSyphonBrightness(unsigned int target) { return(GetInput().WaveformSyphonBrightness(target)); }
@@ -1417,7 +1418,7 @@ WaveformAutoDivergeRecall
 
 bool
 InputObj::
-WaveformVideoSelect
+WaveformVideoSelectLow
 (
 	unsigned int	target
 )	const
@@ -1426,7 +1427,24 @@ WaveformVideoSelect
 	
 	for(unsigned int a=0;a<Children.size();a++)
 	{
-		select|=Children[a]->WaveformVideoSelect(target);
+		select|=Children[a]->WaveformVideoSelectLow(target);
+	}
+
+	return(select);
+}
+
+bool
+InputObj::
+WaveformVideoSelectHigh
+(
+	unsigned int	target
+)	const
+{
+	bool select=false;
+	
+	for(unsigned int a=0;a<Children.size();a++)
+	{
+		select|=Children[a]->WaveformVideoSelectHigh(target);
 	}
 
 	return(select);

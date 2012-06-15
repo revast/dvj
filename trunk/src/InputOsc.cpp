@@ -859,20 +859,39 @@ InputOscObj(int port) :
 			}
 		}
 
-		//VideoSelect
+		//VideoSelectLow
 		{
 			for(int a=0;a<2;a++)
 			{
 				InitializeOscElement
 				(
-					WaveformVideoSelectOscElement[a],
-					WAVEFORM_VIDEO_SELECT,
+					WaveformVideoSelectLowOscElement[a],
+					WAVEFORM_VIDEO_SELECT_LOW,
 					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
 					0,
 					0.0f,
 					1.0f,
 					0.0f,
-					InputWaveformVideoSelect,
+					InputWaveformVideoSelectLow,
+					false
+				);
+			}
+		}
+
+		//VideoSelectHigh
+		{
+			for(int a=0;a<2;a++)
+			{
+				InitializeOscElement
+				(
+					WaveformVideoSelectHighOscElement[a],
+					WAVEFORM_VIDEO_SELECT_HIGH,
+					(a==0) ? TARGET_TOP : TARGET_BOTTOM,
+					0,
+					0.0f,
+					1.0f,
+					0.0f,
+					InputWaveformVideoSelectHigh,
 					false
 				);
 			}
@@ -1940,12 +1959,23 @@ WaveformAutoDivergeRecall
 
 bool
 InputOscObj::
-WaveformVideoSelect
+WaveformVideoSelectLow
 (
 	unsigned int	target
 )	const
 {
-	bool select = WaveformVideoSelectOscElement[GetIndexFromTarget(target)].GetFloat();
+	bool select = WaveformVideoSelectLowOscElement[GetIndexFromTarget(target)].GetFloat();
+	return(select);
+}
+
+bool
+InputOscObj::
+WaveformVideoSelectHigh
+(
+	unsigned int	target
+)	const
+{
+	bool select = WaveformVideoSelectHighOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(select);
 }
 

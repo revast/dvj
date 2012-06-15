@@ -2004,7 +2004,11 @@ DrawVideos
 	bool		preview
 )
 {
-	if(tt->GetMode()!=2)
+	if
+	(
+		tt->GetMode()!=2 &&
+		preview==false
+	)
 	{
 		return;
 	}

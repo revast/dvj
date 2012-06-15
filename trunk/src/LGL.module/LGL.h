@@ -468,6 +468,7 @@ SDL_Thread*	LGL_ThreadCreate(int (*fn)(void*), void* data=NULL);
 int		LGL_ThreadWait(SDL_Thread* target);
 void		LGL_ThreadKill(SDL_Thread* target);
 void		LGL_ThreadSetPriority(float priority, const char* threadName=NULL);	//0 is lowest, 1 is highest
+void		LGL_ThreadSetPriorityForeground();
 void		LGL_ThreadSetCPUAffinity(int cpu);
 
 class LGL_Semaphore

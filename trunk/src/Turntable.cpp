@@ -1136,8 +1136,10 @@ TurntableObj
 		VideoLo->SetFrameBufferAddBackwards(false);
 		VideoLo->SetPreloadMaxMB(GetPreloadFreqSenseMaxMB());
 		VideoLo->SetPreloadFromCurrentTime(false);
-		VideoLo->SetReadAheadMB(0);
-		VideoLo->SetReadAheadDelayMS(10000);
+		//VideoLo->SetReadAheadMB(0);
+		//VideoLo->SetReadAheadDelayMS(10000);
+		VideoLo->SetReadAheadMB(16);
+		VideoLo->SetReadAheadDelayMS(200);
 		VideoLo->SetDecodeInThread(LGL_CPUCount()>=4);
 	}
 	if(VideoHi==NULL)
@@ -1147,8 +1149,10 @@ TurntableObj
 		VideoHi->SetFrameBufferAddBackwards(false);
 		VideoHi->SetPreloadMaxMB(GetPreloadFreqSenseMaxMB());
 		VideoHi->SetPreloadFromCurrentTime(false);
-		VideoHi->SetReadAheadMB(0);
-		VideoHi->SetReadAheadDelayMS(10000);
+		//VideoHi->SetReadAheadMB(0);
+		//VideoHi->SetReadAheadDelayMS(10000);
+		VideoHi->SetReadAheadMB(16);
+		VideoHi->SetReadAheadDelayMS(200);
 		VideoHi->SetDecodeInThread(LGL_CPUCount()>=4);
 	}
 	VideoLoPath[0]='\0';
@@ -1172,6 +1176,7 @@ TurntableObj
 	}
 
 	AudioInputMode=false;
+	TesterEverEnabled=false;
 
 	VideoEncoder=NULL;
 	VideoEncoderThread=NULL;
@@ -1202,7 +1207,7 @@ TurntableObj
 	LowRez=false;
 	LoadAllCachedDataThread=NULL;
 	FindAudioPathThread=NULL;
-	WarmMemoryThread=LGL_ThreadCreate(warmMemoryThread,this);
+	WarmMemoryThread=NULL;//LGL_ThreadCreate(warmMemoryThread,this);
 	UpdateFilterListViaThread=true;
 	UpdateFilterListThread=NULL;
 	UpdateFilterListDatabaseFilterNext.SetBPMCenter(-9999.0f);
@@ -1442,6 +1447,10 @@ NextFrame
 	}
 
 	UpdateDatabaseFilterFn();
+	if(GetInputTester().GetEnable())
+	{
+		TesterEverEnabled=true;
+	}
 
 	if(Sound && Channel>=0)
 	{
@@ -3435,9 +3444,13 @@ NextFrame
 			}
 		}
 
-		if(GetInput().WaveformVideoSelect(target))
+		if(GetInput().WaveformVideoSelectLow(target))
 		{
-			SelectNewVideo();
+			SelectNewVideoLow();
+		}
+		if(GetInput().WaveformVideoSelectHigh(target))
+		{
+			SelectNewVideoHigh();
 		}
 
 		bool toggle=GetInput().WaveformAudioInputToggle(target);
@@ -3921,6 +3934,11 @@ NextFrame
 			RecordScratch=false;
 			LuminScratch=false;
 
+			VideoLoPath[0]='\0';
+			VideoHiPath[0]='\0';
+			VideoLoPathShort[0]='\0';
+			VideoHiPathShort[0]='\0';
+
 			strncpy(DenyPreviewNameDisplayed,SoundSrcNameDisplayed,sizeof(DenyPreviewNameDisplayed)-1);
 			DenyPreviewNameDisplayed[sizeof(DenyPreviewNameDisplayed)-1]='\0';
 		}
@@ -4085,6 +4103,7 @@ NextFrame
 			if(Channel==-1)
 			{
 				Channel=Sound->Play(0,true,0);
+				UpdateSoundFreqResponse();
 				//Sound->SetPositionSeconds(Channel,GetCurrentSavepointSeconds());
 				PauseMultiplier=0;
 			}
@@ -4217,6 +4236,7 @@ NextFrame
 		if(Sound->IsPlaying(Channel)==false)
 		{
 			Channel=Sound->Play(0,true,0);
+			UpdateSoundFreqResponse();
 			if(Sound->IsLoaded())
 			{
 				if(SmoothWaveformScrollingSample/Sound->GetHz() > Sound->GetLengthSeconds()-1)
@@ -4691,7 +4711,6 @@ if(LGL_SecondsSinceLastFrame()>=1.5f/60.0f)
 }
 
 long lastSampleLeft=0;
-//float badFlash=0.0f;
 
 void
 TurntableObj::
@@ -4702,12 +4721,28 @@ DrawFrame
 	float	visualizerZoomOutPercent
 )
 {
-	/*
-	if(Sound && Channel >= 0)
 	{
-		LGL_DebugPrintf("DRC: %i\n",Sound->GetDivergeRecallCount(Channel));
+		if(Video)
+		{
+			Video->GetImage();
+		}
+		if(VideoLo)
+		{
+			VideoLo->GetImage();
+		}
+		if(VideoHi)
+		{
+			VideoHi->GetImage();
+		}
 	}
-	*/
+	if
+	(
+		TesterEverEnabled &&
+		Which==0
+	)
+	{
+		LGL_DebugPrintf("Saving disabled due to InputTester usage");
+	}
 
 	float coolR;
 	float coolG;
@@ -4967,6 +5002,7 @@ DrawFrame
 				LGL_MouseY()<=top
 			)
 			{
+				FreqSensePathBrightness=2.0f;
 				if(LGL_MouseStroke(LGL_MOUSE_LEFT))
 				{
 					if(LGL_KeyDown(LGL_KEY_SHIFT)==false)
@@ -4975,8 +5011,12 @@ DrawFrame
 					}
 					else
 					{
-						GetInputMouse().SetWaveformVideoSelectNext();
+						GetInputMouse().SetWaveformVideoSelectLowNext();
 					}
+				}
+				if(LGL_MouseStroke(LGL_MOUSE_RIGHT))
+				{
+					GetInputMouse().SetWaveformVideoSelectHighNext();
 				}
 			}
 
@@ -5179,8 +5219,25 @@ DrawFrame
 			);
 		}
 
+		{
+			float left=	ViewportLeft;
+			float right=	0.5f-0.501f*WAVE_WIDTH_PERCENT*ViewportWidth;
+			float bottom=	ViewportBottom+0.125*ViewportHeight;
+			float top=	ViewportBottom+0.875*ViewportHeight;
+			Visualizer->DrawVideos
+			(
+				this,
+				left,
+				right,
+				bottom,
+				top,
+				true
+			);
+		}
+
 		if
 		(
+			0 &&
 			Video->GetPathShort() &&
 			GetHighlightedPathShort() &&
 			strstr(Video->GetPathShort(),GetHighlightedPathShort())
@@ -6526,6 +6583,8 @@ LoadMetadataNew(const char* data)
 	}
 
 	Savepoints.clear();
+	VideoLoPath[0]='\0';
+	VideoHiPath[0]='\0';
 
 	FileInterfaceObj fi;
 	const char* lineNow=data;
@@ -6538,7 +6597,34 @@ LoadMetadataNew(const char* data)
 
 		fi.ReadLine(lineNow);
 
-		if(fi.Size()==3)
+		if(fi.Size()==2)
+		{
+			if(strcasecmp(fi[0],"FreqVideoLow")==0)
+			{
+				strcpy(VideoLoPath,fi[1]);
+				if(const char* lastSlash = strrchr(VideoLoPath,'/'))
+				{
+					strcpy(VideoLoPathShort,&(lastSlash[1]));
+				}
+				else
+				{
+					strcpy(VideoLoPathShort,VideoLoPath);
+				}
+			}
+			if(strcasecmp(fi[0],"FreqVideoHigh")==0)
+			{
+				strcpy(VideoHiPath,fi[1]);
+				if(const char* lastSlash = strrchr(VideoHiPath,'/'))
+				{
+					strcpy(VideoHiPathShort,&(lastSlash[1]));
+				}
+				else
+				{
+					strcpy(VideoHiPathShort,VideoHiPath);
+				}
+			}
+		}
+		else if(fi.Size()==3)
 		{
 			if(strcasecmp(fi[0],"Savepoint")==0)
 			{
@@ -6637,6 +6723,15 @@ void
 TurntableObj::
 SaveMetadataNew()
 {
+	if
+	(
+		TesterEverEnabled ||
+		GetInputTester().GetEnable()
+	)
+	{
+		return;
+	}
+
 	if(Sound==NULL)
 	{
 		return;
@@ -6664,13 +6759,13 @@ SaveMetadataNew()
 	char metaDataPath[2048];
 	GetMetadataPathNew(metaDataPath);
 
-	char data[4096];
+	char data[1024*16];
 	data[0]='\0';
+	char tmp[2048];
 	for(int a=0;a<Savepoints.size();a++)
 	{
 		if(Savepoints[a].Seconds!=-1.0f)
 		{
-			char tmp[2048];
 			sprintf
 			(
 				tmp,
@@ -6681,6 +6776,21 @@ SaveMetadataNew()
 			strncat(data,tmp,sizeof(data)-1);
 		}
 	}
+
+	sprintf
+	(
+		tmp,
+		"FreqVideoLow|%s\n",
+		VideoLoPath
+	);
+	strncat(data,tmp,sizeof(data)-1);
+	sprintf
+	(
+		tmp,
+		"FreqVideoHigh|%s\n",
+		VideoHiPath
+	);
+	strncat(data,tmp,sizeof(data)-1);
 
 	LGL_WriteFileAsync(metaDataPath,data,(int)strlen(data));
 
@@ -8036,62 +8146,22 @@ GetAspectRatioMode()
 
 void
 TurntableObj::
-SelectNewVideo
-(
-	bool	forceRandom
-)
+SelectNewVideo()
 {
-	char path[2048];
-	if(FreqSenseBrightness>0.0f)
+	if(VideoLoPath[0]=='\0')
 	{
-		//Change the freq-videos
-		Visualizer->GetNextVideoPathRandomLow(path);
-		strcpy(VideoLoPath,path);
-		if(const char* lastSlash = strrchr(VideoLoPath,'/'))
-		{
-			strcpy(VideoLoPathShort,&(lastSlash[1]));
-		}
-		else
-		{
-			strcpy(VideoLoPathShort,VideoLoPath);
-		}
-
-		Visualizer->GetNextVideoPathRandomHigh(path);
-		strcpy(VideoHiPath,path);
-		if(const char* lastSlash = strrchr(VideoHiPath,'/'))
-		{
-			strcpy(VideoHiPathShort,&(lastSlash[1]));
-		}
-		else
-		{
-			strcpy(VideoHiPathShort,VideoHiPath);
-		}
-		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoLo->GetPath());
-		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",VideoHi->GetPath());
+		SelectNewVideoLow();
 	}
 
+	if(VideoHiPath[0]=='\0')
+	{
+		SelectNewVideoHigh();
+	}
+	
 	if(VideoEncoderPercent==2.0f || VideoEncoderThread==NULL)
 	{
 		//Change the normal videos
-		if
-		(
-			forceRandom ||
-			VideoFileExists==false
-		)
-		{
-			//Get next random video from Visualizer.
-			if(LGL_RandInt(0,1)==0)
-			{
-				Visualizer->GetNextVideoPathRandomLow(path);
-			}
-			else
-			{
-				Visualizer->GetNextVideoPathRandomHigh(path);
-			}
-
-			VideoOffsetSeconds=LGL_RandFloat(0,1000.0f);
-		}
-		else
+		if(VideoFileExists)
 		{
 			if
 			(
@@ -8107,6 +8177,49 @@ SelectNewVideo
 		}
 		LGL_DrawLogWrite("!dvj::NewVideo|%s\n",Video->GetPath());
 	}
+}
+
+void
+TurntableObj::
+SelectNewVideoLow()
+{
+	char path[4096];
+
+	//Change the freq-videos
+	Visualizer->GetNextVideoPathRandomLow(path);
+	strcpy(VideoLoPath,path);
+	if(const char* lastSlash = strrchr(VideoLoPath,'/'))
+	{
+		strcpy(VideoLoPathShort,&(lastSlash[1]));
+	}
+	else
+	{
+		strcpy(VideoLoPathShort,VideoLoPath);
+	}
+
+	SaveMetadataNew();
+}
+
+void
+TurntableObj::
+SelectNewVideoHigh()
+{
+	char path[2048];
+	
+	//Change the freq-videos
+
+	Visualizer->GetNextVideoPathRandomHigh(path);
+	strcpy(VideoHiPath,path);
+	if(const char* lastSlash = strrchr(VideoHiPath,'/'))
+	{
+		strcpy(VideoHiPathShort,&(lastSlash[1]));
+	}
+	else
+	{
+		strcpy(VideoHiPathShort,VideoHiPath);
+	}
+
+	SaveMetadataNew();
 }
 
 bool

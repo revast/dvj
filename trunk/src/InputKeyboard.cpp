@@ -1283,14 +1283,32 @@ WaveformAutoDivergeRecall
 
 bool
 InputKeyboardObj::
-WaveformVideoSelect
+WaveformVideoSelectLow
 (
 	unsigned int	target
 )	const
 {
 	if(target & TARGET_FOCUS)
 	{
-		if(LGL_KeyStroke(GetInputKeyboardWaveformVideoSelectKey()))
+		if(LGL_KeyStroke(GetInputKeyboardWaveformVideoSelectLowKey()))
+		{
+			return(true);
+		}
+	}
+
+	return(false);
+}
+
+bool
+InputKeyboardObj::
+WaveformVideoSelectHigh
+(
+	unsigned int	target
+)	const
+{
+	if(target & TARGET_FOCUS)
+	{
+		if(LGL_KeyStroke(GetInputKeyboardWaveformVideoSelectHighKey()))
 		{
 			return(true);
 		}

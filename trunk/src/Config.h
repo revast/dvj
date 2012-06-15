@@ -105,7 +105,8 @@ typedef enum
 	WAVEFORM_LOOP_THEN_RECALL,
 	WAVEFORM_REVERSE,
 	WAVEFORM_AUTO_DIVERGE_THEN_RECALL,
-	WAVEFORM_VIDEO_SELECT,
+	WAVEFORM_VIDEO_SELECT_LOW,
+	WAVEFORM_VIDEO_SELECT_HIGH,
 	WAVEFORM_VIDEO_BRIGHTNESS,
 	WAVEFORM_VIDEO_FREQSENSE_BRIGHTNESS,
 	WAVEFORM_SYPHON_BRIGHTNESS,
@@ -307,7 +308,8 @@ int	GetInputKeyboardWaveformLoopToggleKey();
 int	GetInputKeyboardWaveformLoopThenRecallKey();
 int	GetInputKeyboardWaveformReverseKey();
 int	GetInputKeyboardWaveformAutoDivergeRecallKey();
-int	GetInputKeyboardWaveformVideoSelectKey();
+int	GetInputKeyboardWaveformVideoSelectLowKey();
+int	GetInputKeyboardWaveformVideoSelectHighKey();
 int	GetInputKeyboardWaveformAudioInputToggleKey();
 int	GetInputKeyboardWaveformVideoAspectRatioNextKey();
 int	GetInputKeyboardWaveformSyncKey();
