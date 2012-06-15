@@ -112,7 +112,8 @@ virtual bool	WaveformLoopAll			(unsigned int target)	const;	//Loop all measures 
 virtual	bool	WaveformLoopToggle		(unsigned int target)	const;	//Enter/Exit loop mode
 virtual	bool	WaveformLoopThenRecallActive	(unsigned int target)	const;	//Loops, but when done, jump to where we would have otherwise been, preserving flow
 virtual int	WaveformAutoDivergeRecall	(unsigned int target)	const;	//When done diverging, jump to where we would have otherwise been, had we not diverged
-virtual	bool	WaveformVideoSelect		(unsigned int target)	const;	//Choose a new video
+virtual	bool	WaveformVideoSelectLow		(unsigned int target)	const;	//Choose a new low video
+virtual	bool	WaveformVideoSelectHigh		(unsigned int target)	const;	//Choose a new high video
 virtual	float	WaveformVideoBrightness		(unsigned int target)	const;	//How bright the video is, independent of the crossfader
 virtual	float	WaveformSyphonBrightness	(unsigned int target)	const;	//How bright syphon is, independent of the crossfader
 virtual	float	WaveformVideoAdvanceRate	(unsigned int target)	const;	//How quickly to advance the video relative to the audio
@@ -141,8 +142,10 @@ private:
 	int	FileSelectNext;
 	bool	WaveformVideoAspectRatioNextNow;
 	bool	WaveformVideoAspectRatioNextNext;
-	bool	WaveformVideoSelectNow;
-	bool	WaveformVideoSelectNext;
+	bool	WaveformVideoSelectLowNow;
+	bool	WaveformVideoSelectLowNext;
+	bool	WaveformVideoSelectHighNow;
+	bool	WaveformVideoSelectHighNext;
 	bool	WaveformLoopToggleNow;
 	bool	WaveformLoopToggleNext;
 	bool	HoverOnSelectedSavepointNow;
@@ -177,7 +180,8 @@ public:
 	void	SetFileIndexHighlightNext(int next);
 	void	SetFileSelectNext();
 	void	SetWaveformVideoAspectRatioNextNext();
-	void	SetWaveformVideoSelectNext();
+	void	SetWaveformVideoSelectLowNext();
+	void	SetWaveformVideoSelectHighNext();
 	void	SetWaveformLoopToggleNext();
 	bool	GetHoverOnSelectedSavepoint();
 	void	SetHoverOnSelectedSavepoint();

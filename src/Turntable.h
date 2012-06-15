@@ -394,6 +394,7 @@ static	VisualizerObj*			Visualizer;
 	float				FreqSenseLEDColorScalarHigh[LED_GROUP_MAX];
 	float				FreqSenseLEDBrightnessWash[LED_GROUP_MAX];
 	bool				AudioInputMode;
+	bool				TesterEverEnabled;
 	LGL_Timer			VideoRadiusIncreaseDelayTimer;
 
 public:
@@ -487,7 +488,9 @@ public:
 
 static	bool				GetSurroundMode();
 	int				GetAspectRatioMode();
-	void				SelectNewVideo(bool forceAmbient=false);
+	void				SelectNewVideo();
+	void				SelectNewVideoLow();
+	void				SelectNewVideoHigh();
 	bool				BPMAvailable();
 	float				GetBPM();
 	float				GetBPMAdjusted(bool normalize=true);

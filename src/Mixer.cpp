@@ -915,7 +915,7 @@ NextFrame
 		{
 			TurntableObj* tt = Turntable[a];
 
-			if(tt->GetMode()==2)
+			if(1)//tt->GetMode()==2)
 			{
 				if(tt->GetVideoLo())
 				{

@@ -175,7 +175,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"preloadFreqSenseMaxMB=0\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#3.2 MBps is highest quality for 1920x480@30fps.\n");
-		fprintf(fd,"cachedVideoConstBitrateMBps=1.25\n");
+		fprintf(fd,"cachedVideoConstBitrateMBps=3.2\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"visualBrightnessAtCenter=1.0\n");
 		fprintf(fd,"\n");
@@ -1561,8 +1561,10 @@ PrepareInputMap()
 		("waveformReverse",			true,	"LGL_KEY_P",		"reverse");
 	dvjInputMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].Set
 		("waveformAutoDivergeThenRecall",	true,	"LGL_KEY_NONE",		"");
-	dvjInputMap[WAVEFORM_VIDEO_SELECT].Set
-		("waveformVideoSelect",			true,	"LGL_KEY_NONE",		"video_select");
+	dvjInputMap[WAVEFORM_VIDEO_SELECT_LOW].Set
+		("waveformVideoSelectLow",		true,	"LGL_KEY_NONE",		"video_select/low");
+	dvjInputMap[WAVEFORM_VIDEO_SELECT_HIGH].Set
+		("waveformVideoSelectHigh",		true,	"LGL_KEY_NONE",		"video_select/high");
 	dvjInputMap[WAVEFORM_VIDEO_BRIGHTNESS].Set
 		("waveformVideoBrightness",		true,	"LGL_KEY_NONE",		"video_brightness");
 	dvjInputMap[WAVEFORM_VIDEO_FREQSENSE_BRIGHTNESS].Set
@@ -1873,8 +1875,10 @@ int GetInputKeyboardWaveformReverseKey()
 	{ return(dvjInputMap[WAVEFORM_REVERSE].KeyboardInt); }
 int GetInputKeyboardWaveformAutoDivergeRecallKey()
 	{ return(dvjInputMap[WAVEFORM_AUTO_DIVERGE_THEN_RECALL].KeyboardInt); }
-int GetInputKeyboardWaveformVideoSelectKey()
-	{ return(dvjInputMap[WAVEFORM_VIDEO_SELECT].KeyboardInt); }
+int GetInputKeyboardWaveformVideoSelectLowKey()
+	{ return(dvjInputMap[WAVEFORM_VIDEO_SELECT_LOW].KeyboardInt); }
+int GetInputKeyboardWaveformVideoSelectHighKey()
+	{ return(dvjInputMap[WAVEFORM_VIDEO_SELECT_HIGH].KeyboardInt); }
 int GetInputKeyboardWaveformAudioInputToggleKey()
 	{ return(dvjInputMap[WAVEFORM_AUDIO_INPUT_TOGGLE].KeyboardInt); }
 int GetInputKeyboardWaveformVideoAspectRatioNextKey()

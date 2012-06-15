@@ -788,13 +788,25 @@ WaveformAutoDivergeRecall
 
 bool
 InputTesterObj::
-WaveformVideoSelect
+WaveformVideoSelectLow
 (
 	unsigned int	target
 )	const
 {
 	int currentAction = GetCurrentAction(target);
-	bool select=currentAction == WAVEFORM_VIDEO_SELECT;
+	bool select=currentAction == WAVEFORM_VIDEO_SELECT_LOW;
+	return(select);
+}
+
+bool
+InputTesterObj::
+WaveformVideoSelectHigh
+(
+	unsigned int	target
+)	const
+{
+	int currentAction = GetCurrentAction(target);
+	bool select=currentAction == WAVEFORM_VIDEO_SELECT_HIGH;
 	return(select);
 }
 
