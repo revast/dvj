@@ -754,17 +754,43 @@ NextFrame
 					);
 
 				int minutes=0;
+
+				//Loop optimization
+				if(seconds>60)
+				{
+					double delta = floorf(seconds/60.0f);
+					seconds-=delta*60.0f;
+					minutes+=delta;
+				}
+
+				LGL_LoopCounterAlpha();
 				while(seconds>=60)
 				{
+					LGL_LoopCounterDelta();
 					seconds-=60;
 					minutes++;
 				}
+				LGL_LoopCounterOmega();
+
 				int hours=0;
+
+				//Loop optimization
+				if(minutes>60)
+				{
+					double delta = floorf(minutes/60.0f);
+					minutes-=delta*60.0f;
+					hours+=delta;
+				}
+
+				LGL_LoopCounterAlpha();
 				while(minutes>=60)
 				{
+					LGL_LoopCounterDelta();
 					minutes-=60;
 					hours++;
 				}
+				LGL_LoopCounterOmega();
+
 				char timestamp[1024];
 				sprintf
 				(
@@ -1296,17 +1322,42 @@ DrawStatus
 		int seconds=(int)secondsTotal;
 
 		int minutes=0;
+
+		//Loop optimization
+		if(seconds>60)
+		{
+			double delta = floorf(seconds/60.0f);
+			seconds-=delta*60.0f;
+			minutes+=delta;
+		}
+
+		LGL_LoopCounterAlpha();
 		while(seconds>=60)
 		{
+			LGL_LoopCounterDelta();
 			seconds-=60;
 			minutes++;
 		}
+		LGL_LoopCounterOmega();
+
 		int hours=0;
+
+		//Loop optimization
+		if(minutes>60)
+		{
+			double delta = floorf(minutes/60.0f);
+			minutes-=delta*60.0f;
+			hours+=delta;
+		}
+
+		LGL_LoopCounterAlpha();
 		while(minutes>=60)
 		{
+			LGL_LoopCounterDelta();
 			minutes-=60;
 			hours++;
 		}
+		LGL_LoopCounterOmega();
 
 		char out[2048];
 		float bright=1.0f;

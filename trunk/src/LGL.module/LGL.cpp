@@ -614,6 +614,14 @@ typedef struct
 	std::vector<char*>	DebugPrintfBuffer;
 	float			DebugPrintfY;
 	LGL_Semaphore*		DebugPrintfSemaphore;
+	bool			DebugMode;
+	long			LoopCounter;
+	const char*		LoopCounterFile;
+	long			LoopCounterLine;
+	long			LoopCounterWorst;
+	const char*		LoopCounterFileWorst;
+	long			LoopCounterLineWorst;
+	SDL_threadID		LoopCounterThread;
 
 	float			LastImageDrawAsLineLeftX;
 	float			LastImageDrawAsLineLeftY;
@@ -2081,6 +2089,14 @@ LGL_Init
 
 	LGL.DebugPrintfY=1.0f;
 	LGL.DebugPrintfSemaphore=new LGL_Semaphore("Debug Printf");
+	LGL.DebugMode=false;
+	LGL.LoopCounter=0;
+	LGL.LoopCounterFile="NULL";
+	LGL.LoopCounterLine=0;
+	LGL.LoopCounterWorst=0;
+	LGL.LoopCounterFileWorst="NULL";
+	LGL.LoopCounterLineWorst=0;
+	LGL.LoopCounterThread = SDL_ThreadID();
 
 	LGL.AudioSpec=(SDL_AudioSpec*)malloc(sizeof(SDL_AudioSpec));
 
@@ -3132,6 +3148,20 @@ LGL_DelayMS
 	if(LGL.Running==false)
 	{
 		return;
+	}
+
+	bool mainThread=(SDL_ThreadID()==LGL.ThreadIDMain);
+	if(mainThread)
+	{
+		printf("Warning! Delaying in main thread!\n");
+		LGL_AssertIfDebugMode();
+	}
+
+	bool audioThread=(SDL_ThreadID()==LGL.ThreadIDAudio);
+	if(audioThread)
+	{
+		printf("Warning! Delaying in audio thread!\n");
+		LGL_AssertIfDebugMode();
 	}
 
 	if(ms<=0)
@@ -4447,16 +4477,6 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 			glFlush();
 			LGL.FramesSinceExecution++;
 			LGL.SecondsSinceLastFrame=LGL.SecondsSinceLastFrameTimer.SecondsSinceLastReset();
-			//Quantize to n/60.0f
-			for(int a=0;a<10;a++)
-			{
-				//if(LGL.SecondsSinceLastFrame<0.5f*((a+1.0f)/60.0f+(a+2.0f)/60.0f))
-				if(LGL.SecondsSinceLastFrame<(a+2.0f)/60.0f)
-				{
-					LGL.SecondsSinceLastFrame=(a+1.0f)/60.0f;
-					break;
-				}
-			}
 			LGL.SecondsSinceLastFrameTimer.Reset();
 
 			for(int a=0;a<59;a++)
@@ -4467,18 +4487,29 @@ LGL_SwapBuffers(bool endFrame, bool clearBackBuffer)
 			if(LGL.SecondsSinceLastFrame<=1.5f/60.0f)
 			{
 				LGL.FrameTimeGoodCount++;
-				LGL.FrameTimeGraph[59]=LGL_Min(LGL.FrameTimeGraph[59],1.0f/60.0f);
+				//LGL.FrameTimeGraph[59]=LGL_Min(LGL.FrameTimeGraph[59],1.0f/60.0f);
 			}
 			else if(LGL.SecondsSinceLastFrame<=2.5f/60.0f)
 			{
 				LGL.FrameTimeMediumCount++;
-				LGL.FrameTimeGraph[59]=LGL_Min(LGL.FrameTimeGraph[59],2.0f/60.0f);
+				//LGL.FrameTimeGraph[59]=LGL_Min(LGL.FrameTimeGraph[59],2.0f/60.0f);
 			}
 			else
 			{
 				LGL.FrameTimeBadCount++;
 			}
 			LGL.FPSGraphTimer.Reset();
+
+			//Quantize to n/60.0f
+			for(int a=0;a<10;a++)
+			{
+				//if(LGL.SecondsSinceLastFrame<0.5f*((a+1.0f)/60.0f+(a+2.0f)/60.0f))
+				if(LGL.SecondsSinceLastFrame<(a+2.0f)/60.0f)
+				{
+					LGL.SecondsSinceLastFrame=(a+1.0f)/60.0f;
+					break;
+				}
+			}
 
 			LGL.FPSCounter++;
 			if(LGL.FPSTimer.SecondsSinceLastReset()>=1)
@@ -4668,6 +4699,8 @@ LGL_SetActiveDisplay(int display)
 {
 	display=(int)(LGL_Clamp(0,display,LGL.DisplayCount-1));
 	LGL.DisplayNow=display;
+
+	//LGL_DebugPrintf("SetActiveDisplay(%i)\n",display);
 
 	SDL_GL_MakeCurrent(LGL.WindowID[LGL.DisplayNow], LGL.GLContext);
 
@@ -10379,6 +10412,8 @@ lgl_video_decoder_preload_thread
 	void* ptr
 )
 {
+	return(0);
+
 	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_PRELOAD,"LGL_VideoPreloader");
 	LGL_VideoDecoder* dec = (LGL_VideoDecoder*)ptr;
 
@@ -10504,6 +10539,8 @@ lgl_video_decoder_readahead_thread
 	void* ptr
 )
 {
+	return(0);
+
 	LGL_ThreadSetPriority(LGL_PRIORITY_VIDEO_READAHEAD,"LGL_VideoDecoder");
 	LGL_VideoDecoder* dec = (LGL_VideoDecoder*)ptr;
 
@@ -10546,9 +10583,15 @@ lgl_video_decoder_load_thread
 	{
 		{
 			LGL_ScopeLock lock(__FILE__,__LINE__,sem);
-			for(int a=0;a<1;a++)
+			LGL_Timer timer;
+			timer.Reset();
+			for(int a=0;a<30;a++)
 			{
 				if(dec->GetThreadTerminate())
+				{
+					break;
+				}
+				if(timer.SecondsSinceLastReset()>0.5f)
 				{
 					break;
 				}
@@ -10564,6 +10607,22 @@ lgl_video_decoder_load_thread
 	}
 
 	return(0);
+}
+
+int lgl_PathNextRequestNumNext=0;
+
+lgl_PathNextInterchange::
+lgl_PathNextInterchange()
+{
+	BelongsToDecoderThread=false;
+	Path[0]='\0';
+	RequestNum=0;
+}
+
+lgl_PathNextInterchange::
+~lgl_PathNextInterchange()
+{
+	//
 }
 
 LGL_VideoDecoder::
@@ -10746,6 +10805,12 @@ void
 LGL_VideoDecoder::
 UnloadVideo()
 {
+	if(VideoOKUserCount>0)
+	{
+		printf("UnloadVideo(): Warning! VideoOKUserCount>0! (%i)\n",VideoOKUserCount);
+		LGL_AssertIfDebugMode();
+	}
+
 	if(CodecContext)
 	{
 		lgl_avcodec_close(CodecContext);
@@ -10792,6 +10857,7 @@ SetVideo
 		path="NULL";
 	}
 
+	/*
 	if(strcmp(Path,path)!=0)
 	{
 		LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
@@ -10807,6 +10873,51 @@ SetVideo
 		}
 		PathNextAttempts.clear();
 	}
+	*/
+	
+	int requestNumMax=-1;
+	for(int a=0;a<lgl_PathNextInterchangeCount;a++)
+	{
+		lgl_PathNextInterchange& interchange = PathNextInterchangeList[a];
+		requestNumMax = LGL_Max(requestNumMax,interchange.RequestNum);
+	}
+
+	for(int a=0;a<lgl_PathNextInterchangeCount;a++)
+	{
+		lgl_PathNextInterchange& interchange = PathNextInterchangeList[a];
+		if
+		(
+			interchange.BelongsToDecoderThread &&
+			interchange.RequestNum == requestNumMax &&
+			strcmp(interchange.Path,path)==0
+		)
+		{
+			//Path is already requested
+			return;
+		}
+	}
+
+	bool success=true;
+	for(int a=0;a<lgl_PathNextInterchangeCount;a++)
+	{
+		lgl_PathNextInterchange& interchange = PathNextInterchangeList[a];
+		if(interchange.BelongsToDecoderThread==false)
+		{
+			strcpy(interchange.Path,path);
+			interchange.RequestNum=lgl_PathNextRequestNumNext;
+			interchange.BelongsToDecoderThread=true;
+			success=true;
+			break;
+		}
+	}
+
+	lgl_PathNextRequestNumNext++;
+
+	if(success==false)
+	{
+		printf("Warning! LGL_VideoDecoder::SetVideo('%s') failed!\n",path);
+		//LGL_AssertIfDebugMode();
+	}
 }
 
 void
@@ -10821,48 +10932,74 @@ SetVideo
 		SetVideo(NULL);
 		return;
 	}
-	else if(pathAttempts.size()==1)
+	if(pathAttempts.size()==1)
 	{
 		SetVideo(pathAttempts[0]);
 		return;
 	}
-	else
+
+	if(strcmp(Path,pathAttempts[0])==0)
 	{
-		if(strcmp(Path,pathAttempts[0])==0)
+		return;
+	}
+
+	/*
+	LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
+	if(Image)
+	{
+		Image->SetFrameNumber(-1);
+	}
+
+	for(int a=0;a<PathNextAttempts.size();a++)
+	{
+		delete PathNextAttempts[a];
+	}
+	PathNextAttempts.clear();
+
+	for(int a=0;a<pathAttempts.size();a++)
+	{
+		if
+		(
+			pathAttempts[a] &&
+			pathAttempts[a][0] != '\0'
+		)
 		{
-			return;
+			const int neoSize = strlen(pathAttempts[a])+1;
+			char* neo = new char[neoSize];
+			strncpy(neo,pathAttempts[a],neoSize-1);
+			neo[neoSize-1]='\0';
+			PathNextAttempts.push_back(neo);
+		}
+	}
+	char* neo = new char[16];
+	strcpy(neo,"NULL");
+	PathNextAttempts.push_back(neo);
+	*/
+
+	int successCount=0;
+	for(int a=0;a<lgl_PathNextInterchangeCount;a++)
+	{
+		if(successCount>=pathAttempts.size())
+		{
+			break;
 		}
 
-		LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
-		if(Image)
+		lgl_PathNextInterchange& interchange = PathNextInterchangeList[a];
+		if(interchange.BelongsToDecoderThread==false)
 		{
-			Image->SetFrameNumber(-1);
+			strcpy(interchange.Path,pathAttempts[pathAttempts.size()-successCount-1]);
+			interchange.BelongsToDecoderThread=true;
+			interchange.RequestNum=lgl_PathNextRequestNumNext;
+			successCount++;
 		}
+	}
 
-		for(int a=0;a<PathNextAttempts.size();a++)
-		{
-			delete PathNextAttempts[a];
-		}
-		PathNextAttempts.clear();
+	lgl_PathNextRequestNumNext++;
 
-		for(int a=0;a<pathAttempts.size();a++)
-		{
-			if
-			(
-				pathAttempts[a] &&
-				pathAttempts[a][0] != '\0'
-			)
-			{
-				const int neoSize = strlen(pathAttempts[a])+1;
-				char* neo = new char[neoSize];
-				strncpy(neo,pathAttempts[a],neoSize-1);
-				neo[neoSize-1]='\0';
-				PathNextAttempts.push_back(neo);
-			}
-		}
-		char* neo = new char[16];
-		strcpy(neo,"NULL");
-		PathNextAttempts.push_back(neo);
+	if(successCount<pathAttempts.size())
+	{
+		printf("Warning! LGL_VideoDecoder::SetVideo() failed! (%i of %lu)\n",successCount,pathAttempts.size());
+		//LGL_AssertIfDebugMode();
 	}
 }
 
@@ -11656,6 +11793,8 @@ void
 LGL_VideoDecoder::
 MaybeLoadVideo()
 {
+	ResolvePathNextInterchange();
+
 	if(PathNext[0]=='\0')
 	{
 		LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
@@ -11664,6 +11803,7 @@ MaybeLoadVideo()
 			strncpy(PathNext,PathNextAttempts[0],sizeof(PathNext)-1);
 			PathNext[sizeof(PathNext)-1]='\0';
 
+			delete PathNextAttempts[0];
 			PathNextAttempts.erase
 			(
 				(std::vector<const char*>::iterator)
@@ -11685,6 +11825,11 @@ MaybeLoadVideo()
 	FPSMissed=0;
 	FPSDisplayedHitCounter=0;
 	FPSDisplayedMissCounter=0;
+	
+	if(strcmp(Path,pathNextLocal)==0)
+	{
+		return;
+	}
 
 	if(strcmp(pathNextLocal,"NULL")==0)
 	{
@@ -11727,6 +11872,11 @@ MaybeLoadVideo()
 		}
 		LGL_ScopeLock videoOkLock(__FILE__,__LINE__,VideoOKSemaphore,0.0f);
 		if(videoOkLock.GetLockObtained()==false)
+		{
+			delayCount++;
+			continue;
+		}
+		if(VideoOKUserCount>0)
 		{
 			delayCount++;
 			continue;
@@ -11911,6 +12061,7 @@ MaybeLoadVideo()
 #endif
 
 		//This can invalidate calls to SetVideo() that occur while loading video... Hmm.
+		/*
 		{
 			LGL_ScopeLock pathNextLock(__FILE__,__LINE__,PathNextSemaphore);
 			for(int a=0;a<PathNextAttempts.size();a++)
@@ -11919,6 +12070,7 @@ MaybeLoadVideo()
 			}
 			PathNextAttempts.clear();
 		}
+		*/
 
 		VideoOK=true;
 		break;
@@ -12316,8 +12468,8 @@ MaybeDecodeImage
 		}
 	}
 
-	static LGL_Semaphore sem("maybeDecodeImage",false);
-	LGL_ScopeLock lock(__FILE__,__LINE__,sem);
+	//static LGL_Semaphore sem("maybeDecodeImage",false);
+	//LGL_ScopeLock lock(__FILE__,__LINE__,sem);
 
 	char path[2048];
 	{
@@ -12341,6 +12493,7 @@ MaybeDecodeImage
 			return(false);
 		}
 	}
+
 	//Lock the video
 	{
 		if(mainThread==false)
@@ -12903,6 +13056,55 @@ GetFrameBufferLoadedList
 	return(ret);
 }
 
+void
+LGL_VideoDecoder::
+ResolvePathNextInterchange()
+{
+	int requestNum=-1;
+
+	for(int a=0;a<lgl_PathNextInterchangeCount;a++)
+	{
+		lgl_PathNextInterchange& interchange = PathNextInterchangeList[a];
+		if(interchange.BelongsToDecoderThread)
+		{
+			requestNum = LGL_Max(requestNum,interchange.RequestNum);
+		}
+	}
+
+	if(requestNum==-1)
+	{
+		return;
+	}
+
+	for(int a=0;a<PathNextAttempts.size();a++)
+	{
+		delete PathNextAttempts[a];
+	}
+	PathNextAttempts.clear();
+
+	for(int a=0;a<lgl_PathNextInterchangeCount;a++)
+	{
+		lgl_PathNextInterchange& interchange = PathNextInterchangeList[a];
+		if
+		(
+			interchange.BelongsToDecoderThread &&
+			interchange.RequestNum == requestNum
+		)
+		{
+			const int neoSize = strlen(interchange.Path)+1;
+			char* neo = new char[neoSize];
+			strncpy(neo,interchange.Path,neoSize-1);
+			neo[neoSize-1]='\0';
+			PathNextAttempts.push_back(neo);
+		}
+
+		if(interchange.RequestNum<=requestNum)
+		{
+			interchange.BelongsToDecoderThread=false;
+		}
+	}
+}
+
 double
 LGL_VideoDecoder::
 TimestampToSeconds(long timestamp)
@@ -13085,14 +13287,19 @@ GetNextFrameNumberToLoadForwards
 	}
 
 	long frameNumberFinal = frameNumberNow+FrameBufferAddRadius;
+	LGL_LoopCounterAlpha();
 	for(long a=frameNumberNow;a<frameNumberFinal;a++)
 	{
+		LGL_LoopCounterDelta();
 		//Handle wrap-around
 		long frameNumberFind=a;
+		LGL_LoopCounterAlpha();
 		while(frameNumberFind>=frameNumberLength)
 		{
+			LGL_LoopCounterDelta();
 			frameNumberFind-=frameNumberLength;
 		}
+		LGL_LoopCounterOmega();
 
 		bool found=false;
 		for(unsigned int b=0;b<frameNumList.size();b++)
@@ -13118,6 +13325,7 @@ GetNextFrameNumberToLoadForwards
 			return(frameNumberFind);
 		}
 	}
+	LGL_LoopCounterOmega();
 
 	return(-1);
 }
@@ -13142,18 +13350,28 @@ GetNextFrameNumberToLoadBackwards
 	}
 
 	long frameNumberFinal = frameNumberNow-FrameBufferAddRadius;
+
+	LGL_LoopCounterAlpha();
 	for(long a=frameNumberNow;a>frameNumberFinal;a--)
 	{
+		LGL_LoopCounterDelta();
 		//Handle wrap-around
 		long frameNumberFind=a;
+		LGL_LoopCounterAlpha();
 		while(frameNumberFind>=frameNumberLength)
 		{
+			LGL_LoopCounterDelta();
 			frameNumberFind-=frameNumberLength;
 		}
+		LGL_LoopCounterOmega();
+
+		LGL_LoopCounterAlpha();
 		while(frameNumberFind<0)
 		{
+			LGL_LoopCounterDelta();
 			frameNumberFind+=frameNumberLength;
 		}
+		LGL_LoopCounterOmega();
 
 		bool found=false;
 		for(int b=(int)frameNumList.size()-1;b>=0;b--)
@@ -13179,6 +13397,7 @@ GetNextFrameNumberToLoadBackwards
 			return(frameNumberFind);
 		}
 	}
+	LGL_LoopCounterOmega();
 
 	return(-1);
 }
@@ -13291,15 +13510,21 @@ GetNextFrameNumberToDecodeForwards()
 
 	int frameBufferIndex=0;
 	long frameNumberFinal = frameNumberNow+FrameBufferAddRadius;
+
+	LGL_LoopCounterAlpha();
 	for(long a=frameNumberNow;a<frameNumberFinal;a++)
 	{
+		LGL_LoopCounterDelta();
 		//Handle wrap-around
 		long frameNumberFind=a;
+		LGL_LoopCounterAlpha();
 		while(frameNumberFind>=frameNumberLength)
 		{
+			LGL_LoopCounterDelta();
 			frameNumberFind-=frameNumberLength;
 			frameBufferIndex=0;
 		}
+		LGL_LoopCounterOmega();
 
 		bool found=false;
 		std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(true);
@@ -13327,6 +13552,7 @@ GetNextFrameNumberToDecodeForwards()
 			return(frameNumberFind);
 		}
 	}
+	LGL_LoopCounterOmega();
 
 	return(-1);
 }
@@ -13351,15 +13577,20 @@ GetNextFrameNumberToDecodeBackwards()
 	std::vector<lgl_FrameBuffer*> frameBufferReady = GetFrameBufferReadyList(true);
 	int frameBufferIndex=frameBufferReady.size()-1;
 	long frameNumberFinal = frameNumberNow-FrameBufferAddRadius;
+	LGL_LoopCounterAlpha();
 	for(long a=frameNumberNow-1;a>frameNumberFinal;a--)
 	{
+		LGL_LoopCounterDelta();
 		//Handle wrap-around
 		long frameNumberFind=a;
+		LGL_LoopCounterAlpha();
 		while(frameNumberFind<0)
 		{
+			LGL_LoopCounterDelta();
 			frameNumberFind+=frameNumberLength;
 			frameBufferIndex=frameBufferReady.size()-1;
 		}
+		LGL_LoopCounterOmega();
 
 		bool found=false;
 		for(int b=frameBufferIndex;b>=0;b--)
@@ -13390,6 +13621,7 @@ GetNextFrameNumberToDecodeBackwards()
 			return(frameNumberFind);
 		}
 	}
+	LGL_LoopCounterOmega();
 
 	return(-1);
 }
@@ -15807,6 +16039,30 @@ lgl_DebugPrintfInternal
 	);
 }
 
+void
+LGL_SetDebugMode
+(
+	bool	debugMode
+)
+{
+	LGL.DebugMode=debugMode;
+}
+
+bool
+LGL_GetDebugMode()
+{
+	return(LGL.DebugMode);
+}
+
+void
+LGL_AssertIfDebugMOde()
+{
+	if(LGL_GetDebugMode())
+	{
+		assert(false);
+	}
+}
+
 LGL_InputBuffer::
 LGL_InputBuffer()
 {
@@ -16289,6 +16545,7 @@ LGL_AddAudioStream
 LGL_AudioDSP::
 LGL_AudioDSP() : FreqResponseNextSemaphore("AudioDSP FreqResponseNext")
 {
+	//printf("LGL_AudioDSP(): Construct: %ld\n",(long)this);
 	for(int a=0;a<LGL_EQ_SAMPLES_FFT*4;a++)
 	{
 		CarryOverLeft[a]=0;
@@ -16305,19 +16562,28 @@ LGL_AudioDSP() : FreqResponseNextSemaphore("AudioDSP FreqResponseNext")
 	FreqResponseNextAvailable=false;
 
 	mlock(CarryOverLeft,sizeof(CarryOverLeft));
-	mlock(CarryOverRight,sizeof(CarryOverLeft));
+	mlock(CarryOverRight,sizeof(CarryOverRight));
 
-	mlock(FreqResponseReal,sizeof(CarryOverLeft));
-	mlock(FreqResponseImaginary,sizeof(CarryOverLeft));
+	mlock(FreqResponseReal,sizeof(FreqResponseReal));
+	mlock(FreqResponseImaginary,sizeof(FreqResponseImaginary));
 
-	mlock(FreqResponseNextReal,sizeof(CarryOverLeft));
-	mlock(FreqResponseNextImaginary,sizeof(CarryOverLeft));
+	mlock(FreqResponseNextReal,sizeof(FreqResponseNextReal));
+	mlock(FreqResponseNextImaginary,sizeof(FreqResponseNextImaginary));
 }
 
 LGL_AudioDSP::
 ~LGL_AudioDSP()
 {
-	//
+	//printf("LGL_AudioDSP(): Destruct: %ld\n",(long)this);
+
+	munlock(CarryOverLeft,sizeof(CarryOverLeft));
+	munlock(CarryOverRight,sizeof(CarryOverRight));
+
+	munlock(FreqResponseReal,sizeof(FreqResponseReal));
+	munlock(FreqResponseImaginary,sizeof(FreqResponseImaginary));
+
+	munlock(FreqResponseNextReal,sizeof(FreqResponseNextReal));
+	munlock(FreqResponseNextImaginary,sizeof(FreqResponseNextImaginary));
 }
 
 void
@@ -17402,7 +17668,8 @@ SetWaveformFromLGLSound
 	float		centerSeconds,
 	float		lengthSeconds,
 	float		centerSecondsVariance,
-	float		lengthSecondsVariance
+	float		lengthSecondsVariance,
+	bool		lockSound
 )
 {
 	NullifyWaveformAndSpectrum();
@@ -17433,9 +17700,9 @@ SetWaveformFromLGLSound
 	}
 
 	Waveform=new Uint8[LengthSamples*4];
-	sound->LockBufferForReading(2);
+	if(lockSound) sound->LockBufferForReading(2);
 	{
-		if(Uint8* soundBuffer=sound->GetBuffer())
+		if(Uint8* soundBuffer=sound->GetBuffer(false))
 		{
 			memcpy
 			(
@@ -17448,7 +17715,7 @@ SetWaveformFromLGLSound
 			bzero(Waveform,LengthSamples*4);
 		}
 	}
-	sound->UnlockBufferForReading();
+	if(lockSound) sound->UnlockBufferForReading();
 }
 
 void
@@ -17838,7 +18105,13 @@ lgl_analyze_wave_segment
 				)
 			)
 			{
-				while(index<0) index+=len16;
+				LGL_LoopCounterAlpha();
+				while(index<0)
+				{
+					LGL_LoopCounterDelta();
+					index+=len16;
+				}
+				LGL_LoopCounterOmega();
 				Sint16 sampleMag=SWAP16(buf16[index%len16]);
 				float sampleMagAbs = fabsf(sampleMag);
 				magnitudeTotal+=sampleMagAbs;
@@ -19170,8 +19443,23 @@ SetPositionSamples
 if(channel<0)
 {
 	printf("LGL_Sound::SetPositionSampless(): WARNING! channel < 0\n");
+	LGL_AssertIfDebugMode();
 	return;
 }
+
+	if
+	(
+		samples>0 &&
+		samples>=GetLengthSamples()
+	)
+	{
+		printf("LGL_Sound::SetPositionSamples(): WARNING! Attempted to set samples beyond end of sound! (%.2f vs %.2f)\n",
+			(float)samples,
+			(float)GetLengthSamples()
+		);
+		LGL_AssertIfDebugMode();
+		return;
+	}
 	//if(LGL.AudioAvailable==false) return;
 	LGL.SoundChannel[channel].FuturePositionSamplesPrev=samples;
 	LGL.SoundChannel[channel].FuturePositionSamplesNow=samples;
@@ -19192,6 +19480,16 @@ if(channel<0)
 	return;
 }
 	//if(LGL.AudioAvailable==false) return;
+
+	if(seconds>GetLengthSeconds())
+	{
+		printf("LGL_Sound::SetPositionSeconds(): WARNING! Attempted to set samples beyond end of sound! (%.2f vs %.2f)\n",
+			(float)seconds,
+			(float)GetLengthSeconds()
+		);
+		LGL_AssertIfDebugMode();
+		return;
+	}
 
 	LGL.SoundChannel[channel].FuturePositionSamplesPrev=seconds*Hz;
 	LGL.SoundChannel[channel].FuturePositionSamplesNow=seconds*Hz;
@@ -19569,6 +19867,7 @@ GetPositionSamples
 	if(channel<0)
 	{
 		printf("LGL_Sound::GetPositionSamples(): WARNING! channel < 0\n");
+		LGL_AssertIfDebugMode();
 		return(0);
 	}
 	//if(LGL.AudioAvailable==false) return(0);
@@ -19589,9 +19888,23 @@ GetPositionSamples
 		return(0);
 	}
 
-	if(ret>=(signed long)BufferLength)
+	if(ret>=(signed long)GetLengthSamples())
 	{
-		ret=BufferLength-1;
+		ret=GetLengthSamples()-1;
+	}
+
+	if(ret >= GetLengthSamples())
+	{
+		printf
+		(
+			"Warning! LGL_Sound::GetPositionSamples() wanted to return a value larger than GetLengthSamples()! (%.2f vs %.2f)\n",
+			(double)ret,
+			(double)GetLengthSamples()
+		);
+
+		LGL_AssertIfDebugMode();
+
+		ret = LGL_Clamp(0,ret,GetLengthSamples()-1);
 	}
 
 	LGL.SoundChannel[channel].PositionSamplesNowLastReported = ret;
@@ -19784,6 +20097,7 @@ GetWarpPointIsSet
 	if(channel<0)
 	{
 		printf("LGL_Sound::GetWarpPointIsSet(): WARNING! channel < 0\n");
+		LGL_AssertIfDebugMode();
 		return(false);
 	}
 	return(LGL.SoundChannel[channel].WarpPointSecondsAlpha>=0);
@@ -19840,6 +20154,11 @@ if(channel<0)
 		sc->WarpPointLoop=false;
 		return(true);
 	}
+	else
+	{
+		printf("Warning! SetWarpPoint() failed to unset warp point due to lock\n");
+		LGL_AssertIfDebugMode();
+	}
 
 	return(false);
 }
@@ -19870,6 +20189,18 @@ if(channel<0)
 			sc->WarpPointLoop=loop;
 			sc->WarpPointLock=lock;
 			return(true);
+		}
+		else
+		{
+			/*
+			printf
+			(
+				"Warning! SetWarpPoint() failed to set warp point, because alpha is before current pos. (%.2f vs %.2f)\n",
+				alphaSeconds,
+				sc->PositionSamplesNow/(float)sc->Hz
+			);
+			LGL_AssertIfDebugMode();
+			*/
 		}
 	}
 
@@ -20067,8 +20398,21 @@ GetSample
 	int BPS=Channels*2;
 	int r2offset=3%BPS;
 
-	while((float)sample*BPS+r2offset>=(float)BufferLength) sample-=BufferLength/BPS;
-	while(sample<0) sample+=BufferLength/BPS;
+	LGL_LoopCounterAlpha();
+	while((float)sample*BPS+r2offset>=(float)BufferLength)
+	{
+		LGL_LoopCounterDelta();
+		sample-=BufferLength/BPS;
+	}
+	LGL_LoopCounterOmega();
+
+	LGL_LoopCounterAlpha();
+	while(sample<0)
+	{
+		LGL_LoopCounterDelta();
+		sample+=BufferLength/BPS;
+	}
+	LGL_LoopCounterOmega();
 
 	Sint16* myBuffer=(Sint16*)Buffer;
 	Sint16 myL=SWAP16(myBuffer[sample*BPS/2+0]);
@@ -20108,8 +20452,21 @@ GetSampleLeft
 	int BPS=Channels*2;
 	int r2offset=3%BPS;
 
-	while((float)sample*BPS+r2offset>=(float)BufferLength) sample-=BufferLength/BPS;
-	while(sample<0) sample+=BufferLength/BPS;
+	LGL_LoopCounterAlpha();
+	while((float)sample*BPS+r2offset>=(float)BufferLength)
+	{
+		LGL_LoopCounterDelta();
+		sample-=BufferLength/BPS;
+	}
+	LGL_LoopCounterOmega();
+
+	LGL_LoopCounterAlpha();
+	while(sample<0)
+	{
+		LGL_LoopCounterDelta();
+		sample+=BufferLength/BPS;
+	}
+	LGL_LoopCounterOmega();
 
 	Sint16* myBuffer=(Sint16*)Buffer;
 	Sint16 myL=SWAP16(myBuffer[sample*BPS/2+0]);
@@ -20145,8 +20502,21 @@ GetSampleRight
 	int BPS=Channels*2;
 	int r2offset=3%BPS;
 
-	while((float)sample*BPS+r2offset>=(float)BufferLength) sample-=BufferLength/BPS;
-	while(sample<0) sample+=BufferLength/BPS;
+	LGL_LoopCounterAlpha();
+	while((float)sample*BPS+r2offset>=(float)BufferLength)
+	{
+		LGL_LoopCounterDelta();
+		sample-=BufferLength/BPS;
+	}
+	LGL_LoopCounterOmega();
+
+	LGL_LoopCounterAlpha();
+	while(sample<0)
+	{
+		LGL_LoopCounterDelta();
+		sample+=BufferLength/BPS;
+	}
+	LGL_LoopCounterOmega();
 
 	Sint16* myBuffer=(Sint16*)Buffer;
 	Sint16 myR=SWAP16(myBuffer[sample*BPS/2+1]);
@@ -20207,9 +20577,36 @@ printf("LGL_Sound::UnlockBufferForReading(): Warning! Buffer wasn't locked in th
 
 Uint8*
 LGL_Sound::
-GetBuffer()
+GetBuffer
+(
+	bool	warnIfNotLocked
+)
 {
-	assert(IsLoaded()==true || BufferSemaphore.IsLocked());
+	/*
+	if(IsLoaded()==true || BufferSemaphore.IsLocked())
+	{
+		return(Buffer);
+	}
+	*/
+
+	if
+	(
+		IsLoaded()==false &&
+		(
+			warnIfNotLocked &&
+			BufferSemaphore.IsLocked()==false
+		)
+	)
+	{
+		printf
+		(
+			"LGL_Sound::GetBuffer(): Warning! Unsafe call! Loaded: %i, Locked: %i (%i)\n",
+			IsLoaded(),
+			BufferSemaphore.IsLocked(),
+			warnIfNotLocked
+		);
+		LGL_AssertIfDebugMode();
+	}
 	return(Buffer);
 }
 
@@ -20322,10 +20719,14 @@ GetMetadata
 			//Protect against infini-looping
 			if(secondsBegin+100*lengthSeconds>0)
 			{
+				LGL_LoopCounterAlpha();
 				while(secondsBegin<0)
 				{
+					LGL_LoopCounterDelta();
 					secondsBegin+=lengthSeconds;
 				}
+				LGL_LoopCounterOmega();
+
 				secondsEnd=secondsBegin+secondsDelta;
 			}
 		}
@@ -20333,10 +20734,13 @@ GetMetadata
 		{
 			if(secondsBegin-100*lengthSeconds<0)
 			{
+				LGL_LoopCounterAlpha();
 				while(secondsBegin>lengthSeconds)
 				{
+					LGL_LoopCounterDelta();
 					secondsBegin-=lengthSeconds;
 				}
+				LGL_LoopCounterOmega();
 				secondsEnd=secondsBegin+secondsDelta;
 			}
 		}
@@ -20368,8 +20772,22 @@ GetMetadata
 
 	float entriesUsed=0.0f;
 	float entryDelta=1.0f/LGL_SOUND_METADATA_ENTRIES_PER_SECOND;
+
+	//Loop optimization
+	float estimate = (secondsEnd - secondsBegin) / entryDelta;
+	if(estimate>1000)
+	{
+		printf("Sound::GetMetadata() requesting a very wide range! %.2f => %.2f = %.0f iterations\n",
+			secondsBegin,
+			secondsEnd,
+			estimate);
+		LGL_AssertIfDebugMode();
+	}
+
+	LGL_LoopCounterAlpha();
 	for(float entryBegin=floorf(secondsBegin);entryBegin<secondsEnd;entryBegin+=entryDelta)
 	{
+		LGL_LoopCounterDelta();
 		float entryEnd=entryBegin+entryDelta;
 		float pctOverlap=1.0f;
 		if(entryEnd<secondsBegin)
@@ -20393,6 +20811,7 @@ GetMetadata
 
 		entriesUsed+=pctOverlap;
 	}
+	LGL_LoopCounterOmega(500);	//This does indeed require some iteration, but let's see if it's capped here...
 
 	if(entriesUsed!=0.0f)
 	{
@@ -21061,11 +21480,15 @@ LGL_AudioSampleLeft
 		return(.5);
 	}
 
+	LGL_LoopCounterAlpha();
 	while(sample<0)
 	{
+		LGL_LoopCounterDelta();
 		printf("LGL_AudioSampleLeft(): Warning, you asked for a sample < 0 (%i). Baka.\n",sample);	
 		sample+=1024;
 	}
+	LGL_LoopCounterOmega();
+
 	if(sample>1024)
 	{
 		sample=sample%1024;;
@@ -21091,11 +21514,15 @@ LGL_AudioSampleRight
 		return(.5);
 	}
 
+	LGL_LoopCounterAlpha();
 	while(sample<0)
 	{
+		LGL_LoopCounterDelta();
 		printf("LGL_AudioSampleRight(): Warning, you asked for a sample < 0 (%i)\n",sample);	
 		sample+=1024;
 	}
+	LGL_LoopCounterOmega();
+
 	if(sample>1024)
 	{
 		sample=sample%1024;;
@@ -31799,6 +32226,77 @@ lgl_assert
 	return(test);
 }
 
+void
+lgl_LoopCounterAlpha
+(
+	const char*	file,
+	long		line
+)
+{
+	if(LGL.LoopCounterThread != SDL_ThreadID())
+	{
+		return;
+	}
+
+	LGL.LoopCounter=0;
+	LGL.LoopCounterFile = file;
+	LGL.LoopCounterLine = line;
+}
+
+void
+LGL_LoopCounterDelta
+(
+	//long	warningIterations
+)
+{
+	if(LGL.LoopCounterThread != SDL_ThreadID())
+	{
+		return;
+	}
+
+	LGL.LoopCounter++;
+}
+
+void
+LGL_LoopCounterOmega
+(
+	long	warningIterations
+)
+{
+	if(LGL.LoopCounterThread != SDL_ThreadID())
+	{
+		return;
+	}
+
+	//Should we warn?
+	if(LGL.LoopCounter>warningIterations)
+	{
+		//Are we the worst?
+		if(LGL.LoopCounter>LGL.LoopCounterWorst)
+		{
+			LGL.LoopCounterWorst = LGL.LoopCounter;
+			LGL.LoopCounterFileWorst = LGL.LoopCounterFile;
+			LGL.LoopCounterLineWorst = LGL.LoopCounterLine;
+		}
+
+		printf("Inefficient loop detected:\n");
+		printf("\tFILE: %s\n",LGL.LoopCounterFile);
+		printf("\tLINE: %ld\n",LGL.LoopCounterLine);
+		printf("\tLOOP: %ld\n",LGL.LoopCounter);
+		printf("\n");
+		printf("Worst loop:\n");
+		printf("\tFILE: %s\n",LGL.LoopCounterFileWorst);
+		printf("\tLINE: %ld\n",LGL.LoopCounterLineWorst);
+		printf("\tLOOP: %ld\n",LGL.LoopCounterWorst);
+		printf("\n");
+	}
+
+	//Cleanup
+	LGL.LoopCounter=0;
+	LGL.LoopCounterFile="NULL";
+	LGL.LoopCounterLine=0;
+}
+
 const
 char*
 LGL_GetErrorStringGL()
@@ -31931,14 +32429,22 @@ LGL_InterpolateModulus
 		float gPrime=greater-lesser;
 		float mPrime=modulus-gPrime;
 		float ret=lesser-i*mPrime;
+		LGL_LoopCounterAlpha();
 		while(ret<0)
 		{
+			LGL_LoopCounterDelta();
 			ret+=modulus;
 		}
+		LGL_LoopCounterOmega();
+
+		LGL_LoopCounterAlpha();
 		while(ret>modulus)
 		{
+			LGL_LoopCounterDelta();
 			ret-=modulus;
 		}
+		LGL_LoopCounterOmega();
+
 		return(ret);
 	}
 	else
@@ -31959,6 +32465,7 @@ LGL_Clamp
 	if(lowerbound>upperbound)
 	{
 		printf("LGL_Clamp(): lower > upper: %.2f > %.2f\n",lowerbound,upperbound);
+		LGL_AssertIfDebugMode();
 	}
 	if(target>upperbound) target=upperbound;
 	if(target<lowerbound) target=lowerbound;
@@ -33094,6 +33601,16 @@ Lock
 		printf("\tLock Owner Line: %i\n",lockOwnerLine);
 		printf("\n");
 	}
+
+	if
+	(
+		mainBlocked ||
+		audioBlocked
+	)
+	{
+		LGL_AssertIfDebugMode();
+	}
+
 	return(ret);
 }
 
@@ -33759,10 +34276,15 @@ LGL_NextPowerOfTwo
 )
 {
 	int a;
+
+	LGL_LoopCounterAlpha();
 	for(a=0;pow(2,a)<target;a++)
 	{
+		LGL_LoopCounterDelta();
 		//
 	}
+	LGL_LoopCounterOmega();
+
 	return((int)pow(2,a));
 }
 /* lgl_fir:
@@ -34159,7 +34681,15 @@ lgl_AudioOutCallbackGenerator
 					)
 					{
 						sc->PositionSamplesNow=sc->WarpPointSecondsOmega*sc->Hz;
-						while(sc->PositionSamplesNow<0) sc->PositionSamplesNow+=sc->LengthSamples*sc->Hz;
+
+						LGL_LoopCounterAlpha();
+						while(sc->PositionSamplesNow<0)
+						{
+							LGL_LoopCounterDelta();
+							sc->PositionSamplesNow+=sc->LengthSamples*sc->Hz;
+						}
+						LGL_LoopCounterOmega();
+
 						sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
 						sc->SampleRateConverterBufferValidSamples=0;
 					}
@@ -34183,7 +34713,15 @@ lgl_AudioOutCallbackGenerator
 					)
 					{
 						sc->PositionSamplesNow=sc->WarpPointSecondsAlpha*sc->Hz;
-						while(sc->PositionSamplesNow<0) sc->PositionSamplesNow+=sc->LengthSamples*sc->Hz;
+
+						LGL_LoopCounterAlpha();
+						while(sc->PositionSamplesNow<0)
+						{
+							LGL_LoopCounterDelta();
+							sc->PositionSamplesNow+=sc->LengthSamples*sc->Hz;
+						}
+						LGL_LoopCounterOmega();
+
 						sc->SampleRateConverterBufferStartSamples=sc->PositionSamplesNow;
 						sc->SampleRateConverterBufferValidSamples=0;
 					}
@@ -35034,7 +35572,9 @@ lgl_AudioOutCallbackGenerator
 							32767
 						);
 				}
-				
+
+				LGL.AudioBufferPos=LGL_Max(0,LGL.AudioBufferPos);
+
 				if(LGL.AudioBufferPos+lHalf<1024)
 				{
 					LGL.AudioBufferLBack[LGL.AudioBufferPos+lHalf]+=(tempStreamFL[lHalf]/32767.0f);
@@ -35072,6 +35612,7 @@ lgl_AudioOutCallbackGenerator
 					stream16rec[encodeChannels*l+3]=(Sint16)LGL_Clamp(-32767,stream16rec[encodeChannels*l+3]+tempStreamRecBR[l]*LGL.RecordVolume,32767);
 				}
 
+				LGL.AudioBufferPos=LGL_Max(0,LGL.AudioBufferPos);
 				if(LGL.AudioBufferPos+l<1024)
 				{
 					LGL.AudioBufferLBack[LGL.AudioBufferPos+l]+=(tempStreamFL[l]/32767.0f);

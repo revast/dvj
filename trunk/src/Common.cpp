@@ -750,29 +750,66 @@ turntable_DrawBPMLines
 	float widthSample=rightSample-leftSample;
 	float pointHeight = pointTop-pointBottom;
 
+	LGL_LoopCounterAlpha();
 	while(pitchbend*60.0f/secondsPerBeat < 100)
 	{
+		LGL_LoopCounterDelta();
 		secondsPerBeat/=2.0f;
 	}
+	LGL_LoopCounterOmega();
+
+	LGL_LoopCounterAlpha();
 	while(pitchbend*60.0f/secondsPerBeat >= 200)
 	{
+		LGL_LoopCounterDelta();
 		secondsPerBeat*=2.0f;
 	}
+	LGL_LoopCounterOmega();
 
 	int whichBeat=1;
 	int whichMeasure=1;
 	double startSeconds = bpmFirstBeatSeconds;
 	if(startSeconds > -secondsPerBeat*4) whichMeasure=-1;
+
+	//Loop optimization
+	{
+		double dist = -secondsPerBeat*4 - startSeconds;
+		double delta = floorf(dist/secondsPerBeat*4);
+		startSeconds += delta * secondsPerBeat*4;
+		whichMeasure -= delta;
+		whichMeasure-=2;
+	}
+
+	LGL_LoopCounterAlpha();
 	while(startSeconds > -secondsPerBeat*4)
 	{
+		LGL_LoopCounterDelta();
 		startSeconds-=secondsPerBeat*4;
 		whichMeasure-=1;
 	}
+	LGL_LoopCounterOmega();
 
 	const float shadowOffset=0.0025f;
 
+	//Loop optimization
+	{
+		double leftSeconds = (leftSample - (44100/4))/44100.0f;
+		double dist = leftSeconds - startSeconds;
+		if(dist>0)
+		{
+			double delta = floorf(dist/secondsPerBeat);
+			startSeconds += delta * secondsPerBeat;
+
+			whichBeat+=delta;
+			whichMeasure+=floorf((whichBeat-1)/4);
+			whichBeat = ((whichBeat-1)%4)+1;
+		}
+	}
+
+	LGL_LoopCounterAlpha();
 	for(double beatSeconds=startSeconds;beatSeconds<soundLengthSeconds;beatSeconds+=secondsPerBeat)
 	{
+		LGL_LoopCounterDelta();
 		long bpmPointSamples = (long)(beatSeconds*44100);
 		if
 		(
@@ -825,10 +862,13 @@ turntable_DrawBPMLines
 			//float dashDelta=0.001f;
 			if(whichBeat==1)
 			{
-				int whichMeasureDraw = whichMeasure;
+				int whichMeasureDraw = whichMeasure+2;
 				if(whichMeasureDraw<=0)
 				{
-					whichMeasureDraw+=2;
+					//Loop optimization
+					float dist = ceilf(whichMeasureDraw/-16.0f);
+					whichMeasureDraw+=16*dist;
+				/*
 					for(int a=0;a<1000;a++)
 					{
 						if(whichMeasureDraw<=0)
@@ -840,7 +880,25 @@ turntable_DrawBPMLines
 							break;
 						}
 					}
+				*/
 				}
+				if(whichMeasureDraw==0)
+				{
+					whichMeasureDraw=16;
+				}
+
+				LGL_GetFont().DrawString
+				(
+					wavLeft+wavWidth*bpmPointPercent+lDelta,
+					pointBottom+0.1f*pointHeight-0.5f*fontHeight,
+					fontHeight,
+					1,1,1,1,
+					false,
+					0.9f,
+					"%i",
+					((whichMeasureDraw-1)%16)+1
+				);
+				/*
 				LGL_GetFont().DrawString
 				(
 					wavLeft+wavWidth*bpmPointPercent+lDelta,
@@ -852,20 +910,10 @@ turntable_DrawBPMLines
 					"%i",
 					whichMeasureDraw
 				);
-				LGL_GetFont().DrawString
-				(
-					wavLeft+wavWidth*bpmPointPercent+lDelta,
-					pointBottom+0.9f*pointHeight-0.5f*fontHeight,
-					fontHeight,
-					1,1,1,1,
-					false,
-					0.9f,
-					"%i",
-					((whichMeasureDraw-1)%16)+1
-				);
+				*/
 			}
 		}
-		else if(bpmPointSamples > rightSample)
+		else if(bpmPointSamples > rightSample+(44100/4))
 		{
 			break;
 		}
@@ -874,9 +922,10 @@ turntable_DrawBPMLines
 		{
 			whichBeat=1;
 			whichMeasure++;
-			if(whichMeasure==-1) whichMeasure=1;
+			//if(whichMeasure==-1) whichMeasure=1;
 		}
 	}
+	LGL_LoopCounterOmega(250);	//It shouldn't be this high, but I don't care to optimize this further at this time.
 }
 
 void
@@ -1026,8 +1075,10 @@ Turntable_DrawWaveformZoomed
 	float warmB;
 	GetColorWarm(warmR,warmG,warmB);
 
+	LGL_LoopCounterAlpha();
 	for(long z=-pointResolution;z<pointResolution*2;z++)
 	{
+		LGL_LoopCounterDelta();
 		long a=z+pointResolution;
 		float xPreview = pointLeft + z/(float)(pointResolution-2)*pointWidth;
 		if
@@ -1167,6 +1218,8 @@ Turntable_DrawWaveformZoomed
 			break;
 		}
 	}
+	LGL_LoopCounterOmega(LGL_WindowResolutionX());
+
 	//Tristrip!
 	if(!lowRez)
 	{
@@ -1180,8 +1233,10 @@ Turntable_DrawWaveformZoomed
 	}
 
 	//Linestrip top!
+	LGL_LoopCounterAlpha();
 	for(int a=0;a<pointsToDrawIndexEnd;a++)
 	{
+		LGL_LoopCounterDelta();
 		if(overdriven[a])
 		{
 			arrayC[(a*4)+0]=1.0f;
@@ -1197,6 +1252,8 @@ Turntable_DrawWaveformZoomed
 			//arrayC[(a*4)+3]=1.0f;
 		}
 	}
+	LGL_LoopCounterOmega(LGL_WindowResolutionX());
+
 	LGL_DrawLineStripToScreen
 	(
 		&(arrayV[pointsToDrawIndexBegin*2]),
@@ -1207,10 +1264,14 @@ Turntable_DrawWaveformZoomed
 	);
 
 	//Linestrip bottom!
+	LGL_LoopCounterAlpha();
 	for(int a=pointsToDrawIndexBegin;a<pointsToDrawIndexEnd;a++)
 	{
+		LGL_LoopCounterDelta();
 		arrayV[(a*2)+1]=(pointBottom+0.5f*pointHeight)-(arrayV[(a*2)+1]-(pointBottom+0.5f*pointHeight));
 	}
+	LGL_LoopCounterOmega(LGL_WindowResolutionX());
+
 	LGL_DrawLineStripToScreen
 	(
 		&(arrayV[pointsToDrawIndexBegin*2]),
@@ -1332,12 +1393,15 @@ Turntable_DrawWaveform
 	GetColorWarm(warmR,warmG,warmB);
 
 	//Ensure our sound is sufficiently loaded
+	LGL_LoopCounterAlpha();
 	while(sound->GetLengthSamples() < soundLengthSamples)
 	{
+		LGL_LoopCounterDelta();
 		//This can only trigger in logDrawer, so it's safe
 		LGL_DelayMS(50);
 		printf("waiting for sound to load... %li vs %li\n",(long int)sound->GetLengthSamples(), (long int)soundLengthSamples);
 	}
+	LGL_LoopCounterOmega();
 
 	//Prepare some derived varibales
 	float viewportWidth = viewportRight - viewportLeft;
@@ -1367,10 +1431,13 @@ Turntable_DrawWaveform
 
 	if(loaded)
 	{
+		LGL_LoopCounterAlpha();
 		while(sound->IsLoaded() == false)
 		{
-			LGL_DelayMS(50);
+			LGL_LoopCounterDelta();
+			LGL_DelayMS(50);	//This can't be good
 		}
+		LGL_LoopCounterOmega();
 	}
 
 	const long xFudgeFactor = (long)(0.0175f*44100);
@@ -1983,8 +2050,10 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		if(loaded)
 		{
 			//Waveform
+			LGL_LoopCounterAlpha();
 			for(;;)
 			{
+				LGL_LoopCounterDelta();
 				if(entireWaveArrayFillIndex<entireWaveArrayCount)
 				{
 					float zeroCrossingFactor;
@@ -2022,6 +2091,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 					break;
 				}
 			}
+			LGL_LoopCounterOmega();
 		}
 
 		if(entireWaveArrayFillIndex>0)
@@ -2101,8 +2171,10 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				GetInputMouse().EntireWaveformScrubberOmega();
 			}
 
+			LGL_LoopCounterAlpha();
 			for(int a=0;a<entireWaveArrayFillIndex;a++)
 			{
+				LGL_LoopCounterDelta();
 				float zeroCrossingFactor=entireWaveArrayFreqFactor[a];
 				float magnitudeAve=entireWaveArrayMagnitudeAve[a];
 				float magnitudeMax=entireWaveArrayMagnitudeMax[a];
@@ -2177,6 +2249,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 					entireWaveArrayLine2Colors[a*4+2]=0.0f;;
 				}
 			}
+			LGL_LoopCounterOmega(LGL_WindowResolutionX());
 		
 			if(!lowRez)
 			{
@@ -2776,11 +2849,24 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		minutes=0;
 		seconds=soundPositionSeconds/pitchbend;
 		if(seconds>60*999) seconds=999;
+
+		//Loop optimization
+		if(seconds>60)
+		{
+			double delta = floorf(seconds/60.0f);
+			seconds-=delta*60.0f;
+			minutes+=delta;
+		}
+
+		LGL_LoopCounterAlpha();
 		while(seconds>60)
 		{
+			LGL_LoopCounterDelta();
 			seconds-=60;
 			minutes+=1;
 		}
+		LGL_LoopCounterOmega();
+
 		if(minutes<10)
 		{
 			if(seconds<10)
@@ -2846,11 +2932,23 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		{
 			seconds/=pitchbend;
 		}
+
+		//Loop optimization
+		if(seconds>60)
+		{
+			double delta = floorf(seconds/60.0f);
+			seconds-=delta*60.0f;
+			minutes+=delta;
+		}
+
+		LGL_LoopCounterAlpha();
 		while(seconds>60)
 		{
+			LGL_LoopCounterDelta();
 			seconds-=60;
 			minutes+=1;
 		}
+		LGL_LoopCounterOmega();
 		if(minutes<10)
 		{
 			if(seconds<10)
@@ -3474,11 +3572,24 @@ Turntable_DrawSavepointSet
 		{
 			seconds/=pitchbend;
 		}
+
+		//Loop optimization
+		if(seconds>60)
+		{
+			double delta = floorf(seconds/60.0f);
+			seconds-=delta*60.0f;
+			minutes+=delta;
+		}
+
+		LGL_LoopCounterAlpha();
 		while(seconds>60)
 		{
+			LGL_LoopCounterDelta();
 			seconds-=60;
 			minutes+=1;
 		}
+		LGL_LoopCounterOmega();
+
 		if(minutes<10)
 		{
 			if(seconds<10)
@@ -4048,11 +4159,14 @@ Visualizer_DrawWaveform
 	float* arraySrc=waveformSamples;
 	float* arrayDst=new float[waveformSamplesCount*2];
 
+	LGL_LoopCounterAlpha();
 	for(int a=0;a<waveformSamplesCount;a++)
 	{
+		LGL_LoopCounterDelta();
 		arrayDst[(a*2)+0]=l+w*(a/(float)waveformSamplesCount);
 		arrayDst[(a*2)+1]=b+0.5f*h+0.5f*h*(arraySrc[a]-0.5f)*2;
 	}
+	LGL_LoopCounterOmega();
 
 	LGL_DrawLineStripToScreen
 	(
