@@ -1350,7 +1350,7 @@ LGL_JackInit()
 		printf("LGL_JackInit(): Error! jack_client_open() failed! status = 0x%.2x\n",status);
 		char dotJackdrcPath[2048];
 		sprintf(dotJackdrcPath,"%s/.jackdrc",LGL_GetHomeDir());
-		if(FILE* fd = fopen(dotJackdrcPath,"r"))
+		if(FILE* fd = LGL_fopen(dotJackdrcPath,"r"))
 		{
 			const int bufLen=2048;
 			char buf[bufLen];
@@ -2875,7 +2875,7 @@ printf("\n");
 		LGL.VidCamImageRaw->LoadSurfaceToTexture();
 		LGL.VidCamImageProcessed->LoadSurfaceToTexture();
 
-		FILE* tempfd=fopen(".lgl-vidcam-calibration","r");
+		FILE* tempfd=LGL_fopen(".lgl-vidcam-calibration","r");
 		if(tempfd!=NULL)
 		{
 			char readstuff[128];
@@ -3675,7 +3675,7 @@ lgl_fftw_init()
 	char fftwWisdomPath[2048];
 	sprintf(fftwWisdomPath,"%s/.fftw_wisdom",fftwWisdomDir);
 
-	if(FILE* fd=fopen(fftwWisdomPath,"r"))
+	if(FILE* fd=LGL_fopen(fftwWisdomPath,"r"))
 	{
 		wisdomLoaded=fftwf_import_wisdom_from_file(fd);
 		if(wisdomLoaded)
@@ -3721,7 +3721,7 @@ lgl_fftw_init()
 		}
 		lgl_fftw_wisdom_creation_thread_status=0;
 
-		if(FILE* fd=fopen(fftwWisdomPath,"w"))
+		if(FILE* fd=LGL_fopen(fftwWisdomPath,"w"))
 		{
 			fftwf_export_wisdom_to_file(fd);
 			fclose(fd);
@@ -5729,7 +5729,7 @@ VertCompile
 		VertDelete();
 	}
 
-	FILE* file=fopen(inFileVert,"rb");
+	FILE* file=LGL_fopen(inFileVert,"rb");
 	if(file==NULL)
 	{
 		printf
@@ -5809,7 +5809,7 @@ FragCompile
 		FragDelete();
 	}
 
-	FILE* file=fopen(inFileFrag,"rb");
+	FILE* file=LGL_fopen(inFileFrag,"rb");
 	if(file==NULL)
 	{
 		printf
@@ -10450,7 +10450,7 @@ printf("preload '%s'? %s: %.2f vs %.2f\n",
 			dec->SetPreloadEnabled(preload);
 			if(preload)
 			{
-				if(FILE* fd=fopen(dec->GetPath(),"rb"))
+				if(FILE* fd=LGL_fopen(dec->GetPath(),"rb"))
 				{
 					const int readSize=1024*1024*8;
 					char* readBuf=new char[readSize];
@@ -12100,7 +12100,7 @@ MaybeReadAhead()
 	LGL_ScopeLock lock(__FILE__,__LINE__,sem);
 
 	//Is it goofy not to keep this fd?
-	if(FILE* fd=fopen(Path,"rb"))
+	if(FILE* fd=LGL_fopen(Path,"rb"))
 	{
 		char* buf = new char[ReadAheadMB*1024*1024];
 		fseek(fd,PosBytes,SEEK_SET);
@@ -12630,7 +12630,7 @@ MaybeDecodeImage
 	}
 
 /*
-	if(FILE* fd=fopen("packet_test.jpg","wb"))
+	if(FILE* fd=LGL_fopen("packet_test.jpg","wb"))
 	{
 		fwrite(packet->data,packet->size,1,fd);
 		fclose(fd);
@@ -12715,6 +12715,8 @@ MaybeDecodeImage
 			}
 		}
 	}
+
+	//LGL_DebugPrintf("Decode!\n");
 
 	if(frameFinished==false)
 	{
@@ -13647,7 +13649,7 @@ GetInvalidFrameBuffer()
 
 	LGL_DebugPrintf("Couldn't find an invalid framebuffer!! (%i) (%s)\n",FrameBufferList.size(),Path);
 	/*
-	if(FILE* baka = fopen("/Users/id/debug.txt","w"))
+	if(FILE* baka = LGL_fopen("/Users/id/debug.txt","w"))
 	{
 		for(unsigned int a=0;a<FrameBufferList.size();a++)
 		{
@@ -15069,7 +15071,7 @@ FlushBuffer
 	{
 		AVOpened=true;
 		Valid=false;
-		if(FILE* fd=fopen(DstMp3Path,"w"))
+		if(FILE* fd=LGL_fopen(DstMp3Path,"w"))
 		{
 			fclose(fd);
 			fd=NULL;
@@ -16052,6 +16054,36 @@ bool
 LGL_GetDebugMode()
 {
 	return(LGL.DebugMode);
+}
+
+FILE*
+LGL_fopen
+(
+	const char*	path,
+	const char*	mode
+)
+{
+	//LGL_DebugPrintf("fopen: %s\n",path);
+	return
+	(
+		fopen
+		(
+			path,
+			mode
+		)
+	);
+}
+
+int
+LGL_fclose
+(
+	FILE*	fd
+)
+{
+	return
+	(
+		fclose(fd)
+	);
 }
 
 void
@@ -20868,7 +20900,7 @@ LoadToMemory()
 	if(LGL_FileLengthBytes(Path)<1024.0*1024.0*200)
 	{
 		//Preload!
-		if(FILE* fd=fopen(Path,"rb"))
+		if(FILE* fd=LGL_fopen(Path,"rb"))
 		{
 			const int readSize=1024*1024*8;
 			char* readBuf=new char[readSize];
@@ -20897,7 +20929,7 @@ LoadToMemory()
 
 	int totalFileBytes=-1;
 	int totalFileBytesUsed=0;
-	if(FILE* fd = fopen(Path,"rb"))
+	if(FILE* fd = LGL_fopen(Path,"rb"))
 	{
 		fseek(fd,0,SEEK_END);
 		totalFileBytes=ftell(fd);
@@ -20905,7 +20937,7 @@ LoadToMemory()
 	}
 	else
 	{
-		printf("LGL_Sound::LoadToMemory(): Error! Couldn't fopen('%s')!\n",Path);
+		printf("LGL_Sound::LoadToMemory(): Error! Couldn't LGL_fopen('%s')!\n",Path);
 		BadFile=true;
 		return;
 	}
@@ -26596,7 +26628,7 @@ LGL_VidCamCalibrate
 					LGL.VidCamDistancePointer=DistPointer;
 					Phase++;
 
-					FILE* writeme=fopen(".lgl-vidcam-calibration","w");
+					FILE* writeme=LGL_fopen(".lgl-vidcam-calibration","w");
 					if(writeme!=NULL)
 					{
 						char tempstr[64];
@@ -26608,7 +26640,7 @@ LGL_VidCamCalibrate
 					}
 					else
 					{
-						printf("fopen(./.lgl-vidcam-calibration) failed\n");
+						printf("LGL_fopen(./.lgl-vidcam-calibration) failed\n");
 					}
 				}
 				if(ResetMe) DistTimer.Reset();
@@ -27114,7 +27146,7 @@ lgl_NetConnectionSocketSendThread
 		else if(nc->FileSendBuffer[1].empty()==false && nc->FileSendNowFD==NULL)
 		{
 			//send file= datagram
-			nc->FileSendNowFD=fopen(nc->FileSendBuffer[1][0],"r");
+			nc->FileSendNowFD=LGL_fopen(nc->FileSendBuffer[1][0],"r");
 			sprintf(nc->FileSendNowName,"%s",nc->FileSendBuffer[1][0]);
 			nc->FileSendNowLength=LGL_FileLengthBytes(nc->FileSendNowName);
 
@@ -27655,7 +27687,7 @@ lgl_NetConnectionSocketRecvThread
 
 				lgl_NetConnectionEvilPathScan(argv[0]);
 
-				FILE* file=fopen(argv[0],"w");
+				FILE* file=LGL_fopen(argv[0],"w");
 				if(file!=NULL)
 				{
 					fwrite(data,1,datalength,file);
@@ -27688,7 +27720,7 @@ lgl_NetConnectionSocketRecvThread
 				else
 				{
 					//Better report the error
-printf("Hey0! Couldn't fopen(%s)\n",argv[0]);
+printf("Hey0! Couldn't LGL_fopen(%s)\n",argv[0]);
 				}
 
 			}
@@ -27704,7 +27736,7 @@ printf("Hey0! Couldn't fopen(%s)\n",argv[0]);
 
 				lgl_NetConnectionEvilPathScan(argv[0]);
 
-				FILE* file=fopen(argv[0],"a");
+				FILE* file=LGL_fopen(argv[0],"a");
 				if(file!=NULL)
 				{
 					fwrite(data,1,datalength,file);
@@ -27738,7 +27770,7 @@ printf("Hey0! Couldn't fopen(%s)\n",argv[0]);
 				else
 				{
 					//Better report the error
-printf("Hey1! Couldn't fopen(%s)\n",argv[0]);
+printf("Hey1! Couldn't LGL_fopen(%s)\n",argv[0]);
 				}
 			}
 			else if
@@ -29818,7 +29850,7 @@ Thread_Load()
 		return;
 	}
 
-	if(FILE* fd = fopen(GetPath(),"r"))
+	if(FILE* fd = LGL_fopen(GetPath(),"r"))
 	{
 		fseek(fd,0,SEEK_END);
 		long len=ftell(fd);
@@ -30106,7 +30138,7 @@ void
 lgl_PathIsAliasCacher::
 Load()
 {
-	if(FILE* fd=fopen(Path,"r"))
+	if(FILE* fd=LGL_fopen(Path,"r"))
 	{
 		const int bufSize=2048;
 		char buf[bufSize];
@@ -30135,7 +30167,7 @@ void
 lgl_PathIsAliasCacher::
 Save()
 {
-	if(FILE* fd=fopen(Path,"w"))
+	if(FILE* fd=LGL_fopen(Path,"w"))
 	{
 		for
 		(
@@ -30993,7 +31025,7 @@ LGL_MD5sum
 	char*	output
 )
 {
-	FILE *fd=fopen(file,"r");
+	FILE *fd=LGL_fopen(file,"r");
 	if(fd==NULL)
 	{
 		printf("LGL_MD5sum('%s'): Warning! Can't open file!\n",file);
@@ -31427,7 +31459,7 @@ Write()
 {
 	char pathTmp[2048];
 	sprintf(pathTmp,"%s.tmp",Path);
-	if(FILE* fd = fopen(pathTmp,"w"))
+	if(FILE* fd = LGL_fopen(pathTmp,"w"))
 	{
 		fwrite(Data,Len,1,fd);
 		fclose(fd);
@@ -31666,7 +31698,7 @@ bool
 LGL_BatteryChargeDraining()
 {
 #ifndef	LGL_OSX
-	if(FILE* fd=fopen("/proc/acpi/battery/BAT0/state","r"))
+	if(FILE* fd=LGL_fopen("/proc/acpi/battery/BAT0/state","r"))
 	{
 		char buf[2048];
 		while(feof(fd)==false)
@@ -31694,7 +31726,7 @@ LGL_BatteryChargePercent()
 	float capacity=-1.0f;
 	float charge=-1.0f;
 
-	if(FILE* fd=fopen("/proc/acpi/battery/BAT0/state","r"))
+	if(FILE* fd=LGL_fopen("/proc/acpi/battery/BAT0/state","r"))
 	{
 		char buf[2048];
 		while(feof(fd)==false)
@@ -31707,7 +31739,7 @@ LGL_BatteryChargePercent()
 		}
 		fclose(fd);
 	}
-	if(FILE* fd=fopen("/proc/acpi/battery/BAT0/info","r"))
+	if(FILE* fd=LGL_fopen("/proc/acpi/battery/BAT0/info","r"))
 	{
 		char buf[2048];
 		while(feof(fd)==false)
@@ -32047,14 +32079,14 @@ lgl_DrawLogPlayback
 {
 	if(inFile==NULL)
 	{
-		printf("lgl_DrawLogPlayback(NULL): Error! Can't fopen NULL filename!\n");
+		printf("lgl_DrawLogPlayback(NULL): Error! Can't LGL_fopen NULL filename!\n");
 		LGL_Exit();
 	}
 		
-	FILE* f=fopen(inFile,"r");
+	FILE* f=LGL_fopen(inFile,"r");
 	if(f==NULL)
 	{
-		printf("lgl_DrawLogPlayback(%s): Error! Couldn't fopen file!\n",inFile);
+		printf("lgl_DrawLogPlayback(%s): Error! Couldn't LGL_fopen file!\n",inFile);
 		LGL_Exit();
 	}
 	fclose(f);
@@ -33122,7 +33154,7 @@ lgl_read_proc_cpuinfo()
 {
 	std::vector<int> cpuSpeeds;
 #ifndef	LGL_OSX
-	if(FILE* fd = fopen("/proc/cpuinfo","r"))
+	if(FILE* fd = LGL_fopen("/proc/cpuinfo","r"))
 	{
 		while(!feof(fd))
 		{
@@ -33216,7 +33248,7 @@ LGL_CPUTemp()
 {
 #ifdef	LGL_LINUX
 	int cpuTemp=999;
-	FILE* fd = fopen("/proc/acpi/thermal_zone/THM/temperature","r");
+	FILE* fd = LGL_fopen("/proc/acpi/thermal_zone/THM/temperature","r");
 	if(fd)
 	{
 		while(!feof(fd))

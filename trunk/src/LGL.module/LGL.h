@@ -1665,6 +1665,19 @@ LGL_SetDebugMode
 bool
 LGL_GetDebugMode();
 
+FILE*
+LGL_fopen
+(
+	const char*	path,
+	const char*	mode
+);
+
+int
+LGL_fclose
+(
+	FILE*	fd
+);
+
 class LGL_InputBuffer
 {
 
