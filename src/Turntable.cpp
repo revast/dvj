@@ -650,6 +650,8 @@ videoEncoderThread
 				LGL_Timer timer;
 				LGL_Timer timerUpdateEta;
 				const float updateEtaInterval=1.0f;
+
+				//Main encode loop
 				for(;;)
 				{
 					if(tt->VideoEncoderTerminateSignal==1)
@@ -766,6 +768,8 @@ videoEncoderThread
 
 					//TODO: LGL_Delay()?
 				}
+
+				LGL_LoopCounterOmega();
 
 				if(LGL_FileExists(encoderDstTmp))
 				{
@@ -933,6 +937,8 @@ warmMemoryThread
 	void*	ptr
 )
 {
+	return(0);	//No need for this, since I can mlock().
+/*
 	TurntableObj* tt = (TurntableObj*)ptr;
 
 	for(;;)
@@ -968,6 +974,7 @@ warmMemoryThread
 	}
 
 	return(0);
+*/
 }
 
 int
@@ -1349,7 +1356,7 @@ TurntableObj::
 			}
 			else
 			{
-				LGL_DelayMS(50);
+				LGL_DelayMS(10);
 			}
 		}
 		delete Sound;
@@ -1382,6 +1389,7 @@ NextFrame
 			//LGL_DebugPrintf("PCM: %f\n",GetPercentOfCurrentMeasure());
 			//LGL_DebugPrintf("MLS: %.2f\n",GetMeasureLengthSeconds());
 			//LGL_DebugPrintf("Video: %s\n",Video ? Video->GetPath() : "NULL VIDEO");
+			//LGL_DebugPrintf("Rate: %.2f\n",SmoothWaveformScrollingSampleRate);
 		}
 	}
 
@@ -1450,6 +1458,7 @@ NextFrame
 	if(GetInputTester().GetEnable())
 	{
 		TesterEverEnabled=true;
+		LGL_SetDebugMode();
 	}
 
 	if(Sound && Channel>=0)
@@ -2113,7 +2122,11 @@ NextFrame
 						)
 						{
 							float savepointSeconds=GetCurrentSavepointSeconds();
-							if(savepointSeconds>=0.0f)
+							if
+							(
+								savepointSeconds>=0.0f &&
+								Sound->GetLengthSeconds()-1.0f > savepointSeconds
+							)
 							{
 								Sound->SetPositionSeconds(Channel,savepointSeconds);
 								Sound->SetSpeed(Channel,0);
@@ -2347,22 +2360,28 @@ NextFrame
 					{
 						if(Channel>=0)
 						{
-							FinalSpeed=(Pitchbend+MixerNudge)+Nudge;
-							Sound->SetSpeed(Channel,FinalSpeed,true);
-							PauseMultiplier=1;
-
 							if
 							(
 								savepointIndexDelta ||
-								Focus!=FocusPrev
+								Focus!=FocusPrev ||
+								PauseMultiplier==0
 							)
 							{
 								float targetSeconds = GetSecondsToSync();
-								if(targetSeconds>=0)
+								if
+								(
+									targetSeconds>=0 &&
+									targetSeconds<Sound->GetLengthSeconds()-1.0f
+								)
 								{
 									Sound->SetPositionSeconds(Channel,targetSeconds);
+
+									PauseMultiplier=1;
 								}
 							}
+
+							FinalSpeed=PauseMultiplier*(Pitchbend+MixerNudge)+Nudge;
+							Sound->SetSpeed(Channel,FinalSpeed,true);
 						}
 					}
 				}
@@ -2510,7 +2529,7 @@ NextFrame
 				//Exit RW/FF
 				//Change our speed instantly.
 				Sound->SetSpeed(Channel,Pitchbend*PauseMultiplier*ReverseMultiplier,true);
-				SmoothWaveformScrollingSample=Sound->GetPositionSamples(Channel);
+				SetSmoothWaveformScrollingSample(Sound->GetPositionSamples(Channel));
 				SmoothWaveformScrollingSampleRate=SmoothWaveformScrollingSampleRateRemembered;
 				SmoothWaveformScrollingSampleExactUponDifferent=Sound->GetPositionSamples(Channel);;
 			}
@@ -2556,14 +2575,14 @@ NextFrame
 		//Volume
 		VolumeInvertBinary=GetInput().WaveformVolumeInvert(target);
 
-		Sound->SetRhythmicInvertProperties
-		(
-			Channel,
-			GetBeginningOfCurrentMeasureSeconds(),
-			GetQuantizePeriodSeconds()
-		);
 		if(GetBPM()>0)
 		{
+			Sound->SetRhythmicInvertProperties
+			(
+				Channel,
+				GetBeginningOfCurrentMeasureSeconds(),
+				GetQuantizePeriodSeconds()
+			);
 			if(GetInput().WaveformRhythmicVolumeInvert(target))
 			{
 				RhythmicVolumeInvert=true;
@@ -2572,12 +2591,12 @@ NextFrame
 			{
 				RhythmicVolumeInvert=false;
 			}
-			Sound->SetRhythmicVolumeInvert(Channel,RhythmicVolumeInvert);
 		}
 		else
 		{
 			RhythmicVolumeInvert=false;
 		}
+		Sound->SetRhythmicVolumeInvert(Channel,RhythmicVolumeInvert);
 
 		RhythmicSoloInvert = BPMAvailable() && GetInput().WaveformRhythmicVolumeInvertOther(target);
 
@@ -2691,10 +2710,13 @@ NextFrame
 					//SavepointIndex=LGL_Max(0,Savepoints.size()-1);
 				}
 				SavepointIndex=0;
+				LGL_LoopCounterAlpha();
 				while(SavepointIndexAtPlus()==false)
 				{
+					LGL_LoopCounterDelta();
 					SavepointIndex++;
 				}
+				LGL_LoopCounterOmega();
 				SortSavepoints();
 				SaveMetadataNew();
 			}
@@ -2766,14 +2788,20 @@ NextFrame
 					if(Savepoints[SavepointIndex].BPM>0)
 					{
 						Savepoints[SavepointIndex].BPM+=candidate;
+						LGL_LoopCounterAlpha();
 						while(Savepoints[SavepointIndex].BPM<100.0f)
 						{
+							LGL_LoopCounterDelta();
 							Savepoints[SavepointIndex].BPM*=2.0f;
 						}
+						LGL_LoopCounterOmega();
+						LGL_LoopCounterAlpha();
 						while(Savepoints[SavepointIndex].BPM>=200.0f)
 						{
+							LGL_LoopCounterDelta();
 							Savepoints[SavepointIndex].BPM/=2.0f;
 						}
+						LGL_LoopCounterOmega();
 					}
 					SaveMetadataNew();
 				}
@@ -2804,7 +2832,7 @@ NextFrame
 				if(Sound->GetLengthSeconds()>=savepointSeconds)
 				{
 					Sound->SetPositionSeconds(Channel,savepointSeconds);
-					SmoothWaveformScrollingSample=savepointSeconds*Sound->GetHz();
+					SetSmoothWaveformScrollingSample(savepointSeconds*Sound->GetHz());
 				}
 			}
 
@@ -2813,7 +2841,7 @@ NextFrame
 			(
 				GetInput().WaveformSavepointJumpAtMeasure(target) &&
 				Savepoints[SavepointIndex].Seconds!=-1.0f &&
-				GetBPM()!=0 &&
+				GetBPM()>0 &&
 				PauseMultiplier!=0
 			)
 			{
@@ -2838,10 +2866,14 @@ NextFrame
 						//Jump at start of next measure
 						double beatStart=GetBPMAnchorMeasureSeconds();
 						double measureLength=GetMeasureLengthSeconds();
+						LGL_LoopCounterAlpha();
 						while(beatStart>0)
 						{
+							LGL_LoopCounterDelta();
 							beatStart-=measureLength;
 						}
+						LGL_LoopCounterOmega();
+
 						double savepointSecondsQuantized=beatStart;
 						double closest=99999.0;
 						for(double test=beatStart;test<savepointSeconds+2*measureLength;test+=0.25*measureLength)
@@ -2854,24 +2886,43 @@ NextFrame
 						}
 						double nowSeconds=GetTimeSeconds();
 						double savepointMeasureStart=beatStart;
+						LGL_LoopCounterAlpha();
 						while(savepointMeasureStart+measureLength<savepointSecondsQuantized)
 						{
+							LGL_LoopCounterDelta();
 							savepointMeasureStart+=measureLength;
 						}
+						LGL_LoopCounterOmega();
+
 						//double savepointSecondsIntoMeasure=savepointSecondsQuantized-savepointMeasureStart;
 						double nowMeasureStart=beatStart;
+
+						//Loop optimization
+						double dist = nowSeconds - (nowMeasureStart+measureLength);
+						double delta = floorf(dist/measureLength);
+						nowMeasureStart += delta*measureLength;
+
+						LGL_LoopCounterAlpha();
 						while(nowMeasureStart+measureLength<nowSeconds)
 						{
+							LGL_LoopCounterDelta();
 							nowMeasureStart+=measureLength;
 						}
+						LGL_LoopCounterOmega();
+
 						double timeToWarp=nowMeasureStart+measureLength;//+savepointSecondsIntoMeasure;
+						LGL_LoopCounterAlpha();
 						while(timeToWarp<nowSeconds)
 						{
+							LGL_LoopCounterDelta();
 							timeToWarp+=measureLength;
 						}
+						LGL_LoopCounterOmega();
 
+						LGL_LoopCounterAlpha();
 						for(;;)
 						{
+							LGL_LoopCounterDelta();
 							bool ret = Sound->SetWarpPoint
 							(
 								Channel,
@@ -2888,6 +2939,7 @@ NextFrame
 								timeToWarp+=measureLength;
 							}
 						}
+						LGL_LoopCounterOmega();
 					}
 				}
 			}
@@ -2917,8 +2969,10 @@ NextFrame
 
 							jumpAlphaSeconds=currentMeasureStart;
 							jumpOmegaSeconds=candidateMeasureStart;
+							LGL_LoopCounterAlpha();
 							for(;;)
 							{
+								LGL_LoopCounterDelta();
 								float posSeconds = GetTimeSeconds();
 								if(jumpAlphaSeconds < posSeconds)
 								{
@@ -2930,6 +2984,7 @@ NextFrame
 									break;
 								}
 							}
+							LGL_LoopCounterOmega();
 						}
 						//Sound->SetPositionSeconds(Channel,candidateSeconds);
 
@@ -2940,8 +2995,10 @@ NextFrame
 							jumpOmegaSeconds<=Sound->GetLengthSeconds()-5.0f
 						)
 						{
+							LGL_LoopCounterAlpha();
 							for(;;)
 							{
+								LGL_LoopCounterDelta();
 								bool ret=Sound->SetWarpPoint
 								(
 									Channel,
@@ -2961,6 +3018,7 @@ NextFrame
 									jumpOmegaSeconds += quantizePeriodSeconds;
 								}
 							}
+							LGL_LoopCounterOmega();
 						}
 					}
 				}
@@ -3244,8 +3302,8 @@ NextFrame
 					else
 					{
 						LoopAlphaSeconds = GetBeginningOfCurrentMeasureSeconds(pow(2,QuantizePeriodMeasuresExponent));
-
-						for(;;)
+						/*
+						for(int q=0;;q++)
 						{
 							float posSeconds = GetTimeSeconds();
 							if(LoopAlphaSeconds + deltaSeconds < posSeconds)
@@ -3256,7 +3314,14 @@ NextFrame
 							{
 								break;
 							}
+
+							if(q==99)
+							{
+								printf("Former for(;;) loop takes too many iterations!\n");
+								LGL_AssertIfDebugMode();
+							}
 						}
+						*/
 
 						LoopOmegaSeconds=LGL_Min
 						(
@@ -3269,15 +3334,42 @@ NextFrame
 						}
 					}
 
-					for(;;)
+					LGL_LoopCounterAlpha();
+					for(int z=0;z<100;z++)
 					{
-						bool ret=Sound->SetWarpPoint
-						(
-							Channel,
-							LoopOmegaSeconds,
-							LoopAlphaSeconds,
-							true
-						);
+						LGL_LoopCounterDelta();
+						bool ret=false;
+
+						if(z>90 && LGL_GetDebugMode())
+						{
+							printf
+							(
+								"Attempt %i: %.4f vs %.4f\n",
+								z,
+								LoopOmegaSeconds,
+								Sound->GetPositionSeconds(Channel)
+							);
+						}
+
+						if(1)//LoopOmegaSeconds > Sound->GetPositionSeconds(Channel)+0.1f)
+						{
+							if(z>90 && LGL_GetDebugMode())
+							{
+								printf
+								(
+									"[%i]: Trying to SetWarpPoint... (Locked? %i)\n",
+									z,
+									Sound->GetWarpPointIsLocked(Channel)
+								);
+							}
+							ret=Sound->SetWarpPoint
+							(
+								Channel,
+								LoopOmegaSeconds,
+								LoopAlphaSeconds,
+								true
+							);
+						}
 
 						if(ret)
 						{
@@ -3285,14 +3377,57 @@ NextFrame
 						}
 						else
 						{
-							LoopAlphaSeconds+=deltaSeconds;
+							if(Sound->GetWarpPointIsLocked(Channel))
+							{
+								break;
+							}
+							/*
+							else
+							{
+								printf("Warning! When setting WarpPoint, ret was false, but GetWarpPointIsLocked() was also false. How?!\n");
+								LGL_AssertIfDebugMode();
+							}
+							*/
+							float lastMeasure = GetBPMLastMeasureSeconds();
+
+							float posSeconds = GetTimeSeconds();
+							posSeconds+=z*0.005f;
+							float dist = posSeconds - LoopOmegaSeconds;
+							int mult = LGL_Max(0,ceilf(dist/deltaSeconds));
+
+							LoopAlphaSeconds+=deltaSeconds*mult;
 							LoopOmegaSeconds=LGL_Min
 							(
 								LoopAlphaSeconds+deltaSeconds,
-								GetBPMLastMeasureSeconds()
+								lastMeasure
 							);
+
+							if(LoopAlphaSeconds>lastMeasure)
+							{
+								break;
+							}
+
+							if(z>90 && LGL_GetDebugMode())
+							{
+								printf("[%i]: %.2f => %.2f (%.2f) (%.6f)\n",
+									z,
+									LoopAlphaSeconds,
+									LoopOmegaSeconds,
+									deltaSeconds,
+									Sound->GetLengthSeconds()
+								);
+							}
+						}
+
+						if(z==99)
+						{
+							printf("Warning! Failed to set warp point, or early-out!\n");
+							LoopActive=false;
+							//LGL_AssertIfDebugMode();
+							break;
 						}
 					}
+					LGL_LoopCounterOmega();
 				}
 			}
 		}
@@ -3972,10 +4107,13 @@ NextFrame
 				else
 				{
 					GlitchPureVideoNow+=2*GlitchPureSpeed*LGL_Min(1.0f/120.0f,LGL_SecondsSinceLastFrame());
+					LGL_LoopCounterAlpha();
 					while(GlitchPureVideoNow>(GlitchBegin/44100.0f)+(GlitchLength/44100.0f)*GLITCH_PURE_VIDEO_MULTIPLIER)
 					{
+						LGL_LoopCounterDelta();
 						GlitchPureVideoNow-=(GlitchLength/44100.0f)*GLITCH_PURE_VIDEO_MULTIPLIER;
 					}
+					LGL_LoopCounterOmega();
 				}
 			}
 
@@ -3993,14 +4131,22 @@ NextFrame
 				LuminScratch=true;
 				LuminScratchSamplePositionDesired=
 					(long)(leftSample+gSamplePercent*(rightSample-leftSample));
+				LGL_LoopCounterAlpha();
 				while(LuminScratchSamplePositionDesired<0)
 				{
+					LGL_LoopCounterDelta();
 					LuminScratchSamplePositionDesired+=Sound->GetLengthSamples();
 				}
+				LGL_LoopCounterOmega();
+
+				LGL_LoopCounterAlpha();
 				while(LuminScratchSamplePositionDesired>=Sound->GetLengthSamples())
 				{
+					LGL_LoopCounterDelta();
 					LuminScratchSamplePositionDesired-=Sound->GetLengthSamples();
 				}
+				LGL_LoopCounterOmega();
+
 				GlitchBegin=Sound->GetPositionGlitchBeginSamples(Channel)-.005f*64*512*Pitchbend*2;
 			}
 			else
@@ -4028,14 +4174,21 @@ NextFrame
 					GrainStreamActiveSeconds+=secondsElapsed;
 					if(1)
 					{
+						LGL_LoopCounterAlpha();
 						while(GrainStreamSourcePoint<0.0f)
 						{
+							LGL_LoopCounterDelta();
 							GrainStreamSourcePoint+=Sound->GetLengthSeconds();
 						}
+						LGL_LoopCounterOmega();
+
+						LGL_LoopCounterAlpha();
 						while(GrainStreamSourcePoint>=Sound->GetLengthSeconds())
 						{
+							LGL_LoopCounterDelta();
 							GrainStreamSourcePoint-=Sound->GetLengthSeconds();
 						}
+						LGL_LoopCounterOmega();
 					}
 					else
 					{
@@ -4193,7 +4346,7 @@ NextFrame
 			GlitchBegin=0;
 			GlitchLength=0;
 			GlitchPitch=1.0f;
-			SmoothWaveformScrollingSample=0.0f;
+			SetSmoothWaveformScrollingSample(0.0f);
 			SmoothWaveformScrollingSampleRate=1.0f;
 			SmoothWaveformScrollingSampleRateRemembered=1.0f;
 			VideoOffsetSeconds=LGL_RandFloat(0,1000.0f);
@@ -4241,7 +4394,7 @@ NextFrame
 			{
 				if(SmoothWaveformScrollingSample/Sound->GetHz() > Sound->GetLengthSeconds()-1)
 				{
-					SmoothWaveformScrollingSample=0;
+					SetSmoothWaveformScrollingSample(0);
 				}
 				else
 				{
@@ -4258,7 +4411,7 @@ NextFrame
 			else
 			{
 				Sound->SetPositionSeconds(Channel,Sound->GetLengthSeconds()-1);
-				SmoothWaveformScrollingSample=Sound->GetPositionSamples(Channel);
+				SetSmoothWaveformScrollingSample(Sound->GetPositionSamples(Channel));
 			}
 			Sound->SetSpeedInterpolationFactor
 			(
@@ -4361,8 +4514,10 @@ NextFrame
 		{
 			float timeStamp=GrainStreamSpawnDelaySeconds;
 			float joyVarY=0.0f;//2.0f*fabsf(LGL_JoyAnalogueStatus(0,LGL_JOY_ANALOGUE_L,LGL_JOY_XAXIS));
+			LGL_LoopCounterAlpha();
 			while(timeStamp<secondsElapsed)
 			{
+				LGL_LoopCounterDelta();
 				LGL_AudioGrain* grain=new LGL_AudioGrain;
 				grain->SetWaveformFromLGLSound
 				(
@@ -4388,6 +4543,8 @@ NextFrame
 				GrainStream.AddNextGrain(grain);
 				timeStamp+=1.0f/GrainStreamGrainsPerSecond;
 			}
+			LGL_LoopCounterOmega();
+
 			GrainStreamSpawnDelaySeconds=timeStamp-secondsElapsed;
 		}
 		else
@@ -4419,7 +4576,7 @@ NextFrame
 			double now=Sound->GetPositionSamples(Channel);
 			if(now != SmoothWaveformScrollingSampleExactUponDifferent)
 			{
-				SmoothWaveformScrollingSample=now;
+				SetSmoothWaveformScrollingSample(now);
 				SmoothWaveformScrollingSampleExactUponDifferent=-1;
 			}
 		}
@@ -4517,7 +4674,7 @@ LGL_DrawLineToScreen
 		{
 			//We're accurate enough
 //printf("\t\t\t\t\t\tOK!\n");
-			SmoothWaveformScrollingSample+=proposedDelta;
+			SetSmoothWaveformScrollingSample(SmoothWaveformScrollingSample+proposedDelta);
 			SmoothWaveformScrollingSampleRate=
 				(1.0f-rateDelta*0.1f*LGL_SecondsSinceLastFrame())*SmoothWaveformScrollingSampleRate+
 				(0.0f+rateDelta*0.1f*LGL_SecondsSinceLastFrame())*1.0f;
@@ -4563,15 +4720,14 @@ LGL_DrawLineToScreen
 );
 */
 //printf("\t\t\t\t\t\tDelta! (%.2f) (%.2f)\n",proposedDelta,deltaMultiplier);
-			SmoothWaveformScrollingSample+=proposedDelta;
+			SetSmoothWaveformScrollingSample(SmoothWaveformScrollingSample+proposedDelta);
 		}
 		else
 		{
 //printf("\t\t\t\t\t\tFUCK!\n");
 			//Fuck, we're really far off. Screw smooth scrolling, just jump to currentSample
-			SmoothWaveformScrollingSample=currentSample;
+			SetSmoothWaveformScrollingSample(currentSample);
 		}
-		SmoothWaveformScrollingSample=LGL_Clamp(0,SmoothWaveformScrollingSample,Sound->GetLengthSamples());
 		if(RewindFF==false)
 		{
 			SmoothWaveformScrollingSampleRateRemembered = SmoothWaveformScrollingSampleRate;
@@ -4589,30 +4745,19 @@ LGL_DrawLineToScreen
 
 		if(Looping())
 		{
-			double loopSamples = Sound->GetHz()*(LoopOmegaSeconds - LoopAlphaSeconds);
-			if(loopSamples>0)
+			if
+			(
+				SmoothWaveformScrollingSample>LoopOmegaSeconds*Sound->GetHz() ||
+				SmoothWaveformScrollingSample<LoopAlphaSeconds*Sound->GetHz()
+			)
 			{
-				while(SmoothWaveformScrollingSample>LoopOmegaSeconds*Sound->GetHz())
-				{
-					SmoothWaveformScrollingSample-=loopSamples;
-				}
-				while(SmoothWaveformScrollingSample<LoopAlphaSeconds*Sound->GetHz())
-				{
-					SmoothWaveformScrollingSample+=loopSamples;
-				}
-			}
-			else
-			{
-				if(SmoothWaveformScrollingSample>LoopOmegaSeconds*Sound->GetHz())
-				{
-					SmoothWaveformScrollingSample=0;
-				}
+				SetSmoothWaveformScrollingSample(LoopAlphaSeconds*Sound->GetHz());
 			}
 		}
 
 if(LGL_SecondsSinceLastFrame()>=1.5f/60.0f)
 {
-	SmoothWaveformScrollingSample = Sound->GetPositionSamples(Channel);
+	SetSmoothWaveformScrollingSample(Sound->GetPositionSamples(Channel));
 }
 	}
 
@@ -4824,11 +4969,15 @@ DrawFrame
 			if(seconds>=0 && seconds<9999.0f)
 			{
 				int minutes=0;
+				LGL_LoopCounterAlpha();
 				while(seconds>=60)
 				{
+					LGL_LoopCounterDelta();
 					minutes++;
 					seconds-=60;
 				}
+				LGL_LoopCounterOmega();
+
 				LGL_GetFont().DrawString
 				(
 					centerX,bottom+0.5f*height-0.5f*0.125f*height,0.125f*height,
@@ -4948,11 +5097,15 @@ DrawFrame
 			if(seconds>=0)
 			{
 				int minutes=0;
+				LGL_LoopCounterAlpha();
 				while(seconds>=60)
 				{
+					LGL_LoopCounterDelta();
 					minutes++;
 					seconds-=60;
 				}
+				LGL_LoopCounterOmega();
+
 				LGL_GetFont().DrawString
 				(
 					centerX,bottom+0.5f*height-0.5f*0.125f*height,0.125f*height,
@@ -5363,11 +5516,16 @@ DrawFrame
 		{
 			float minutes=0;
 			float seconds=ceil(Sound->GetSecondsUntilLoaded());
+			minutes = floorf(seconds/60.0f);
+			seconds -= minutes*60.0f;
+			LGL_LoopCounterAlpha();
 			while(seconds>=60)
 			{
+				LGL_LoopCounterDelta();
 				minutes++;
 				seconds-=60;
 			}
+			LGL_LoopCounterOmega();
 
 			char temp[2048];
 			if(seconds<10)
@@ -5781,7 +5939,10 @@ DrawWave
 	(
 		Sound,
 		GetTimeSeconds(),
-		LGL_Min(FinalSpeed,1.0f)/240.0f
+		LGL_Min(FinalSpeed,1.0f)/240.0f,
+		0.0f,
+		0.0f,
+		false
 	);
 
 	float coolR;
@@ -6480,6 +6641,10 @@ GetFreqMetadata
 			{
 				timePrev=timeNow-1.0f/60.0f;
 			}
+			if(timeNow>timePrev+1.0f/60.0f)
+			{
+				timeNow=timePrev+1.0f/60.0f;
+			}
 			ret=
 				Sound->GetMetadata
 				(
@@ -6565,10 +6730,13 @@ LoadMetadataOld(const char* data)
 		}
 	}
 
+	LGL_LoopCounterAlpha();
 	while(Savepoints.size()<12)
 	{
+		LGL_LoopCounterDelta();
 		Savepoints.push_back(SavepointObj());
 	}
+	LGL_LoopCounterOmega();
 	
 	SortSavepoints();
 }
@@ -6588,8 +6756,10 @@ LoadMetadataNew(const char* data)
 
 	FileInterfaceObj fi;
 	const char* lineNow=data;
+	LGL_LoopCounterAlpha();
 	for(;;)
 	{
+		LGL_LoopCounterDelta();
 		if(lineNow[0]=='\0')
 		{
 			break;
@@ -6648,13 +6818,17 @@ LoadMetadataNew(const char* data)
 			lineNow=&(lineNow[1]);
 		}
 	}
+	LGL_LoopCounterOmega();
 
 	SavepointIndex=0;
 
+	LGL_LoopCounterAlpha();
 	while(Savepoints.size()<12)
 	{
+		LGL_LoopCounterDelta();
 		Savepoints.push_back(SavepointObj());
 	}
+	LGL_LoopCounterOmega();
 }
 
 void
@@ -7271,10 +7445,13 @@ SortSavepoints()
 		SavepointIndex=0;
 		if(plus)
 		{
+			LGL_LoopCounterAlpha();
 			while(SavepointIndexAtPlus()==false)
 			{
+				LGL_LoopCounterDelta();
 				SavepointIndex++;
 			}
+			LGL_LoopCounterOmega();
 		}
 	}
 }
@@ -7497,10 +7674,13 @@ AttemptToCreateSound()
 			}
 
 			Savepoints.clear();
+			LGL_LoopCounterAlpha();
 			while(Savepoints.size()<12)
 			{
+				LGL_LoopCounterDelta();
 				Savepoints.push_back(SavepointObj());
 			}
+			LGL_LoopCounterOmega();
 
 			if(MetadataFileToRam->GetStatus()==1)
 			{
@@ -7711,7 +7891,7 @@ Recall()
 		Sound->SetWarpPoint(Channel);
 	}
 
-	SmoothWaveformScrollingSample=Sound->GetPositionSamples(Channel);
+	SetSmoothWaveformScrollingSample(Sound->GetPositionSamples(Channel));
 }
 
 bool
@@ -7731,6 +7911,12 @@ double
 TurntableObj::GetBeatLengthSeconds()
 {
 	double bpm = GetBPM();
+	if(bpm<=0)
+	{
+		printf("Warning! Called GetBeatLengthSeconds() when BPM is %.2f!\n",bpm);
+		bpm=120.0f;
+		assert(false);
+	}
 	if(bpm*Pitchbend<100.0f)
 	{
 		bpm*=2.0f;
@@ -8310,14 +8496,21 @@ GetBPM()
 		bpm!=BPM_NONE
 	)
 	{
+		LGL_LoopCounterAlpha();
 		while(bpm<100.0f)
 		{
+			LGL_LoopCounterDelta();
 			bpm*=2.0f;
 		}
+		LGL_LoopCounterOmega();
+
+		LGL_LoopCounterAlpha();
 		while(bpm>200.0f)
 		{
+			LGL_LoopCounterDelta();
 			bpm*=0.5f;
 		}
+		LGL_LoopCounterOmega();
 	}
 //printf("GetBPM(): %.2f\n",bpm);
 	return(bpm);
@@ -8353,14 +8546,21 @@ GetBPMAdjusted
 	)
 	{
 		bpm*=Pitchbend;
+		LGL_LoopCounterAlpha();
 		while(bpm<100.0f)
 		{
+			LGL_LoopCounterDelta();
 			bpm*=2.0f;
 		}
+		LGL_LoopCounterOmega();
+
+		LGL_LoopCounterAlpha();
 		while(bpm>200.0f)
 		{
+			LGL_LoopCounterDelta();
 			bpm*=0.5f;
 		}
+		LGL_LoopCounterOmega();
 	}
 
 	return(bpm);
@@ -8378,21 +8578,30 @@ GetBPMFromDeltaSeconds
 		return(BPM_NONE);
 	}
 
-	for(int a=0;a<100;a++)
+	LGL_LoopCounterAlpha();
+	for(int a=0;a<200;a++)
 	{
+		LGL_LoopCounterDelta();
 		if(deltaSeconds<10.0f)
 		{
 			deltaSeconds*=2.0f;
 		}
+		else
+		{
+			break;
+		}
 	}
+	LGL_LoopCounterOmega();
 
 	float bpm = -1.0f;
 	int bpmMin=100;
 	int measuresGuess=1;
 	if(deltaSeconds!=0)
 	{
-		for(int a=0;a<10;a++)
+		LGL_LoopCounterAlpha();
+		for(int a=0;a<200;a++)
 		{
+			LGL_LoopCounterDelta();
 			float bpmGuess=(4*measuresGuess)/(deltaSeconds/60.0f);
 			if(bpmGuess>=bpmMin)
 			{
@@ -8401,6 +8610,7 @@ GetBPMFromDeltaSeconds
 			}
 			measuresGuess*=2;
 		}
+		LGL_LoopCounterOmega();
 	}
 
 	if
@@ -8441,10 +8651,14 @@ GetBPMFirstMeasureSeconds()
 	double firstBeatSeconds = GetBPMFirstBeatSeconds();
 	double deltaMeasure = GetMeasureLengthSeconds();
 	double candidate = firstBeatSeconds;
+	LGL_LoopCounterAlpha();
 	while(candidate - deltaMeasure > 0)
 	{
+		LGL_LoopCounterDelta();
 		candidate -= deltaMeasure;
 	}
+	LGL_LoopCounterOmega();
+
 	return(candidate);
 }
 
@@ -8460,10 +8674,21 @@ GetBPMLastMeasureSeconds()
 	double firstBeatSeconds = GetBPMFirstBeatSeconds();
 	double deltaMeasure = GetMeasureLengthSeconds();
 	double candidate = firstBeatSeconds;
-	while(candidate + deltaMeasure < Sound->GetLengthSeconds()-0.01f)
+
+	//Loop Optimization
+	double sndLen = Sound->GetLengthSeconds();
+	double dist = sndLen - candidate;
+	double delta = floorf(dist/deltaMeasure);
+	candidate += deltaMeasure * delta;
+
+	LGL_LoopCounterAlpha();
+	while(candidate + deltaMeasure < sndLen-0.01f)
 	{
+		LGL_LoopCounterDelta();
 		candidate += deltaMeasure;
 	}
+	LGL_LoopCounterOmega();
+
 	return(candidate);
 }
 
@@ -8575,6 +8800,10 @@ GetBeatThisFrame
 	{
 		return(false);
 	}
+	if(Channel<0)
+	{
+		return(false);
+	}
 	if(BPMAvailable()==false)
 	{
 		return(false);
@@ -8600,18 +8829,27 @@ GetBeatThisFrame
 		return(true);
 	}
 
+	//Loop Optimization
+	double dist = windowStart - candidate;
+	double delta = floorf(dist/deltaBeat);
+	candidate += delta * deltaBeat;
+
+	LGL_LoopCounterAlpha();
 	while(candidate < windowEnd)
 	{
+		LGL_LoopCounterDelta();
 		if
 		(
 			candidate>=windowStart &&
 			candidate< windowEnd
 		)
 		{
+			LGL_LoopCounterOmega();
 			return(true);
 		}
 		candidate+=deltaBeat;
 	}
+	LGL_LoopCounterOmega();
 
 	return(false);
 }
@@ -8672,13 +8910,13 @@ GetBeginningOfArbitraryMeasureSeconds
 		return(-1.0);
 	}
 	
-	double deltaMeasure = measureMultiplier*GetMeasureLengthSeconds();
+	double deltaPeriod = measureMultiplier*GetMeasureLengthSeconds();
 	double candidate = GetBPMAnchorMeasureSeconds();
-	//LGL_DebugPrintf("Anchor.Delta: %.2f\n",deltaMeasure);
-	while(candidate-deltaMeasure*measureMultiplier > 0.0f)
-	{
-		candidate-=deltaMeasure*measureMultiplier;
-	}
+
+	//Loop Optimization
+	float dist = seconds-candidate;
+	float delta = floorf(dist/deltaPeriod);
+	candidate += delta*deltaPeriod;
 
 	if(candidate==seconds)
 	{
@@ -8686,17 +8924,23 @@ GetBeginningOfArbitraryMeasureSeconds
 	}
 	else if(candidate < seconds)
 	{
-		while(candidate+deltaMeasure<seconds+0.001f)
+		LGL_LoopCounterAlpha();
+		while(candidate+deltaPeriod<seconds+0.001f)
 		{
-			candidate+=deltaMeasure;
+			LGL_LoopCounterDelta();
+			candidate+=deltaPeriod;
 		}
+		LGL_LoopCounterOmega();
 	}
 	else
 	{
+		LGL_LoopCounterAlpha();
 		while(candidate-0.001f>seconds)
 		{
-			candidate-=deltaMeasure;
+			LGL_LoopCounterDelta();
+			candidate-=deltaPeriod;
 		}
+		LGL_LoopCounterOmega();
 	}
 
 	return(candidate);
@@ -8783,5 +9027,58 @@ SetNoiseFactorVideo
 )
 {
 	NoiseFactorVideo = LGL_Clamp(0.0f,noiseFactorVideo,1.0f);
+}
+
+void
+TurntableObj::
+SetSmoothWaveformScrollingSample
+(
+	double	sample
+)
+{
+	if(Sound->GetLengthSeconds()<1.0f)
+	{
+		sample = LGL_Clamp(0.0f,sample,LGL_Max(0,Sound->GetLengthSamples()-1));
+	}
+
+	//Allow for a little straying...
+	if
+	(
+		sample < 0 &&
+		sample > Sound->GetHz()*-10.0f
+	)
+	{
+		sample=0;
+	}
+	if
+	(
+		sample >= Sound->GetLengthSamples() &&
+		sample < Sound->GetLengthSamples() + Sound->GetHz()*10
+	)
+	{
+		sample=LGL_Max(0,Sound->GetLengthSamples()-1);
+	}
+
+	if
+	(
+		sample<0 ||
+		(
+			sample!=0 &&
+			sample>=Sound->GetLengthSamples()
+		)
+	)
+	{
+		printf
+		(
+			"Warning! SetSmoothWaveformScrollingSample given invalid input: 0 <= %.2f < %.2f\n",
+			sample,
+			(double)Sound->GetLengthSamples()
+		);
+		LGL_AssertIfDebugMode();
+
+		sample = LGL_Clamp(0,sample,Sound->GetLengthSamples()-1);
+	}
+
+	SmoothWaveformScrollingSample = sample;
 }
 

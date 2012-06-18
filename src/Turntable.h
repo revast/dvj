@@ -514,6 +514,7 @@ static	bool				GetSurroundMode();
 	bool				ListSelectorToString(const char* str);
 	float				GetNoiseFactorVideo();
 	void				SetNoiseFactorVideo(float noiseFactor);
+	void				SetSmoothWaveformScrollingSample(double sample);
 
 };
 

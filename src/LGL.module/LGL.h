@@ -1232,6 +1232,22 @@ public:
 	long			FrameNumber;
 };
 
+class lgl_PathNextInterchange
+{
+
+public:
+
+				lgl_PathNextInterchange();
+				~lgl_PathNextInterchange();
+
+	bool			BelongsToDecoderThread;
+	char			Path[4096];
+	long			RequestNum;
+
+};
+
+const long lgl_PathNextInterchangeCount=64;
+
 class LGL_VideoDecoder
 {
 
@@ -1347,6 +1363,9 @@ private:
 	SDL_Thread*		ThreadLoad;
 	SDL_Thread*		ThreadDecode;
 	LGL_Semaphore		PathSemaphore;
+
+	void			ResolvePathNextInterchange();
+	lgl_PathNextInterchange	PathNextInterchangeList[lgl_PathNextInterchangeCount];
 	LGL_Semaphore		PathNextSemaphore;
 
 	AVFormatContext*	FormatContext;
@@ -1636,6 +1655,15 @@ lgl_DebugPrintfInternal
 (
 	const char*	string
 );
+
+void
+LGL_SetDebugMode
+(
+	bool	debugMode=true
+);
+
+bool
+LGL_GetDebugMode();
 
 class LGL_InputBuffer
 {
@@ -1936,7 +1964,8 @@ virtual	int		MixIntoStream
 				float		centerSeconds,
 				float		lengthSeconds,
 				float		centerSecondsVariance=0.0f,
-				float		lengthSecondsVariance=0.0f
+				float		lengthSecondsVariance=0.0f,
+				bool		lockSound=true
 			);
 	void		SetWaveformFromLGLSoundSamples
 			(
@@ -2219,7 +2248,7 @@ public:
 	void		UnlockBuffer();
 	void		LockBufferForReading(int id=0);
 	void		UnlockBufferForReading(int id=0);
-	Uint8*		GetBuffer();
+	Uint8*		GetBuffer(bool warnIfNotLocked=true);
 	unsigned long	GetBufferLength();
 	double		GetPositionSeconds(int channel);
 	float		GetPositionPercent(int channel);
@@ -3486,12 +3515,23 @@ bool	lgl_assert
 #define LGL_Tracef (lgl_tracing_output_debug_string( true, NULL, __FILE__, __LINE__))
 #define LGL_Assert(a) if(lgl_assert(a,#a,__FILE__,__LINE__)==false) assert(a);
 #define LGL_Assertf(a,b) if((lgl_AssertfPayload(a,#a)b)==false) assert(a);
+#define LGL_AssertIfDebugMode() if(LGL_GetDebugMode() && !lgl_assert(false,"Debug Mode Assert",__FILE__,__LINE__)) assert(false);
 
 /*
 void		LGL_Tracef(const char* str, ...);
 void		LGL_Assert(bool test);
 void		LGL_Assertf(bool test, (const char* str, ...));
 */
+
+void		lgl_LoopCounterAlpha
+		(
+			const char*	file,
+			long		line
+		);
+
+#define		LGL_LoopCounterAlpha() lgl_LoopCounterAlpha(__FILE__,__LINE__)
+void		LGL_LoopCounterDelta();//long warningIterations=90);
+void		LGL_LoopCounterOmega(long warningIterations=99);
 
 const
 char*		LGL_GetErrorStringGL();
