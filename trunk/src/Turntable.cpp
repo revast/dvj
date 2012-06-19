@@ -3428,6 +3428,14 @@ NextFrame
 						}
 					}
 					LGL_LoopCounterOmega();
+
+					if(LoopAlphaSeconds > Sound->GetLengthSeconds()-0.01f)
+					{
+						LoopAlphaSeconds=-1.0f;
+						LoopActive=false;
+						LoopThenRecallActive=false;
+						Sound->SetWarpPoint(Channel);
+					}
 				}
 			}
 		}
