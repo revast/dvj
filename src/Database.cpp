@@ -434,6 +434,24 @@ DatabaseObj::
 	ClearDatabaseEntryList();
 }
 
+bool databaseEntrySortPredicate(const DatabaseEntryObj* d1, const DatabaseEntryObj* d2)
+{
+	return
+	(
+		d1 &&
+		d2 &&
+		d1->NameDisplayed &&
+		d2->NameDisplayed &&
+		(
+			(
+				d1->IsDir &&
+				d2->IsDir==false
+			) ||
+			strcasecmp(d1->NameDisplayed, d2->NameDisplayed) < 0
+		)
+	);
+}
+
 std::vector<DatabaseEntryObj*>
 DatabaseObj::
 GetEntryListFromFilter
@@ -920,6 +938,13 @@ Refresh_Internal
 		}
 
 		FilesProcessed=0;
+
+		std::sort
+		(
+			DatabaseEntryList.begin(),
+			DatabaseEntryList.end(),
+			databaseEntrySortPredicate
+		);
 	}
 }
 
