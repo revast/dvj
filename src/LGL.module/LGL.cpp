@@ -21010,6 +21010,7 @@ LoadToMemory()
 			}
 
 			Channels=codecContext->channels;
+			if(Channels==1) Channels=2;
 			if
 			(
 				Channels!=1 &&

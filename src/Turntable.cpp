@@ -1741,10 +1741,13 @@ NextFrame
 		VideoEncoderTerminateSignal=0;
 		{
 			LGL_ScopeLock lock(__FILE__,__LINE__,VideoEncoderSemaphore);
-			VideoEncoder->DeleteImage();
-			LGL_ThreadCreate(videoEncoderDeleteThread,VideoEncoder);
-			//delete VideoEncoder;
-			VideoEncoder=NULL;
+			if(VideoEncoder)
+			{
+				VideoEncoder->DeleteImage();
+				LGL_ThreadCreate(videoEncoderDeleteThread,VideoEncoder);
+				//delete VideoEncoder;
+				VideoEncoder=NULL;
+			}
 		}
 	}
 
