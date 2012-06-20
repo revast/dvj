@@ -1943,9 +1943,6 @@ NextFrame
 		if(strcmp(FilterText.GetString(),FilterTextMostRecent)!=0)
 		{
 			filterDelta=true;
-			strncpy(FilterTextMostRecent,FilterText.GetString(),sizeof(FilterTextMostRecent));
-			FilterTextMostRecent[sizeof(FilterTextMostRecent)-1]='\0';
-			FilterTextMostRecentBPM = (int)floorf(BPMMaster+0.5f);
 
 			char oldSelection[2048];
 			if(GetHighlightedNameDisplayed())
@@ -1962,6 +1959,10 @@ NextFrame
 				oldSelection[0]='\0';
 			}
 			oldSelection[sizeof(oldSelection)-1]='\0';
+
+			strncpy(FilterTextMostRecent,FilterText.GetString(),sizeof(FilterTextMostRecent));
+			FilterTextMostRecent[sizeof(FilterTextMostRecent)-1]='\0';
+			FilterTextMostRecentBPM = (int)floorf(BPMMaster+0.5f);
 
 			char filterText[2048];
 			strncpy(filterText,FilterText.GetString(),sizeof(filterText));
@@ -2044,7 +2045,7 @@ NextFrame
 			{
 				DatabaseFilter.Assign(UpdateFilterListDatabaseFilterNext);
 				UpdateFilterListResetHighlightedRow=false;
-				UpdateFilterListDesiredSelection[0]='\0';
+				strncpy(UpdateFilterListDesiredSelection,oldSelection,sizeof(UpdateFilterListDesiredSelection)-1);
 			}
 			else
 			{
