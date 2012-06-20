@@ -14296,11 +14296,7 @@ LGL_VideoEncoder::
 		lgl_av_freep(&DstMp3Buffer2);
 	}
 
-	if(Image)
-	{
-		delete Image;
-		Image=NULL;
-	}
+	DeleteImage();
 }
 
 bool
@@ -14847,6 +14843,17 @@ GetImage()
 	Image->InvertY=true;
 
 	return(Image);
+}
+
+void
+LGL_VideoEncoder::
+DeleteImage()
+{
+	if(Image)
+	{
+		delete Image;
+		Image=NULL;
+	}
 }
 
 const char*
@@ -33548,6 +33555,28 @@ Lock
 )
 {
 	if(Promiscuous) return(true);
+	
+	if(LGL_GetDebugMode())
+	{
+		/*
+		if(SDL_ThreadID() == LGL.ThreadIDMain)
+		{
+			printf("Main thread locks semaphore:\n");
+			printf("\tLock Waiter File: %s\n",file);
+			printf("\tLock Waiter Line: %i\n",line);
+			printf("\n");
+			//LGL_AssertIfDebugMode();
+		}
+		*/
+		if(SDL_ThreadID() == LGL.ThreadIDAudio)
+		{
+			printf("Audio thread locks semaphore:\n");
+			printf("\tLock Waiter File: %s\n",file);
+			printf("\tLock Waiter Line: %i\n",line);
+			printf("\n");
+			LGL_AssertIfDebugMode();
+		}
+	}
 
 	LGL_Timer timer;
 	char name[1024];

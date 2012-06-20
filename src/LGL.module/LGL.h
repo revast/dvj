@@ -1448,6 +1448,7 @@ public:
 	float			GetBitrateMaxMBps();
 static	void			SetBitrateMaxMBps(float max);
 	LGL_Image*		GetImage();
+	void			DeleteImage();
 	const char*		GetSrcPath();
 
 private:

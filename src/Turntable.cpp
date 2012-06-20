@@ -1369,6 +1369,17 @@ TurntableObj::
 	}
 }
 
+int
+videoEncoderDeleteThread
+(
+	void*	encoder
+)
+{
+	LGL_VideoEncoder* enc = (LGL_VideoEncoder*)encoder;
+	delete enc;
+	return(0);
+}
+
 void
 TurntableObj::
 NextFrame
@@ -1730,7 +1741,9 @@ NextFrame
 		VideoEncoderTerminateSignal=0;
 		{
 			LGL_ScopeLock lock(__FILE__,__LINE__,VideoEncoderSemaphore);
-			delete VideoEncoder;
+			VideoEncoder->DeleteImage();
+			LGL_ThreadCreate(videoEncoderDeleteThread,VideoEncoder);
+			//delete VideoEncoder;
 			VideoEncoder=NULL;
 		}
 	}
@@ -5472,9 +5485,14 @@ DrawFrame
 				}
 				title=drawDirPath;
 			}
+			float fontHeight=0.025f;
+			float fontWidth=LGL_GetFont().GetWidthString(fontHeight,title);
+			float fontWidthMax=0.95f*(ListSelector.GetWindowScopeRight() - ListSelector.GetWindowScopeLeft());
+			fontHeight=LGL_Min(fontHeight,fontHeight*fontWidthMax/fontWidth);
 			LGL_GetFont().DrawString
 			(
-				CenterX,ViewportBottom+.875f*ViewportHeight,.025f,
+				CenterX,ViewportBottom+.875f*ViewportHeight,
+				fontHeight,
 				1,1,1,1,
 				true,.5f,
 				title
