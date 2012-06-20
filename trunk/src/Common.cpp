@@ -775,8 +775,8 @@ turntable_DrawBPMLines
 	{
 		double dist = -secondsPerBeat*4 - startSeconds;
 		double delta = floorf(dist/secondsPerBeat*4);
-		startSeconds -= delta * secondsPerBeat*4;
-		whichMeasure -= delta;
+		startSeconds += delta * secondsPerBeat*4;
+		whichMeasure += delta;
 	}
 
 	LGL_LoopCounterAlpha();
