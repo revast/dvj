@@ -724,6 +724,11 @@ Refresh_Internal
 
 		char path[2048];
 		sprintf(path,"%s/%s",subdirPath,dirTree.GetFileName(a));
+		bool verbose = false;//strstr(path,"The Forger")!=NULL;
+		if(verbose)
+		{
+			printf("path: %s\n",path);
+		}
 
 		if(a!=0)
 		{
@@ -732,11 +737,22 @@ Refresh_Internal
 
 		float bpm=0;
 		const char* dirTreeGetFileName = dirTree.GetFileName(a);
+		if(verbose)
+		{
+			printf("dirTreeGetFileName A: %s\n",dirTreeGetFileName);
+		}
 		char* nameDisplayediTunes=NULL;
 		if(strstr(path,iTunesMusicStr))
 		{
 			GenerateiTunesNameDisplayed(path,nameDisplayediTunes);
-			dirTreeGetFileName = nameDisplayediTunes;
+			if(nameDisplayediTunes)
+			{
+				dirTreeGetFileName = nameDisplayediTunes;
+			}
+			if(verbose)
+			{
+				printf("dirTreeGetFileName B: %s\n",dirTreeGetFileName);
+			}
 		}
 
 		//Look for new metadata
@@ -758,6 +774,11 @@ Refresh_Internal
 						break;
 					}
 				}
+			}
+
+			if(verbose)
+			{
+				printf("Metadata search path[%i]: %s\n",metaExists,pathMeta);
 			}
 
 			if(metaExists)//LGL_FileExists(pathMeta))
