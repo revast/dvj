@@ -182,6 +182,8 @@ Turntable_DrawWaveform
 	float		freqSensePathBrightness,
 	const char*	freqSenseLowPathShort,
 	const char*	freqSenseHighPathShort,
+	float		freqSenseLowBitrateMBps,
+	float		freqSenseHighBitrateMBps,
 	float		freqSenseLEDBrightness,
 	float		freqSenseLEDColorScalarLow,
 	float		freqSenseLEDColorScalarHigh,

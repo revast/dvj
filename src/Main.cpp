@@ -343,9 +343,21 @@ void NextFrame()
 
 	//Globals
 
+	if
+	(
+		(
+			LGL_KeyDown(LGL_KEY_LCOMMAND) ||
+			LGL_KeyDown(LGL_KEY_RCOMMAND)
+		) &&
+		LGL_KeyStroke(LGL_KEY_Q)
+	)
+	{
+		LGL_Exit();
+	}
+
 	if(ExitPrompt==false)
 	{
-		if(LGL_KeyStroke(LGL_KEY_ESCAPE))
+		if(0 && LGL_KeyStroke(LGL_KEY_ESCAPE))
 		{
 			ExitPrompt=true;
 		}

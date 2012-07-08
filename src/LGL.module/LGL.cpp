@@ -802,7 +802,8 @@ lgl_AudioOutCallbackJackXrun
 	return(0);
 }
 
-Uint8 lgl_AudioInCallbackJackBuf[4096];
+const int lgl_AudioInCallbackJackBufLen = 4096*4;
+Uint8 lgl_AudioInCallbackJackBuf[lgl_AudioInCallbackJackBufLen];
 int lgl_AudioInCallbackJackBufPos=0;
 bool lgl_AudioInCallbackErrorReported=false;
 
@@ -833,9 +834,10 @@ int lgl_AudioInCallbackJack(void *udata, Uint8 *stream, int len8)
 	}
 	else
 	{
+		lgl_AudioInCallback(NULL,stream,2048);
 		if(lgl_AudioInCallbackErrorReported==false)
 		{
-			printf("Strange AudioInCallbackJack len: %i... Not processing AudioIn!\n",len8);
+			printf("Strange AudioInCallbackJack len: %i... AudioIn might be delayed!\n",len8);
 			lgl_AudioInCallbackErrorReported=true;
 		}
 	}
@@ -3540,7 +3542,11 @@ LGL_DrawAudioInWaveform
 	{
 		grain=LGL.AudioInGrainListFront[LGL.AudioInGrainListFront.size()-1];
 	}
-	if(grain)
+	if
+	(
+		grain &&
+		grain != LGL.AudioInFallbackGrain
+	)
 	{
 		grain->DrawWaveform
 		(
@@ -10698,8 +10704,10 @@ Init()
 	FPSDisplayedMissCounter=0;
 	FPSDisplayedHitMissFrameNumber=0;
 	LengthSeconds=0;
+	LengthBytes=0;
 	TimeSeconds=0;
 	TimeSecondsPrev=0;
+	SetTimeHappened=false;
 	FrameNumberNext=-1;
 	FrameNumberDisplayed=-1;
 	NextRequestedDecodeFrame=-1;
@@ -10938,7 +10946,11 @@ SetVideo
 		return;
 	}
 
-	if(strcmp(Path,pathAttempts[0])==0)
+	if
+	(
+		pathAttempts[0] &&
+		strcmp(Path,pathAttempts[0])==0
+	)
 	{
 		return;
 	}
@@ -11040,6 +11052,7 @@ SetTime
 
 	TimeSecondsPrev=TimeSeconds;
 	TimeSeconds=seconds;
+	SetTimeHappened=true;
 }
 
 double
@@ -11054,6 +11067,21 @@ LGL_VideoDecoder::
 GetLengthSeconds()
 {
 	return(LengthSeconds);
+}
+
+float
+LGL_VideoDecoder::
+GetBitrateMBps()
+{
+	float lenSeconds = GetLengthSeconds();
+	if(lenSeconds>0)
+	{
+		return(LengthBytes/(1024*1024*lenSeconds));
+	}
+	else
+	{
+		return(0.0f);
+	}
 }
 
 double
@@ -11861,6 +11889,7 @@ MaybeLoadVideo()
 
 	//Go for it!!
 
+	SetTimeHappened=false;
 	int delayCount=0;
 	for(;;)
 	{
@@ -11968,6 +11997,7 @@ MaybeLoadVideo()
 		}
 
 		LengthSeconds=FormatContext->duration/(double)(AV_TIME_BASE);
+		LengthBytes = LGL_FileLengthBytes(Path);
 		FPS=
 			FormatContext->streams[VideoStreamIndex]->r_frame_rate.num/(double)
 			FormatContext->streams[VideoStreamIndex]->r_frame_rate.den;
@@ -12441,6 +12471,7 @@ MaybeDecodeImage
 	//We can early out before grabbing the lock
 	if
 	(
+		SetTimeHappened==false ||
 		FormatContext==NULL ||
 		CodecContext==NULL ||
 		FrameNative==NULL ||
@@ -19080,6 +19111,7 @@ LGL_Sound
 		ptr=&(strstr(ptr,"/")[1]);
 	}
 	strcpy(PathShort,ptr);
+	PathUser[0]='\0';
 
 	Loaded=false;
 	MetadataVolumePeak=0.0f;
@@ -19132,6 +19164,7 @@ LGL_Sound
 
 	strcpy(Path,"Memory Buffer");
 	strcpy(PathShort,Path);
+	PathUser[0]='\0';
 
 	Loaded=true;
 	LoadedSmooth=1;
@@ -21449,6 +21482,28 @@ LGL_Sound::
 GetPathShort()	const
 {
 	return(PathShort);
+}
+
+const
+char*
+LGL_Sound::
+GetPathUser()	const
+{
+	return(PathUser);
+}
+
+void
+LGL_Sound::
+SetPathUser
+(
+	const char*	pathUser
+)
+{
+	PathUser[0]='\0';
+	if(pathUser)
+	{
+		snprintf(PathUser,sizeof(PathUser)-1,"%s",pathUser);
+	}
 }
 
 //

@@ -1266,6 +1266,7 @@ public:
 	void			SetTime(double seconds);
 	double			GetTime();
 	double			GetLengthSeconds();
+	float			GetBitrateMBps();
 	double			GetFPS();
 	int			GetFPSDisplayed();
 	int			GetFPSMissed();
@@ -1328,8 +1329,10 @@ private:
 	LGL_Timer		FPSDisplayedTimer;
 	LGL_Timer		FPSDisplayedConstTimeTimer;
 	double			LengthSeconds;
+	double			LengthBytes;
 	double			TimeSeconds;
 	double			TimeSecondsPrev;
+	bool			SetTimeHappened;
 	long			FrameNumberNext;
 	long			FrameNumberDisplayed;
 	long			NextRequestedDecodeFrame;
@@ -2333,11 +2336,14 @@ public:
 
 const	char*		GetPath() const;
 const	char*		GetPathShort() const;
+const	char*		GetPathUser() const;
+	void		SetPathUser(const char* pathUser);
 
 private:
 
 	char		Path[2048];
 	char		PathShort[2048];
+	char		PathUser[2048];
 	Uint8*		Buffer;
 	unsigned long	BufferLength;
 	unsigned long	BufferLengthTotal;

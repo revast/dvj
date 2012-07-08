@@ -115,7 +115,8 @@ findCachedPath
 	if
 	(
 		strstr(srcPath,dotExtension) &&
-		strcmp(dotExtension,".mjpeg.avi")==0
+		strcmp(dotExtension,".mjpeg.avi")==0 &&
+		GetReencodeMjpegs()==false
 	)
 	{
 		//hajnal.mov has .mjpeg.avi extension in it, indicating we look no further.
@@ -514,7 +515,11 @@ videoEncoderThread
 			audioExtension
 		);
 
-		if(strstr(encoderSrc,".mjpeg.avi"))
+		if
+		(
+			strstr(encoderSrc,".mjpeg.avi") &&
+			GetReencodeMjpegs()==false
+		)
 		{
 			strcpy(encoderDst,encoderSrc);
 		}
@@ -527,9 +532,11 @@ videoEncoderThread
 				encoderSrc
 			);
 
-			bool isMjpeg=LGL_VideoIsMJPEG(encoderSrc);
-
-			if(isMjpeg)
+			if
+			(
+				GetReencodeMjpegs()==false &&
+				LGL_VideoIsMJPEG(encoderSrc)
+			)
 			{
 				static LGL_Semaphore lnSym("lnSym");
 				LGL_ScopeLock lock(__FILE__,__LINE__,lnSym);
@@ -1187,6 +1194,7 @@ TurntableObj
 
 	VideoEncoder=NULL;
 	VideoEncoderThread=NULL;
+	VideoEncoderDeleteThread=NULL;
 	VideoEncoderReason[0]='\0';
 
 	ENTIRE_WAVE_ARRAY_COUNT=LGL_WindowResolutionX();
@@ -1224,7 +1232,7 @@ TurntableObj
 	WarmMemoryThreadTerminateSignal=0;
 	UpdateFilterListThreadTerminateSignal=0;
 	AspectRatioMode=0;
-	EncodeEveryTrack=0;
+	EncodeEveryTrack=false;
 	EncodeEveryTrackIndex=0;
 
 	InputUnsetDebounce=false;
@@ -1256,7 +1264,6 @@ TurntableObj
 	VideoEncoderEtaSeconds=-1.0f;
 	VideoEncoderAudioOnly=false;
 	VideoEncoderPathSrc[0]='\0';
-	VideoEncoderThread=NULL;
 	VideoEncoderTerminateSignal=0;
 	VideoEncoderBeginSignal=0;
 	VideoEncoderUnsupportedCodecTime=0.0f;
@@ -1305,6 +1312,11 @@ TurntableObj::
 			}
 			LGL_DelayMS(50);
 		}
+	}
+	if(VideoEncoderDeleteThread)
+	{
+		LGL_ThreadWait(VideoEncoderDeleteThread);
+		VideoEncoderDeleteThread=NULL;
 	}
 
 	for(unsigned int a=0;a<TrackListFileUpdates.size();a++)
@@ -1544,6 +1556,11 @@ NextFrame
 		EncodeEveryTrackIndex=ListSelector.GetHighlightedRow();
 	}
 
+	if(Which==0 && EncodeEveryTrack)
+	{
+		LGL_DebugPrintf("Caching every video in current folders");
+	}
+
 	unsigned int target = GetTarget();
 	float candidate = 0.0f;
 
@@ -1733,6 +1750,218 @@ NextFrame
 	}
 
 	VolumeSolo=GetInput().WaveformVolumeSolo(target);
+	
+	//Video Sliders
+	{
+		float newBright=GetInput().WaveformVideoBrightness(target);
+		if(newBright!=-1.0f)
+		{
+			if
+			(
+				VideoBrightness==0.0f &&
+				newBright>0.0f
+			)
+			{
+				/*
+				if(LGL_VideoDecoder* dec = GetVideo())
+				{
+					dec->ForcePreload();
+				}
+				*/
+			}
+			VideoBrightness=newBright;
+		}
+		VideoBrightness=LGL_Clamp
+		(
+			0.0f,
+			VideoBrightness+GetInput().WaveformVideoBrightnessDelta(target),
+			1.0f
+		);
+
+		newBright=GetInput().WaveformSyphonBrightness(target);
+		if(newBright!=-1.0f)
+		{
+			SyphonBrightness=newBright;
+		}
+		SyphonBrightness=LGL_Clamp
+		(
+			0.0f,
+			SyphonBrightness+GetInput().WaveformSyphonBrightnessDelta(target),
+			1.0f
+		);
+
+		newBright=GetInput().WaveformOscilloscopeBrightness(target);
+		if(newBright!=-1.0f)
+		{
+			OscilloscopeBrightness=newBright;
+		}
+		OscilloscopeBrightness=LGL_Clamp
+		(
+			0.0f,
+			OscilloscopeBrightness+GetInput().WaveformOscilloscopeBrightnessDelta(target),
+			1.0f
+		);
+
+		newBright=GetInput().WaveformFreqSenseBrightness(target);
+		if(newBright==-1.0f)
+		{
+			if(GetInput().WaveformFreqSenseBrightnessDelta(target)!=0.0f)
+			{
+				newBright=LGL_Clamp
+				(
+					0.0f,
+					FreqSenseBrightness+GetInput().WaveformFreqSenseBrightnessDelta(target),
+					1.0f
+				);
+			}
+		}
+		if(newBright!=-1.0f)
+		{
+			if
+			(
+				FreqSenseBrightness==0.0f &&
+				newBright>0.0f
+			)
+			{
+				//VideoLo->ForcePreload();
+				//VideoHi->ForcePreload();
+			}
+			float tmp = FreqSenseBrightness;
+			FreqSenseBrightness=newBright;
+			if
+			(
+				tmp==0.0f &&
+				FreqSenseBrightness >= 0.0f &&
+				(
+					VideoLoPath[0]=='\0' ||
+					VideoHiPath[0]=='\0'
+				)
+			)
+			{
+				SelectNewVideo();
+			}
+		}
+	}
+	
+	//LEDs
+	{
+		//Group
+		float newGroup=GetInput().WaveformFreqSenseLEDGroupFloat(target);
+		if(newGroup==-1.0f)
+		{
+			float delta = GetInput().WaveformFreqSenseLEDGroupFloatDelta(target);
+			if(delta!=0.0f)
+			{
+				newGroup=LGL_Clamp
+				(
+					0.0f,
+					FreqSenseLEDGroupFloat+delta,
+					1.0f
+				);
+			}
+		}
+		if(newGroup!=-1.0f)
+		{
+			newGroup=LGL_Clamp
+			(
+				0.0f,
+				newGroup,
+				1.0f
+			);
+			FreqSenseLEDGroupFloat=newGroup;
+		}
+
+		//Brightness
+		float newBright=GetInput().WaveformFreqSenseLEDBrightness(target);
+		if(newBright==-1.0f)
+		{
+			float delta = GetInput().WaveformFreqSenseLEDBrightnessDelta(target);
+			if(delta!=0.0f)
+			{
+				newBright=LGL_Clamp
+				(
+					0.0f,
+					FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()]+delta,
+					1.0f
+				);
+			}
+		}
+		if(newBright!=-1.0f)
+		{
+			newBright=LGL_Clamp
+			(
+				0.0f,
+				newBright,
+				1.0f
+			);
+			FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()]=newBright;
+		}
+
+		//Color Low/High
+		for(int f=0;f<2;f++)
+		{
+			float& targetColor =
+				(f==0) ?
+				FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()] :
+				FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()];
+			float newColor=
+				(f==0) ?
+				GetInput().WaveformFreqSenseLEDColorScalarLow(target) :
+				GetInput().WaveformFreqSenseLEDColorScalarHigh(target);
+			if(newColor==-1.0f)
+			{
+				float delta =
+					(f==0) ?
+					GetInput().WaveformFreqSenseLEDColorScalarLowDelta(target) :
+					GetInput().WaveformFreqSenseLEDColorScalarHighDelta(target);
+				if(delta!=0.0f)
+				{
+					newColor=LGL_Clamp
+					(
+						0.0f,
+						targetColor+delta,
+						1.0f
+					);
+				}
+			}
+			if(newColor!=-1.0f)
+			{
+				newColor=LGL_Clamp
+				(
+					0.0f,
+					newColor,
+					1.0f
+				);
+				targetColor=newColor;
+			}
+		}
+
+		//Brightness Wash
+		newBright=GetInput().WaveformFreqSenseLEDBrightnessWash(target);
+		if(newBright==-1.0f)
+		{
+			float delta = GetInput().WaveformFreqSenseLEDBrightnessWashDelta(target);
+			if(delta!=0.0f)
+			{
+				newBright=LGL_Clamp
+				(
+					0.0f,
+					FreqSenseLEDBrightnessWash[GetFreqSenseLEDGroupInt()]+delta,
+					1.0f
+				);
+			}
+		}
+		if(newBright!=-1.0f)
+		{
+			newBright=LGL_Clamp
+			(
+				0.0f,
+				newBright,
+				1.0f
+			);
+			FreqSenseLEDBrightnessWash[GetFreqSenseLEDGroupInt()]=newBright;
+		}
+	}
 
 	if(VideoEncoderTerminateSignal==-1)
 	{
@@ -1743,8 +1972,14 @@ NextFrame
 			LGL_ScopeLock lock(__FILE__,__LINE__,VideoEncoderSemaphore);
 			if(VideoEncoder)
 			{
+				if(VideoEncoderDeleteThread)
+				{
+					LGL_ThreadWait(VideoEncoderDeleteThread);
+					VideoEncoderDeleteThread=NULL;
+				}
+
 				VideoEncoder->DeleteImage();
-				LGL_ThreadCreate(videoEncoderDeleteThread,VideoEncoder);
+				VideoEncoderDeleteThread=LGL_ThreadCreate(videoEncoderDeleteThread,VideoEncoder);
 				//delete VideoEncoder;
 				VideoEncoder=NULL;
 			}
@@ -2065,7 +2300,11 @@ NextFrame
 		int fileSelect = GetInput().FileSelect(target);
 		if(EncodeEveryTrack)
 		{
-			if(DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->AlreadyPlayed)
+			if
+			(
+				DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->AlreadyPlayed ||
+				DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->IsDir
+			)
 			{
 				if(ListSelector.GetHighlightedRow()==EncodeEveryTrackIndex)
 				{
@@ -2074,7 +2313,10 @@ NextFrame
 			}
 			else
 			{
-				fileSelect = (EncodeEveryTrackIndex==ListSelector.GetHighlightedRow());
+				if(UpdateFilterListThread==NULL)
+				{
+					fileSelect = (EncodeEveryTrackIndex==ListSelector.GetHighlightedRow());
+				}
 			}
 		}
 		if
@@ -2089,9 +2331,14 @@ NextFrame
 			if
 			(
 				targetIsDir==false &&
-				GetHighlightedPath()
+				GetHighlightedPath() &&
+				(
+					Sound==NULL ||
+					strcmp(Sound->GetPathUser(),GetHighlightedPath())==0
+				)
 			)
 			{
+				printf("%s vs %s\n",Sound->GetPath(),GetHighlightedPath());
 				DeriveSoundStrings();
 
 				WhiteFactor=1.0f;
@@ -2181,7 +2428,11 @@ NextFrame
 				if(strcmp(targetPath,"..")==0)
 				{
 					targetPathIsDotDot = true;
-					strcpy(targetPath,DatabaseFilter.Dir);
+					if(DatabaseFilter.Dir==NULL)
+					{
+						printf("Warning! DatabaseFilter.Dir is NULL!\n");
+					}
+					strcpy(targetPath,DatabaseFilter.Dir ? DatabaseFilter.Dir : GetMusicRootPath());
 					if(char* slash = strrchr(targetPath,'/'))
 					{
 						slash[0]='\0';
@@ -2249,7 +2500,7 @@ NextFrame
 
 		if(EncodeEveryTrack)
 		{
-			if(EncodeEveryTrackIndex>(int)DatabaseFilteredEntries.size())
+			if(EncodeEveryTrackIndex>=(int)DatabaseFilteredEntries.size())
 			{
 				EncodeEveryTrack=false;
 			}
@@ -2263,41 +2514,53 @@ NextFrame
 		{
 			if
 			(
-				Video->GetUserString() &&
-				GetHighlightedNameDisplayed() &&
-				strcmp(Video->GetUserString(),GetHighlightedNameDisplayed())!=0
-			)
-			{
-				Video->SetUserString(GetHighlightedNameDisplayed());
-
-				std::vector<const char*> pathAttempts = listVideoSearchPaths
-				(
-					GetHighlightedPath()
-				);
-				Video->InvalidateAllFrameBuffers();
-				Video->SetVideo(pathAttempts);
-				if(Channel==-1)
-				{
-					Video->SetTime(30.0f+LGL_RandFloat(0.0f,30.0f));
-				}
-				for(int a=0;a<pathAttempts.size();a++)
-				{
-					delete pathAttempts[a];
-				}
-				pathAttempts.clear();
-			}
-
-			if
-			(
 				Sound &&
-				Channel!=-1
+				Sound->GetPathUser() &&
+				GetHighlightedPath() &&
+				strcmp(Sound->GetPathUser(),GetHighlightedPath())==0
 			)
 			{
-				Video->SetTime(GetTimeSeconds());
-			}
-			else
-			{
-				Video->SetTime(Video->GetTime()+LGL_SecondsSinceLastFrame());
+				if
+				(
+					Video->GetUserString() &&
+					GetHighlightedNameDisplayed() &&
+					strcmp(Video->GetUserString(),GetHighlightedNameDisplayed())!=0
+				)
+				{
+					Video->SetUserString(GetHighlightedNameDisplayed());
+
+					std::vector<const char*> pathAttempts = listVideoSearchPaths
+					(
+						GetHighlightedPath()
+					);
+					char* empty = new char[1];
+					empty[0]='\0';
+					pathAttempts.push_back(empty);
+					Video->InvalidateAllFrameBuffers();
+					Video->SetVideo(pathAttempts);
+					if(Channel==-1)
+					{
+						Video->SetTime(30.0f+LGL_RandFloat(0.0f,30.0f));
+					}
+					for(int a=0;a<pathAttempts.size();a++)
+					{
+						delete pathAttempts[a];
+					}
+					pathAttempts.clear();
+				}
+
+				if
+				(
+					Sound &&
+					Channel!=-1
+				)
+				{
+					Video->SetTime(GetTimeSeconds());
+				}
+				else
+				{
+					//Video->SetTime(Video->GetTime()+LGL_SecondsSinceLastFrame());
+				}
 			}
 		}
 
@@ -2422,7 +2685,10 @@ NextFrame
 		(
 			loadable==false ||
 			GetInput().WaveformEject(target) ||
-			Mode1Timer.SecondsSinceLastReset() > (EncodeEveryTrack ? 20.0f : 5.0f)
+			(
+				EncodeEveryTrack==false &&
+				Mode1Timer.SecondsSinceLastReset() > 5.0f
+			)
 		)
 		{
 			//Abort load. Select new track.
@@ -3626,95 +3892,6 @@ NextFrame
 			AspectRatioMode=(AspectRatioMode+1)%3;
 		}
 
-		float newBright=GetInput().WaveformVideoBrightness(target);
-		if(newBright!=-1.0f)
-		{
-			if
-			(
-				VideoBrightness==0.0f &&
-				newBright>0.0f
-			)
-			{
-				/*
-				if(LGL_VideoDecoder* dec = GetVideo())
-				{
-					dec->ForcePreload();
-				}
-				*/
-			}
-			VideoBrightness=newBright;
-		}
-		VideoBrightness=LGL_Clamp
-		(
-			0.0f,
-			VideoBrightness+GetInput().WaveformVideoBrightnessDelta(target),
-			1.0f
-		);
-
-		newBright=GetInput().WaveformSyphonBrightness(target);
-		if(newBright!=-1.0f)
-		{
-			SyphonBrightness=newBright;
-		}
-		SyphonBrightness=LGL_Clamp
-		(
-			0.0f,
-			SyphonBrightness+GetInput().WaveformSyphonBrightnessDelta(target),
-			1.0f
-		);
-
-		newBright=GetInput().WaveformOscilloscopeBrightness(target);
-		if(newBright!=-1.0f)
-		{
-			OscilloscopeBrightness=newBright;
-		}
-		OscilloscopeBrightness=LGL_Clamp
-		(
-			0.0f,
-			OscilloscopeBrightness+GetInput().WaveformOscilloscopeBrightnessDelta(target),
-			1.0f
-		);
-
-		newBright=GetInput().WaveformFreqSenseBrightness(target);
-		if(newBright==-1.0f)
-		{
-			if(GetInput().WaveformFreqSenseBrightnessDelta(target)!=0.0f)
-			{
-				newBright=LGL_Clamp
-				(
-					0.0f,
-					FreqSenseBrightness+GetInput().WaveformFreqSenseBrightnessDelta(target),
-					1.0f
-				);
-			}
-		}
-		if(newBright!=-1.0f)
-		{
-			if
-			(
-				FreqSenseBrightness==0.0f &&
-				newBright>0.0f
-			)
-			{
-				//VideoLo->ForcePreload();
-				//VideoHi->ForcePreload();
-			}
-			float tmp = FreqSenseBrightness;
-			FreqSenseBrightness=newBright;
-			if
-			(
-				tmp==0.0f &&
-				FreqSenseBrightness >= 0.0f &&
-				(
-					VideoLoPath[0]=='\0' ||
-					VideoHiPath[0]=='\0'
-				)
-			)
-			{
-				SelectNewVideo();
-			}
-		}
-
 		if
 		(
 			Focus &&
@@ -3725,126 +3902,6 @@ NextFrame
 		}
 
 		FreqSensePathBrightness=LGL_Max(0.0f,FreqSensePathBrightness-LGL_SecondsSinceLastFrame());
-
-		//LEDs
-		{
-			//Group
-			float newGroup=GetInput().WaveformFreqSenseLEDGroupFloat(target);
-			if(newGroup==-1.0f)
-			{
-				float delta = GetInput().WaveformFreqSenseLEDGroupFloatDelta(target);
-				if(delta!=0.0f)
-				{
-					newGroup=LGL_Clamp
-					(
-						0.0f,
-						FreqSenseLEDGroupFloat+delta,
-						1.0f
-					);
-				}
-			}
-			if(newGroup!=-1.0f)
-			{
-				newGroup=LGL_Clamp
-				(
-					0.0f,
-					newGroup,
-					1.0f
-				);
-				FreqSenseLEDGroupFloat=newGroup;
-			}
-
-			//Brightness
-			newBright=GetInput().WaveformFreqSenseLEDBrightness(target);
-			if(newBright==-1.0f)
-			{
-				float delta = GetInput().WaveformFreqSenseLEDBrightnessDelta(target);
-				if(delta!=0.0f)
-				{
-					newBright=LGL_Clamp
-					(
-						0.0f,
-						FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()]+delta,
-						1.0f
-					);
-				}
-			}
-			if(newBright!=-1.0f)
-			{
-				newBright=LGL_Clamp
-				(
-					0.0f,
-					newBright,
-					1.0f
-				);
-				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()]=newBright;
-			}
-
-			//Color Low/High
-			for(int f=0;f<2;f++)
-			{
-				float& targetColor =
-					(f==0) ?
-					FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()] :
-					FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()];
-				float newColor=
-					(f==0) ?
-					GetInput().WaveformFreqSenseLEDColorScalarLow(target) :
-					GetInput().WaveformFreqSenseLEDColorScalarHigh(target);
-				if(newColor==-1.0f)
-				{
-					float delta =
-						(f==0) ?
-						GetInput().WaveformFreqSenseLEDColorScalarLowDelta(target) :
-						GetInput().WaveformFreqSenseLEDColorScalarHighDelta(target);
-					if(delta!=0.0f)
-					{
-						newColor=LGL_Clamp
-						(
-							0.0f,
-							targetColor+delta,
-							1.0f
-						);
-					}
-				}
-				if(newColor!=-1.0f)
-				{
-					newColor=LGL_Clamp
-					(
-						0.0f,
-						newColor,
-						1.0f
-					);
-					targetColor=newColor;
-				}
-			}
-
-			//Brightness Wash
-			newBright=GetInput().WaveformFreqSenseLEDBrightnessWash(target);
-			if(newBright==-1.0f)
-			{
-				float delta = GetInput().WaveformFreqSenseLEDBrightnessWashDelta(target);
-				if(delta!=0.0f)
-				{
-					newBright=LGL_Clamp
-					(
-						0.0f,
-						FreqSenseLEDBrightnessWash[GetFreqSenseLEDGroupInt()]+delta,
-						1.0f
-					);
-				}
-			}
-			if(newBright!=-1.0f)
-			{
-				newBright=LGL_Clamp
-				(
-					0.0f,
-					newBright,
-					1.0f
-				);
-				FreqSenseLEDBrightnessWash[GetFreqSenseLEDGroupInt()]=newBright;
-			}
-		}
 
 		float newRate=GetInput().WaveformVideoAdvanceRate(target);
 		if(newRate!=-1.0f)
@@ -4066,7 +4123,10 @@ NextFrame
 				}
 			}
 			FilterTextMostRecent[0]='\0';
-			FilterText.SetString();
+			if(EncodeEveryTrack==false)
+			{
+				FilterText.SetString();
+			}
 			FilterTextMostRecentBPM = (int)floorf(BPMMaster+0.5f);
 			DatabaseFilter.SetPattern("");
 
@@ -4384,6 +4444,7 @@ NextFrame
 			VideoEncoderBeginSignal=0;
 			VideoEncoderEndSignal=0;
 			strcpy(VideoEncoderPathSrc,SoundSrcPath);
+
 			VideoEncoderThread=LGL_ThreadCreate(videoEncoderThread,this);
 
 			//Load Video if possible
@@ -4983,65 +5044,78 @@ DrawFrame
 
 		if(Sound->IsLoaded()==false)
 		{
-			LGL_GetFont().DrawString
-			(
-				centerX,bottom+0.90f*height,.015f,
-				1,1,1,1,
-				true,.5f,
-				"Loading Audio..."
-			);
-			int seconds=(int)Sound->GetSecondsUntilLoaded();
-			if(seconds>=0 && seconds<9999.0f)
+			if(Sound->IsUnloadable())
 			{
-				int minutes=0;
-				LGL_LoopCounterAlpha();
-				while(seconds>=60)
-				{
-					LGL_LoopCounterDelta();
-					minutes++;
-					seconds-=60;
-				}
-				LGL_LoopCounterOmega();
-
 				LGL_GetFont().DrawString
 				(
-					centerX,bottom+0.5f*height-0.5f*0.125f*height,0.125f*height,
+					centerX,bottom+0.90f*height,.015f,
 					1,1,1,1,
 					true,.5f,
-					"%i:%.2i",
-					minutes,
-					seconds
+					"Unloadable"
 				);
 			}
+			else
+			{
+				LGL_GetFont().DrawString
+				(
+					centerX,bottom+0.90f*height,.015f,
+					1,1,1,1,
+					true,.5f,
+					"Loading Audio..."
+				);
+				int seconds=(int)Sound->GetSecondsUntilLoaded();
+				if(seconds>=0 && seconds<9999.0f)
+				{
+					int minutes=0;
+					LGL_LoopCounterAlpha();
+					while(seconds>=60)
+					{
+						LGL_LoopCounterDelta();
+						minutes++;
+						seconds-=60;
+					}
+					LGL_LoopCounterOmega();
 
-			float percent=Sound->GetPercentLoadedSmooth();
-			float pct=LGL_Clamp(0.0f,percent,1.0f);
-			LGL_DrawRectToScreen
-			(
-				left,left+pct*width*0.5f,
-				bottom,bottom+0.15f*height,
-				(1.0f-pct)*coolR+(0.0f+pct)*warmR,
-				(1.0f-pct)*coolG+(0.0f+pct)*warmG,
-				(1.0f-pct)*coolB+(0.0f+pct)*warmB,
-				1.0f
-			);
-			LGL_DrawRectToScreen
-			(
-				right,right-pct*width*0.5f,
-				bottom,bottom+0.15f*height,
-				(1.0f-pct)*coolR+(0.0f+pct)*warmR,
-				(1.0f-pct)*coolG+(0.0f+pct)*warmG,
-				(1.0f-pct)*coolB+(0.0f+pct)*warmB,
-				1.0f
-			);
-			LGL_GetFont().DrawString
-			(
-				centerX+0.025f*width,bottom+0.025f*height,0.09f*height,
-				1,1,1,1,
-				true,0.5f,
-				"%.0f%%",
-				LGL_Clamp(0.0f,percent,0.99f)*100.0f
-			);
+					LGL_GetFont().DrawString
+					(
+						centerX,bottom+0.5f*height-0.5f*0.125f*height,0.125f*height,
+						1,1,1,1,
+						true,.5f,
+						"%i:%.2i",
+						minutes,
+						seconds
+					);
+				}
+
+				float percent=Sound->GetPercentLoadedSmooth();
+				float pct=LGL_Clamp(0.0f,percent,1.0f);
+				LGL_DrawRectToScreen
+				(
+					left,left+pct*width*0.5f,
+					bottom,bottom+0.15f*height,
+					(1.0f-pct)*coolR+(0.0f+pct)*warmR,
+					(1.0f-pct)*coolG+(0.0f+pct)*warmG,
+					(1.0f-pct)*coolB+(0.0f+pct)*warmB,
+					1.0f
+				);
+				LGL_DrawRectToScreen
+				(
+					right,right-pct*width*0.5f,
+					bottom,bottom+0.15f*height,
+					(1.0f-pct)*coolR+(0.0f+pct)*warmR,
+					(1.0f-pct)*coolG+(0.0f+pct)*warmG,
+					(1.0f-pct)*coolB+(0.0f+pct)*warmB,
+					1.0f
+				);
+				LGL_GetFont().DrawString
+				(
+					centerX+0.025f*width,bottom+0.025f*height,0.09f*height,
+					1,1,1,1,
+					true,0.5f,
+					"%.0f%%",
+					LGL_Clamp(0.0f,percent,0.99f)*100.0f
+				);
+			}
 		}
 		else if
 		(
@@ -5479,13 +5553,24 @@ DrawFrame
 			const char* title = FilterText.GetString();
 			if(title==NULL || title[0]=='\0')
 			{
-				if(strstr(DatabaseFilter.Dir,LGL_GetHomeDir()))
+				if(DatabaseFilter.Dir)
 				{
-					sprintf(drawDirPath,"~%s/",&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())]));
+					if(strstr(DatabaseFilter.Dir,LGL_GetHomeDir()))
+					{
+						sprintf(drawDirPath,"~%s/",&(DatabaseFilter.Dir[strlen(LGL_GetHomeDir())]));
+					}
+					else
+					{
+						strcpy(drawDirPath,DatabaseFilter.Dir);
+					}
 				}
 				else
 				{
-					strcpy(drawDirPath,DatabaseFilter.Dir);
+					if(DatabaseFilter.Dir==NULL)
+					{
+						printf("Warning! DatabaseFilter.Dir is NULL! (B)\n");
+					}
+					title = "Unknown Path";
 				}
 				title=drawDirPath;
 			}
@@ -5838,6 +5923,8 @@ DrawFrame
 				LGL_Min(FreqSensePathBrightness,1.0f)*freqSensePathActiveMultiplier,
 				VideoLoPathShort,
 				VideoHiPathShort,
+				VideoLo->GetBitrateMBps(),
+				VideoHi->GetBitrateMBps(),
 				FreqSenseLEDBrightness[GetFreqSenseLEDGroupInt()],	//62
 				FreqSenseLEDColorScalarLow[GetFreqSenseLEDGroupInt()],	//63
 				FreqSenseLEDColorScalarHigh[GetFreqSenseLEDGroupInt()],	//64
@@ -7770,8 +7857,18 @@ AttemptToCreateSound()
 				SoundBuffer,
 				SoundBufferLength
 			);
-
+			Sound->SetPathUser(GetHighlightedPath());
 			Sound->SetVolumePeak(CachedVolumePeak);
+
+			if
+			(
+				Video->GetUserString()==NULL ||
+				GetHighlightedNameDisplayed()==NULL ||
+				strcmp(Video->GetUserString(),GetHighlightedNameDisplayed())!=0
+			)
+			{
+				Video->SetVideo(NULL);
+			}
 
 			DatabaseEntryNow=DatabaseFilteredEntries[ListSelector.GetHighlightedRow()];
 			DecodeTimer.Reset();

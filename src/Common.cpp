@@ -1371,6 +1371,8 @@ Turntable_DrawWaveform
 	float		freqSensePathBrightness,
 	const char*	freqSenseLowPathShort,
 	const char*	freqSenseHighPathShort,
+	float		freqSenseLowBitrateMBps,
+	float		freqSenseHighBitrateMBps,
 	float		freqSenseLEDBrightness,
 	float		freqSenseLEDColorScalarLow,
 	float		freqSenseLEDColorScalarHigh,
@@ -2453,36 +2455,45 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 	);
 	
 	//Draw FreqSense video names
-	if(freqSensePathBrightness>0.0f)
+	if(1)//freqSensePathBrightness>0.0f)
 	{
-		float br = freqSensePathBrightness;
 		for(int v=0;v<2;v++)
 		{
+			float br = freqSensePathBrightness;
 			const char* path = (v==0) ? freqSenseHighPathShort : freqSenseLowPathShort;
-			float h = (v==0) ? 0.65f : 0.35f;
-			fontHeight=0.05f*viewportHeight;
-			float fontHeight2=fontHeight;
-			float fontWidth=LGL_GetFont().GetWidthString(fontHeight2,path);
-			float fontWidthMax=viewportWidth*0.55f;
-			fontHeight2=LGL_Min(fontHeight2,fontHeight2*fontWidthMax/fontWidth);
-			LGL_GetFont().DrawString
-			(
-				txtCenterX,
-				viewportBottom+h*viewportHeight-0.5f*fontHeight,
-				fontHeight2,
-				br,br,br,br,
-				true,.5f,
-				path
-			);
-			LGL_GetFont().DrawString
-			(
-				txtCenterX,
-				viewportBottom+h*viewportHeight-0.5f*fontHeight,
-				fontHeight2,
-				br,br,br,br,
-				true,.5f,
-				path
-			);
+			float bitrate = (v==0) ? freqSenseHighBitrateMBps : freqSenseLowBitrateMBps;
+			bool bitrateOK = (bitrate <= 1.0f);
+			if(bitrateOK==false)
+			{
+				br = 1.0f;
+			}
+			if(br>0.0f)
+			{
+				float red = br;
+				float green = br * (bitrateOK ? 1.0f : 0.0f);
+				float blue = br * (bitrateOK ? 1.0f : 0.0f);
+				float h = (v==0) ? 0.65f : 0.35f;
+				fontHeight=0.05f*viewportHeight;
+				char pathNow[4096];
+				snprintf(pathNow,sizeof(pathNow)-1,"%s (%.1f MBps)",path,bitrate);
+				float fontHeight2=fontHeight;
+				float fontWidth=LGL_GetFont().GetWidthString(fontHeight2,pathNow);
+				float fontWidthMax=viewportWidth*0.55f;
+				fontHeight2=LGL_Min(fontHeight2,fontHeight2*fontWidthMax/fontWidth);
+				LGL_GetFont().DrawString
+				(
+					txtCenterX,
+					viewportBottom+h*viewportHeight-0.5f*fontHeight,
+					fontHeight2,
+					red,green,blue,br,
+					true,.5f,
+					pathNow
+				);
+				if(bitrateOK==false)
+				{
+					printf("Bad Path: %.1f => %s\n",bitrate,path);
+				}
+			}
 		}
 	}
 
