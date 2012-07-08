@@ -59,7 +59,9 @@ SetDir
 	if(Dir)
 	{
 		delete Dir;
-		Dir=NULL;
+		const char* dir = GetMusicRootPath();
+		Dir=new char[strlen(dir)+1];
+		strcpy(Dir,dir);
 	}
 	if
 	(
@@ -939,12 +941,15 @@ Refresh_Internal
 
 		FilesProcessed=0;
 
-		std::sort
-		(
-			DatabaseEntryList.begin(),
-			DatabaseEntryList.end(),
-			databaseEntrySortPredicate
-		);
+		if(DatabaseEntryList.size()>0)
+		{
+			std::sort
+			(
+				DatabaseEntryList.begin(),
+				DatabaseEntryList.begin() + DatabaseEntryList.size()-1,
+				databaseEntrySortPredicate
+			);
+		}
 	}
 }
 

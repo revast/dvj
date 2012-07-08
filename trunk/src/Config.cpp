@@ -176,6 +176,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"\n");
 		fprintf(fd,"#3.2 MBps is highest quality for 1920x480@30fps.\n");
 		fprintf(fd,"cachedVideoConstBitrateMBps=3.2\n");
+		fprintf(fd,"reencodeMjpegs=1\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"visualBrightnessAtCenter=1.0\n");
 		fprintf(fd,"\n");
@@ -786,6 +787,15 @@ GetCachedVideoConstBitrateMBps()
 			dvjrcConfigFile->read<float>("cachedVideoConstBitrateMBps",1.25f),
 			10.0f
 		)
+	);
+}
+
+bool
+GetReencodeMjpegs()
+{
+	return
+	(
+		dvjrcConfigFile->read<int>("reencodeMjpegs",1)
 	);
 }
 

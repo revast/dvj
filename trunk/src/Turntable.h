@@ -402,6 +402,7 @@ public:
 	LGL_VideoEncoder*		VideoEncoder;
 	LGL_Semaphore			VideoEncoderSemaphore;
 	SDL_Thread*			VideoEncoderThread;
+	SDL_Thread*			VideoEncoderDeleteThread;
 	float				VideoEncoderPercent;
 	float				VideoEncoderEtaSeconds;
 	bool				VideoEncoderAudioOnly;

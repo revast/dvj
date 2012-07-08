@@ -253,7 +253,7 @@ WaveformNudge
 			{
 				if(LGL_KeyDown(LGL_KEY_SHIFT)==false)
 				{
-					nudge=LGL_MultiTouchDX2()*10.0f;
+					nudge=LGL_MultiTouchDX2()*40.0f;
 				}
 			}
 		}
