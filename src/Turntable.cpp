@@ -3234,74 +3234,82 @@ NextFrame
 				{
 					if(Sound->IsLoaded())
 					{
-						double quantizePeriodSeconds=GetQuantizePeriodSeconds();
-						bool lockWarp=false;
-						if(candidate>1.0f)
+						if(GetBPM()>0)
 						{
-							lockWarp=true;
-							candidate-=1.0f;
-						}
-						candidate=LGL_Clamp(0.0f,candidate,1.0f);
-						float candidateSeconds=Sound->GetLengthSeconds()*candidate;
-						double jumpAlphaSeconds=GetTimeSeconds();
-						double jumpOmegaSeconds=candidateSeconds;
-						if(BPMAvailable() && PauseMultiplier!=0.0f)
-						{
-							double currentMeasureStart=GetBeginningOfCurrentMeasureSeconds();
-							double candidateMeasureStart=GetBeginningOfArbitraryMeasureSeconds(candidateSeconds);
-
-							jumpAlphaSeconds=currentMeasureStart;
-							jumpOmegaSeconds=candidateMeasureStart;
-							LGL_LoopCounterAlpha();
-							for(;;)
+							double quantizePeriodSeconds=GetQuantizePeriodSeconds();
+							bool lockWarp=false;
+							if(candidate>1.0f)
 							{
-								LGL_LoopCounterDelta();
-								float posSeconds = GetTimeSeconds();
-								if(jumpAlphaSeconds < posSeconds)
-								{
-									jumpAlphaSeconds += quantizePeriodSeconds;
-									jumpOmegaSeconds += quantizePeriodSeconds;
-								}
-								else
-								{
-									break;
-								}
+								lockWarp=true;
+								candidate-=1.0f;
 							}
-							LGL_LoopCounterOmega();
-						}
-						//Sound->SetPositionSeconds(Channel,candidateSeconds);
-
-						if
-						(
-							jumpAlphaSeconds>=0.0f &&
-							jumpOmegaSeconds>=0.0f &&
-							jumpOmegaSeconds<=Sound->GetLengthSeconds()-5.0f
-						)
-						{
-							LGL_LoopCounterAlpha();
-							for(;;)
+							candidate=LGL_Clamp(0.0f,candidate,1.0f);
+							float candidateSeconds=Sound->GetLengthSeconds()*candidate;
+							double jumpAlphaSeconds=GetTimeSeconds();
+							double jumpOmegaSeconds=candidateSeconds;
+							if(BPMAvailable() && PauseMultiplier!=0.0f)
 							{
-								LGL_LoopCounterDelta();
-								bool ret=Sound->SetWarpPoint
-								(
-									Channel,
-									jumpAlphaSeconds,
-									jumpOmegaSeconds,
-									false,
-									lockWarp
-								);
+								double currentMeasureStart=GetBeginningOfCurrentMeasureSeconds();
+								double candidateMeasureStart=GetBeginningOfArbitraryMeasureSeconds(candidateSeconds);
 
-								if(ret)
+								jumpAlphaSeconds=currentMeasureStart;
+								jumpOmegaSeconds=candidateMeasureStart;
+								LGL_LoopCounterAlpha();
+								for(;;)
 								{
-									break;
+									LGL_LoopCounterDelta();
+									float posSeconds = GetTimeSeconds();
+									if(jumpAlphaSeconds < posSeconds)
+									{
+										jumpAlphaSeconds += quantizePeriodSeconds;
+										jumpOmegaSeconds += quantizePeriodSeconds;
+									}
+									else
+									{
+										break;
+									}
 								}
-								else
-								{
-									jumpAlphaSeconds += quantizePeriodSeconds;
-									jumpOmegaSeconds += quantizePeriodSeconds;
-								}
+								LGL_LoopCounterOmega();
 							}
-							LGL_LoopCounterOmega();
+							//Sound->SetPositionSeconds(Channel,candidateSeconds);
+
+							if
+							(
+								jumpAlphaSeconds>=0.0f &&
+								jumpOmegaSeconds>=0.0f &&
+								jumpOmegaSeconds<=Sound->GetLengthSeconds()-5.0f
+							)
+							{
+								LGL_LoopCounterAlpha();
+								for(int a=0;a<10000;a++)
+								{
+									LGL_LoopCounterDelta();
+									bool ret=Sound->SetWarpPoint
+									(
+										Channel,
+										jumpAlphaSeconds,
+										jumpOmegaSeconds,
+										false,
+										lockWarp
+									);
+
+									if(ret)
+									{
+										break;
+									}
+									else
+									{
+										jumpAlphaSeconds += quantizePeriodSeconds;
+										jumpOmegaSeconds += quantizePeriodSeconds;
+									}
+								}
+								LGL_LoopCounterOmega();
+							}
+						}
+						else
+						{
+							float candidateSeconds = Sound->GetLengthSeconds()*candidate;
+							Sound->SetPositionSeconds(Channel,candidateSeconds);
 						}
 					}
 				}
@@ -8031,7 +8039,14 @@ RecallIsSet()
 double
 TurntableObj::GetQuantizePeriodSeconds()
 {
-	return(GetMeasureLengthSeconds()*pow(2,QuantizePeriodMeasuresExponent));
+	if(GetBPM()>0)
+	{
+		return(GetMeasureLengthSeconds()*pow(2,QuantizePeriodMeasuresExponent));
+	}
+	else
+	{
+		return(QuantizePeriodNoBPMSeconds);
+	}
 }
 
 double
