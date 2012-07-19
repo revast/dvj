@@ -109,11 +109,7 @@ LGLLIBRARIES_LIN	= $(AVCODECLIBRARIES_LIN) `sdl-config --libs` `pkg-config --cfl
 AR_OSX			= ar rcs
 CC_OSX			= clang++
 MODEFLAGS_OSX		= -g
-ifeq ($(PLATFORM), 11.0.0)
-WARNINGS_OSX		= -Wall -Wconditional-uninitialized
-else
 WARNINGS_OSX		= -Wall
-endif
 DEFINES_OSX		= -DLGL_LINUX -DLGL_OSX -Dfopen64=fopen -D__MACOSX_CORE__
 CFLAGS_OSX		= $(WARNINGS_OSX) -I$(OBJDIR_OSX) `sdl-config --cflags` $(MODEFLAGS_OSX) -I$(ROOT_SRC_DIR) $(DEFINES_OSX) -I/opt/libjpeg-turbo/include -I/usr/local/include/ -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers
 #-fsingle-precision-constant
