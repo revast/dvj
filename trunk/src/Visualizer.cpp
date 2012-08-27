@@ -2033,7 +2033,11 @@ DrawVideos
 	oscilloscopeBright*=ejectBrightnessScalar;
 	freqSenseBright*=ejectBrightnessScalar;
 
-	if(oscilloscopeBright > 0.0f)
+	if
+	(
+		oscilloscopeBright > 0.0f ||
+		tt->GetAudioInputMode()
+	)
 	{
 		bool drewOscilloscope=false;
 		//FIXME: This should be a single path for uniform oscilloscope rendering
@@ -2087,7 +2091,7 @@ DrawVideos
 				drewOscilloscope=true;
 			}
 		}
-		else
+		else if(oscilloscopeBright > 0.0f)
 		{
 			tt->DrawWave
 			(
