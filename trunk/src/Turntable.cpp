@@ -3434,7 +3434,7 @@ NextFrame
 		//Looping
 		const int exponentMin=-9;
 		const int exponentMax=6;
-		const int exponentAll=9999;
+		const int exponentAll=20;
 
 		bool loopActiveLastFrame = LoopActive;
 		bool loopThenRecallActiveLastFrame = LoopThenRecallActive;
@@ -3588,6 +3588,11 @@ NextFrame
 						if(LoopOmegaSeconds<LoopAlphaSeconds)
 						{
 							LoopOmegaSeconds=LoopAlphaSeconds;
+						}
+
+						if(LoopOmegaSeconds>Sound->GetLengthSeconds())
+						{
+							LoopOmegaSeconds=Sound->GetLengthSeconds();
 						}
 					}
 					else
@@ -8797,7 +8802,18 @@ GetBPMFirstMeasureSeconds()
 	while(candidate - deltaMeasure > 0)
 	{
 		LGL_LoopCounterDelta();
-		candidate -= deltaMeasure;
+		if(candidate - deltaMeasure*100 > 0)
+		{
+			candidate -= deltaMeasure*100;
+		}
+		else if(candidate - deltaMeasure*10 > 0)
+		{
+			candidate -= deltaMeasure*10;
+		}
+		else
+		{
+			candidate -= deltaMeasure;
+		}
 	}
 	LGL_LoopCounterOmega();
 
