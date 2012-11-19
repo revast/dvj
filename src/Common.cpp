@@ -2735,7 +2735,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 		char loopStr[2048];
 		if(bpmAdjusted>0)
 		{
-			if(loopExponent>1000)
+			if(loopExponent>10)
 			{
 				strcpy(loopStr,"all");
 			}

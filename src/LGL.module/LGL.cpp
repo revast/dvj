@@ -20256,7 +20256,11 @@ if(channel<0)
 	{
 		if(sc->PositionSamplesNow <= alphaSeconds*sc->Hz)
 		{
-			sc->WarpPointSecondsAlpha=alphaSeconds;
+			sc->WarpPointSecondsAlpha=LGL_Min
+			(
+				alphaSeconds,
+				GetLengthSeconds()-1.0f/GetHz()
+			);
 			sc->WarpPointSecondsOmega=omegaSeconds;
 			sc->WarpPointLoop=loop;
 			sc->WarpPointLock=lock;
