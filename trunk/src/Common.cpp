@@ -2491,7 +2491,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 				);
 				if(bitrateOK==false)
 				{
-					printf("Bad Path: %.1f => %s\n",bitrate,path);
+					//printf("Bad Path: %.1f => %s\n",bitrate,path);
 				}
 			}
 		}

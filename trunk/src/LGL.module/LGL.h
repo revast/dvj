@@ -1581,6 +1581,12 @@ LGL_VideoIsMJPEG
 	const char*	path
 );
 
+void
+LGL_SetUseLibJpegTurbo
+(
+	bool	use=true
+);
+
 class LGL_Font
 {
 

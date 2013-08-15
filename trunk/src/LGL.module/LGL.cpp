@@ -644,6 +644,8 @@ typedef struct
 	SDL_Thread*		WriteFileAsyncThread;
 
 	LGL_Timer		MainThreadBlockDetectorTimer;
+
+	bool			UseLibJpegTurbo;
 	
 	//lgl_PathIsAliasCacher	PathIsAliasCacher;
 } LGL_State;
@@ -1937,8 +1939,8 @@ lgl_sws_scale
 	const int		dstStride[]
 )
 {
-	//static LGL_Semaphore localSem("lgl_sws_scale");
-	//LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
+	static LGL_Semaphore localSem("lgl_sws_scale");
+	LGL_ScopeLock localLock(__FILE__,__LINE__,localSem);
 
 	return
 	(
@@ -2583,7 +2585,7 @@ printf("\n");
 	glClearColor(0,0,0,0);
 	glDisable(GL_DEPTH_TEST);
 	//glEnable(GL_LINE_SMOOTH);
-	//glEnable(GL_POLYGON_SMOOTH);
+	glDisable(GL_POLYGON_SMOOTH);
 
 	LGL.TexturePixels=0;
 	LGL.FrameBufferTextureGlitchFix=true;
@@ -2741,6 +2743,8 @@ printf("\n");
 	LGL.WiimoteSemaphore = new LGL_Semaphore("Wiimote");
 	LGL.WriteFileAsyncWorkItemListNewSemaphore = new LGL_Semaphore("WriteFileAsyncWorkItemListNewSemaphore");
 	LGL.WriteFileAsyncThread = NULL;
+
+	LGL.UseLibJpegTurbo=true;
 
 #ifdef	LGL_LINUX_VIDCAM
 	int tempfd1=open("/dev/video0",O_RDWR);
@@ -5394,7 +5398,7 @@ LGL_DrawRectToScreen
 	glBegin(GL_QUADS);
 	{
 		glNormal3f(0,0,-1);
-		glVertex2f(.5*-width,-.5*height);
+		glVertex2f(-.5*width,-.5*height);
 		glVertex2f(.5*width,-.5*height);
 		glVertex2f(.5*width,.5*height);
 		glVertex2f(-.5*width,.5*height);
@@ -5562,6 +5566,7 @@ LGL_SmoothPolygons
 	bool	in
 )
 {
+	/*
 	if(in)
 	{
 		glEnable(GL_POLYGON_SMOOTH);
@@ -5570,6 +5575,7 @@ LGL_SmoothPolygons
 	{
 		glDisable(GL_POLYGON_SMOOTH);
 	}
+	*/
 }
 
 void
@@ -12700,7 +12706,7 @@ MaybeDecodeImage
 
 	//Decode video frame
 	int frameFinished=0;
-	const int useLibJpegTurbo=true;//(SDL_ThreadID()!=LGL.ThreadIDMain);
+	const int useLibJpegTurbo=LGL.UseLibJpegTurbo;//(SDL_ThreadID()!=LGL.ThreadIDMain);
 	if(useLibJpegTurbo)
 	{
 		if(0 && QuicktimeMovie)
@@ -15345,6 +15351,15 @@ LGL_VideoIsMJPEG
 	return(ret);
 }
 
+void
+LGL_SetUseLibJpegTurbo
+(
+	bool	use
+)
+{
+	LGL.UseLibJpegTurbo=use;
+}
+
 //LGL_Font
 
 LGL_Font::
@@ -15797,7 +15812,7 @@ const	char	*string,
 
 	//glPopMatrix();
 
-	glEnable(GL_POLYGON_SMOOTH);
+	//glEnable(GL_POLYGON_SMOOTH);
 
 	return(xNow);
 }
