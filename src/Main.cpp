@@ -777,6 +777,8 @@ int main(int argc, char** argv)
 	}
 	*/
 
+	system("killall -9 jackd");
+
 	//Set working directory
 	char wd[2048];
 	strcpy(wd,argv[0]);
@@ -913,9 +915,10 @@ int main(int argc, char** argv)
 		channels,
 		appName
 	);
-
+	
 	LGL_MouseVisible(false);
 	LGL_SetFPSMax(GetFPSMax());
+	LGL_SetUseLibJpegTurbo(GetUseLibJpegTurbo());
 
 	if(LGL_DirectoryExists("Data")==false)
 	{

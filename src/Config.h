@@ -185,6 +185,9 @@ GetCachedVideoConstBitrateMBps();
 bool
 GetReencodeMjpegs();
 
+bool
+GetUseLibJpegTurbo();
+
 float
 GetVisualBrightnessAtCenter();
 
