@@ -195,11 +195,11 @@ GetMarkerStringFromIndex
 
 	if(index<=9)
 	{
-		sprintf(str,"%i",index);
+		snprintf(str,4,"%i",index);
 	}
 	else
 	{
-		sprintf(str,"%c",'A'+(((unsigned char)index)-10));
+		snprintf(str,4,"%c",'A'+(((unsigned char)index)-10));
 	}
 }
 
@@ -862,8 +862,10 @@ turntable_DrawBPMLines
 			if(whichBeat==1)
 			{
 				int whichMeasureDraw = whichMeasure+2;
+				int whichMeasureDrawZebbler = whichMeasureDraw;
 				if(whichMeasureDraw<=0)
 				{
+					whichMeasureDrawZebbler -= 2;
 					//Loop optimization
 					float dist = ceilf(whichMeasureDraw/-16.0f);
 					whichMeasureDraw+=16*dist;
@@ -897,19 +899,17 @@ turntable_DrawBPMLines
 					"%i",
 					((whichMeasureDraw-1)%16)+1
 				);
-				/*
 				LGL_GetFont().DrawString
 				(
 					wavLeft+wavWidth*bpmPointPercent+lDelta,
-					pointBottom+0.1f*pointHeight-0.5f*fontHeight,
+					pointBottom+0.9f*pointHeight-0.5f*fontHeight,
 					fontHeight,
 					1,1,1,1,
 					false,
 					0.9f,
 					"%i",
-					whichMeasureDraw
+					whichMeasureDrawZebbler
 				);
-				*/
 			}
 		}
 		else if(bpmPointSamples > rightSample+(44100/4))
@@ -1995,7 +1995,7 @@ if(sound->GetSilent()==false)//LGL_KeyDown(LGL_KEY_RALT)==false)
 						1.0f,1.0f,1.0f,1.0f,
 						3
 					);
-					char str[4];
+					char str[8];
 					GetMarkerStringFromIndex(str,a);
 					float fontHeight=0.10f*pointHeight;
 					float lDelta=0.02f;

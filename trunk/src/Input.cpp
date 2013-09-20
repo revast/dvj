@@ -449,12 +449,12 @@ WaveformPitchbend
 	unsigned int	target
 )	const
 {
-	float pitchbend=0.0f;
+	float pitchbend=DVJ_INPUT_NIL;
 
 	for(unsigned int a=0;a<Children.size();a++)
 	{
 		float candidate=Children[a]->WaveformPitchbend(target);
-		if(candidate!=0.0f)
+		if(candidate!=DVJ_INPUT_NIL)
 		{
 			pitchbend=candidate;
 		}

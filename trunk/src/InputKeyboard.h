@@ -130,6 +130,7 @@ private:
 	LGL_Timer
 		WaveformSavepointUnsetTimer;
 
+	bool	SyncDebump;
 	bool	WaveformLoopAllDebump;
 	bool	WaveformAudioInputToggleDebounce;
 	float	BPMValue;

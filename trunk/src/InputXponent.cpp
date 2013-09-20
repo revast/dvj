@@ -717,7 +717,7 @@ WaveformPitchbend
 {
 	const float RANGE=0.08f;
 
-	float pitchbend=0.0f;
+	float pitchbend=DVJ_INPUT_NIL;
 
 	if(LGL_GetXponent())
 	{
@@ -737,10 +737,13 @@ WaveformPitchbend
 		{
 			pitchbend = 1.0f+RANGE*-2.0f*(0.5f-LGL_GetXponent()->GetKnobStatus(LGL_XPONENT_KNOB_LEFT_PITCHBEND));
 		}
-	}
 
-	//Quantize a bit
-	pitchbend = floorf(pitchbend*1000.0f)/1000.0f;
+		if(pitchbend!=DVJ_INPUT_NIL)
+		{
+			//Quantize a bit
+			pitchbend = floorf(pitchbend*1000.0f)/1000.0f;
+		}
+	}
 
 	return(pitchbend);
 }

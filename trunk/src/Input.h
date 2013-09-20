@@ -32,6 +32,8 @@ class InputObj;
 
 InputObj& GetInput();
 
+#define	DVJ_INPUT_NIL	(-9999.0f)
+
 float	InputFocusChange(unsigned int target);
 float	InputFocusBottom(unsigned int target);
 float	InputFocusTop(unsigned int target);
