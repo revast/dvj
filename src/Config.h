@@ -55,6 +55,7 @@ typedef enum
 	WAVEFORM_NUDGE_BACKWARD,
 	WAVEFORM_NUDGE_FORWARD,
 	WAVEFORM_PITCHBEND,
+	WAVEFORM_PITCHBEND_RESET,
 	WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW,
 	WAVEFORM_PITCHBEND_DELTA_UP_SLOW,
 	WAVEFORM_PITCHBEND_DELTA_DOWN,
@@ -271,6 +272,7 @@ int	GetInputKeyboardWaveformEjectKey();
 int	GetInputKeyboardWaveformPauseToggleKey();
 int	GetInputKeyboardWaveformNudgeBackwardKey();
 int	GetInputKeyboardWaveformNudgeForwardKey();
+int	GetInputKeyboardWaveformPitchbendResetKey();
 int	GetInputKeyboardWaveformPitchbendDeltaDownSlowKey();
 int	GetInputKeyboardWaveformPitchbendDeltaUpSlowKey();
 int	GetInputKeyboardWaveformPitchbendDeltaDownKey();
@@ -369,6 +371,9 @@ GetLEDClientList();
 
 bool
 GetOldFileStructure();
+
+bool
+GetAutoBeatmatch();
 
 bool
 GetDebugVideoCaching();

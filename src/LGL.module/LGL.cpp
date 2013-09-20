@@ -22049,6 +22049,8 @@ LGL_ProcessInput()
 
 			if(event.key.keysym.sym != 0)
 			{
+				//printf("keysym: %i\n",event.key.keysym.sym);
+
 				LGL.KeyStroke[event.key.keysym.sym]=(LGL.KeyDown[event.key.keysym.sym]==false);
 				LGL.KeyDown[event.key.keysym.sym]=true;
 				if(LGL.KeyStroke[event.key.keysym.sym])
@@ -22058,7 +22060,6 @@ LGL_ProcessInput()
 
 				if(event.key.keysym.sym==LGL_KEY_BACKSPACE)
 				{
-					//OSX Backspace ("delete" as they call it...)
 					event.key.keysym.unicode=event.key.keysym.sym;
 				}
 
@@ -23824,6 +23825,14 @@ LGL_KeyDown
 			LGL_KeyDown(LGL_KEY_SHIFT)
 		);
 	}
+	if(key==LGL_KEY_VERTICALBAR)
+	{
+		return
+		(
+			LGL_KeyDown(LGL_KEY_BACKSLASH) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)
+		);
+	}
 
 	return(LGL.KeyDown[key]);
 }
@@ -23865,6 +23874,14 @@ LGL_KeyStroke
 		return
 		(
 			LGL_KeyStroke(LGL_KEY_PERIOD) &&
+			LGL_KeyDown(LGL_KEY_SHIFT)
+		);
+	}
+	if(key==LGL_KEY_VERTICALBAR)
+	{
+		return
+		(
+			LGL_KeyStroke(LGL_KEY_BACKSLASH) &&
 			LGL_KeyDown(LGL_KEY_SHIFT)
 		);
 	}
@@ -23942,6 +23959,24 @@ LGL_KeyRelease
 			)
 		);
 	}
+	if(key==LGL_KEY_VERTICALBAR)
+	{
+		return
+		(
+			(
+				LGL_KeyRelease(LGL_KEY_BACKSLASH) &&
+				LGL_KeyRelease(LGL_KEY_SHIFT)
+			) ||
+			(
+				LGL_KeyRelease(LGL_KEY_BACKSLASH) &&
+				LGL_KeyDown(LGL_KEY_SHIFT)
+			) ||
+			(
+				LGL_KeyDown(LGL_KEY_BACKSLASH) &&
+				LGL_KeyRelease(LGL_KEY_SHIFT)
+			)
+		);
+	}
 
 	return(LGL.KeyRelease[key]);
 }
@@ -23973,6 +24008,17 @@ LGL_KeyTimer
 			(
 				LGL_KeyTimer(LGL_KEY_SHIFT),
 				LGL_KeyTimer(LGL_KEY_SLASH)
+			)
+		);
+	}
+	if(key==LGL_KEY_VERTICALBAR)
+	{
+		return
+		(
+			LGL_Min
+			(
+				LGL_KeyTimer(LGL_KEY_SHIFT),
+				LGL_KeyTimer(LGL_KEY_BACKSLASH)
 			)
 		);
 	}

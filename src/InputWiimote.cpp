@@ -328,16 +328,23 @@ WaveformPitchbend
 )	const
 {
 	float pitchbend=0.0f;
+	bool inputReceived=false;
 	if(target & TARGET_FOCUS)
 	{
 		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_UP))
 		{
 			pitchbend+=LGL_SecondsSinceLastFrame();
+			inputReceived=true;
 		}
 		if(LGL_GetWiimote(0).ButtonDown(LGL_WIIMOTE_DOWN))
 		{
 			pitchbend-=LGL_SecondsSinceLastFrame();
+			inputReceived=true;
 		}
+	}
+	if(inputReceived==false)
+	{
+		pitchbend=DVJ_INPUT_NIL;
 	}
 	return(pitchbend);
 }

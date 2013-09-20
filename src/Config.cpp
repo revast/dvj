@@ -199,6 +199,7 @@ CreateDefaultDVJRC
 		fprintf(fd,"audioSwapOutputStreams=0\n");
 		fprintf(fd,"debugVideoCaching=0\n");
 		fprintf(fd,"oldFileStructure=0\n");
+		fprintf(fd,"autoBeatmatch=1\n");
 		fprintf(fd,"\n");
 		fprintf(fd,"#Fader Options (Fader00-Fader11 valid):\n");
 		fprintf(fd,"#NULL\n");
@@ -1099,6 +1100,7 @@ MapStringToSDLK
 	//Skip uppercase letters
 	MAP_STRING_TO_SDLK(LGL_KEY_LEFTBRACKET);
 	MAP_STRING_TO_SDLK(LGL_KEY_BACKSLASH);
+	MAP_STRING_TO_SDLK(LGL_KEY_VERTICALBAR);
 	MAP_STRING_TO_SDLK(LGL_KEY_RIGHTBRACKET);
 	MAP_STRING_TO_SDLK(LGL_KEY_CARET);
 	MAP_STRING_TO_SDLK(LGL_KEY_UNDERSCORE);
@@ -1481,6 +1483,8 @@ PrepareInputMap()
 		("waveformNudgeForward",		true,	"LGL_KEY_RIGHT",	"nudge/forward");
 	dvjInputMap[WAVEFORM_PITCHBEND].Set
 		("waveformPitchbend",			true,	"LGL_KEY_NONE",		"pitchbend");
+	dvjInputMap[WAVEFORM_PITCHBEND_RESET].Set
+		("waveformPitchbendReset",		true,	"LGL_KEY_VERTICALBAR",	"pitchbend/reset");
 	dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW].Set
 		("waveformPitchbendDeltaLowerSlow",	true,	"LGL_KEY_UNKNOWN",	"");	//"pitchbend/lower/slow");
 	dvjInputMap[WAVEFORM_PITCHBEND_DELTA_UP_SLOW].Set
@@ -1809,6 +1813,8 @@ int GetInputKeyboardWaveformNudgeBackwardKey()
 	{ return(dvjInputMap[WAVEFORM_NUDGE_BACKWARD].KeyboardInt); }
 int GetInputKeyboardWaveformNudgeForwardKey()
 	{ return(dvjInputMap[WAVEFORM_NUDGE_FORWARD].KeyboardInt); }
+int GetInputKeyboardWaveformPitchbendResetKey()
+	{ return(dvjInputMap[WAVEFORM_PITCHBEND_RESET].KeyboardInt); }
 int GetInputKeyboardWaveformPitchbendDeltaDownSlowKey()
 	{ return(dvjInputMap[WAVEFORM_PITCHBEND_DELTA_DOWN_SLOW].KeyboardInt); }
 int GetInputKeyboardWaveformPitchbendDeltaUpSlowKey()
@@ -2161,6 +2167,13 @@ GetOldFileStructure()
 {
 	int old=dvjrcConfigFile->read<int>("oldFileStructure",0);
 	return(old!=0);
+}
+
+bool
+GetAutoBeatmatch()
+{
+	int match=dvjrcConfigFile->read<int>("autoBeatmatch",1);
+	return(match!=0);
 }
 
 bool

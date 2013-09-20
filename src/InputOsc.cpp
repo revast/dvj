@@ -299,7 +299,7 @@ InputOscObj(int port) :
 					0,
 					0.92f,
 					1.08f,
-					0.0f,
+					DVJ_INPUT_NIL,
 					InputWaveformPitchbend,
 					false
 				);
@@ -1439,7 +1439,7 @@ WaveformPitchbend
 	unsigned int	target
 )	const
 {
-	float pitchbend=0.0f;
+	float pitchbend=DVJ_INPUT_NIL;
 	pitchbend = WaveformPitchbendOscElement[GetIndexFromTarget(target)].GetFloat();
 	return(pitchbend);
 }

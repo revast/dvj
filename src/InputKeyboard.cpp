@@ -58,6 +58,15 @@ NextFrame()
 		WaveformLoopAllDebump=true;
 	}
 
+	if(LGL_KeyDown(GetInputKeyboardWaveformPitchbendResetKey()))
+	{
+		SyncDebump=true;
+	}
+	if(LGL_KeyDown(GetInputKeyboardWaveformSyncKey())==false)
+	{
+		SyncDebump=false;
+	}
+
 	if(LGL_KeyDown(BPM_INPUT_KEY))
 	{
 		if(LGL_KeyStroke(BPM_INPUT_KEY))
@@ -373,7 +382,15 @@ WaveformPitchbend
 	unsigned int	target
 )	const
 {
-	return(0.0f);
+	if(LGL_KeyStroke(GetInputKeyboardWaveformPitchbendResetKey()))
+	{
+		if(target & TARGET_FOCUS)
+		{
+			return(1.0f);
+		}
+	}
+	
+	return(DVJ_INPUT_NIL);
 }
 
 float
@@ -1404,7 +1421,15 @@ WaveformSync
 {
 	if(target & TARGET_FOCUS)
 	{
-		return(LGL_KeyDown(GetInputKeyboardWaveformSyncKey()));
+		bool keyDown = LGL_KeyDown(GetInputKeyboardWaveformSyncKey());
+		if
+		(
+			SyncDebump
+		)
+		{
+			keyDown = false;
+		}
+		return(keyDown);
 	}
 	
 	return(false);

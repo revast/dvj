@@ -198,7 +198,7 @@ WaveformPitchbend
 	unsigned int	target
 )	const
 {
-	float pitchbend=0.0f;
+	float pitchbend=DVJ_INPUT_NIL;
 	return(pitchbend);
 }
 

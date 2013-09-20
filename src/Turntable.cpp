@@ -2338,7 +2338,7 @@ NextFrame
 				)
 			)
 			{
-				printf("%s vs %s\n",Sound->GetPath(),GetHighlightedPath());
+				//printf("%s vs %s\n",Sound->GetPath(),GetHighlightedPath());
 				DeriveSoundStrings();
 
 				WhiteFactor=1.0f;
@@ -2571,7 +2571,10 @@ NextFrame
 				PauseMultiplier=0;
 				if(DatabaseFilteredEntries[ListSelector.GetHighlightedRow()]->IsDir==false)
 				{
-					AttemptToCreateSound();
+					if(GetAutoBeatmatch())
+					{
+						AttemptToCreateSound();
+					}
 				}
 			}
 			else
@@ -3361,15 +3364,17 @@ NextFrame
 
 			candidate = GetInput().WaveformPitchbend(target);
 			float candidateXponent = GetInputXponent().WaveformPitchbend(target);
-			if(candidate!=0.0f)
+			if(candidate!=DVJ_INPUT_NIL)
 			{
 				if
 				(
+					candidate!=DVJ_INPUT_NIL ||
 					candidateXponent==0.0f ||
 					PitchbendLastSetByXponentSlider ||
 					fabsf(Pitchbend-candidate)<0.0025f
 				)
 				{
+					LGL_DebugPrintf("Candidate pass! %.2f\n",candidate);
 					Pitchbend=candidate;
 					if(candidateXponent!=0.0f)
 					{
@@ -3378,7 +3383,7 @@ NextFrame
 				}
 			}
 			candidate=GetInput().WaveformPitchbendDelta(target);
-			if(candidate!=0.0f)
+			if(candidate!=DVJ_INPUT_NIL)
 			{
 				Pitchbend=LGL_Clamp
 				(
@@ -4094,6 +4099,11 @@ NextFrame
 		{
 			Mode=0;
 			Mode0Timer.Reset();
+
+			if(Sound)
+			{
+				Sound->PrepareForDelete();
+			}
 
 			char oldSelection[2048];
 			if(GetHighlightedNameDisplayed())
