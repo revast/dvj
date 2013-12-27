@@ -66,7 +66,7 @@
 #define __PTHREADUTILITIES_H__
 
 #import "pthread.h"
-#import <CoreServices/../Frameworks/CarbonCore.framework/Headers/MacTypes.h>
+//#import <CoreServices/../Frameworks/CarbonCore.framework/Headers/MacTypes.h>
 
 #define THREAD_SET_PRIORITY			0
 #define THREAD_SCHEDULED_PRIORITY		1
@@ -168,6 +168,7 @@ setThreadToPriority(pthread_t inThread, UInt32 inPriority, Boolean inIsFixed,
 			       THREAD_TIME_CONSTRAINT_POLICY,
 			       (thread_policy_t)&theTCPolicy,
 			       THREAD_TIME_CONSTRAINT_POLICY_COUNT);
+printf("JACK: Attempting realtime...\n");
 	} else {
             // OTHER THREADS
             thread_extended_policy_data_t		theFixedPolicy;

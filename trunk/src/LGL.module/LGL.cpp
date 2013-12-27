@@ -2286,7 +2286,7 @@ printf("\n");
 
 	//Audio
 
-	LGL.ThreadIDAudio = NULL;
+	LGL.ThreadIDAudio = (SDL_threadID)NULL;
 
 	LGL.AudioEncoderPath[0]='\0';
 	LGL.AudioEncoder=NULL;
@@ -2576,7 +2576,7 @@ printf("\n");
 	SDL_GL_MakeCurrent(LGL.WindowID[0], LGL.GLContext);
 
 	LGL.ThreadIDMain = SDL_ThreadID();
-	LGL.ThreadIDWatch = NULL;
+	LGL.ThreadIDWatch = (SDL_threadID)NULL;
 
 	//GL Settings
 
@@ -4118,7 +4118,10 @@ lgl_EndFrame()
 
 					delete LGL.DrawLog[a];
 					LGL.DrawLog[a]=NULL;
-					LGL.DrawLog.erase((std::vector<char*>::iterator)(&(LGL.DrawLog[a])));
+					std::vector<char*>::iterator it = LGL.DrawLog.begin();
+					it+=a;
+					//LGL.DrawLog.erase((std::vector<char*>::iterator)(&(LGL.DrawLog[a])));
+					LGL.DrawLog.erase(it);
 					a--;
 				}
 			}
@@ -6504,10 +6507,10 @@ SetVertAttributeFloatPrivate
 		printf
 		(
 			"LGL_Shader('%s')::SetVertAttributeFloat(): Error! "
-			"Could not resolve Attribute '%s' for program %i...\n",
+			"Could not resolve Attribute '%s' for program %li...\n",
 			Description,
 			name,
-			(int)ProgramObject
+			(long int)ProgramObject
 		);
 		for(GLuint a=0;a<16;a++)
 		{
@@ -11840,8 +11843,7 @@ MaybeLoadVideo()
 			delete PathNextAttempts[0];
 			PathNextAttempts.erase
 			(
-				(std::vector<const char*>::iterator)
-				(&PathNextAttempts[0])
+				PathNextAttempts.begin()
 			);
 		}
 
@@ -11965,9 +11967,9 @@ MaybeLoadVideo()
 		CodecContext=fc->streams[VideoStreamIndex]->codec;
 		if
 		(
-			!CodecContext->codec_id == CODEC_ID_MJPEG &&
-			!CodecContext->codec_id == CODEC_ID_MJPEGB &&
-			!CodecContext->codec_id == CODEC_ID_LJPEG
+			CodecContext->codec_id != CODEC_ID_MJPEG &&
+			CodecContext->codec_id != CODEC_ID_MJPEGB &&
+			CodecContext->codec_id != CODEC_ID_LJPEG
 		)
 		{
 			printf("LGL_VideoDecoder::MaybeLoadVideo(): Video isn't mjpeg: '%s'\n",Path);
@@ -18948,11 +18950,9 @@ MixIntoStream
 			if(AudioGrainsQueued[a]->GetStartDelaySamplesRemaining()<=myLen)
 			{
 				AudioGrainsActive.push_back(AudioGrainsQueued[a]);
-				AudioGrainsQueued.erase
-				(
-					(std::vector<LGL_AudioGrain*>::iterator)
-					(&AudioGrainsQueued[a])
-				);
+				std::vector<LGL_AudioGrain*>::iterator it = AudioGrainsQueued.begin();
+				it+=a;
+				AudioGrainsQueued.erase(it);
 				a--;
 			}
 		}
@@ -18984,11 +18984,9 @@ MixIntoStream
 			if(AudioGrainsActive[a]->Finished())
 			{
 				delete AudioGrainsActive[a];
-				AudioGrainsActive.erase
-				(
-					(std::vector<LGL_AudioGrain*>::iterator)
-					(&AudioGrainsActive[a])
-				);
+				std::vector<LGL_AudioGrain*>::iterator it = AudioGrainsActive.begin();
+				it+=a;
+				AudioGrainsActive.erase(it);
 				a--;
 			}
 		}
@@ -25291,7 +25289,8 @@ INTERNAL_ProcessInput()
 	AccelPast.push_back(AccelBack);
 	if(AccelPast.size()>60)
 	{
-		AccelPast.erase((std::vector<LGL_Vector>::iterator)(&(AccelPast[0])));
+		std::vector<LGL_Vector>::iterator it = AccelPast.begin();
+		AccelPast.erase(it);
 	}
 
 	FlickXNegativeNow = (GetAccelRaw().GetX() < -2.0f && FlickXNegativeDebounce > -0.25f);
@@ -33323,7 +33322,7 @@ LGL_CPUCount()
 			&cpus,
 			&len,
 			NULL,
-			NULL
+			0
 		) == -1
 	)
 	{

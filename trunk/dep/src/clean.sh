@@ -1,5 +1,17 @@
 #!/bin/bash
 
+cd autoconf-2.68
+make clean
+cd ..
+
+cd automake-1.11
+make clean
+cd ..
+
+cd libtool-2.4
+make clean
+cd ..
+
 cd jpeg-6b
 make clean
 cd ..

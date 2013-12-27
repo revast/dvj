@@ -1553,7 +1553,7 @@ GetNextVideoPathRandom
 
 	sprintf(path,"%s/%s",videoPath,queue[0]);
 	char* str=queue[0];
-	queue.erase((std::vector<char*>::iterator)(&(queue[0])));
+	queue.erase(queue.begin());
 	queue.push_back(str);
 
 	VideoRandomGetCount++;
@@ -1594,7 +1594,8 @@ ForceVideoToBackOfRandomQueue
 				if(strcmp(pathShort,queue[a])==0)
 				{
 					char* tmp=queue[a];
-					queue.erase((std::vector<char*>::iterator)(&(queue[a])));
+					std::vector<char*>::iterator it = queue.begin() + a;
+					queue.erase(it);
 					queue.push_back(tmp);
 					break;
 				}

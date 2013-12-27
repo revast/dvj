@@ -2641,8 +2641,8 @@ static	int		IDCounter;
 	LGL_Semaphore	PointerMotionSemaphore;
 	float		PointerGreatestIRSourceDistance;
 
-	unsigned char	AccelCalibration[2][3];
-	unsigned char	AccelCalibrationNunchuk[2][3];
+	//unsigned char	AccelCalibration[2][3];
+	//unsigned char	AccelCalibrationNunchuk[2][3];
 	LGL_Vector	AccelFront;
 	LGL_Vector	AccelBack;
 	std::vector<LGL_Vector>

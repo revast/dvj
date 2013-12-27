@@ -64,9 +64,12 @@ CG_SetError(const char *prefix, CGDisplayErr result)
     case kCGErrorCannotComplete:
         error = "kCGErrorCannotComplete";
         break;
+    /*
+    //2013.12.27 - EMF: Doesn't compile
     case kCGErrorNameTooLong:
         error = "kCGErrorNameTooLong";
         break;
+    */
     case kCGErrorNotImplemented:
         error = "kCGErrorNotImplemented";
         break;
@@ -76,9 +79,12 @@ CG_SetError(const char *prefix, CGDisplayErr result)
     case kCGErrorTypeCheck:
         error = "kCGErrorTypeCheck";
         break;
+    /*
+    //2013.12.27 - EMF: Doesn't compile
     case kCGErrorNoCurrentPoint:
         error = "kCGErrorNoCurrentPoint";
         break;
+    */
     case kCGErrorInvalidOperation:
         error = "kCGErrorInvalidOperation";
         break;
