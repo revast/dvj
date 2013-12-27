@@ -1793,8 +1793,8 @@ WaveformSavepointShift
 		(
 			(target & TARGET_TOP) &&
 			(
-				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_PREV) ||
-				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_RIGHT_NEXT)
+				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_PREV) ||
+				!LGL_GetXponent()->GetButtonDown(LGL_XPONENT_BUTTON_LEFT_NEXT)
 			)
 		)
 		{
