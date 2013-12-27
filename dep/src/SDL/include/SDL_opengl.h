@@ -5125,7 +5125,9 @@ typedef ptrdiff_t GLsizeiptrARB;
 #ifndef GL_ARB_shader_objects
 /* GL types for program/shader text and shader object handles */
 typedef char GLcharARB;
-typedef unsigned int GLhandleARB;
+//typedef unsigned int GLhandleARB;
+//2013.12.26: Old above, new below
+typedef void* GLhandleARB;
 #endif
 
 /* GL type for "half" precision (s10e5) float data in host memory */

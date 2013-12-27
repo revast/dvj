@@ -155,10 +155,7 @@ ParticleSystemObj::
 	while(Particles.size()>0)
 	{
 		ParticleObj* t=Particles[0];
-		Particles.erase
-		(
-			(std::vector<ParticleObj*>::iterator)(&(Particles[0]))
-		);
+		Particles.erase(Particles.begin());
 		delete t;
 	}
 }
@@ -239,13 +236,15 @@ NextFrame(float secondsElapsed)
 		}
 	}
 
-	while(Particles.size() > ParticlesMax)
+	while
+	(
+		Particles.size() > ParticlesMax &&
+		Particles.size() > 0
+	)
 	{
 		ParticleObj* t=Particles[Particles.size()-1];
-		Particles.erase
-		(
-			(std::vector<ParticleObj*>::iterator)(&(Particles[Particles.size()-1]))
-		);
+		std::vector<ParticleObj*>::iterator it = Particles.begin() + Particles.size()-1;
+		Particles.erase(it);
 		delete t;
 	}
 
@@ -263,10 +262,8 @@ NextFrame(float secondsElapsed)
 			//The particle wants to die
 
 			ParticleObj* t=Particles[a];
-			Particles.erase
-			(
-				(std::vector<ParticleObj*>::iterator)(&(Particles[a]))
-			);
+			std::vector<ParticleObj*>::iterator it = Particles.begin() + a;
+			Particles.erase(it);
 			delete t;
 			a--;
 		}

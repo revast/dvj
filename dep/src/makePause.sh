@@ -2,6 +2,12 @@ function pause {
 	read -p "Press return to continue..."
 }
 
+./autoconf-2.68.sh
+pause
+./automake-1.11.sh
+pause
+./libtool-2.4.sh
+pause
 ./jpeg-6b.sh
 pause
 ./libpng-1.2.46.sh

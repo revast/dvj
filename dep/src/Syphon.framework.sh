@@ -1,4 +1,4 @@
 #!/bin/bash
 
-sudo cp -R Syphon.framework /Library/Frameworks
+sudo cp -R Syphon.framework /System/Library/Frameworks
 
