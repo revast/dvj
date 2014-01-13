@@ -1,5 +1,5 @@
 ./autoconf-2.68.sh
-./automake-1.11.sh
+./automake-1.14.1.sh
 ./libtool-2.4.sh
 ./jpeg-6b.sh
 ./libpng-1.2.46.sh

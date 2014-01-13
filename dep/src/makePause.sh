@@ -4,7 +4,7 @@ function pause {
 
 ./autoconf-2.68.sh
 pause
-./automake-1.11.sh
+./automake-1.14.1.sh
 pause
 ./libtool-2.4.sh
 pause
