@@ -4,9 +4,7 @@ cd autoconf-2.69
 make clean
 cd ..
 
-cd automake-1.14.1
-make clean
-cd ..
+rm -rf automake-1.14.1
 
 cd libtool-2.4
 make clean
