@@ -1,7 +1,7 @@
 library		version				src
 
-autoconf	2.68				http://ftpmirror.gnu.org/autoconf/autoconf-2.68.tar.gz
-automake	1.11				http://ftpmirror.gnu.org/automake/automake-1.11.tar.gz
+autoconf	2.69				http://ftpmirror.gnu.org/autoconf/autoconf-2.69.tar.gz
+automake	1.14.1				http://ftpmirror.gnu.org/automake/automake-1.14.1.tar.gz
 libtool		2.4				http://ftpmirror.gnu.org/libtool/libtool-2.4.tar.gz
 SDL		2010.12.18 (5:17pm PST)		hg clone http://hg.libsdl.org/SDL
 SDL_image	1.2.7				http://www.libsdl.org/projects/SDL_image/release/SDL_image-1.2.7.tar.gz

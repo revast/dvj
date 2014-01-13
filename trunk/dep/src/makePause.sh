@@ -2,7 +2,7 @@ function pause {
 	read -p "Press return to continue..."
 }
 
-./autoconf-2.68.sh
+./autoconf-2.69.sh
 pause
 ./automake-1.14.1.sh
 pause
