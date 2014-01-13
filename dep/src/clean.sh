@@ -4,7 +4,7 @@ cd autoconf-2.68
 make clean
 cd ..
 
-cd automake-1.11
+cd automake-1.14.1
 make clean
 cd ..
 
