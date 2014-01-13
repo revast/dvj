@@ -1,5 +1,5 @@
-This is ../doc/libtool.info, produced by makeinfo version 4.13 from
-../doc/libtool.texi.
+This is doc/libtool.info, produced by makeinfo version 4.8 from
+./doc/libtool.texi.
 
 INFO-DIR-SECTION GNU programming tools
 START-INFO-DIR-ENTRY
@@ -2541,7 +2541,7 @@ associated with a language.  These variables tell `libtool' how it
 should create objects and libraries for each language.
 
    Tags are defined at `configure'-time for each language activated in
-the package (see `LT_LANG' in *note LT_INIT::).  Here is the
+the package (see `LT_LANG' in *Note LT_INIT::).  Here is the
 correspondence between language names and tags names.
 
 Language name      Tag name
@@ -5512,7 +5512,7 @@ a compiler capable of generating the appropriate output is available.
 In such cross compiling scenarios, the platform on which the libraries
 or applications are compiled is called the "build platform", while the
 platform on which the libraries or applications are intended to be used
-or executed is called the "host platform".  *note The GNU Build System:
+or executed is called the "host platform".  *Note The GNU Build System:
 (automake)GNU Build System, of which libtool is a part, supports cross
 compiling via arguments passed to the configure script: `--build=...'
 and `--host=...'. However, when the build platform and host platform
@@ -5560,12 +5560,12 @@ with canonical triplet `i586-pc-mingw32'.  On the GNU/Linux platform
 there is a cross compiler following the usual naming conventions of
 such compilers, where the compiler name is prefixed by the host
 canonical triplet (or suitable alias).  (For more information
-concerning canonical triplets and platform aliases, see *note
+concerning canonical triplets and platform aliases, see *Note
 Specifying Target Triplets: (autoconf)Specifying Target Triplets. and
-*note Canonicalizing: (autoconf)Canonicalizing.)  In this case, the C
+*Note Canonicalizing: (autoconf)Canonicalizing.)  In this case, the C
 compiler is named `i586-pc-mingw32-gcc'.
 
-   As described in *note Wrapper executables::, for the MinGW host
+   As described in *Note Wrapper executables::, for the MinGW host
 platform libtool uses a wrapper executable to set various environment
 variables before launching the actual program executable.  Like the
 program executable, the wrapper executable is cross-compiled for the

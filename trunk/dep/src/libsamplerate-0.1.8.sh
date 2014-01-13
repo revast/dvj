@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd libsamplerate-0.1.7
+cd libsamplerate-0.1.8
 ./configure
 make
 sudo make install

@@ -36,7 +36,7 @@ cd fftw-3.2.1
 make clean
 cd ..
 
-cd libsamplerate-0.1.7
+cd libsamplerate-0.1.8
 make clean
 cd ..
 
