@@ -20,7 +20,7 @@ pause
 pause
 ./fftw-3.2.1.sh
 pause
-./libsamplerate-0.1.7.sh
+./libsamplerate-0.1.8.sh
 pause
 ./yasm-1.0.1.sh
 pause
